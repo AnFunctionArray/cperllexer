@@ -1,0 +1,4 @@
+((?<abstrptrrev>(?<abstrptr>\s*[*]\s*((?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b))*+\s*)(?!(?&abstrptrrev)(?C11))([(](?R)[)])?(?<abstrsubs>\s*\[(.*?)\]\s*(?(<abstrptrrev>)|(?C12)))*+(?C11)|(?&abstrptr))
+	(?&abstrptr)*+(?&abstrsubs)*+)?
+	([(](?R)[)])?(?&abstrsubs)*+
+	

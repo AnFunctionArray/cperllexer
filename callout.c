@@ -6,13 +6,7 @@
 #include <boost/preprocessor/stringize.hpp>
 #include <string.h>
 
-#include "actualcontent.h"
-
-struct calloutinfo { PCRE2_SPTR name_table, pattern; int namecount, name_entry_size; };
-
-int getnameloc(const char* str, struct calloutinfo);
-
-int compile_pattern_and_execute(const char* psubject, const char* subject, int (*callback)(pcre2_callout_enumerate_block*, void*));
+#include "main.h"
 
 int callout_test(pcre2_callout_block* a, void* b)
 {
@@ -57,15 +51,16 @@ int callout_test(pcre2_callout_block* a, void* b)
 		n = (getnameloc("abstrptr", *ptable)); break;
 #else
 	case 12:
-		n = getnameloc("abstrsub", *ptable); break;
+		n = getnameloc("abstrsubs", *ptable); //cond = n = 0; break;
+		break;
 	default:
 		n = getnameloc("abstrptr", *ptable);
 		//ntoprint[1] = getnameloc("abstrsub", *ptable);
 		printf("callout id %d\n", a->callout_number); break;
 #endif
 	}
-#if !!(PATTERN_FLAGS & PCRE2_AUTO_CALLOUT) & !defined(DONT_EXPAND)
-	n = 0;
+#if (!!(PATTERN_FLAGS & PCRE2_AUTO_CALLOUT) & !defined(DONT_EXPAND)) | defined(DO_EXPAND)
+	cond = n = 0;
 #elif !defined(DONT_EXPAND)
 	if (n) ntoprint[0] = ++n;
 #else 
@@ -75,7 +70,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 	if (!n)
 #endif
 		printf("pattern - %.*s\n", (unsigned int)a->next_item_length, ptable->pattern + a->pattern_position),
-		printf("pattern rest - %s\n", ptable->pattern + a->pattern_position);
+		printf("pattern rest - %.*s\n", (unsigned int)ptable->szpattern, ptable->pattern + a->pattern_position);
 
 	//if (a->callout_number == 1)
 		//if (a->capture_top == 1)

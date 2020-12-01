@@ -5,14 +5,9 @@
 #include <stdio.h>
 #include <boost/preprocessor/stringize.hpp>
 #include <string.h>
+#include <stdlib.h>
 
-#include "actualcontent.h"
-
-struct calloutinfo { PCRE2_SPTR name_table, pattern; int namecount, name_entry_size; };
-
-int getnameloc(const char* str, struct calloutinfo);
-
-int compile_pattern_and_execute(const char* psubject, const char* subject, int (*callback)(pcre2_callout_enumerate_block*, void*));
+#include "main.h"
 
 int callout_test(pcre2_callout_block* a, void* b);
 
@@ -32,10 +27,12 @@ int getnameloc(const char* str, struct calloutinfo nametable)
 	return 0;
 }
 
-int compile_pattern_and_execute(const char* pattern, const char* subject, int (*callback)(pcre2_callout_enumerate_block*, void*))
+int compile_pattern_and_execute(const char* pattern, const char* subject, int (*callback)(pcre2_callout_enumerate_block*, void*), size_t szpattern)
 {
 	int error, ncaptures, namecount, name_entry_size, n, rc;
-	PCRE2_SIZE erroroffset;//, *povector;
+	PCRE2_SIZE erroroffset, *povector;
+
+	char* pstr;
 
 	uint32_t ovectorcount;
 
@@ -49,16 +46,33 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 
 	pcre2_match_context* match_context = pcre2_match_context_create(0);
 
+	pcre2_code* pcode;
+
+	PCRE2_UCHAR* pnewsubstr = malloc(szpattern);
+
+	PCRE2_SIZE newsubstrlen = szpattern;
+
+	struct calloutinfo nametable;
 
 	//"\"(((\\\\((x)|(b)|(0))(\\d+)|([0-9a-fA-F]+)|(\\\")|(n)|(t))*(?C2))|((.*)(?C3)))*\"(?C1)"
 
 	printf("%s\n", subject);
-	printf("%s\n", pattern);
+	pcode = pcre2_compile("\\s|\\n", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
 
-	struct calloutinfo nametable;
+	pcre2_substitute(pcode, pattern, szpattern, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "", 0, pnewsubstr, &newsubstrlen);
+
+	pcre2_match_context_free(match_context), pcre2_match_data_free(pmatch_data);
+
+	pmatch_data = pcre2_match_data_create(0xFFFF, 0);
+
+	match_context = pcre2_match_context_create(0);
+
+	printf("%.*s\n\n", (unsigned int)newsubstrlen, pnewsubstr);
+
+	free(pattern);
 
 
-	pcre2_code* pcode = pcre2_compile(pattern, PCRE2_ZERO_TERMINATED, PATTERN_FLAGS, &error, &erroroffset, 0);
+	pcode = pcre2_compile(pnewsubstr, newsubstrlen, PATTERN_FLAGS, &error, &erroroffset, 0);
 
 	pcre2_pattern_info(pcode, PCRE2_INFO_NAMETABLE, &nametable.name_table);
 
@@ -66,7 +80,8 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 
 	pcre2_pattern_info(pcode, PCRE2_INFO_NAMEENTRYSIZE, &nametable.name_entry_size);
 
-	nametable.pattern = pattern;
+	nametable.pattern = pnewsubstr;
+	nametable.szpattern = newsubstrlen;
 
 	//static int dequeadd(val, pqueue, ptail, phead, empty, full, size)
 	
@@ -75,6 +90,13 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 	pcre2_set_callout(match_context, callback, &nametable);
 
 	rc = pcre2_match(pcode, subject, PCRE2_ZERO_TERMINATED, 0, 0, pmatch_data, match_context);
+
+	ovectorcount = pcre2_get_ovector_count(pmatch_data);
+
+	povector = pcre2_get_ovector_pointer(pmatch_data);
+
+	printf("full match is: %d - %d, %.*s\n", povector[0], povector[1], (unsigned int)(povector[1] - povector[0]),
+		subject + povector[0]);
 
 	pcre2_match_data_free(pmatch_data);
 
@@ -85,7 +107,26 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 
 main()
 {
-	return compile_pattern_and_execute(TEST_REGEX, TEST_STRING, callout_test);
+	FILE* fregex = fopen(TEST_REGEX_FILE, "rt");
+	fpos_t szfile;
+	char* filecontent;
+
+	fseek(fregex, 0, SEEK_END);
+	fgetpos(fregex, &szfile);
+
+	filecontent = malloc(szfile);
+
+	rewind(fregex);
+
+	fread(filecontent, szfile, 1, fregex);
+
+	fclose(fregex);
+
+	while (--szfile && (filecontent[szfile] == '\xCD' || filecontent[szfile] == '\x9')); //printf(" %x ", (unsigned char)filecontent[szfile]);
+
+	szfile++;
+
+	return compile_pattern_and_execute(filecontent, TEST_STRING, callout_test, szfile);
 
 #if 0
 	ovectorcount = pcre2_get_ovector_count(pmatch_data);

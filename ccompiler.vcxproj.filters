@@ -18,9 +18,6 @@
     <ClCompile Include="main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="so.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="callout.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -28,9 +25,11 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="Readme.md" />
+    <None Include="main.regex" />
+    <None Include="test.regex" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="actualcontent.h">
+    <ClInclude Include="main.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
