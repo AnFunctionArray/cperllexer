@@ -56,9 +56,11 @@ int callout_test(pcre2_callout_block* a, void* b)
 	case 11:
 		n = (getnameloc("abstrptr", *ptable)); break;
 #else
+	case 12:
+		n = getnameloc("abstrsub", *ptable); break;
 	default:
 		n = getnameloc("abstrptr", *ptable);
-		ntoprint[1] = getnameloc("prior", *ptable);
+		//ntoprint[1] = getnameloc("abstrsub", *ptable);
 		printf("callout id %d\n", a->callout_number); break;
 #endif
 	}
@@ -92,7 +94,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 		for (y = 0; y < cond; ++y)
 			if (ntoprint[y] == n)
 				break;
-		if (cond == y) --y;
+		if (cond && cond == y) --y;
 
 		if (ntoprint[y] != n && cond)
 			continue;
