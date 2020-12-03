@@ -1,9 +1,10 @@
-\s*((?<inner>(((\"|(?<begincharliteral>'))(?C4)((?<escape>(\\(?:(x)[0-9a-fA-F]++|(?:(b)[01]++|(?:(0)[0-7]++|(\d++|(?(<begincharliteral>)'|\")|t|n)))))(?C1))|
-						(?<text>(((?!(?&escape)|(?(<begincharliteral>)'|\")).)++)(?C2)))*+(?(<begincharliteral>)'|\")
+\s*((?<inner>((("|(?<begincharliteral>'))(?C4)((?<escape>(\\(?:(x)[0-9a-fA-F]++|(?:(b)[01]++|(?:(0)[0-7]++|(\d++|(?(<begincharliteral>)'|")|t|n))))))(?C1)|
+						(?<text>(((?!(?&escape)|(?(<begincharliteral>)'|")).)++)(?C2)))*+(?(<begincharliteral>)'|")
 						|(?<numberliteral>((?:(0x)[0-9a-fA-F]++|(?:(0b)[01]++|(?:(0)[0-7]++|(\d++)))))(?C5))
 						|(?<identifier>([_a-zA-Z][_a-zA-Z0-9]*+)(?C6)))))
-						\s*(\s*(?<postfixexpr>\[(?R)\]|[(](?C7)(?R)(?C13)[)]|(?<arrowordot>([.]|->))(?C8)\s*(?&identifier)|(?<postfixarith>([+][+]|--))(?C9))\s*)*|(?<inparenths>[(](?R)[)])
+						\s*(\s*(\[(?R)\]|[(](?C7)(?R)(?C13)[)]|(?<arrowordot>([.]|->))(?C8)\s*(?&identifier)|(?<postfixarith>([+][+]|--))(?C9))\s*)*|(?<inparenths>[(](?R)[)])
 						|(?<unary>(?<prefixarith>([+][+]|--))(?R)(?C10)|(?<unaryop>([&*+-~!]))\s*(?<castexpr>\s*[(]\s*
 						(\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b))*\s*
-						(?<abstdecl>((?<abstrptrrev>(?<abstrptr>\s*[*]\s*((?&qualifiers))*+\s*)(?!(?&abstrptrrev)(?C11))([(](?&abstdecl)[)])?(?<abstrsubs>\s*\[(.*?)\]\s*(?(<abstrptrrev>)
-						|(?C12)))*+(?C11)|(?&abstrptr))(?&abstrptr)*+(?&abstrsubs)*+)?(\s*[(](?&abstdecl)[)]\s*)?(?&abstrsubs)*+)[)])(?R)))\s*|\s*
+						(?<abstdecl>(?<abstdeclinside>(?<abstrptrrev>(?<abstrptr>\s*[*]\s*((?&qualifiers))*+\s*)(?!(?&abstrptrrev)(?(<abstrptrrev>)|(?C11)))(?<abstrmostoutter>\s*
+						[(](?&abstdecl)[)]\s*)?(?<abstrsubs>\s*\[(.*?)\]\s*(?(<abstrptrrev>)(?(<abstdeclinside>)(?C12))|(?C12)))*+(?(<abstrptrrev>)|(?C11))|(?&abstrptr))?(?&abstrptr)*+
+						(?&abstrmostoutter)?(?&abstrsubs)*+))?[)])(?R)))\s*|\s*

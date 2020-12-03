@@ -1,4 +1,4 @@
-((?<abstrptrrev>(?<abstrptr>\s*[*]\s*((?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b))*+\s*)(?!(?&abstrptrrev)(?C11))([(](?R)[)])?(?<abstrsubs>\s*\[(.*?)\]\s*(?(<abstrptrrev>)|(?C12)))*+(?C11)|(?&abstrptr))
-	(?&abstrptr)*+(?&abstrsubs)*+)?
-	([(](?R)[)])?(?&abstrsubs)*+
-	
+(?<castexpr>\s*[(]\s*
+						(\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b))*\s*
+						(?<abstdecl>(?<abstdeclinside>(?<abstrptrrev>(?<abstrptr>\s*[*]\s*((?&qualifiers))*+\s*)(?!(?&abstrptrrev)(?(<abstrptrrev>)|(?C11)))(?<abstrmostoutter>\s*[(](?&abstdecl)[)]\s*)?(?<abstrsubs>\s*\[(.*?)\]\s*
+						(?(<abstrptrrev>)(?(<abstdeclinside>)(?C12))|(?C12)))*+(?(<abstrptrrev>)|(?C11))|(?&abstrptr))?(?&abstrptr)*+(?&abstrmostoutter)?(?&abstrsubs)*+))?[)])

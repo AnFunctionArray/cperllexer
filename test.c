@@ -1,1 +1,1 @@
-(*restrict(*restrict(* const)[1][2])[3])[4]
+(char(*restrict*const(*restrict(* const)[1][2])[3])[4])

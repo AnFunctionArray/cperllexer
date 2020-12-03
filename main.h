@@ -26,6 +26,10 @@
 #define PATTERN_FLAGS PATTERN_FLAGS_BASE
 //#define DONT_EXPAND
 
+#if !(PATTERN_FLAGS & PCRE2_AUTO_CALLOUT)
+#define HIDE_DETAILS
+#endif
+
 //#define DO_EXPAND
 
 //#define SHOW_PATTERN
@@ -58,9 +62,15 @@
 
 struct calloutinfo { PCRE2_SPTR name_table, pattern; int namecount, name_entry_size; size_t szpattern; };
 
-int getnameloc(const char* str, struct calloutinfo);
+char* getnameloc(long long int ntocompare, struct calloutinfo nametable);
 
 int compile_pattern_and_execute(const char* pattern, const char* subject, int (*callback)(pcre2_callout_enumerate_block*, void*), size_t szpattern, size_t szsubject);
+
+int printf_all(char* format, ...);
+
+FILE* foutput;
+
+#define printf(format, ...) (fprintf(foutput, format, __VA_ARGS__), printf(format, __VA_ARGS__))
 
 //"((?<abstrptrrev>(?<abstrptr>\\s*[*]\\s*((?&qualifiers))*\\s*)(?!(?&abstrptrrev)(?C11))(?C11)|(?&abstrptr))|(?&abstrptr)++)[)]"
 //#define TEST_REGEX "(?<dot>([*]\\d))(?!(?R)(?C1))(?C1)|(?&dot)"

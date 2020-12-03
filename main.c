@@ -6,14 +6,38 @@
 #include <boost/preprocessor/stringize.hpp>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include "main.h"
 
+FILE* foutput;
+
+int printf_all(char* format, ...)
+{
+	int res;
+	va_list ls, ls1;
+
+	va_start(ls, format);
+
+	va_copy(ls1, ls);
+
+	vprintf(format, ls);
+
+	res = vfprintf(foutput, format, ls1);
+
+	va_end(ls1);
+	va_end(ls);
+
+	return res;
+}
+
 int callout_test(pcre2_callout_block* a, void* b);
 
-int getnameloc(const char* str, struct calloutinfo nametable)
+char *getnameloc(long long int ntocompare, struct calloutinfo nametable)
 {
 	PCRE2_SPTR tabptr = nametable.name_table;
+
+	char *str = (char *)ntocompare;
 
 	int namecount = nametable.namecount, n;
 
@@ -21,10 +45,11 @@ int getnameloc(const char* str, struct calloutinfo nametable)
 	{
 		n = (tabptr[0] << 8) | tabptr[1];
 
-		if (!strcmp(tabptr + 2, str)) return n;
+		if (ntocompare > 0 && !strcmp(tabptr + 2, str)) return n;
+		else if (n == -ntocompare) return tabptr + 2;
 	}
 
-	return 0;
+	return "";
 }
 
 int compile_pattern_and_execute(const char* pattern, const char* subject, int (*callback)(pcre2_callout_enumerate_block*, void*), size_t szpattern, size_t szsubject)
@@ -110,6 +135,7 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 char* openfile(char* chname, size_t *szfileout)
 {
 	FILE* fregex = fopen(chname, "rt");
+	foutput = fopen("output.txt", "wt");
 	fpos_t szfile;
 	char* filecontent;
 
@@ -126,7 +152,7 @@ char* openfile(char* chname, size_t *szfileout)
 
 	while (--szfile && (filecontent[szfile] == '\xCD' || filecontent[szfile] == '\x9')); //printf(" %x ", (unsigned char)filecontent[szfile]);
 
-	*szfileout = szfile++;
+	*szfileout = szfile+1;
 
 	return filecontent;
 }
