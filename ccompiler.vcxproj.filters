@@ -21,6 +21,12 @@
     <ClCompile Include="callout.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="maintest.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

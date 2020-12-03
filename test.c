@@ -1,0 +1,1 @@
+(*restrict(*restrict(* const)[1][2])[3])[4]

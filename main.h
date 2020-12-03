@@ -1,4 +1,5 @@
 #pragma once
+#include <boost/preprocessor/facilities/expand.hpp>
 
 #define STRING_REGEX(a, b, c) "\"((\\\\(?:(x)[0-9a-fA-F]++|(?:(b)[01]++|(?:(0)[0-7]++|(\\d++|\"|t|n)))))(?C"BOOST_PP_STRINGIZE(a)")|(((?!(?2)|\").)++)(?C"BOOST_PP_STRINGIZE(b)"))*\"(?C"BOOST_PP_STRINGIZE(c)")"
 
@@ -19,19 +20,34 @@
 						"(?<abstrdecl>(?<abstrinpar>[(]((?<abstrinner>(?<abstrptrrev>(?<abstrptr>\\s*[*]\\s*((?&qualifiers))*\\s*)(?!(?&abstrptrrev)(?C11))(?C11)|(?&abstrptr))?(?<abstrsub>\\s*\\[(.*?)\\]\\s*)*)"\
 						"|(?&abstrdecl))[)]\\s*)|(?&abstrinner)?[)])(?R))))\\s*|\\s*"
 #define TEST_REGEX_FILE "main.regex"
-#define TEST_STRING  "\"test\\9test1\\9\\077\\xAF\\xAF\\t\\\"\\xAF\\\"\" [ ( ( !(char *restrict*const)3 ) ) ] ( ++ a ++ -> a7 ++ ) fkdfk '\\'\"' \"\" 0x89 ggfgfg \"tes t3\" fgdfdf (\"tes())\"(\"t\\4\"(\"\\xF9\")))"
-#define PATTERN_FLAGS 0 //| PCRE2_AUTO_CALLOUT
+#define TEST_FILE "maintest.c"
+//#define TEST_STRING  "\"test\\9test1\\9\\077\\xAF\\xAF\\t\\\"\\xAF\\\"\" [ ( ( !(char (*restrict(*restrict(*const)[1][2])[3])[4])3 ) ) ] ( ++ a ++ -> a7 ++ ) fkdfk '\\'\"' \"\" 0x89 ggfgfg \"tes t3\" fgdfdf (\"tes())\"(\"t\\4\"(\"\\xF9\")))"
+#define PATTERN_FLAGS_BASE 0 //| PCRE2_AUTO_CALLOUT
+#define PATTERN_FLAGS PATTERN_FLAGS_BASE
 //#define DONT_EXPAND
 
 //#define DO_EXPAND
 
-#define TEST
+//#define SHOW_PATTERN
+
+//#define SHOW_GROUP 27
+
+#ifdef SHOW_GROUP
+#define PATTERN_FLAGS PATTERN_FLAGS_BASE | PCRE2_AUTO_CALLOUT
+#endif
+
+#if defined(SHOW_GROUP) & !defined(SHOW_GROUP_LAST)
+#define SHOW_GROUP_LAST SHOW_GROUP
+#endif
+
+//#define TEST
 #ifdef TEST
 //#define TEST_REGEX "\\s*[(]\\s*(\\bint\\b|\\bchar\\b|\\bshort\\b|\\blong\\b|\\bsigned\\b|\\bunsigned\\b|\\bfloat\\b|\\bdouble\\b|(?<qualifiers>\\bconst\\b|\\brestrict\\b|\\bvolatile\\b))*+"\
 					"\\s*((?<abstrdecl>((?<abstrallptrs>(?<abstrptrrev>(?<abstrptr>\\s*[*]\\s*((?&qualifiers))*\\s*)(?!(?&abstrptrrev)(?C11))(?C11)|(?&abstrptr))|(?&abstrptr)++)"\
 						"(?=((?<abstrsub>\\s*\\[(.*?)\\]\\s*)(?C12))*+)(?&abstrsub)*+)|[(](?&abstrdecl)[)](?&abstrsub)*+))[)]"
 #define TEST_REGEX_FILE "test.regex"
-#define TEST_STRING "(*restrict(*restrict(*const)[1][2])[3])[4]"
+#define TEST_FILE "test.c"
+//#define TEST_STRING "(*restrict(*restrict(*const)[1][2])[3])[4]"
 #endif
 
 //(? #\s * [(]\s * (\bint\b | \bchar\b | \bshort\b | \blong\b | \bsigned\b | \bunsigned\b | \bfloat\b | \bdouble\b | (? <qualifiers>\bconst\b | \brestrict\b | \bvolatile\b)) * +\
@@ -44,7 +60,7 @@ struct calloutinfo { PCRE2_SPTR name_table, pattern; int namecount, name_entry_s
 
 int getnameloc(const char* str, struct calloutinfo);
 
-int compile_pattern_and_execute(const char* psubject, const char* subject, int (*callback)(pcre2_callout_enumerate_block*, void*));
+int compile_pattern_and_execute(const char* pattern, const char* subject, int (*callback)(pcre2_callout_enumerate_block*, void*), size_t szpattern, size_t szsubject);
 
 //"((?<abstrptrrev>(?<abstrptr>\\s*[*]\\s*((?&qualifiers))*\\s*)(?!(?&abstrptrrev)(?C11))(?C11)|(?&abstrptr))|(?&abstrptr)++)[)]"
 //#define TEST_REGEX "(?<dot>([*]\\d))(?!(?R)(?C1))(?C1)|(?&dot)"

@@ -27,7 +27,7 @@ int getnameloc(const char* str, struct calloutinfo nametable)
 	return 0;
 }
 
-int compile_pattern_and_execute(const char* pattern, const char* subject, int (*callback)(pcre2_callout_enumerate_block*, void*), size_t szpattern)
+int compile_pattern_and_execute(const char* pattern, const char* subject, int (*callback)(pcre2_callout_enumerate_block*, void*), size_t szpattern, size_t szsubject)
 {
 	int error, ncaptures, namecount, name_entry_size, n, rc;
 	PCRE2_SIZE erroroffset, *povector;
@@ -56,7 +56,7 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 
 	//"\"(((\\\\((x)|(b)|(0))(\\d+)|([0-9a-fA-F]+)|(\\\")|(n)|(t))*(?C2))|((.*)(?C3)))*\"(?C1)"
 
-	printf("%s\n", subject);
+	printf("%.*s\n", szsubject, subject );
 	pcode = pcre2_compile("\\s|\\n", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
 
 	pcre2_substitute(pcode, pattern, szpattern, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "", 0, pnewsubstr, &newsubstrlen);
@@ -74,6 +74,9 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 
 	pcode = pcre2_compile(pnewsubstr, newsubstrlen, PATTERN_FLAGS, &error, &erroroffset, 0);
 
+	if (error != 100)
+		printf("pattern error %d at %.*s\n", error, (unsigned int)(newsubstrlen - erroroffset), pnewsubstr + erroroffset);
+
 	pcre2_pattern_info(pcode, PCRE2_INFO_NAMETABLE, &nametable.name_table);
 
 	pcre2_pattern_info(pcode, PCRE2_INFO_NAMECOUNT, &nametable.namecount);
@@ -89,7 +92,7 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 
 	pcre2_set_callout(match_context, callback, &nametable);
 
-	rc = pcre2_match(pcode, subject, PCRE2_ZERO_TERMINATED, 0, 0, pmatch_data, match_context);
+	rc = pcre2_match(pcode, subject, szsubject, 0, 0, pmatch_data, match_context);
 
 	ovectorcount = pcre2_get_ovector_count(pmatch_data);
 
@@ -104,10 +107,9 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 
 	return rc;
 }
-
-main()
+char* openfile(char* chname, size_t *szfileout)
 {
-	FILE* fregex = fopen(TEST_REGEX_FILE, "rt");
+	FILE* fregex = fopen(chname, "rt");
 	fpos_t szfile;
 	char* filecontent;
 
@@ -124,9 +126,17 @@ main()
 
 	while (--szfile && (filecontent[szfile] == '\xCD' || filecontent[szfile] == '\x9')); //printf(" %x ", (unsigned char)filecontent[szfile]);
 
-	szfile++;
+	*szfileout = szfile++;
 
-	return compile_pattern_and_execute(filecontent, TEST_STRING, callout_test, szfile);
+	return filecontent;
+}
+main()
+{
+	size_t szfilepattern, szsubject;
+
+	char* pfilepattern = openfile(TEST_REGEX_FILE, &szfilepattern), *pfilesubject = openfile(TEST_FILE, &szsubject);
+
+	return compile_pattern_and_execute(pfilepattern, pfilesubject, callout_test, szfilepattern, szsubject);
 
 #if 0
 	ovectorcount = pcre2_get_ovector_count(pmatch_data);

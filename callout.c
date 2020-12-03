@@ -7,6 +7,26 @@
 #include <string.h>
 
 #include "main.h"
+#include <setjmp.h>
+
+void testifitsusedalready(int val, jmp_buf *pbuff)
+{
+	static int stack[0xFF], *pstackptr = 1[&stack], *pstackiter = 1[&stack];
+
+	if (pstackiter == pstackptr)
+	{
+		*--pstackptr = val;
+		pstackiter = 1[&stack];
+		longjmp(*pbuff, -1);
+	}
+	if (*--pstackiter == val)
+	{
+		pstackiter = 1[&stack];
+		longjmp(*pbuff, val);
+	}
+
+	longjmp(*pbuff, -2);
+}
 
 int callout_test(pcre2_callout_block* a, void* b)
 {
@@ -19,6 +39,9 @@ int callout_test(pcre2_callout_block* a, void* b)
 	int cond = 1, y;
 
 	int ntoprint[0xFF] = { -1, };
+#ifdef SHOW_GROUP
+	goto showgroup;
+#endif
 
 	switch (a->callout_number)
 	{
@@ -41,12 +64,20 @@ int callout_test(pcre2_callout_block* a, void* b)
 	case 4:
 		message = "start string\n"; break;
 	case 7:
+		//cond = n = 0; break;
+		/*; static test = 0;
+		if (a->capture_top <= getnameloc("arrowordot", *ptable))
+			if(!test++)*/
 		message = "start function call\n"; break;
+		/*	else cond = n = 0; 
+		else ; break;*/
+	case 13:
+		message = "end function call\n"; break;
 	case 8:
 		printf("member access operator:\n");
 		n = getnameloc("arrowordot", *ptable); break;
 	case 12:
-		n = getnameloc("abstrsub", *ptable); break;
+		n = getnameloc("abstrsubs", *ptable); break;
 	case 11:
 		n = (getnameloc("abstrptr", *ptable)); break;
 #else
@@ -63,14 +94,36 @@ int callout_test(pcre2_callout_block* a, void* b)
 	cond = n = 0;
 #elif !defined(DONT_EXPAND)
 	if (n) ntoprint[0] = ++n;
+	else cond = n;
 #else 
 	;
 #endif
-#ifndef DONT_EXPAND
+#if !defined(DONT_EXPAND) & !defined(SHOW_PATTERN)
 	if (!n)
 #endif
-		printf("pattern - %.*s\n", (unsigned int)a->next_item_length, ptable->pattern + a->pattern_position),
-		printf("pattern rest - %.*s\n", (unsigned int)ptable->szpattern, ptable->pattern + a->pattern_position);
+#ifdef SHOW_GROUP
+		showgroup:	
+	//if(0[ptable->pattern + a->pattern_position - 1] == ')')
+	if (a->capture_last >= SHOW_GROUP && a->capture_last <= SHOW_GROUP_LAST)
+		{
+			jmp_buf buff;
+			switch (setjmp(buff))
+			{
+			case -2:
+			case 0:
+				testifitsusedalready(a->capture_last, &buff); break;
+			default:
+				return 0;
+			case -1:printf("capture n - %d\n", a->capture_last);
+			}
+#endif
+			printf("pattern - %.*s\n", (unsigned int)a->next_item_length, ptable->pattern + a->pattern_position),
+				printf("pattern rest - %.*s\n", (unsigned int)ptable->szpattern, ptable->pattern + a->pattern_position);
+
+#ifdef SHOW_GROUP
+		}
+	return 0;
+#endif
 
 	//if (a->callout_number == 1)
 		//if (a->capture_top == 1)
