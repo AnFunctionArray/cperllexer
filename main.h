@@ -26,6 +26,8 @@
 #define PATTERN_FLAGS PATTERN_FLAGS_BASE
 //#define DONT_EXPAND
 
+//#define DEBUG
+
 #if !(PATTERN_FLAGS & PCRE2_AUTO_CALLOUT)
 #define HIDE_DETAILS
 #endif
@@ -44,7 +46,7 @@
 #define SHOW_GROUP_LAST SHOW_GROUP
 #endif
 
-//#define TEST
+#define TEST
 #ifdef TEST
 //#define TEST_REGEX "\\s*[(]\\s*(\\bint\\b|\\bchar\\b|\\bshort\\b|\\blong\\b|\\bsigned\\b|\\bunsigned\\b|\\bfloat\\b|\\bdouble\\b|(?<qualifiers>\\bconst\\b|\\brestrict\\b|\\bvolatile\\b))*+"\
 					"\\s*((?<abstrdecl>((?<abstrallptrs>(?<abstrptrrev>(?<abstrptr>\\s*[*]\\s*((?&qualifiers))*\\s*)(?!(?&abstrptrrev)(?C11))(?C11)|(?&abstrptr))|(?&abstrptr)++)"\
@@ -70,7 +72,11 @@ int printf_all(char* format, ...);
 
 FILE* foutput;
 
+#if !!(PATTERN_FLAGS & PCRE2_AUTO_CALLOUT) & !defined(DEBUG)
+#define printf(format, ...) (fprintf(foutput, format, __VA_ARGS__))//, printf(format, __VA_ARGS__))
+#else
 #define printf(format, ...) (fprintf(foutput, format, __VA_ARGS__), printf(format, __VA_ARGS__))
+#endif
 
 //"((?<abstrptrrev>(?<abstrptr>\\s*[*]\\s*((?&qualifiers))*\\s*)(?!(?&abstrptrrev)(?C11))(?C11)|(?&abstrptr))|(?&abstrptr)++)[)]"
 //#define TEST_REGEX "(?<dot>([*]\\d))(?!(?R)(?C1))(?C1)|(?&dot)"

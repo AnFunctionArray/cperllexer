@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <boost/preprocessor/stringize.hpp>
 #include <string.h>
+#include <stdbool.h>
 
 #include "main.h"
 #include <setjmp.h>
@@ -33,13 +34,15 @@ int callout_test(pcre2_callout_block* a, void* b)
 	struct calloutinfo* ptable = b;
 	int n = //a->callout_number == 2 ? getnameloc("inner", *ptable) : getnameloc("middle", *ptable);
 		//a->callout_number == 1 ? getnameloc("escape", *ptable) : a->callout_number == 5 ? getnameloc("numberliteral", *ptable) : getnameloc("text", *ptable);
-		0;
+		0, ntoclear;
 
 	char* message = NULL, * namedcapture = 0;
 
 	int szntoprint = 1, y, cond = 1;
 
 	int ntoprint[0xFF] = { -1, };
+
+	static bool stop_printing_declarations;
 
 	//static int justacheckforescape = 0;
 #ifdef SHOW_GROUP
@@ -48,9 +51,9 @@ int callout_test(pcre2_callout_block* a, void* b)
 	//printf("callout id %d\n", a->callout_number);
 	switch (a->callout_number)
 	{
-#ifndef TEST
-	//case 14:
-		//justacheckforescape = !justacheckforescape;
+#if 1
+		//case 14:
+			//justacheckforescape = !justacheckforescape;
 	case 9:
 		printf("postfix arithmetic:\n");
 		n = getnameloc(namedcapture = "postfixarith", *ptable); break;
@@ -65,7 +68,9 @@ int callout_test(pcre2_callout_block* a, void* b)
 		n = getnameloc(namedcapture = "text", *ptable); break;
 	case 6:
 		printf("identifier:\n");
-		n = getnameloc(namedcapture = "identifier", *ptable); break;
+		n = getnameloc(namedcapture = "identifier", *ptable);
+		//cond = n = 0; break;
+		break;
 	case 4:
 		message = "start string\n"; break;
 	case 7:
@@ -82,22 +87,94 @@ int callout_test(pcre2_callout_block* a, void* b)
 		printf("member access operator:\n");
 		n = getnameloc(namedcapture = "arrowordot", *ptable); break;
 	case 12:
+
+		ntoclear = getnameloc("typenamerev", *ptable);
+		//if (a->offset_vector[2 * ntoclear] == a->offset_vector[2 * ntoclear + 1] && a->offset_vector[2 * ntoclear + 1] == -1)
+		{
+			ntoclear = getnameloc("cond0", *ptable);
+
+			if (a->offset_vector[2 * ntoclear + 1] != -1)
+			{
+				//n = (getnameloc(namedcapture = "abstrptr", *ptable)); break;
+			}
+			//else
+			//return 0;
+		}
+
+
+		ntoclear = getnameloc("abstrptrrev", *ptable);
+		if (a->offset_vector[2 * ntoclear + 1] != -1)
+		{
+			ntoclear = getnameloc("abstdeclinside", *ptable);
+			if (a->offset_vector[2 * ntoclear] == a->offset_vector[2 * ntoclear + 1] && a->offset_vector[2 * ntoclear + 1] == -1)
+				return 0;
+		}
+
 		n = getnameloc(namedcapture = "abstrsubs", *ptable); break;
+	case 14:
+		message = "end sizeof\n"; break;
+	case 15:
+		message = "begin sizeof\n"; break;
+	case 16:
+		ntoclear = getnameloc("typenamerev", *ptable);
+
+		if (a->offset_vector[2 * ntoclear + 1] != -1)
+		{
+			//ntoclear = getnameloc("cond0", *ptable);
+			//a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = 0;
+		}
+
+		for (ntoclear = getnameloc("typenamebegin", *ptable); ntoclear <= getnameloc("typenameend", *ptable); ++ntoclear)
+			a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+		break;
+	case 17:
+		ntoclear = getnameloc("cond0", *ptable);
+		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = 0;
+		break;
+	case 18:
+		ntoclear = getnameloc("cond0", *ptable);
+		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+		break;
 	case 11:
+		ntoclear = getnameloc("typenamerev", *ptable);
+
+		//if (a->offset_vector[2 * ntoclear] == a->offset_vector[2 * ntoclear + 1] && a->offset_vector[2 * ntoclear + 1] == -1)
+		{
+			ntoclear = getnameloc("cond0", *ptable);
+
+			if (a->offset_vector[2 * ntoclear + 1] != -1)
+			{
+				//n = (getnameloc(namedcapture = "abstrptr", *ptable)); break;
+			}
+			//else
+				//return 0;
+		}
+
+		ntoclear = getnameloc("abstrptrrev", *ptable);
+
+		if (a->offset_vector[2 * ntoclear + 1] != -1)
+			return 0;
+		
 		n = (getnameloc(namedcapture = "abstrptr", *ptable)); break;
 #else
 	case 12:
 		n = getnameloc(namedcapture = "abstrsubs", *ptable); //cond = 0; break;
 		break;
-	default:
-		n = getnameloc(namedcapture = "abstrptr", *ptable);
+	case 13:
+		for (ntoclear = getnameloc("typenamebegin", *ptable); ntoclear <= getnameloc("typenameend", *ptable); ++ntoclear)
+			a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+		break;
+	case 11:
+		n = getnameloc(namedcapture = "abstrptr", *ptable); break;
 		//cond = 0; break;
 		//ntoprint[1] = getnameloc("abstrsub", *ptable);
 		//printf("callout id %d\n", a->callout_number); break;
 #endif
 	}
 	if (n) ntoprint[0] = ++n;
-	else cond = n, printf("\n\n");
+	else szntoprint = 0;
+	//else cond = n, printf("\n\n");
+
 #ifdef SHOW_GROUP
 	showgroup :
 	//if(0[ptable->pattern + a->pattern_position - 1] == ')')
@@ -118,11 +195,12 @@ int callout_test(pcre2_callout_block* a, void* b)
 #endif
 #ifndef HIDE_DETAILS
 		printf("pattern - %.*s\n", (unsigned int)a->next_item_length, ptable->pattern + a->pattern_position),
-		printf("pattern rest - %.*s\n", (unsigned int)ptable->szpattern, ptable->pattern + a->pattern_position);
+		printf("pattern rest - %.*s\n", (unsigned int)(ptable->szpattern - (a->pattern_position + a->next_item_length)), ptable->pattern + a->pattern_position + a->next_item_length),
+		printf("matching - %.*s\n", (unsigned int)(a->subject_length - a->current_position), a->subject + a->current_position);
 #endif
 	0;
 #ifdef SHOW_GROUP
-	}
+}
 return 0;
 #endif
 
@@ -133,7 +211,7 @@ return 0;
 
 if (message)
 printf(message);
-else
+if (!message || PATTERN_FLAGS & PCRE2_AUTO_CALLOUT)
 for (n = 0; n < a->capture_top; ++n)
 {
 print:
@@ -143,14 +221,14 @@ print:
 	if (szntoprint && szntoprint == y) --y;
 
 	//if (cond)
-		if (ntoprint[y] != n)
-			if (!(PATTERN_FLAGS & PCRE2_AUTO_CALLOUT) && cond)
-				continue; else;
-		else 
+	if (ntoprint[y] != n)
+		if (!(PATTERN_FLAGS & PCRE2_AUTO_CALLOUT) && cond)
+			continue; else;
+	else
 #ifndef HIDE_DETAILS
-			printf("namedcapture: %s\n", namedcapture);
+		printf("namedcapture: %s\n", namedcapture);
 #else 
-			;
+		;
 #endif
 
 	printf(
@@ -162,6 +240,13 @@ print:
 	);
 }
 
+if (!cond || PATTERN_FLAGS & PCRE2_AUTO_CALLOUT)
+printf("\n\n");
+
+#ifdef DEBUG
+_sleep(1000);
+system("cls");
+#endif
 
 return 0;
 }

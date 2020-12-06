@@ -77,6 +77,8 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 
 	PCRE2_SIZE newsubstrlen = szpattern;
 
+	char errormsg[0xFF];
+
 	struct calloutinfo nametable;
 
 	//"\"(((\\\\((x)|(b)|(0))(\\d+)|([0-9a-fA-F]+)|(\\\")|(n)|(t))*(?C2))|((.*)(?C3)))*\"(?C1)"
@@ -100,7 +102,8 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 	pcode = pcre2_compile(pnewsubstr, newsubstrlen, PATTERN_FLAGS, &error, &erroroffset, 0);
 
 	if (error != 100)
-		printf("pattern error %d at %.*s\n", error, (unsigned int)(newsubstrlen - erroroffset), pnewsubstr + erroroffset);
+		pcre2_get_error_message(error, errormsg, 0xFF),
+		printf("pattern error %d at %s : %.*s\n", error, errormsg, (unsigned int)(newsubstrlen - erroroffset), pnewsubstr + erroroffset);
 
 	pcre2_pattern_info(pcode, PCRE2_INFO_NAMETABLE, &nametable.name_table);
 
@@ -116,6 +119,8 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 	//dequeadd(nametable, nametablequeue, &ptail, &phead, &empty, &full, _countof(nametablequeue));
 
 	pcre2_set_callout(match_context, callback, &nametable);
+
+	printf("\n\n");
 
 	rc = pcre2_match(pcode, subject, szsubject, 0, 0, pmatch_data, match_context);
 
