@@ -46,7 +46,7 @@
 #define SHOW_GROUP_LAST SHOW_GROUP
 #endif
 
-#define TEST
+//#define TEST
 #ifdef TEST
 //#define TEST_REGEX "\\s*[(]\\s*(\\bint\\b|\\bchar\\b|\\bshort\\b|\\blong\\b|\\bsigned\\b|\\bunsigned\\b|\\bfloat\\b|\\bdouble\\b|(?<qualifiers>\\bconst\\b|\\brestrict\\b|\\bvolatile\\b))*+"\
 					"\\s*((?<abstrdecl>((?<abstrallptrs>(?<abstrptrrev>(?<abstrptr>\\s*[*]\\s*((?&qualifiers))*\\s*)(?!(?&abstrptrrev)(?C11))(?C11)|(?&abstrptr))|(?&abstrptr)++)"\

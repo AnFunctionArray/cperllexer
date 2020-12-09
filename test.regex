@@ -1,6 +1,6 @@
-(?<cond0>)(?C18)(?<typename>(?<typenamebegin>(?C16)\s*[(]\s*
+(?<cond0>)(?C18)(?<typenamerev>(?<typename>(?<typenamebegin>(?C16)\s*[(]\s*
 						(\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b))*\s*
 						(?<abstdecl>(?<abstdeclinside>(?<abstrptrrev>(?<abstrptr>\s*[*]\s*((?&qualifiers))*+\s*)(?!(?&abstrptrrev)(?C11))
-						(?<abstrmostoutter>\s*[(](?&abstdecl)[)]\s*)?(?<abstrsubs>\s*\[(.*?)\]\s*
-						(?C12))*+(?C11)|(?&abstrptr))?(?&abstrptr)*+(?&abstrmostoutter)?(?&abstrsubs)*+))?[)])
-						(?<typenameend>))+(?<identifier>(?!sizeof)([_a-zA-Z][_a-zA-Z0-9]*+)(?C6))
+						(?<abstrmostoutter>\s*[(](?&abstdecl)[)]\s*)?+(?<abstrsubs>\s*\[(\d++)\]\s*
+						(?C12))*+(?C11)|(?&abstrptr))?+(?&abstrptr)*+(?&abstrmostoutter)?+(?&abstrsubs)*+))[)])
+						(?<typenameend>))(?!(?&typenamerev)|(?<identifier>(?!sizeof)([_a-zA-Z][_a-zA-Z0-9]*+)(?C6)))|(?C17)(?&typename))
