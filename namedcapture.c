@@ -51,18 +51,19 @@ int callout_test(pcre2_callout_block* a, void* b)
 	switch (a->callout_number)
 	{
 	case 17:
-		ntoclear = getnameloc("cond0", *ptable);
-		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = 0;
+		push_condstack(1);
 		//message = "begin reverse\n";
 		break;
 	case 18:
-		ntoclear = getnameloc("cond0", *ptable);
-		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+		pop_condstack();
+		break;
+	case 19:
+		push_condstack(0);
 		break;
 	default:
-		ntoclear = getnameloc("cond0", *ptable);
+		//ntoclear = getnameloc("cond0", *ptable);
 
-		if (a->offset_vector[2 * ntoclear + 1] != -1)
+		if (!size_condstack() || top_condstack())
 		{
 			//n = (getnameloc(namedcapture = "abstrptr", *ptable)); break;
 		}
@@ -121,8 +122,8 @@ int callout_test(pcre2_callout_block* a, void* b)
 			{
 				//n = (getnameloc(namedcapture = "abstrptr", *ptable)); break;
 			}
-			else
-			return 0;
+			//else
+			//return 0;
 		}
 
 
@@ -171,8 +172,8 @@ int callout_test(pcre2_callout_block* a, void* b)
 			{
 				//n = (getnameloc(namedcapture = "abstrptr", *ptable)); break;
 			}
-			else
-				return 0;
+			//else
+				//return 0;
 		}
 
 		ntoclear = getnameloc("abstrptrrev", *ptable);

@@ -27,6 +27,9 @@
     <ClCompile Include="namedcapture.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cpphelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
