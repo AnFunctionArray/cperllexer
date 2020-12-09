@@ -48,6 +48,27 @@ int callout_test(pcre2_callout_block* a, void* b)
 #ifdef SHOW_GROUP
 	goto showgroup;
 #endif
+	switch (a->callout_number)
+	{
+	case 17:
+		ntoclear = getnameloc("cond0", *ptable);
+		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = 0;
+		//message = "begin reverse\n";
+		break;
+	case 18:
+		ntoclear = getnameloc("cond0", *ptable);
+		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+		break;
+	default:
+		ntoclear = getnameloc("cond0", *ptable);
+
+		if (a->offset_vector[2 * ntoclear + 1] != -1)
+		{
+			//n = (getnameloc(namedcapture = "abstrptr", *ptable)); break;
+		}
+		else
+			return 0;
+	}
 	//printf("callout id %d\n", a->callout_number);
 	switch (a->callout_number)
 	{
@@ -71,6 +92,9 @@ int callout_test(pcre2_callout_block* a, void* b)
 		n = getnameloc(namedcapture = "identifier", *ptable);
 		//cond = n = 0; break;
 		break;
+	case 19:
+
+		n = getnameloc(namedcapture = "unaryop", *ptable); break;
 	case 4:
 		message = "start string\n"; break;
 	case 7:
@@ -127,7 +151,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 		for (ntoclear = getnameloc("typenamebegin", *ptable); ntoclear <= getnameloc("typenameend", *ptable); ++ntoclear)
 			a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
 		break;
-	case 17:
+	/*case 17:
 		ntoclear = getnameloc("cond0", *ptable);
 		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = 0;
 		//message = "begin reverse\n";
@@ -135,7 +159,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 	case 18:
 		ntoclear = getnameloc("cond0", *ptable);
 		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
-		break;
+		break;*/
 	case 11:
 		ntoclear = getnameloc("typenamerev", *ptable);
 

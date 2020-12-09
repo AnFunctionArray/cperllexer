@@ -1,1 +1,1 @@
-(char(*restrict* const(*restrict(* const)[1][2])[3])[5])(char(*restrict* const(*restrict(* const)[7][2])[3])[4])a
+!*&(char(*restrict* const(*restrict(* const)[1][2])[3])[5])(char(*restrict* const(*restrict(* const)[7][2])[3])[4])a

@@ -1,11 +1,12 @@
-\s*((?<inner>((("|(?<begincharliteral>'))(?C4)((?<escape>(\\(?:(x)[0-9a-fA-F]++|(?:(b)[01]++|(?:(0)[0-7]++|(\d++|(?(<begincharliteral>)'|")|t|n))))))(?C1)|
+(?<cond0>)(?<primexpr>\s*((?<inner>((("|(?<begincharliteral>'))(?C4)((?<escape>(\\(?:(x)[0-9a-fA-F]++|(?:(b)[01]++|(?:(0)[0-7]++|(\d++|(?(<begincharliteral>)'|")|t|n))))))(?C1)|
 						(?<text>(((?!(?&escape)|(?(<begincharliteral>)'|")).)++)(?C2)))*+(?(<begincharliteral>)'|")
 						|(?<numberliteral>((?:(0x)[0-9a-fA-F]++|(?:(0b)[01]++|(?:(0)[0-7]++|(\d++)))))(?C5))
 						|(?<identifier>(?!sizeof)([_a-zA-Z][_a-zA-Z0-9]*+)(?C6)))))
-						\s*(\s*(\[(?R)\]|[(](?C7)(?R)(?C13)[)]|(?<arrowordot>([.]|->))(?C8)\s*(?&identifier)|(?<postfixarith>([+][+]|--))(?C9))\s*)*|(?<inparenths>[(](?R)[)])
-						|(?<unary>(?<prefixarith>([+][+]|--))(?R)(?C10)|(?<unaryop>([&*+-~!]))*\s*(?<cond0>)(?C18)(?<typenamerev>(?<typename>(?<typenamebegin>(?C16)\s*[(]\s*
+						\s*(\s*(\[(?&primexpr)\]|[(](?C7)(?&primexpr)(?C13)[)]|(?<arrowordot>([.]|->))(?C8)\s*(?&identifier)|(?<postfixarith>([+][+]|--))(?C9))\s*)*|(?<inparenths>[(](?&primexpr)[)])
+						|(?<unary>(?<prefixarith>([+][+]|--))(?&primexpr)(?C10)|(?C18)(?<unaryoprev>(?<unaryop>([&\*+\-\~!])(?C19))(?!(?&unaryoprev)|(?<typenamerev>(?<typename>(?<typenamebegin>(?C16)\s*[(]\s*
 						(\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b))*\s*
 						(?<abstdecl>(?<abstdeclinside>(?<abstrptrrev>(?<abstrptr>\s*[*]\s*((?&qualifiers))*+\s*)(?!(?&abstrptrrev)(?C11))
 						(?<abstrmostoutter>\s*[(](?&abstdecl)[)]\s*)?+(?<abstrsubs>\s*\[(\d++)\]\s*
 						(?C12))*+(?C11)|(?&abstrptr))?+(?&abstrptr)*+(?&abstrmostoutter)?+(?&abstrsubs)*+))[)])
-						(?<typenameend>))(?!(?&typenamerev)|(?R))|(?C17)(?&typename))(?C18)(?&typename)*+(?R)|(?C15)sizeof((?&typename)|(?R))(?C14)))\s*|\s*
+						(?<typenameend>))(?!(?&typenamerev)|(?C17)(?&primexpr)(?C18))|(?C17)(?&typename))|(?C17)(?&primexpr)(?C18))|(?C17)(?&unaryop))(?C18)(?&unaryop)*+
+						((?&typename)*+(?&primexpr)|(?&primexpr))(?C17)|(?C15)sizeof((?&typename)|(?&primexpr))(?C14)))\s*|\s*)
