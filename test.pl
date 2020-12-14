@@ -1,16 +1,13 @@
 #!/usr/bin/perl
 
-$text = "(char*const(*restrict[2])[4][5])";
+$text = "(char(*restrict(*restrict(*const)[1][2])[3])[4])";
 
-$result = $text =~/[(](\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|
-			(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b))
-			(?<abstdecl>(?&abstrptr)*(?<abstrptr1>(?<abstrptr>[*](?<ptrqualifs>(?&qualifiers))))
-			(?<abstrest>(?<abstrmostoutter>[(](?&abstdecl)[)])?+
-			(?<abstrsubs>\[(?<abstrsubsinner>\d++)\]
-			(?{print "$+{abstrsubsinner}\n" if(debug(2));}))*+)?+(?{print "$+{ptrqualifs}\n" if(debug(1));})
-			(?!)|
-			(?&abstrptr)*?(?&abstrptr)+(?<abstrrestoutter>([(](?&abstrptr)*?(?&abstrptr)+(?&abstrrestoutter)?+[)])?+
-			(\[(\d++)\])*+)?+|(?&abstrest))[)]/xx;
+$result = $text =~/(?<typename>[(]
+						(?<typesandqualifiers>\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b))*
+						(?<abstdecl>((?<abstrptrrev>(?<abstrptr>[*](?<ptrqualifs>(?&qualifiers))*+)(?!(?&abstrptrrev)(?{print "$+{ptrqualifs}\n" if(debug(1));}))
+						(?<abstrrest>(?<abstrmostoutter>[(](?&abstdecl)[)])?+(?<abstrsubs>\[(?<abstrsubsinner>\d++)\]
+						(?{print "$+{abstrsubsinner}\n" if(debug(2));}))*+(?{print "$+{ptrqualifs}\n" if(debug(1));}))|(?&abstrptr))|(?&abstrrest))(?<abstdeclinside>(?&abstrptr)*+
+                        ([(](?&abstdeclinside)[)])?+(\[(\d++)\])*+))[)])/xx;
 						
 						
 print $&;
