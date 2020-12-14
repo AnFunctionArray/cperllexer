@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-$text = "(char*volatile*restrict(*const(*restrict))[4][5])";
+$text = "(char*const(*restrict[2])[4][5])";
 
 $result = $text =~/[(](\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|
 			(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b))
@@ -10,7 +10,7 @@ $result = $text =~/[(](\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned
 			(?{print "$+{abstrsubsinner}\n" if(debug(2));}))*+)?+(?{print "$+{ptrqualifs}\n" if(debug(1));})
 			(?!)|
 			(?&abstrptr)*?(?&abstrptr)+(?<abstrrestoutter>([(](?&abstrptr)*?(?&abstrptr)+(?&abstrrestoutter)?+[)])?+
-			(\[(\d++)\])*+)?+)[)]/xx;
+			(\[(\d++)\])*+)?+|(?&abstrest))[)]/xx;
 						
 						
 print $&;
