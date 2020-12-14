@@ -1,24 +1,19 @@
 #!/usr/bin/perl
 
-$text = "!~*(char*volatile*restrict(*const)[4])a";
+$text = "(char*volatile*restrict(*const(*restrict))[4][5])";
 
-$result = $text =~/(?{$end = 1})(?<unaryoprev>(?<unaryop>([&*+-~!]))(?!(?&unaryoprev)|(?<typenamerev>(?<typename>(?<typenamebegin>\s*[(]\s*
-						(\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b))*\s*
-						(?<abstdecl>(?<abstdeclinside>(?<abstrptrrev>(?<abstrptr>\s*[*]\s*(?<qualifptr>(?&qualifiers))*+\s*)
-						
-						(?!(?&abstrptrrev))
-						
-						(?<abstrmostoutter>\s*[(](?&abstdecl)[)]\s*)?+
-						(?{ print "$+{qualifptr}\n" if(debug(1)); })
-						(?<abstrsubs>\s*\[(?<abstrsubsinner>\d++)\]\s*
-						(?{print "$+{abstrsubsinner}\n" if(debug(2));}))*+
-						|(?&abstrptr)(?{print "$+{qualifptr}\n" if(debug(3)); }))?+(?{ print "$+{qualifptr}\n" if(debug(4)); })(?&abstrptr)*+
-						(?&abstrmostoutter)?+(?&abstrsubs)*+))[)])
-						(?<typenameend>))(?!(?&typenamerev)|(?&identifier))|(?&typename)))|(?&unaryop))(?{$end = 1})(?&unaryop)*+
-						(?&typename)*+(?<identifier>(?!sizeof)([_a-zA-Z][_a-zA-Z0-9]*+))/xx;
+$result = $text =~/[(](\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|
+			(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b))
+			(?<abstdecl>(?&abstrptr)*(?<abstrptr1>(?<abstrptr>[*](?<ptrqualifs>(?&qualifiers))))
+			(?<abstrest>(?<abstrmostoutter>[(](?&abstdecl)[)])?+
+			(?<abstrsubs>\[(?<abstrsubsinner>\d++)\]
+			(?{print "$+{abstrsubsinner}\n" if(debug(2));}))*+)?+(?{print "$+{ptrqualifs}\n" if(debug(1));})
+			(?!)|
+			(?&abstrptr)*?(?&abstrptr)+(?<abstrrestoutter>([(](?&abstrptr)*?(?&abstrptr)+(?&abstrrestoutter)?+[)])?+
+			(\[(\d++)\])*+)?+)[)]/xx;
 						
 						
-print $result;
+print $&;
 
 sub debug {
 
@@ -40,8 +35,8 @@ foreach my $bufname (sort keys %-) {
     print "\n\n";
     }
     
-   if($index eq 4) {return 1 if(1);}
+   #return 0 if (not $+{abstrrestoutter});
    #else {return 1 if(not $+{abstrptrrev});}
-   return 0;
+   return 1;
 }
 
