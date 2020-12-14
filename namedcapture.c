@@ -6,6 +6,7 @@
 #include <boost/preprocessor/stringize.hpp>
 #include <string.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "main.h"
 #include <setjmp.h>
@@ -29,6 +30,62 @@ void testifitsusedalready(int val, jmp_buf* pbuff)
 	longjmp(*pbuff, -2);
 }
 
+enum {
+	maxsize = 0xFFF
+};
+
+struct match {
+	int n;
+	char *startmatch, *namedcpture;
+};
+
+struct debugstr {
+	int last_capture_n;
+	char *pattern, *patternrest, *matching;
+	struct match matches[maxsize];
+	int ba, b;
+} tmp;
+
+static struct debugstr	debugarray[maxsize];
+
+static struct match *currmatch = tmp.matches;
+static struct debugstr *currdebug = debugarray;
+
+void debug_insert_common(int nlast, unsigned int a, char* pa, unsigned int b, char* pb, unsigned int c, char* pc, int ba)
+{
+	memset(&tmp, 0, sizeof tmp);
+	tmp.last_capture_n = nlast;
+	tmp.pattern = malloc(a + 1);
+	sprintf(tmp.pattern, "%.*s", a, pa);
+	tmp.patternrest = malloc(b + 1);
+	sprintf(tmp.patternrest, "%.*s", b, pb);
+	tmp.matching = malloc(c + 1);
+	sprintf(tmp.matching, "%.*s", c, pc);
+	tmp.b = b;
+	tmp.ba = ba;
+	currmatch = tmp.matches;
+}
+
+void debug_insert_match(int n, unsigned int a, char* pa, char* pnamedcapture)
+{
+	struct match match;
+
+	match.n = n;
+	match.startmatch = malloc(a + 1);
+	sprintf(match.startmatch, "%.*s", a, pa);
+	match.namedcpture = pnamedcapture;
+	*currmatch++ = match;
+}
+
+extern void debug()
+{
+	*currdebug++ = tmp;
+
+	if (!(tmp.ba >= 17 && tmp.b <= 92))
+		_sleep(0);
+	return;
+}
+
 int callout_test(pcre2_callout_block* a, void* b)
 {
 	struct calloutinfo* ptable = b;
@@ -44,38 +101,45 @@ int callout_test(pcre2_callout_block* a, void* b)
 
 	static bool stop_printing_declarations;
 
-	//static int justacheckforescape = 0;
-#ifdef SHOW_GROUP
-	goto showgroup;
+#if PATTERN_FLAGS & PCRE2_AUTO_CALLOUT
+	debug_insert_common(a->capture_last, (unsigned int)a->next_item_length, ptable->pattern + a->pattern_position,
+			(unsigned int)(ptable->szpattern - (a->pattern_position + a->next_item_length)), ptable->pattern + a->pattern_position + a->next_item_length,
+			(unsigned int)(a->subject_length - a->current_position), a->subject + a->current_position, a->pattern_position);
 #endif
 	switch (a->callout_number)
 	{
 	case 17:
-		push_condstack(1);
+		ntoclear = getnameloc("cond0", *ptable);
+		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = 0;
 		//message = "begin reverse\n";
 		break;
 	case 18:
-		pop_condstack();
-		break;
-	case 19:
-		push_condstack(0);
+		ntoclear = getnameloc("cond0", *ptable);
+		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
 		break;
 	default:
-		//ntoclear = getnameloc("cond0", *ptable);
+		ntoclear = getnameloc("cond0", *ptable);
 
-		if (!size_condstack() || top_condstack())
+		if (a->offset_vector[2 * ntoclear + 1] != -1)
 		{
 			//n = (getnameloc(namedcapture = "abstrptr", *ptable)); break;
 		}
-		else
-			return 0;
+		//else
+			//return 0;
 	}
+
+	//static int justacheckforescape = 0;
+#ifdef SHOW_GROUP
+	goto showgroup;
+#endif
 	//printf("callout id %d\n", a->callout_number);
 	switch (a->callout_number)
 	{
 #if 1
 		//case 14:
 			//justacheckforescape = !justacheckforescape;
+	case 19:
+		n = getnameloc(namedcapture = "unaryop", *ptable); break;
 	case 9:
 		printf("postfix arithmetic:\n");
 		n = getnameloc(namedcapture = "postfixarith", *ptable); break;
@@ -93,9 +157,6 @@ int callout_test(pcre2_callout_block* a, void* b)
 		n = getnameloc(namedcapture = "identifier", *ptable);
 		//cond = n = 0; break;
 		break;
-	case 19:
-
-		n = getnameloc(namedcapture = "unaryop", *ptable); break;
 	case 4:
 		message = "start string\n"; break;
 	case 7:
@@ -127,13 +188,13 @@ int callout_test(pcre2_callout_block* a, void* b)
 		}
 
 
-		ntoclear = getnameloc("abstrptrrev", *ptable);
-		if (a->offset_vector[2 * ntoclear + 1] != -1)
-		{
-			ntoclear = getnameloc("abstdeclinside", *ptable);
-			if (a->offset_vector[2 * ntoclear] == a->offset_vector[2 * ntoclear + 1] && a->offset_vector[2 * ntoclear + 1] == -1)
-				return 0;
-		}
+		//ntoclear = getnameloc("abstrptrrev", *ptable);
+		//if (a->offset_vector[2 * ntoclear + 1] != -1)
+		//{
+			//ntoclear = getnameloc("abstdeclinside", *ptable);
+			//if (a->offset_vector[2 * ntoclear] == a->offset_vector[2 * ntoclear + 1] && a->offset_vector[2 * ntoclear + 1] == -1)
+				//return 0;
+		//}
 
 		n = getnameloc(namedcapture = "abstrsubs", *ptable); break;
 	case 14:
@@ -152,15 +213,15 @@ int callout_test(pcre2_callout_block* a, void* b)
 		for (ntoclear = getnameloc("typenamebegin", *ptable); ntoclear <= getnameloc("typenameend", *ptable); ++ntoclear)
 			a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
 		break;
-	/*case 17:
-		ntoclear = getnameloc("cond0", *ptable);
-		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = 0;
-		//message = "begin reverse\n";
-		break;
-	case 18:
-		ntoclear = getnameloc("cond0", *ptable);
-		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
-		break;*/
+		/*case 17:
+			ntoclear = getnameloc("cond0", *ptable);
+			a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = 0;
+			//message = "begin reverse\n";
+			break;
+		case 18:
+			ntoclear = getnameloc("cond0", *ptable);
+			a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+			break;*/
 	case 11:
 		ntoclear = getnameloc("typenamerev", *ptable);
 
@@ -176,11 +237,11 @@ int callout_test(pcre2_callout_block* a, void* b)
 				//return 0;
 		}
 
-		ntoclear = getnameloc("abstrptrrev", *ptable);
+		//ntoclear = getnameloc("abstrptrrev", *ptable);
 
-		if (a->offset_vector[2 * ntoclear + 1] != -1)
-			return 0;
-		
+		//if (a->offset_vector[2 * ntoclear + 1] != -1)
+			//return 0;
+
 		n = (getnameloc(namedcapture = "abstrptr", *ptable)); break;
 #else
 	case 12:
@@ -226,7 +287,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 #endif
 	0;
 #ifdef SHOW_GROUP
-}
+	}
 return 0;
 #endif
 
@@ -264,7 +325,14 @@ print:
 		(unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]),
 		a->subject + a->offset_vector[2 * n]
 	);
+#if PATTERN_FLAGS & PCRE2_AUTO_CALLOUT
+	debug_insert_match(n, (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]), a->subject + a->offset_vector[2 * n], namedcapture);
+#endif
 }
+
+#if PATTERN_FLAGS & PCRE2_AUTO_CALLOUT
+debug();
+#endif
 
 if (!cond || PATTERN_FLAGS & PCRE2_AUTO_CALLOUT)
 printf("\n\n");

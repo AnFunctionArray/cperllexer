@@ -1,7 +1,5 @@
-(?<cond0>)(?C18)(?<unaryoprev>(?<unaryop>([&*+-~!])(?C19))(?!(?&unaryoprev)|(?<typenamerev>(?<typename>(?<typenamebegin>(?C16)\s*[(]\s*
-						(\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b))*\s*
-						(?<abstdecl>(?<abstdeclinside>(?<abstrptrrev>(?<abstrptr>\s*[*]\s*((?&qualifiers))*+\s*)(?!(?&abstrptrrev)(?C11))
-						(?<abstrmostoutter>\s*[(](?&abstdecl)[)]\s*)?+(?<abstrsubs>\s*\[(\d++)\]\s*
-						(?C12))*+(?C11)|(?&abstrptr))?+(?&abstrptr)*+(?&abstrmostoutter)?+(?&abstrsubs)*+))[)])
-						(?<typenameend>))(?!(?&typenamerev)|(?C17)(?&identifier)(?C18))|(?C17)(?&typename)))|(?C17)(?&unaryop))(?C18)(?&unaryop)*+
-						(?C18)(?&typename)*+(?<identifier>(?!sizeof)([_a-zA-Z][_a-zA-Z0-9]*+)(?C6))(?C17)
+(?<typename>[(]
+						(\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b))*
+						(?<abstdecl>(?<abstrptrrev>(?<abstrptr>[*]((?&qualifiers))*+)(?!(?&abstrptrrev)(?C11))
+						(?<abstrmostoutter>[(](?&abstdecl)[)])?+(?<abstrsubs>\[(\d++)\]
+						(?C12))*+(?C11)|(?&abstrptr))?+(?<abstdeclinside>(?&abstrptr)*+([(](?&abstdeclinside)[)])?+(\[(\d++)\])*+))[)])

@@ -9,4 +9,4 @@
 						(?<abstdecl>(?<abstdeclinside>(?<abstrptrrev>(?<abstrptr>\s*[*]\s*((?&qualifiers))*+\s*)(?!(?&abstrptrrev)(?C11))
 						(?<abstrmostoutter>\s*[(](?&abstdecl)[)]\s*)?+(?<abstrsubs>\s*\[(\d++)\]\s*
 						(?C12))*+(?C11)|(?&abstrptr))?+(?&abstrptr)*+(?&abstrmostoutter)?+(?&abstrsubs)*+))[)])
-						(?<typenameend>)(?C18))(?!(?&typenamerev)|(?&primexpr))|(?C17)(?&typename))(?C19)(?&typename)*+(?C17)(?&primexpr)(?C19)|(?C15)sizeof((?&typename)|(?&primexpr))(?C14)))
+						(?<typenameend>)(?C18))(?!(?&cond0)(?&typenamerev))|(?<cond0>)(?&typename))(?C19)(?&typename)*+(?&primexpr)|(?C15)sizeof((?&typename)|(?&primexpr))(?C14)))
