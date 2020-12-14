@@ -1,1 +1,1 @@
-(char*restrict(*volatile*const)[4])
+(char(*restrict(*restrict(*const)[1][2])[3])[4])

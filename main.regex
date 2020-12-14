@@ -8,9 +8,10 @@
 						|(?<unary>(?<prefixarith>([+][+]|--))(?&primexpr)(?C10)|(?<typenamerev>(?&typenamefacet)
 						(?!(?&primexpr))|(?<typename>[(]
 						(?<typesandqualifiers>\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b))*
-						(?<abstdecl>((?<abstrptrrev>(?<abstrptr>[*]((?&qualifiers))*+)(?!(?&abstrptrrev)(?C11))
+						((?<abstdecl>(?<abstrptrrev>(?<abstrptr>[*]((?&qualifiers))*+)(?!(?&abstrptrrev))
 						(?<abstrrest>(?<abstrmostoutter>[(](?&abstdecl)[)])?+(?<abstrsubs>\[(\d++)\]
-						(?C12))*+(?C11))|(?&abstrptr))|(?&abstrrest))(?<abstdeclinside>(?&abstrptr)*+([(](?&abstdeclinside)[)])?+(\[(\d++)\])*+))[)])(?<primexprfacet>(?<innerfacet>((("|(?<begincharliteralfacet>'))
+						(?C12))*+(?C11))|(?&abstrptr))(?<abstdeclinside>(?&abstrptr)*+([(](?&abstdeclinside)[)])?+(\[(\d++)\])*+))|(?&abstrmostoutter)?+(?&abstrsubs)*+)[)])
+						(?<primexprfacet>(?<innerfacet>((("|(?<begincharliteralfacet>'))
 						((?<escapefacet>(\\(?:(x)[0-9a-fA-F]++|(?:(b)[01]++|(?:(0)[0-7]++|(\d++|(?(<begincharliteral>)'|")|t|n))))))|
 						(?<textfacet>(((?!(?&escapefacet)|(?(<begincharliteral>)'|")).)++)))*+(?(<begincharliteral>)'|")
 						|(?<numberliteralfacet>((?:(0x)[0-9a-fA-F]++|(?:(0b)[01]++|(?:(0)[0-7]++|(\d++))))))
