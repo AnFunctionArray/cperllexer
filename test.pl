@@ -1,4 +1,4 @@
-
+#!/usr/bin/perl
 
 $text = "!~*(char*volatile*restrict(*const)[4])a";
 
