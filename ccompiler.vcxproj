@@ -19,6 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="metaregex\parseregexfile.c" />
+    <ClCompile Include="metaregex\parseregexfilecpp.cpp" />
     <ClCompile Include="namedcapture.c" />
     <ClCompile Include="main.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
@@ -34,10 +36,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="main.regex" />
     <None Include="packages.config" />
     <None Include="Readme.md" />
-    <None Include="test.regex" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h" />
@@ -68,6 +68,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <EnableASAN>false</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -143,6 +144,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard_C>Default</LanguageStandard_C>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

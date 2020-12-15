@@ -1,0 +1,3 @@
+(?<unary>(?<prefixarith>([+][+]|--))(?&primexpr)(?C10)|(?<typenamerev>(?&typenamefacet)
+						(?!(?&primexpr))|(?&typename)(?&primexprfacet))|(((?<unaryop>([\&\*\+\-\~\!]))(?!(?&primexpr)(?C19))|(?&unaryop))
+						(?&unaryop)*+(?&primexprfacet))|sizeof(?C15)((?&typename)|(?&primexpr))(?C14))

@@ -3,7 +3,7 @@
 
 #include "lib/pcre2.h"
 #include <stdio.h>
-#include <boost/preprocessor/stringize.hpp>
+//#include <boost/preprocessor/stringize.hpp>
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -33,11 +33,11 @@ int printf_all(char* format, ...)
 
 int callout_test(pcre2_callout_block* a, void* b);
 
-char *getnameloc(long long int ntocompare, struct calloutinfo nametable)
+char* getnameloc(long long int ntocompare, struct calloutinfo nametable)
 {
 	PCRE2_SPTR tabptr = nametable.name_table;
 
-	char *str = (char *)ntocompare;
+	char* str = (char*)ntocompare;
 
 	int namecount = nametable.namecount, n;
 
@@ -52,10 +52,10 @@ char *getnameloc(long long int ntocompare, struct calloutinfo nametable)
 	return "";
 }
 
-int compile_pattern_and_execute(const char* pattern, const char* subject, int (*callback)(pcre2_callout_enumerate_block*, void*), size_t szpattern, size_t szsubject)
+int compile_pattern_and_execute(const char* pattern, const char* subject, int (*callback)(pcre2_callout_enumerate_block*, void*), size_t szpattern, size_t szsubject, int msgs, size_t *plen, int flags)
 {
 	int error, ncaptures, namecount, name_entry_size, n, rc;
-	PCRE2_SIZE erroroffset, *povector;
+	PCRE2_SIZE erroroffset, * povector;
 
 	char* pstr;
 
@@ -83,7 +83,7 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 
 	//"\"(((\\\\((x)|(b)|(0))(\\d+)|([0-9a-fA-F]+)|(\\\")|(n)|(t))*(?C2))|((.*)(?C3)))*\"(?C1)"
 
-	printf("%.*s\n", szsubject, subject );
+	if(msgs) printf("%.*s\n", szsubject, subject);
 	pcode = pcre2_compile("\\s|\\n", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
 
 	pcre2_substitute(pcode, pattern, szpattern, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "", 0, pnewsubstr, &newsubstrlen);
@@ -94,12 +94,12 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 
 	match_context = pcre2_match_context_create(0);
 
-	printf("%.*s\n\n", (unsigned int)newsubstrlen, pnewsubstr);
+	if (msgs) printf("%.*s\n\n", (unsigned int)newsubstrlen, pnewsubstr);
 
-	free(pattern);
+	//free(pattern);
 
 
-	pcode = pcre2_compile(pnewsubstr, newsubstrlen, PATTERN_FLAGS, &error, &erroroffset, 0);
+	pcode = pcre2_compile(pnewsubstr, newsubstrlen, flags, &error, &erroroffset, 0);
 
 	if (error != 100)
 		pcre2_get_error_message(error, errormsg, 0xFF),
@@ -115,12 +115,12 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 	nametable.szpattern = newsubstrlen;
 
 	//static int dequeadd(val, pqueue, ptail, phead, empty, full, size)
-	
+
 	//dequeadd(nametable, nametablequeue, &ptail, &phead, &empty, &full, _countof(nametablequeue));
 
 	pcre2_set_callout(match_context, callback, &nametable);
 
-	printf("\n\n");
+	if (msgs) printf("\n\n");
 
 	rc = pcre2_match(pcode, subject, szsubject, 0, 0, pmatch_data, match_context);
 
@@ -129,7 +129,9 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 	povector = pcre2_get_ovector_pointer(pmatch_data);
 
 	printf("full match is: %d - %d, %.*s\n", povector[0], povector[1], (unsigned int)(povector[1] - povector[0]),
-		subject + povector[0]);
+			subject + povector[0]);
+
+	if (plen) *plen = povector[1] - povector[0];
 
 	pcre2_match_data_free(pmatch_data);
 
@@ -137,10 +139,9 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 
 	return rc;
 }
-char* openfile(char* chname, size_t *szfileout)
+char* openfile(char* chname, size_t* szfileout)
 {
 	FILE* fregex = fopen(chname, "rt");
-	foutput = fopen("output.txt", "wt");
 	fpos_t szfile;
 	char* filecontent;
 
@@ -157,7 +158,7 @@ char* openfile(char* chname, size_t *szfileout)
 
 	while (--szfile && (filecontent[szfile] == '\xCD' || filecontent[szfile] == '\x9')); //printf(" %x ", (unsigned char)filecontent[szfile]);
 
-	*szfileout = szfile+1;
+	*szfileout = szfile + 1;
 
 	return filecontent;
 }
@@ -165,9 +166,20 @@ main()
 {
 	size_t szfilepattern, szsubject;
 
-	char* pfilepattern = openfile(TEST_REGEX_FILE, &szfilepattern), *pfilesubject = openfile(TEST_FILE, &szsubject);
+	foutput = fopen("output.txt", "wt");
 
-	return compile_pattern_and_execute(pfilepattern, pfilesubject, callout_test, szfilepattern, szsubject);
+	char* pfilepattern = openfile(TEST_REGEX_FILE, &szfilepattern), * pfilesubject = openfile(TEST_FILE, &szsubject);
+#ifndef TEST
+	char *res = glueregexfile(TEST_REGEX_FILE);
+
+	int stat = compile_pattern_and_execute(res, pfilesubject, callout_test, strlen(res), szsubject, 1, 0, PATTERN_FLAGS);
+#else
+	int stat = compile_pattern_and_execute(pfilepattern, pfilesubject, callout_test, szfilepattern, szsubject, 1, 0, PATTERN_FLAGS);
+#endif
+
+	fclose(foutput);
+
+	exit(stat);
 
 #if 0
 	ovectorcount = pcre2_get_ovector_count(pmatch_data);

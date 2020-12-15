@@ -27,12 +27,16 @@
     <ClCompile Include="namedcapture.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="metaregex\parseregexfile.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="metaregex\parseregexfilecpp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="Readme.md" />
-    <None Include="main.regex" />
-    <None Include="test.regex" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">

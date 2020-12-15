@@ -3,32 +3,14 @@
 
 #include "lib/pcre2.h"
 #include <stdio.h>
-#include <boost/preprocessor/stringize.hpp>
+//#include <boost/preprocessor/stringize.hpp>
 #include <string.h>
 #include <stdbool.h>
 #include <string.h>
 
 #include "main.h"
 #include <setjmp.h>
-
-void testifitsusedalready(int val, jmp_buf* pbuff)
-{
-	static int stack[0xFF], * pstackptr = 1[&stack], * pstackiter = 1[&stack];
-
-	if (pstackiter == pstackptr)
-	{
-		*--pstackptr = val;
-		pstackiter = 1[&stack];
-		longjmp(*pbuff, -1);
-	}
-	if (*--pstackiter == val)
-	{
-		pstackiter = 1[&stack];
-		longjmp(*pbuff, val);
-	}
-
-	longjmp(*pbuff, -2);
-}
+#include <Windows.h>
 
 enum {
 	maxsize = 0xFFF
@@ -101,7 +83,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 
 	static bool stop_printing_declarations;
 
-#if PATTERN_FLAGS & PCRE2_AUTO_CALLOUT
+#ifdef DEBUG
 	debug_insert_common(a->capture_last, (unsigned int)a->next_item_length, ptable->pattern + a->pattern_position,
 			(unsigned int)(ptable->szpattern - (a->pattern_position + a->next_item_length)), ptable->pattern + a->pattern_position + a->next_item_length,
 			(unsigned int)(a->subject_length - a->current_position), a->subject + a->current_position, a->pattern_position);
@@ -136,6 +118,9 @@ int callout_test(pcre2_callout_block* a, void* b)
 	switch (a->callout_number)
 	{
 #if 1
+	case 254:
+		__debugbreak();
+		break;
 		//case 14:
 			//justacheckforescape = !justacheckforescape;
 	case 19:
@@ -325,12 +310,12 @@ print:
 		(unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]),
 		a->subject + a->offset_vector[2 * n]
 	);
-#if PATTERN_FLAGS & PCRE2_AUTO_CALLOUT
+#ifdef DEBUG
 	debug_insert_match(n, (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]), a->subject + a->offset_vector[2 * n], namedcapture);
 #endif
 }
 
-#if PATTERN_FLAGS & PCRE2_AUTO_CALLOUT
+#ifdef DEBUG
 debug();
 #endif
 
@@ -338,6 +323,7 @@ if (!cond || PATTERN_FLAGS & PCRE2_AUTO_CALLOUT)
 printf("\n\n");
 
 #ifdef DEBUG
+if(!((1 << 15) & GetAsyncKeyState(VK_RETURN)))
 _sleep(1000);
 system("cls");
 #endif
