@@ -1,3 +1,7 @@
-(?<binaryops>(?<shift>(<<|>>)(?&primexpr)(?<addop>([\+\-])((?&primexpr)(?<mulop>([\*\/\%])(?&primexpr)(?C21))?)(?C20))?|(?&mulop))|(?&addop))
+(?<binaryops>(?&relshiftaddmul))
 
+(?<relshiftaddmul>(?<relop>((?!<<)<|(?!>>)>|<=|>=)(?&primexpr)(?!(?&shiftaddmulfacet))(?C23))|(?&shiftaddmul)(?&relop)?)
+(?<shiftaddmul>(?<shiftop>(<<|>>)(?&primexpr)(?!(?&binaryaddmulfacet))(?C22))|(?&binaryaddmul)(?&shiftop)?)
+(?<binaryaddmul>(?<addop>([\+\-])((?&primexpr)(?!(?&mulopfacet))(?C20)))|(?&mulop)(?&addop)?)
 
+(?<mulop>([\*\/\%])(?&primexpr)(?C21))
