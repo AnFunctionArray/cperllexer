@@ -1,5 +1,5 @@
-#include "unary.regex", "typename.regex", "inner.regex", "binary.regex"
+#include "unary.regex", "typename.regex", "inner.regex"
 
-(?<primexpr>((?&inner)((\[(?&primexpr)\]|[(](?C7)(?&primexpr)(?C13)[)]|(?<arrowordot>([.]|->))(?C8)(?&identifier)|(?<postfixarith>([+][+]|--))(?C9)))*|
+(?<primexpr>((?&inner)([*/%](?&primexpr))??((\[(?&primexpr)\]|[(](?C7)(?&primexpr)[)](?C13)|(?<arrowordot>([.]|->))(?C8)(?&identifier)|(?<postfixarith>([+][+]|--))(?C9)))*([*/%](?&primexpr))??|
 						(?<inparenths>[(](?&primexpr)[)])
-						|(?&unary)))
+						|(?&unary)([*/%](?&primexpr))??))
