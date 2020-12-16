@@ -1,7 +1,20 @@
-(?<binaryops>(?&relshiftaddmul))
+(?<binaryops>(?&orlogicplusrest)?+(\?(?C33)(?&primexpr):(?C32)(?&primexpr)(?C34))??
+    (?<assignexpr>(?<assignop>(=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)(?C30)(?&primexpr)))?+(,(?C35)(?&primexpr))?)
 
-(?<relshiftaddmul>(?<relop>((?!<<)<|(?!>>)>|<=|>=)(?&primexpr)(?!(?&shiftaddmulfacet))(?C23))|(?&shiftaddmul)(?&relop)?)
-(?<shiftaddmul>(?<shiftop>(<<|>>)(?&primexpr)(?!(?&binaryaddmulfacet))(?C22))|(?&binaryaddmul)(?&shiftop)?)
-(?<binaryaddmul>(?<addop>([\+\-])((?&primexpr)(?!(?&mulopfacet))(?C20)))|(?&mulop)(?&addop)?)
+
+(?<orlogicplusrest>(?<orlogicop>\|\|(?&primexpr)(?!(?&andlogicplusrestfacet))(?C29))|(?&andlogicplusrest)(?&orlogicop)?)
+(?<andlogicplusrest>(?<andlogicop>&&(?&primexpr)(?!(?&orplusrestfacet))(?C28))|(?&orplusrest)(?&andlogicop)?)
+(?<orplusrest>(?<orop>(?!\|\|)\|(?&primexpr)(?!(?&xorplusrestfacet))(?C27))|(?&xorplusrest)(?&orop)?)
+(?<xorplusrest>(?<xorop>\^(?&primexpr)(?!(?&andplusrestfacet))(?C26))|(?&andplusrest)(?&xorop)?)
+(?<andplusrest>(?<andop>(?!&&)&(?&primexpr)(?!(?&eqplusrestfacet))(?C25))|(?&eqplusrest)(?&andop)?)
+(?<eqplusrest>(?<eqop>(==|!=)(?&primexpr)(?!(?&relplusrestfacet))(?C24))|(?&relplusrest)(?&eqop)?)
+(?<relplusrest>(?<relop>((?!<<)<|(?!>>)>|<=|>=)(?&primexpr)(?!(?&shiftplusrestfacet))(?C23))|(?&shiftplusrest)(?&relop)?)
+(?<shiftplusrest>(?<shiftop>(<<|>>)(?&primexpr)(?!(?&addmulplusrestfacet))(?C22))|(?&addmulplusrest)(?&shiftop)?)
+(?<addmulplusrest>(?<addop>([\+\-])((?&primexpr)(?!(?&mulopfacet))(?C20)))|(?&mulop)(?&addop)?)
 
 (?<mulop>([\*\/\%])(?&primexpr)(?C21))
+
+
+(?<commaplusrest>(?<commaop>,(?&primexpr)(?!(?&ternaryplusrestfacet))(?C31))|(?&ternaryplusrest)(?&commaop)?)
+
+(?<ternaryplusrest>(?<ternaryop>\?(?C33)(?&orlogicplusrestfacet):(?C32)(?&primexpr))|(?&orlogicplusrest))

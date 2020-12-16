@@ -128,6 +128,28 @@ int callout_test(pcre2_callout_block* a, void* b)
 #endif
 		//case 14:
 			//justacheckforescape = !justacheckforescape;
+	case 35:
+		message = "comma\n"; break;
+	case 34:
+		message = "ternary0\n"; break;
+	case 33:
+		message = "ternary1\n"; break;
+	case 32:
+		message = "ternary2\n"; break;
+	case 30:
+		n = getnameloc(namedcapture = "assignop", *ptable); break;
+	case 29:
+		n = getnameloc(namedcapture = "orlogicop", *ptable); break;
+	case 28:
+		n = getnameloc(namedcapture = "andlogicop", *ptable); break;
+	case 27:
+		n = getnameloc(namedcapture = "orop", *ptable); break;
+	case 26:
+		n = getnameloc(namedcapture = "xorop", *ptable); break;
+	case 25:
+		n = getnameloc(namedcapture = "andop", *ptable); break;
+	case 24:
+		n = getnameloc(namedcapture = "eqop", *ptable); break;
 	case 23:
 		n = getnameloc(namedcapture = "relop", *ptable); break;
 	case 22:
