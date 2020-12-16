@@ -128,6 +128,10 @@ int callout_test(pcre2_callout_block* a, void* b)
 #endif
 		//case 14:
 			//justacheckforescape = !justacheckforescape;
+	case 20:
+		n = getnameloc(namedcapture = "addop", *ptable); break;
+	case 21:
+		n = getnameloc(namedcapture = "mulop", *ptable); break;
 	case 19:
 		n = getnameloc(namedcapture = "unaryop", *ptable); break;
 	case 9:

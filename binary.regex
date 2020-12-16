@@ -1,0 +1,3 @@
+(?<binaryops>(?<shift>(<<|>>)(?&primexpr)(?<addop>([\+\-])((?&primexpr)(?<mulop>([\*\/\%])(?&primexpr)(?C21))?)(?C20))?|(?&mulop))|(?&addop))
+
+
