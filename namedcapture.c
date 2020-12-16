@@ -121,6 +121,11 @@ int callout_test(pcre2_callout_block* a, void* b)
 	case 254:
 		__debugbreak();
 		break;
+#ifdef TEST
+	case 101:
+		n = getnameloc("facetgroup", *ptable);
+		break;
+#endif
 		//case 14:
 			//justacheckforescape = !justacheckforescape;
 	case 19:

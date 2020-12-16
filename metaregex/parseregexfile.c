@@ -9,7 +9,8 @@
 
 int callout_facets(pcre2_callout_block* a, void* b)
 {
-	int n = 1;
+	struct calloutinfo* ptable = b;
+	int n = getnameloc("facetgroup", *ptable) + 1;
 
 	void addfacetor(const char* content, size_t szcontent);
 
@@ -43,8 +44,6 @@ char* create_regex_facets(const char *regex, size_t *szregex)
 
 	struct calloutinfo nametable;
 
-	pcre2_set_callout(match_context, callout_facets, &nametable);
-
 	size_t szstrin = *szregex;
 
 	void beginfacetor();
@@ -52,13 +51,36 @@ char* create_regex_facets(const char *regex, size_t *szregex)
 
 	beginfacetor();
 
-	pcode = pcre2_compile("[(]\\?<(\\w+)facet>(?C1)", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
+	*szregex += MAX_FACET_ADDED_SPACE;
 
-	rc = pcre2_match(pcode, regex, szstrin, 0, 0, pmatch_data, match_context);
+	1[pnewsubstr] = malloc(*szregex);
 
-	if (rc != -1) {
-		*szregex = 0; return "";
-	}
+	pcode = pcre2_compile("\\s|\\n", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
+
+	error = pcre2_substitute(pcode, regex, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "", 0, 1[pnewsubstr], szregex);
+
+	szstrin = *szregex;
+
+	pcode = pcre2_compile(".*(?<facetgroup>[(]\\?<(\\w+)facet>)(?C1)(*F)|.*?(?&facetgroup)+", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
+
+	pcre2_set_callout(match_context, callout_facets, &nametable);
+
+	pcre2_pattern_info(pcode, PCRE2_INFO_NAMETABLE, &nametable.name_table);
+
+	pcre2_pattern_info(pcode, PCRE2_INFO_NAMECOUNT, &nametable.namecount);
+
+	pcre2_pattern_info(pcode, PCRE2_INFO_NAMEENTRYSIZE, &nametable.name_entry_size);
+
+	szstrin = *szregex;
+
+	nametable.pattern = 1[pnewsubstr];
+	nametable.szpattern = szstrin;
+
+	rc = pcre2_match(pcode, 1[pnewsubstr], szstrin, 0, 0, pmatch_data, match_context);
+
+	//if (rc != -1) {
+	//	*szregex = 0; return "";
+	//}
 
 	pcre2_set_callout(match_context, 0, 0);
 
@@ -68,7 +90,7 @@ char* create_regex_facets(const char *regex, size_t *szregex)
 
 	pcode = pcre2_compile(retrievefacetor(), PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
 
-	pcre2_substitute(pcode, regex, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "(?<$1facet>", PCRE2_ZERO_TERMINATED, *pnewsubstr, szregex);
+	error = pcre2_substitute(pcode, 1[pnewsubstr], szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "", 0, *pnewsubstr, szregex);
 
 	pcode = pcre2_compile("[(]\\?C\\d++[)]", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
 
@@ -76,7 +98,7 @@ char* create_regex_facets(const char *regex, size_t *szregex)
 
 	*szregex += MAX_FACET_ADDED_SPACE;
 
-	1[pnewsubstr] = malloc(*szregex);
+	free(1[pnewsubstr]); 1[pnewsubstr] = malloc(*szregex);
 
 	pcre2_substitute(pcode, *pnewsubstr, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "", 0, 1[pnewsubstr], szregex);
 
@@ -90,9 +112,19 @@ char* create_regex_facets(const char *regex, size_t *szregex)
 
 	pcre2_substitute(pcode, 1[pnewsubstr], szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "(?&$1facet)", PCRE2_ZERO_TERMINATED, *pnewsubstr, szregex);
 
-	pcre2_match_context_free(match_context), pcre2_match_data_free(pmatch_data); free(1[pnewsubstr]);
+	szstrin = *szregex;
 
-	return *pnewsubstr;
+	*szregex += MAX_FACET_ADDED_SPACE;
+
+	free(1[pnewsubstr]); 1[pnewsubstr] = malloc(*szregex);
+
+	pcode = pcre2_compile("[(]\\?<((\\w(?!facet))+?)>", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
+
+	pcre2_substitute(pcode, *pnewsubstr, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "(?<$1facet>", PCRE2_ZERO_TERMINATED, 1[pnewsubstr], szregex);
+
+	pcre2_match_context_free(match_context), pcre2_match_data_free(pmatch_data); free(*pnewsubstr);
+
+	return 1[pnewsubstr];
 }
 
 int callout_regex(pcre2_callout_block* a, void* b)

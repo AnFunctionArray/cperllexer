@@ -51,11 +51,11 @@ extern "C" const char* retrievefinalregex(const char *rest, size_t szrest)
 extern "C" const char* retrievefacetor()
 {
 	if (!facetor.empty()) facetor.pop_back();
-	else return "[(]\\?<(\\w+?)>";
+	else return "(?<=[(])\\?<((\\w)+?facet)>";
 
 	std::stringstream newregex;
 
-	newregex << "[(]\\?<(?!" << facetor << ")(\\w+?)>";
+	newregex << "(?<=[(])\\?<((\\w)+?facet|" << facetor << ")>";
 
 	facetor = newregex.str();
 

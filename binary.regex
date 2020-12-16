@@ -1,0 +1,4 @@
+
+(?<binaryop>((?&unaryfacet)(?!(?<mulexpr>[\*\/\%](?&primexpr)))|(?&unary)(?&mulexpr)))
+
+(?<binaryopfacet>(?&unaryfacet)(?&mulexprfacet))
