@@ -127,14 +127,28 @@ char* create_regex_facets(const char *regex, size_t *szregex)
 	return 1[pnewsubstr];
 }
 
+static char* pentry;
+
+static size_t szentry;
+
 int callout_regex(pcre2_callout_block* a, void* b)
 {
 	struct calloutinfo* ptable = b;
-	int n = getnameloc("filename", *ptable);
+	int n = getnameloc(a->callout_number == 1 ? "filename" : "entrygroup", *ptable);
 
 	void addregexfile(const char* content);
 
 	size_t szfilepattern = a->offset_vector[2 * n + 1] - a->offset_vector[2 * n], szfacet;
+
+	if (a->callout_number == 2)
+	{
+		char* filename = malloc(szentry = szfilepattern + sizeof "(?&)");
+
+		sprintf(filename, "(?&%.*s)", (unsigned int)szfilepattern, a->subject + a->offset_vector[2 * n]);
+
+		pentry = filename;
+		return 0;
+	}
 
 	char* filename = malloc(szfilepattern + 1);
 
@@ -165,7 +179,9 @@ char* glueregexfile(char* filename)
 
 	facet = create_regex_facets(pfilepattern + plen, &szfacet);
 
+	addregexfile(pfilepattern + plen, szfilepattern - plen);
+
 	addregexfile(facet, szfacet);
 
-	return retrievefinalregex(pfilepattern + plen, szfilepattern - plen);
+	return retrievefinalregex(pentry, szentry);
 }

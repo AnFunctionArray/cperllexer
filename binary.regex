@@ -1,4 +1,4 @@
-(?<binaryops>(?&orlogicplusrest)?+(\?(?C33)(?&primexpr):(?C32)(?&primexpr)(?C34))??(,(?C35)(?&primexpr))?)
+(?<binaryops>(?&orlogicplusrest)?+(,(?C35)(?&primexpr))?)
 
 (?<assignexpr>(?<assignop>(=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)(?&primexpr))(?C30))
 
@@ -13,8 +13,3 @@
 (?<addmulplusrest>(?<addop>([\+\-])((?&primexpr)(?!(?&mulopfacet))(?C20)))|(?&mulop)(?&addop)?)
 
 (?<mulop>([\*\/\%])(?&primexpr)(?C21))
-
-
-(?<commaplusrest>(?<commaop>,(?&primexpr)(?!(?&ternaryplusrestfacet))(?C31))|(?&ternaryplusrest)(?&commaop)?)
-
-(?<ternaryplusrest>(?<ternaryop>\?(?C33)(?&orlogicplusrestfacet):(?C32)(?&primexpr))|(?&orlogicplusrest))
