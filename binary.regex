@@ -1,6 +1,6 @@
-(?<binaryops>(?&orlogicplusrest)?+(\?(?C33)(?&primexpr):(?C32)(?&primexpr)(?C34))??
-    (?<assignexpr>(?<assignop>(=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)(?C30)(?&primexpr)))?+(,(?C35)(?&primexpr))?)
+(?<binaryops>(?&orlogicplusrest)?+(\?(?C33)(?&primexpr):(?C32)(?&primexpr)(?C34))??(,(?C35)(?&primexpr))?)
 
+(?<assignexpr>(?<assignop>(=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)(?&primexpr))(?C30))
 
 (?<orlogicplusrest>(?<orlogicop>\|\|(?&primexpr)(?!(?&andlogicplusrestfacet))(?C29))|(?&andlogicplusrest)(?&orlogicop)?)
 (?<andlogicplusrest>(?<andlogicop>&&(?&primexpr)(?!(?&orplusrestfacet))(?C28))|(?&orplusrest)(?&andlogicop)?)
