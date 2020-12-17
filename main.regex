@@ -1,6 +1,6 @@
 #include "unary.regex", "typename.regex", "inner.regex", "binary.regex"
 #entry primexpr
 
-(?<primexpr>(?<primexprnoternary>(?<primexprinner>(?<unaryexpr>(?&inner)((\[(?&primexpr)\]|[(](?C7)(?&primexpr)[)](?C13)|(?<arrowordot>([.]|->))(?C8)(?&identifier)|(?<postfixarith>([+][+]|--))(?C9)))*+|
+(?<primexpr>(?<assignorternary>(?<primexprnoternary>(?<primexprinner>(?<unaryexpr>(?&inner)((\[(?&primexpr)\]|[(](?C7)(?&primexpr)[)](?C13)|(?<arrowordot>([.]|->))(?C8)(?&identifier)|(?<postfixarith>([+][+]|--))(?C9)))*+|
 						(?<inparenths>[(](?&primexpr)[)])
-						|(?&unary))(?&assignexpr)?+|(?&typenamerev))((?&binaryops)?+)??)(?&ternary)?+)
+						|(?&unary))(?&assignexpr)?+|(?&typenamerev))((?&binaryops)?+)??)((?&ternary)?+)??)(,(?C35)(?&assignorternary))??)

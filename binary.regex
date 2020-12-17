@@ -1,6 +1,6 @@
 (?<binaryops>(?&orlogicplusrest))
 
-(?<assignexpr>(?<assignop>(=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)(?&primexpr))(?C30))
+(?<assignexpr>(?<assignop>(=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)(?&assignorternary))(?C30))
 
 (?<orlogicplusrest>(?<orlogicop>(\|\|)(?&primexprnoternary)(?!(?&andlogicplusrestfacet))(?C29))|(?&andlogicplusrest)(?&orlogicop)?)
 (?<andlogicplusrest>(?<andlogicop>(&&)(?&primexprnoternary)(?!(?&orplusrestfacet))(?C28))|(?&orplusrest)(?&andlogicop)?)
@@ -15,9 +15,9 @@
 (?<mulop>([\*\/\%])(?&primexprnoternary)(?C21))
 
 
-(?<commaplusrest>(?<commaop>,(?&primexpr)(?!(?&ternaryplusrestfacet))(?C31))|(?&ternaryplusrest)(?&commaop)?)
+(?<commaplusrest>(?<commaop>,(?&primexpr)(?!(?&assignexprfacet))(?C31))|(?&ternaryplusrest)(?&commaop)?)
 
-(?<ternary>\?(?C33)(?&primexprnoternary):(?C32)((?&unaryexpr)|(?&typenamerev))(?&binaryops)?+(?&ternary)?+(?C34))
+(?<ternary>\?(?C33)(?&primexprnoternary):(?C32)((?&unaryexpr)|(?&typenamerev))((?&binaryops)?+)?((?&ternary)?+)?(?C34))
 
 (?<ternaryplusrest>(?&ternary)|(?&orlogicplusrest))
 
