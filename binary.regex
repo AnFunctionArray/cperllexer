@@ -17,7 +17,7 @@
 
 (?<commaplusrest>(?<commaop>,(?&primexpr)(?!(?&assignexprfacet))(?C31))|(?&ternaryplusrest)(?&commaop)?)
 
-(?<ternary>\?(?C33)(?&primexpr):(?C32)((?&unaryexpr)|(?&typenamerev))((?&binaryops)?+)?((?&ternary)?+)?(?C34))
+(?<ternary>\?(?C33)(?&primexpr):(?C32)(?<conditionalexpr>((?&unaryexpr)|(?&typenamerev))((?&binaryops)?+)?((?&ternary)?+)?)(?C34))
 
 (?<ternaryplusrest>(?&ternary)|(?&orlogicplusrest))
 

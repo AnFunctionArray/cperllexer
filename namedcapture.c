@@ -115,6 +115,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 	goto showgroup;
 #endif
 	//printf("callout id %d\n", a->callout_number);
+	static int istypedefdecl;
 	switch (a->callout_number)
 	{
 #if 1
@@ -128,6 +129,24 @@ int callout_test(pcre2_callout_block* a, void* b)
 #endif
 		//case 14:
 			//justacheckforescape = !justacheckforescape;
+	case 39:
+		ntoclear = getnameloc("typedefkeyword", *ptable);
+		istypedefdecl = a->offset_vector[2 * ntoclear] != -1;
+		a->offset_vector[2 * ntoclear] = a->offset_vector[ntoclear] = -1;
+	case 38:;
+
+		if (istypedefdecl)
+		{
+			void addtotypedefs(const char* identifier, size_t szcontent);
+			n = getnameloc(namedcapture = "identifier", *ptable);
+			addtotypedefs(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]));
+			n = 0;
+		}
+		
+	case 37:;
+		int istypedefinvecotr(const char* identifier, size_t szcontent);
+		n = getnameloc(namedcapture = "identifier", *ptable);
+		//return istypedefinvecotr(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]));
 	case 35:
 		message = "comma\n"; break;
 	case 34:

@@ -1,7 +1,28 @@
 #include <string>
 #include <sstream>
+#include <vector>
 
 static std::string gluedregex, facetor;
+
+static std::vector<std::string> typedefs{};
+
+extern "C" void addtotypedefs(const char* identifier, size_t szcontent)
+{
+	std::string contentstr;
+
+	contentstr.assign(identifier, szcontent);
+
+	typedefs.push_back(contentstr);
+}
+
+extern "C" int istypedefinvecotr(const char* identifier, size_t szcontent)
+{
+	std::string contentstr;
+
+	contentstr.assign(identifier, szcontent);
+
+	return std::find(typedefs.begin(), typedefs.end(), contentstr) == typedefs.end();
+}
 
 extern "C" void beginregex()
 {

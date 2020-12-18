@@ -1,2 +1,2 @@
-(?<unary>(?<prefixarith>\s*([+][+]|--)\s*)(?&primexpr)(?C10)|(((?<unaryop>\s*([\&\*\+\-\~\!])\s*)(?!(?&primexpr)(?C19))|(?&unaryop))
+(?<unary>(?<prefixarith>\s*([+][+]|--))(?&primexpr)(?C10)|(((?<unaryop>\s*([\&\*\+\-\~\!]))(?!(?&primexpr)(?C19))|(?&unaryop))
 						(?&unaryop)*+(?&primexprfacet))|sizeof(?C15)((?&typename)|(?&primexpr))(?C14))

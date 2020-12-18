@@ -1,6 +1,8 @@
 (?<typename>\s*[(](?<typenameinside>
-						(?<typesandqualifiersfacet>\s*(\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|(?<qualifiers>\s*(\bconst\b|\brestrict\b|\bvolatile\b)\s*))\s*)++
-						((?<abstdecl>(?<abstrptrrev>(?<abstrptr>\s*[*]\s*((?&qualifiers))*+)(?!(?&abstrptrrev)(?C11))
+						(?<typesandqualifiersfacet>\s*((\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b)|(?&structorunion)|
+						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
+						|(?<storageclass>\btypedef\b|\bextern\b|\bstatic\b|\bauto\b|\bregister\b))\s*)++
+						(?<abstdecloutside>(?<abstdecl>(?<abstrptrrev>(?<abstrptr>\s*[*]\s*(\s*(?&qualifiers)\s*)*+)(?!(?&abstrptrrev)(?C11))
 						(?<abstrrest>(?<abstrmostoutter>\s*([(](?&abstdecl)[)]|(?&identifier))\s*)?+(?<abstrsubs>\s*(\[(?&primexpr)\]|[(](?&typenameinside)?+(,(?&typenameinside))*+[)])\s*)*+(?C11))|
 						(?&abstrptr))(?<abstdeclinside>(?&abstrptr)*+(\s*([(](?&abstdeclinside)[)]|(?&identifierfacet))\s*)?+(\s*(\[(?&primexprfacet)\]|
 						[(](?&typenameinsidefacet)?+(,(?&typenameinsidefacet))*+[)])\s*)*+))|(?&abstrmostoutter)?+(?&abstrsubs)*+))[)]\s*)
@@ -8,7 +10,18 @@
 (?<typenamerev>(?&typenamefacet)
 						(?!(?&primexpr))|(?&typename)(?&primexprfacet))
 
-(?<typenamefacet>[(](?&typesandqualifiersfacet)++(?&abstdeclinside)[)])
-(?<typenameinsidefacet>(?&typesandqualifiersfacet)++(?&abstdeclinside))
+(?<abstdecloutsidefacet>(?&abstdeclinside))
+
+(?<typenamefacet>\s*[(](?&typesandqualifiersfacet)++(?&abstdeclinside)[)]\s*)
 
 (?<typenamerevfacet>(?&typenamefacet)(?&primexprfacet))
+
+(?<abstrbitfield>\s*:\s*(?&primexpr))
+(?<designator>\s*(\[(?&primexpr)\]|\.\s*(?&identifier))\s*)
+(?<initializer>(?&assignorternary)|\s*[{](?<init>((?&designator)++=)?+(?&initializer))?+(,(?&init))*+,?+\s*[}]\s*)
+(?<abstrinitialization>\s*=\s*)
+
+(?<structorunion>\s*(struct|union)((?&identifier)|(?&identifier)?+\s*[{]\s*((?&typenameinside)?+(?&abstrbitfield)?+(,(?&abstdecloutside)(?&abstrbitfield)?+)*+\s*;\s*)*+[}]\s*)|(?&enum))
+(?<enum>\s*enum((?&identifier)?+\s*[{](?<enumerator>(?&identifier)(=(?&conditionalexpr))?+)?+(,(?&enumerator))*+,?+\s*[}]\s*|(?&identifier)))
+
+(?<declaration>((?&typenameinside)?+(?&abstrbitfield)?+(,(?&abstdecloutside)(?&abstrbitfield)?+)*+\s*;\s*))
