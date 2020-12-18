@@ -1,9 +1,9 @@
-(?<typename>[(](?<typenameinside>
-						(?<typesandqualifiersfacet>\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b))++
-						((?<abstdecl>(?<abstrptrrev>(?<abstrptr>[*]((?&qualifiers))*+)(?!(?&abstrptrrev)(?C11))
-						(?<abstrrest>(?<abstrmostoutter>[(](?&abstdecl)[)]|\s*(?&identifier))?+(?<abstrsubs>\[(?&primexpr)\]|[(](?&typenameinside)?+(,(?&typenameinside))*+[)])*+(?C11))|
-						(?&abstrptr))(?<abstdeclinside>(?&abstrptr)*+([(](?&abstdeclinside)[)]|\s*(?&identifierfacet))?+(\[(?&primexprfacet)\]|
-						[(](?&typenameinsidefacet)?+(,(?&typenameinsidefacet))*+[)])*+))|(?&abstrmostoutter)?+(?&abstrsubs)*+))[)])
+(?<typename>\s*[(](?<typenameinside>
+						(?<typesandqualifiersfacet>\s*(\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|(?<qualifiers>\s*(\bconst\b|\brestrict\b|\bvolatile\b)\s*))\s*)++
+						((?<abstdecl>(?<abstrptrrev>(?<abstrptr>\s*[*]\s*((?&qualifiers))*+)(?!(?&abstrptrrev)(?C11))
+						(?<abstrrest>(?<abstrmostoutter>\s*([(](?&abstdecl)[)]|(?&identifier))\s*)?+(?<abstrsubs>\s*(\[(?&primexpr)\]|[(](?&typenameinside)?+(,(?&typenameinside))*+[)])\s*)*+(?C11))|
+						(?&abstrptr))(?<abstdeclinside>(?&abstrptr)*+(\s*([(](?&abstdeclinside)[)]|(?&identifierfacet))\s*)?+(\s*(\[(?&primexprfacet)\]|
+						[(](?&typenameinsidefacet)?+(,(?&typenameinsidefacet))*+[)])\s*)*+))|(?&abstrmostoutter)?+(?&abstrsubs)*+))[)]\s*)
 
 (?<typenamerev>(?&typenamefacet)
 						(?!(?&primexpr))|(?&typename)(?&primexprfacet))

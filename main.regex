@@ -1,6 +1,8 @@
 #include "unary.regex", "typename.regex", "inner.regex", "binary.regex"
-#entry primexpr
+#entry entry
 
-(?<primexpr>(?<assignorternary>(?<primexprnoternary>(?<primexprinner>(?<unaryexpr>(?&inner)((\[(?&primexpr)\]|[(](?C7)(?&primexpr)[)](?C13)|(?<arrowordot>([.]|->))(?C8)(?&identifier)|(?<postfixarith>([+][+]|--))(?C9)))*+|
-						(?<inparenths>[(](?&primexpr)[)])
-						|(?&unary))(?&assignexpr)?+|(?&typenamerev))((?&binaryops)?+)??)((?&ternary)?+)??)(,(?C35)(?&assignorternary))*?)
+(?<entry>^(?<primexpr>\s*(?<assignorternary>(?<primexprnoternary>(?<primexprinner>(?<unaryexpr>(?&inner)((\s*(\[(?&primexpr)\]|[(](?C7)(?&primexpr)[)](?C13))\s*
+						|(?<arrowordot>\s*([.]|->)\s*)(?C8)(?&identifier)
+						|(?<postfixarith>\s*([+][+]|--)\s*)(?C9)))*+|
+						(?<inparenths>\s*[(](?&primexpr)[)]\s*)
+						|(?&unary))(?&assignexpr)?+|(?&typenamerev))((?&binaryops)?+)??)((?&ternary)?+)??)(\s*,(?C35)\s*(?&assignorternary))*?\s*))
