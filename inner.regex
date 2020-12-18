@@ -2,4 +2,4 @@
 						(?C4)((?<escape>(\\(?:(x)[0-9a-fA-F]++|(?:(b)[01]++|(?:(0)[0-7]++|(\d++|(?(<begincharliteral>)'|")|t|n))))))(?C1)|
 						(?<text>(((?!(?&escape)|(?(<begincharliteral>)'|")).)++)(?C2)))*+(?(<begincharliteral>)'|")
 						|(?<numberliteral>((?:(0x)[0-9a-fA-F]++|(?:(0b)[01]++|(?:(0)[0-7]++|(\d++)))))(?C5))
-						|(?<identifier>\s*(?!sizeof|(?&typesandqualifiersfacet))([_a-zA-Z][_a-zA-Z0-9]*+)(?C6)\s*)))\s*)
+						|(?<identifier>\s*(?!sizeof|(?&typesandqualifiersmask))([_a-zA-Z][_a-zA-Z0-9]*+)(?C6)\s*)))\s*)

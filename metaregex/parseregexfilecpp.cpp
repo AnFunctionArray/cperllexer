@@ -21,7 +21,9 @@ extern "C" int istypedefinvecotr(const char* identifier, size_t szcontent)
 
 	contentstr.assign(identifier, szcontent);
 
-	return std::find(typedefs.begin(), typedefs.end(), contentstr) == typedefs.end();
+	int res = std::find(typedefs.begin(), typedefs.end(), contentstr) == typedefs.end();
+
+	return res;
 }
 
 extern "C" void beginregex()

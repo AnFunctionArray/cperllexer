@@ -15,4 +15,4 @@
 (?<selectionstatement>\s*(if\s*[(](?&primexpr)[)](?&statement)(else(?&statement))?+|switch\s*[(](?&primexpr)[)](?&statement))\s*)
 (?<statement>(?&label)?+((?&exprstatement)|(?&compoundstatement)|(?&selectionstatement)|(?&iterationstatement)|(?&jumpstatement)))
 (?<label>((?&identifier)|case(?&primexpr)|default):)
-(?<cprogram>^(((?&typenameinside)(?&compoundstatement))|(?&declaration)))
+(?<cprogram>^((?&typenameinside)((?&compoundstatement)|(?&declaration)))*+)

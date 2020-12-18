@@ -1,3 +1,8 @@
+int b=9 * 7;
+//typedef int jk;
+
+jk c = 8 * 9;
+
 int main() {
 	(a[!*&(((char* const(*restrict(*restrict(* const)[1][2])[3])[4])(char const(* const(*restrict * restrict(* const* const)
 		(enum { ab = 9, cb = 20, } x1, struct { int ax : 5, bx[4] : 5; } *restrict b[4])[2][2])[3])[4])sizeof++--"a"++->a7++[*&!7] * 8))]
