@@ -46,10 +46,10 @@ char* openfile(char* chname, size_t* szfileout);
 
 char* glueregexfile(char* filename);
 
-FILE* foutput;
+extern FILE* foutput;
 
 #if !!(PATTERN_FLAGS & PCRE2_AUTO_CALLOUT) & !defined(DEBUG)
 #define printf(format, ...) (fprintf(foutput, format, __VA_ARGS__))//, printf(format, __VA_ARGS__))
 #else
-#define printf(format, ...) (fprintf(foutput, format, __VA_ARGS__), printf(format, __VA_ARGS__))
+#define printf(format, ...) (fprintf(foutput, format, ##__VA_ARGS__), printf(format, ##__VA_ARGS__))
 #endif

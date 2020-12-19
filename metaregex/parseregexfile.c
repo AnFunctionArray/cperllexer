@@ -1,7 +1,7 @@
 #include <stdio.h>
 #define PCRE2_CODE_UNIT_WIDTH 8
 #define PCRE2_STATIC
-#include "../lib/pcre2.h"
+#include <pcre2.h>
 #include "../main.h"
 #include <stdlib.h>
 
@@ -191,12 +191,12 @@ static char* pentry;
 
 static size_t szentry;
 
+void addregexfile(const char *content, size_t szcontent);
+
 int callout_regex(pcre2_callout_block* a, void* b)
 {
 	struct calloutinfo* ptable = b;
 	int n = getnameloc(a->callout_number == 1 ? "filename" : "entrygroup", *ptable), y = getnameloc("prefix", *ptable);
-
-	void addregexfile(const char* content);
 
 	size_t szfilepattern = a->offset_vector[2 * n + 1] - a->offset_vector[2 * n], szfacet = a->offset_vector[2 * y + 1] - a->offset_vector[2 * y];
 

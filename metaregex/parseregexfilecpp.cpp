@@ -1,6 +1,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <algorithm>
 
 static std::string gluedregex, facetor;
 

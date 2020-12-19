@@ -10,7 +10,6 @@
 
 #include "main.h"
 #include <setjmp.h>
-#include <Windows.h>
 
 enum {
 	maxsize = 0xFFF
