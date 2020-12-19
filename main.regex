@@ -10,7 +10,7 @@
 (?<jumpstatement>\s*(goto(?&identifier);|continue\s*;|break\s*;|return(?&primexpr)?+;)\s*)
 (?<iterationstatement>\s*(while\s*[(](?&primexpr)[)](?&statement)|do(?&statement)while\s*[(](?&primexpr)[)]\s*;
 	|for\s*[(]((?&declaration)|(?&exprstatement))?+(?&exprstatement)?+(?&primexpr)?+[)](?&statement))\s*)
-(?<exprstatement>(?&primexpr)?+;\s*)
+(?<exprstatement>(?&primexpr)?;\s*)
 (?<compoundstatement>\s*[{]((?&declaration)|(?&statement))*+[}]\s*)
 (?<selectionstatement>\s*(if\s*[(](?&primexpr)[)](?&statement)(else(?&statement))?+|switch\s*[(](?&primexpr)[)](?&statement))\s*)
 (?<statement>(?&label)?+((?&exprstatement)|(?&compoundstatement)|(?&selectionstatement)|(?&iterationstatement)|(?&jumpstatement)))

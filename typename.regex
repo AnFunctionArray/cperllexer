@@ -12,7 +12,7 @@
 (?<identifiermine>\s*(?!(?&keywordlist))((?&identifierraw))(?C39)\s*)
 (?<identifiermine2>\s*(?!(?&keywordlist))((?&identifierraw))(?C38)\s*)
 
-(?<keywordlist>(?&typesandqualifiersmask)|struct|enum|__[_a-zA-Z0-9]*+|sizeof)
+(?<keywordlist>(?&typesandqualifiersmask)|struct|enum|__[_a-zA-Z0-9]*+|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)
 
 (?<typenamerev>(?&typenamefacet)
 						(?!(?&primexpr))|(?&typename)(?&primexprfacet))
