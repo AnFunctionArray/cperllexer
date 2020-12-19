@@ -9,8 +9,10 @@
 
 (?<typedefnamefacet>(?&identifiermine2))
 
-(?<identifiermine>\s*(?!sizeof|struct|enum|(?&typesandqualifiersmask))((?&identifierraw))(?C39)\s*)
-(?<identifiermine2>\s*(?!sizeof|struct|enum|(?&typesandqualifiersmask))((?&identifierraw))(?C38)\s*)
+(?<identifiermine>\s*(?!(?&keywordlist))((?&identifierraw))(?C39)\s*)
+(?<identifiermine2>\s*(?!(?&keywordlist))((?&identifierraw))(?C38)\s*)
+
+(?<keywordlist>(?&typesandqualifiersmask)|struct|enum|__[_a-zA-Z0-9]*+|sizeof)
 
 (?<typenamerev>(?&typenamefacet)
 						(?!(?&primexpr))|(?&typename)(?&primexprfacet))
@@ -23,8 +25,8 @@
 
 (?<abstrbitfield>\s*:\s*(?&primexpr))
 (?<designator>\s*(\[(?&primexpr)\]|\.\s*(?&identifier))\s*)
-(?<initializer>(?&assignorternary)|\s*[{](?<init>((?&designator)++=)?+(?&initializer))?+(,(?&init))*+,?+\s*[}]\s*)
-(?<abstrinitialization>=(?&assignorternary))
+(?<initializer>(?&assignorternary)|\s*[{]((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*[}]\s*)
+(?<abstrinitialization>=(?&initializer))
 
 (?<structorunion>\s*(struct|union)((?&identifier)|(?&identifier)?+\s*[{]\s*((?&typenameinside)?+(?&abstrbitfield)?+(,(?&abstdecloutside)(?&abstrbitfield)?+)*+\s*;\s*)*+[}]\s*)|(?&enum))
 (?<enum>\s*enum((?&identifier)?+\s*[{](?<enumerator>(?&identifier)(=(?&conditionalexpr))?+)?+(,(?&enumerator))*+,?+\s*[}]\s*|(?&identifier)))

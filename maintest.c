@@ -1,4 +1,4 @@
-char b=9 * 7;
+char b = { .a[4] = 9 * 7, 76 };
 typedef int jk;
 
 jk c=8 * 9;
