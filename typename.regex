@@ -1,19 +1,25 @@
 (?<typename>\s*[(](?<typenameinside>
-						(?>(?<typesandqualifiers>\s*(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b)|(?&structorunion)|
+						((?<typesandqualifiers>\s*(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b)|
 						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
-						|(?<storageclass>\b(?<typedefkeyword>typedef)\b|\bextern\b|\bstatic\b|\bauto\b|\bregister\b|__[_a-zA-Z0-9]*+))\s*)|(?&typedefnamefacet))+?
-						(?<abstdecloutside>(?<abstdecl>(?<#restrictoutsidefacet>(?<abstrptrrev>(?<abstrptr>\s*[*]\s*((?&qualifiers))*+)(?!(?&abstrptrrev)(?C11))
-						(?<abstrrest>(?<abstrmostoutter>\s*([(](?&abstdecl)[)]|(?&identifier))\s*)?+(?<abstrsubs>\s*(\[(?&primexpr)\]|[(](?&typenameinside)?+(,(?&typenameinside))*+[)])\s*)*+(?C11))|
-						(?&abstrptr)))(?&abstdeclinside))|(?&abstrmostoutter)?+(?&abstrsubs)*+))[)]\s*)
+						|(?<storageclass>(?>(?<typedefkeyword>\btypedef\b))|\bextern\b|\bstatic\b|\bauto\b|\bregister\b)|__[_a-zA-Z0-9]*+)\s*)
+						|(?&typedefnamefacet)|(?&structorunion))++
+						(?<abstdecloutside>(?<abstdecl>(?<abstrptrrev#restrictoutsidefacet>(?<abstrptr>\s*[*]\s*((?&qualifiers))*+)(?!(?&abstrptrrev)(?C11))
+						(?<abstrrest>(?<abstrmostoutter>\s*([(](?&abstdecl)[)]|(?&identifiermine))\s*)?+(?<abstrsubs>\s*(\[(?&primexpr)\]|[(](?&typenameinside)?+(,(?&typenameinside))*+[)])\s*)*+(?C11))|
+						(?&abstrptr))(?&abstdeclinside))|(?&abstrmostoutter)?+(?&abstrsubs)*+))[)]\s*)
 
-(?<typedefnamefacet>(?&identifierfacet)(?C38))
+(?<typedefnamefacet>(?&identifiermine2))
+
+(?<identifiermine>\s*(?!sizeof|struct|enum|(?&typesandqualifiersmask))((?&identifierraw))(?C39)\s*)
+(?<identifiermine2>\s*(?!sizeof|struct|enum|(?&typesandqualifiersmask))((?&identifierraw))(?C38)\s*)
 
 (?<typenamerev>(?&typenamefacet)
 						(?!(?&primexpr))|(?&typename)(?&primexprfacet))
 
 (?<typenamerevfacet>(?&typenamefacet)(?&primexprfacet))
 
-(?<abstdeclinside>(?&abstrptr)*+(?&abstrmostoutterfacet)?+(?&abstrsubsfacet)*+)
+(?<abstdeclinside>(?&abstrptr)*+(?&abstrmostoutter)?+(?&abstrsubsfacet)*+)
+
+(?<abstdeclinsidetypedef>(?&abstrptr)*+(\s*([(](?&abstdeclfacet)[)]|(?&identifier))\s*)?+(?&abstrsubsfacet)*+)
 
 (?<abstrbitfield>\s*:\s*(?&primexpr))
 (?<designator>\s*(\[(?&primexpr)\]|\.\s*(?&identifier))\s*)

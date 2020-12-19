@@ -38,7 +38,7 @@ char* create_regex_facets(const char *regex, size_t *szregex, char **outprocesse
 
 	pcre2_code* pcode;
 
-	PCRE2_UCHAR* pnewsubstr[2];
+	PCRE2_UCHAR* pnewsubstr[2], *ptmp;
 
 	char errormsg[0xFF];
 
@@ -101,7 +101,7 @@ char* create_regex_facets(const char *regex, size_t *szregex, char **outprocesse
 
 	error = pcre2_substitute(pcode, CURR, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "(?<$1>", PCRE2_ZERO_TERMINATED, PRIOR, szoutfile);
 
-	pcode = pcre2_compile("[(]\\?<((\\w)*?)[#]restrictoutsidefacet>", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
+	pcode = pcre2_compile("[(]\\?<[#]restrictoutsidefacet>|[(]\\?<((\\w)+?)[#]restrictoutsidefacet>", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
 
 	szstrin = *szoutfile;
 
@@ -113,7 +113,24 @@ char* create_regex_facets(const char *regex, size_t *szregex, char **outprocesse
 
 	szstrin = nametable.szpattern;
 
-	error = pcre2_substitute(pcode, CURR, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "((*F)", PCRE2_ZERO_TERMINATED, PRIOR, szregex);
+	error = pcre2_substitute(pcode, CURR, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL | PCRE2_SUBSTITUTE_EXTENDED, pmatch_data, match_context, "(${1:+?<${1}>:}(*F)", PCRE2_ZERO_TERMINATED, PRIOR, szregex);
+
+#define PRIOR OPTION0
+#define CURR OPTION1
+
+#define SWAP (ptmp = OPTION0, OPTION0 = OPTION1, OPTION1 = ptmp)
+
+	szstrin = *szregex;
+
+	*szregex += MAX_FACET_ADDED_SPACE;
+
+	free(PRIOR); PRIOR = malloc(*szregex);
+
+	pcode = pcre2_compile("(?<=[(])\\?<facet>", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
+
+	pcre2_substitute(pcode, CURR, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "", 0, PRIOR, szregex);
+
+	SWAP;
 
 #define PRIOR OPTION0
 #define CURR OPTION1

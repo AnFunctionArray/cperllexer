@@ -1,5 +1,5 @@
 #include "unary.regex", "typename.regex", "inner.regex", "binary.regex"
-#entry ^primexpr
+#entry ^cprogram
 
 (?<entry>(?<primexpr>\s*(?<assignorternary>\s*(?<primexprnoternary>\s*((?<unaryexpr>(?&inner)(((\[(?&primexpr)\]|[(](?C7)(?&primexpr)[)](?C13))\s*
 						|(?<arrowordot>([.]|->))(?C8)(?&identifier)

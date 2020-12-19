@@ -120,7 +120,8 @@ int callout_test(pcre2_callout_block* a, void* b)
 	{
 #if 1
 	case 254:
-		__debugbreak();
+		cond = 0;
+		
 		break;
 #ifdef TEST
 	case 101:
@@ -129,9 +130,22 @@ int callout_test(pcre2_callout_block* a, void* b)
 #endif
 		//case 14:
 			//justacheckforescape = !justacheckforescape;
+	case 39:;
+		ntoclear = getnameloc("typedefkeyword", *ptable);
+		istypedefdecl = a->offset_vector[2 * ntoclear] != -1;
+		if (istypedefdecl)
+		{
+			void addtotypedefs(const char* identifier, size_t szcontent);
+			n = getnameloc(namedcapture = "identifiermine", *ptable) + 1;
+			addtotypedefs(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]));
+			n = 0;
+		}
+		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+		n = getnameloc(namedcapture = "identifiermine", *ptable);
+		break;
 	case 38:;
 		int istypedefinvecotr(const char* identifier, size_t szcontent);
-		n = getnameloc(namedcapture = "identifierfacet", *ptable) + 1;
+		n = getnameloc(namedcapture = "identifiermine2", *ptable) + 1;
 		if (a->offset_vector[2 * n] != -1)
 			return istypedefinvecotr(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]));
 		n = 0;
@@ -183,19 +197,6 @@ int callout_test(pcre2_callout_block* a, void* b)
 	case 6:;
 		printf("identifier:\n");
 		n = getnameloc(namedcapture = "identifier", *ptable);
-		break;
-		ntoclear = getnameloc("typedefkeyword", *ptable);
-		istypedefdecl = a->offset_vector[2 * ntoclear] != -1;
-		if (istypedefdecl)
-		{
-			void addtotypedefs(const char* identifier, size_t szcontent);
-			n = getnameloc(namedcapture = "identifier", *ptable) + 1;
-			addtotypedefs(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]));
-			n = 0;
-		}
-		else printf("identifier:\n");
-		a->offset_vector[2 * ntoclear] = a->offset_vector[ntoclear] = -1;
-		break;
 		//cond = n = 0; break;
 		break;
 	case 4:
@@ -383,6 +384,8 @@ if (!((1 << 15) & GetAsyncKeyState(VK_RETURN)))
 _sleep(1000);
 system("cls");
 #endif
+
+if (a->callout_number == 254) exit(-1);
 
 return 0;
 }
