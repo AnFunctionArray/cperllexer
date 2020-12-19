@@ -1,7 +1,7 @@
 #include "unary.regex", "typename.regex", "inner.regex", "binary.regex"
-#entry cprogram
+#entry ^primexpr
 
-(?<entry>^(?<primexpr>\s*(?<assignorternary>\s*(?<primexprnoternary>\s*((?<unaryexpr>(?&inner)(((\[(?&primexpr)\]|[(](?C7)(?&primexpr)[)](?C13))\s*
+(?<entry>(?<primexpr>\s*(?<assignorternary>\s*(?<primexprnoternary>\s*((?<unaryexpr>(?&inner)(((\[(?&primexpr)\]|[(](?C7)(?&primexpr)[)](?C13))\s*
 						|(?<arrowordot>([.]|->))(?C8)(?&identifier)
 						|(?<postfixarith>([+][+]|--)\s*)(?C9)))*+|
 						(?<inparenths>\s*[(](?&primexpr)[)]\s*)
@@ -15,4 +15,6 @@
 (?<selectionstatement>\s*(if\s*[(](?&primexpr)[)](?&statement)(else(?&statement))?+|switch\s*[(](?&primexpr)[)](?&statement))\s*)
 (?<statement>(?&label)?+((?&exprstatement)|(?&compoundstatement)|(?&selectionstatement)|(?&iterationstatement)|(?&jumpstatement)))
 (?<label>((?&identifier)|case(?&primexpr)|default):)
-(?<cprogram>^((?&typenameinside)((?&compoundstatement)|(?&declaration)))*+)
+(?<cprogram>((?&typenameinside)((?&compoundstatement)|(?&abstrinitialization)?(,(?&abstdecloutside)(?&abstrinitialization)?+)*+\s*;\s*))*+)
+
+(?<testmain>^(?&typenameinside)=(?&assignorternary)??;)

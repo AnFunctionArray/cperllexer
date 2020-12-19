@@ -41,7 +41,7 @@ extern "C" void addregexfile(const char *content, size_t szcontent)
 	std::stringstream newregex;
 	std::string contentstr;
 
-	contentstr.assign(content, szcontent);
+	contentstr.assign(content);
 
 	newregex << "(" << contentstr << ")";
 

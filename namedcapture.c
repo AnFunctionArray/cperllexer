@@ -18,20 +18,20 @@ enum {
 
 struct match {
 	int n;
-	char *startmatch, *namedcpture;
+	char* startmatch, * namedcpture;
 };
 
 struct debugstr {
 	int last_capture_n;
-	char *pattern, *patternrest, *matching;
+	char* pattern, * patternrest, * matching;
 	struct match matches[maxsize];
 	int ba, b;
 } tmp;
 
 static struct debugstr	debugarray[maxsize];
 
-static struct match *currmatch = tmp.matches;
-static struct debugstr *currdebug = debugarray;
+static struct match* currmatch = tmp.matches;
+static struct debugstr* currdebug = debugarray;
 
 void debug_insert_common(int nlast, unsigned int a, char* pa, unsigned int b, char* pb, unsigned int c, char* pc, int ba)
 {
@@ -63,8 +63,8 @@ extern void debug()
 {
 	*currdebug++ = tmp;
 
-	if (!(tmp.ba >= 17 && tmp.b <= 92))
-		_sleep(0);
+	//if (!(tmp.ba >= 17 && tmp.b <= 92))
+		//_sleep(0);
 	return;
 }
 
@@ -85,8 +85,8 @@ int callout_test(pcre2_callout_block* a, void* b)
 
 #ifdef DEBUG
 	debug_insert_common(a->capture_last, (unsigned int)a->next_item_length, ptable->pattern + a->pattern_position,
-			(unsigned int)(ptable->szpattern - (a->pattern_position + a->next_item_length)), ptable->pattern + a->pattern_position + a->next_item_length,
-			(unsigned int)(a->subject_length - a->current_position), a->subject + a->current_position, a->pattern_position);
+		(unsigned int)(ptable->szpattern - (a->pattern_position + a->next_item_length)), ptable->pattern + a->pattern_position + a->next_item_length,
+		(unsigned int)(a->subject_length - a->current_position), a->subject + a->current_position, a->pattern_position);
 #endif
 	switch (a->callout_number)
 	{
@@ -115,7 +115,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 	goto showgroup;
 #endif
 	//printf("callout id %d\n", a->callout_number);
-	static int istypedefdecl;
+	static int istypedefdecl, isinsidetypename;
 	switch (a->callout_number)
 	{
 #if 1
@@ -130,21 +130,12 @@ int callout_test(pcre2_callout_block* a, void* b)
 		//case 14:
 			//justacheckforescape = !justacheckforescape;
 	case 38:;
-		ntoclear = getnameloc("typedefkeyword", *ptable);
-		istypedefdecl = a->offset_vector[2 * ntoclear] != -1;
-		if (istypedefdecl)
-		{
-			void addtotypedefs(const char* identifier, size_t szcontent);
-			n = getnameloc(namedcapture = "identifier", *ptable) + 1;
-			addtotypedefs(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]));
-			n = 0;
-		}
-		a->offset_vector[2 * ntoclear] = a->offset_vector[ntoclear] = -1;
-		
-	case 37:;
 		int istypedefinvecotr(const char* identifier, size_t szcontent);
 		n = getnameloc(namedcapture = "identifierfacet", *ptable) + 1;
-		return !istypedefinvecotr(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]));
+		if (a->offset_vector[2 * n] != -1)
+			return istypedefinvecotr(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]));
+		n = 0;
+		break;
 	case 35:
 		message = "comma\n"; break;
 	case 34:
@@ -189,9 +180,22 @@ int callout_test(pcre2_callout_block* a, void* b)
 		n = getnameloc(namedcapture = "numberliteral", *ptable); break;
 	case 2:
 		n = getnameloc(namedcapture = "text", *ptable); break;
-	case 6:
+	case 6:;
 		printf("identifier:\n");
 		n = getnameloc(namedcapture = "identifier", *ptable);
+		break;
+		ntoclear = getnameloc("typedefkeyword", *ptable);
+		istypedefdecl = a->offset_vector[2 * ntoclear] != -1;
+		if (istypedefdecl)
+		{
+			void addtotypedefs(const char* identifier, size_t szcontent);
+			n = getnameloc(namedcapture = "identifier", *ptable) + 1;
+			addtotypedefs(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]));
+			n = 0;
+		}
+		else printf("identifier:\n");
+		a->offset_vector[2 * ntoclear] = a->offset_vector[ntoclear] = -1;
+		break;
 		//cond = n = 0; break;
 		break;
 	case 4:
@@ -374,8 +378,8 @@ debug();
 if (!cond || PATTERN_FLAGS & PCRE2_AUTO_CALLOUT)
 printf("\n\n");
 
-#ifdef DEBUG
-if(!((1 << 15) & GetAsyncKeyState(VK_RETURN)))
+#ifdef DEBUG_PHYSIC
+if (!((1 << 15) & GetAsyncKeyState(VK_RETURN)))
 _sleep(1000);
 system("cls");
 #endif

@@ -21,7 +21,7 @@ int callout_facets(pcre2_callout_block* a, void* b)
 	return 0;
 }
 
-char* create_regex_facets(const char *regex, size_t *szregex)
+char* create_regex_facets(const char *regex, size_t *szregex, char **outprocessedfile, size_t *szoutfile)
 {
 	int error, ncaptures, namecount, name_entry_size, n, rc;
 	PCRE2_SIZE erroroffset, * povector;
@@ -84,47 +84,90 @@ char* create_regex_facets(const char *regex, size_t *szregex)
 
 	pcre2_set_callout(match_context, 0, 0);
 
+#define OPTION0 *pnewsubstr
+#define OPTION1 1[pnewsubstr]
+
+	OPTION0 = OPTION1;
+
+	pcode = pcre2_compile("[(]\\?<((\\w)+?)[#]restrictoutsidefacet>", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
+
+#define PRIOR OPTION1
+#define CURR OPTION0
 	*szregex += MAX_FACET_ADDED_SPACE;
 
-	*pnewsubstr = malloc(*szregex);
+	PRIOR = malloc(*szregex);
+
+	*szoutfile = *szregex;
+
+	error = pcre2_substitute(pcode, CURR, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "(?<$1>", PCRE2_ZERO_TERMINATED, PRIOR, szoutfile);
+
+	pcode = pcre2_compile("[(]\\?<((\\w)*?)[#]restrictoutsidefacet>", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
+
+	szstrin = *szoutfile;
+
+	*szoutfile += MAX_FACET_ADDED_SPACE;
+
+	*outprocessedfile = malloc(*szoutfile);
+
+	error = pcre2_substitute(pcode, PRIOR, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "(", PCRE2_ZERO_TERMINATED, *outprocessedfile, szoutfile);
+
+	szstrin = nametable.szpattern;
+
+	error = pcre2_substitute(pcode, CURR, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "((*F)", PCRE2_ZERO_TERMINATED, PRIOR, szregex);
+
+#define PRIOR OPTION0
+#define CURR OPTION1
+
+	*szregex += MAX_FACET_ADDED_SPACE;
+
+	free(PRIOR); PRIOR = malloc(*szregex);
 
 	pcode = pcre2_compile(retrievefacetor(), PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
 
-	error = pcre2_substitute(pcode, 1[pnewsubstr], szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "", 0, *pnewsubstr, szregex);
+	error = pcre2_substitute(pcode, CURR, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "", 0, PRIOR, szregex);
 
 	pcode = pcre2_compile("[(]\\?C\\d++[)]", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
 
+#define PRIOR OPTION1
+#define CURR OPTION0
+
 	szstrin = *szregex;
 
 	*szregex += MAX_FACET_ADDED_SPACE;
 
-	free(1[pnewsubstr]); 1[pnewsubstr] = malloc(*szregex);
+	free(PRIOR); PRIOR = malloc(*szregex);
 
-	pcre2_substitute(pcode, *pnewsubstr, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "", 0, 1[pnewsubstr], szregex);
+	pcre2_substitute(pcode, CURR, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "", 0, PRIOR, szregex);
 
 	pcode = pcre2_compile("[(]\\?&((\\w(?!facet))++)[)]", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
 
-	szstrin = *szregex;
-
-	*szregex += MAX_FACET_ADDED_SPACE;
-
-	free(*pnewsubstr); *pnewsubstr = malloc(*szregex);
-
-	pcre2_substitute(pcode, 1[pnewsubstr], szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "(?&$1facet)", PCRE2_ZERO_TERMINATED, *pnewsubstr, szregex);
+#define PRIOR OPTION0
+#define CURR OPTION1
 
 	szstrin = *szregex;
 
 	*szregex += MAX_FACET_ADDED_SPACE;
 
-	free(1[pnewsubstr]); 1[pnewsubstr] = malloc(*szregex);
+	free(PRIOR); PRIOR = malloc(*szregex);
+
+	pcre2_substitute(pcode, CURR, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "(?&$1facet)", PCRE2_ZERO_TERMINATED, PRIOR, szregex);
+
+#define PRIOR OPTION1
+#define CURR OPTION0
+
+	szstrin = *szregex;
+
+	*szregex += MAX_FACET_ADDED_SPACE;
+
+	free(PRIOR); PRIOR = malloc(*szregex);
 
 	pcode = pcre2_compile("[(]\\?<((\\w(?!facet))+?)>", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
 
-	pcre2_substitute(pcode, *pnewsubstr, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "(?<$1facet>", PCRE2_ZERO_TERMINATED, 1[pnewsubstr], szregex);
+	pcre2_substitute(pcode, CURR, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "(?<$1facet>", PCRE2_ZERO_TERMINATED, PRIOR, szregex);
 
-	pcre2_match_context_free(match_context), pcre2_match_data_free(pmatch_data); free(*pnewsubstr);
+	pcre2_match_context_free(match_context), pcre2_match_data_free(pmatch_data); free(CURR);
 
-	return 1[pnewsubstr];
+	return PRIOR;
 }
 
 static char* pentry;
@@ -134,17 +177,17 @@ static size_t szentry;
 int callout_regex(pcre2_callout_block* a, void* b)
 {
 	struct calloutinfo* ptable = b;
-	int n = getnameloc(a->callout_number == 1 ? "filename" : "entrygroup", *ptable);
+	int n = getnameloc(a->callout_number == 1 ? "filename" : "entrygroup", *ptable), y = getnameloc("prefix", *ptable);
 
 	void addregexfile(const char* content);
 
-	size_t szfilepattern = a->offset_vector[2 * n + 1] - a->offset_vector[2 * n], szfacet;
+	size_t szfilepattern = a->offset_vector[2 * n + 1] - a->offset_vector[2 * n], szfacet = a->offset_vector[2 * y + 1] - a->offset_vector[2 * y];
 
 	if (a->callout_number == 2)
 	{
-		char* filename = malloc(szentry = szfilepattern + sizeof "(?&)");
+		char* filename = malloc(szentry = szfilepattern + sizeof "(^(?&))");
 
-		sprintf(filename, "(?&%.*s)", (unsigned int)szfilepattern, a->subject + a->offset_vector[2 * n]);
+		sprintf(filename, "(%.*s(?&%.*s))", (unsigned int)szfacet, a->subject + a->offset_vector[2 * y],(unsigned int)szfilepattern, a->subject + a->offset_vector[2 * n]);
 
 		pentry = filename;
 		return 0;
@@ -154,11 +197,17 @@ int callout_regex(pcre2_callout_block* a, void* b)
 
 	sprintf(filename, "%.*s", (unsigned int)szfilepattern, a->subject + a->offset_vector[2 * n]);
 
-	char* pfilepattern = openfile(filename, &szfilepattern), *pregexfacet = (szfacet = szfilepattern, create_regex_facets(pfilepattern, &szfacet));
+	char* pfilepattern = openfile(filename, &szfilepattern), *pprcoessedfile, *pregexfacet = (szfacet = szfilepattern, create_regex_facets(pfilepattern, &szfacet, &pprcoessedfile, &szfilepattern));
 
-	addregexfile(pfilepattern, szfilepattern);
+	free(pfilepattern);
+
+	addregexfile(pprcoessedfile, szfilepattern);
+
+	free(pprcoessedfile);
 
 	addregexfile(pregexfacet, szfacet);
+
+	free(pregexfacet);
 
 	return 0;
 }
@@ -169,7 +218,7 @@ char* glueregexfile(char* filename)
 	const char* retrievefinalregex(const char* rest, size_t szrest);
 	size_t plen;
 	size_t szfilepattern, szregexpattern, szfacet;
-	char* pfilepattern = openfile(filename, &szfilepattern), *pregexpattern = openfile("./metaregex/regex.regex", &szregexpattern), *facet;
+	char* pfilepattern = openfile(filename, &szfilepattern), *pregexpattern = openfile("./metaregex/regex.regex", &szregexpattern), *facet, * pprcoessedfile;
 
 	beginregex();
 
@@ -177,11 +226,17 @@ char* glueregexfile(char* filename)
 
 	szfacet = szfilepattern - plen;
 
-	facet = create_regex_facets(pfilepattern + plen, &szfacet);
+	facet = create_regex_facets(pfilepattern + plen, &szfacet, &pprcoessedfile, &szfilepattern);
 
-	addregexfile(pfilepattern + plen, szfilepattern - plen);
+	free(pfilepattern);
+
+	addregexfile(pprcoessedfile, szfilepattern);
+
+	free(pprcoessedfile);
 
 	addregexfile(facet, szfacet);
+
+	free(facet);
 
 	return retrievefinalregex(pentry, szentry);
 }

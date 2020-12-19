@@ -73,7 +73,7 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 
 	pcre2_code* pcode;
 
-	PCRE2_UCHAR* pnewsubstr = malloc(szpattern);
+	PCRE2_UCHAR* pnewsubstr = pattern;//malloc(szpattern);
 
 	PCRE2_SIZE newsubstrlen = szpattern;
 
@@ -84,15 +84,15 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 	//"\"(((\\\\((x)|(b)|(0))(\\d+)|([0-9a-fA-F]+)|(\\\")|(n)|(t))*(?C2))|((.*)(?C3)))*\"(?C1)"
 
 	if(msgs) printf("%.*s\n", szsubject, subject);
-	pcode = pcre2_compile("\\s|\\n", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
+	//pcode = pcre2_compile("\\s|\\n", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
 
-	pcre2_substitute(pcode, pattern, szpattern, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "", 0, pnewsubstr, &newsubstrlen);
+	//pcre2_substitute(pcode, pattern, szpattern, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "", 0, pnewsubstr, &newsubstrlen);
 
-	pcre2_match_context_free(match_context), pcre2_match_data_free(pmatch_data);
+	//pcre2_match_context_free(match_context), pcre2_match_data_free(pmatch_data);
 
-	pmatch_data = pcre2_match_data_create(0xFFFF, 0);
+	//pmatch_data = pcre2_match_data_create(0xFFFF, 0);
 
-	match_context = pcre2_match_context_create(0);
+	//match_context = pcre2_match_context_create(0);
 
 	if (msgs) printf("%.*s\n\n", (unsigned int)newsubstrlen, pnewsubstr);
 

@@ -9,6 +9,8 @@
 
 //#define DEBUG
 
+//#define DEBUG_PHYSIC
+
 #if !(PATTERN_FLAGS & PCRE2_AUTO_CALLOUT)
 #define HIDE_DETAILS
 #endif
