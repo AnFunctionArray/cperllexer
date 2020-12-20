@@ -1,5 +1,10 @@
 #pragma once
 //#include <boost/preprocessor/facilities/expand.hpp>
+#include <llvm-c/Core.h>
+#include <llvm-c/ExecutionEngine.h>
+#include <llvm-c/Target.h>
+#include <llvm-c/Analysis.h>
+#include <llvm-c/BitWriter.h>
 
 #define TEST_REGEX_FILE "main.regex"
 #define TEST_FILE "maintest.c"

@@ -124,6 +124,8 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 
 	rc = pcre2_match(pcode, subject, szsubject, 0, 0, pmatch_data, match_context);
 
+	printf("%d\n", rc);
+
 	ovectorcount = pcre2_get_ovector_count(pmatch_data);
 
 	povector = pcre2_get_ovector_pointer(pmatch_data);
@@ -178,8 +180,6 @@ main()
 #endif
 
 	fclose(foutput);
-
-	exit(stat);
 
 #if 0
 	ovectorcount = pcre2_get_ovector_count(pmatch_data);

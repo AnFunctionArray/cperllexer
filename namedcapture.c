@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "main.h"
+#include "llvm/llvmgen.h"
 #include <setjmp.h>
 
 enum {
@@ -115,6 +116,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 #endif
 	//printf("callout id %d\n", a->callout_number);
 	static int istypedefdecl, isinsidetypename;
+#define GROUP_PTR_AND_SZ(n) a->subject + a->offset_vector[2 * (n)], (unsigned int)(a->offset_vector[2 * (n) + 1] - a->offset_vector[2 * (n)])
 	switch (a->callout_number)
 	{
 #if 1
@@ -129,6 +131,12 @@ int callout_test(pcre2_callout_block* a, void* b)
 #endif
 		//case 14:
 			//justacheckforescape = !justacheckforescape;
+	case 41:
+		endconstantexpr();
+		break;
+	case 40:
+		beginconstantexpr();
+		break;
 	case 39:;
 		ntoclear = getnameloc("typedefkeyword", *ptable);
 		istypedefdecl = a->offset_vector[2 * ntoclear] != -1;
@@ -179,6 +187,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 		n = getnameloc(namedcapture = "addop", *ptable); break;
 	case 21:
 		n = getnameloc(namedcapture = "mulop", *ptable); break;
+		mul(GROUP_PTR_AND_SZ(n + 1));
 	case 19:
 		n = getnameloc(namedcapture = "unaryop", *ptable); break;
 	case 9:
@@ -190,7 +199,9 @@ int callout_test(pcre2_callout_block* a, void* b)
 	case 1:
 		n = getnameloc(namedcapture = "escape", *ptable); break;
 	case 5:
-		n = getnameloc(namedcapture = "numberliteral", *ptable); break;
+		n = getnameloc(namedcapture = "numberliteral", *ptable);
+		insertinttoimm(GROUP_PTR_AND_SZ(n + 1));
+		break;
 	case 2:
 		n = getnameloc(namedcapture = "text", *ptable); break;
 	case 6:;
