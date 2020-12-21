@@ -12,9 +12,9 @@
 (?<eqplusrest>(?<eqop>(==|!=)(?&binaryops)(?!(?&relplusrestfacet))(?C24))|(?&relplusrest)(?&eqop)?)
 (?<relplusrest>(?<relop>((?!<<)<|(?!>>)>|<=|>=)(?&binaryops)(?!(?&shiftplusrestfacet))(?C23))|(?&shiftplusrest)(?&relop)?)
 (?<shiftplusrest>(?<shiftop>(<<|>>)(?&binaryops)(?!(?&addmulplusrestfacet))(?C22))|(?&addmulplusrest)(?&shiftop)?)
-(?<addmulplusrest>(?&muloprest)(?<addop>([\+\-])(?&addmulplusrest))(?C20)|(?&muloprestfacet))
+(?<addmulplusrest>(?&muloprest)(?<addop>([\+\-])(?&addmulplusrest))|(?C20)(?&muloprestfacet))
 
-(?<muloprest>(?&inner)(?<mulop>([\*\/\%])(?&muloprest))(?C21)|(?&innerfacet))
+(?<muloprest>(?&inner)(?<mulop>([\*\/\%])(?&muloprest))|(?C21)(?&innerfacet))
 
 (?<commaplusrest>(?<commaop>,(?&primexpr)(?!(?&assignexprfacet))(?C31))|(?&ternaryplusrest)(?&commaop)?)
 
