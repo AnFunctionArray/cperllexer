@@ -1,4 +1,4 @@
-(?<binaryops>(?&inner))
+(?<binaryops>(?&inner)(?>(?&addmulplusrest))??)
 
 (?<assignexpr>(?&unaryexpr)(?<assignop>(=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)(?&assignorternary)(?C30)))
 
@@ -12,9 +12,9 @@
 (?<eqplusrest>(?<eqop>(==|!=)(?&binaryops)(?!(?&relplusrestfacet))(?C24))|(?&relplusrest)(?&eqop)?)
 (?<relplusrest>(?<relop>((?!<<)<|(?!>>)>|<=|>=)(?&binaryops)(?!(?&shiftplusrestfacet))(?C23))|(?&shiftplusrest)(?&relop)?)
 (?<shiftplusrest>(?<shiftop>(<<|>>)(?&binaryops)(?!(?&addmulplusrestfacet))(?C22))|(?&addmulplusrest)(?&shiftop)?)
-(?<addmulplusrest>(?&muloprest)(?<addop>([\+\-])(?&addmulplusrest))|(?C20)(?&muloprestfacet))
+(?<addmulplusrest>(?<addmulplusrestinner>(?&muloprest)(?<addop>([\+\-])(?&addmulplusrestinner))(?=(?&addmulplusrestinnerfacet))|(?C20)(?&muloprestfacet))(?&addopfacet)*+)
 
-(?<muloprest>(?&inner)(?<mulop>([\*\/\%])(?&muloprest))|(?C21)(?&innerfacet))
+(?<muloprest>(?<muloprestinner>(?&inner)(?<mulop>([\*\/\%])(?&muloprestinner))(?=(?&muloprestinnerfacet))|(?C21)(?&innerfacet))(?&mulopfacet)*+)
 
 (?<commaplusrest>(?<commaop>,(?&primexpr)(?!(?&assignexprfacet))(?C31))|(?&ternaryplusrest)(?&commaop)?)
 
