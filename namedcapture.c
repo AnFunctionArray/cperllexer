@@ -88,27 +88,6 @@ int callout_test(pcre2_callout_block* a, void* b)
 		(unsigned int)(ptable->szpattern - (a->pattern_position + a->next_item_length)), ptable->pattern + a->pattern_position + a->next_item_length,
 		(unsigned int)(a->subject_length - a->current_position), a->subject + a->current_position, a->pattern_position);
 #endif
-	switch (a->callout_number)
-	{
-	case 17:
-		ntoclear = getnameloc("cond0", *ptable);
-		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = 0;
-		//message = "begin reverse\n";
-		break;
-	case 18:
-		ntoclear = getnameloc("cond0", *ptable);
-		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
-		break;
-	default:
-		ntoclear = getnameloc("cond0", *ptable);
-
-		if (a->offset_vector[2 * ntoclear + 1] != -1)
-		{
-			//n = (getnameloc(namedcapture = "abstrptr", *ptable)); break;
-		}
-		//else
-			//return 0;
-	}
 
 	//static int justacheckforescape = 0;
 #ifdef SHOW_GROUP
@@ -165,29 +144,34 @@ int callout_test(pcre2_callout_block* a, void* b)
 		message = "ternary1\n"; break;
 	case 32:
 		message = "ternary2\n"; break;
+
+#define BINARY_OP(name) \
+	ntoclear = n = a->offset_vector[(n = getnameloc(namedcapture = name, *ptable))*2] != -1 ? n : 0
+
 	case 30:
-		n = getnameloc(namedcapture = "assignop", *ptable); break;
+		BINARY_OP("assignop"); break;
 	case 29:
-		n = getnameloc(namedcapture = "orlogicop", *ptable); break;
+		BINARY_OP("orlogicop"); break;
 	case 28:
-		n = getnameloc(namedcapture = "andlogicop", *ptable); break;
+		BINARY_OP("andlogicop"); break;
 	case 27:
-		n = getnameloc(namedcapture = "orop", *ptable); break;
+		BINARY_OP("orop"); break;
 	case 26:
-		n = getnameloc(namedcapture = "xorop", *ptable); break;
+		BINARY_OP("xorop"); break;
 	case 25:
-		n = getnameloc(namedcapture = "andop", *ptable); break;
+		BINARY_OP("andop"); break;
 	case 24:
-		n = getnameloc(namedcapture = "eqop", *ptable); break;
+		BINARY_OP("eqop"); break;
 	case 23:
-		n = getnameloc(namedcapture = "relop", *ptable); break;
+		BINARY_OP("relop"); break;
 	case 22:
-		n = getnameloc(namedcapture = "shiftop", *ptable); break;
+		BINARY_OP("shiftop"); break;
 	case 20:
-		n = getnameloc(namedcapture = "addop", *ptable); break;
+		BINARY_OP("addop"); break;
 	case 21:
-		n = getnameloc(namedcapture = "mulop", *ptable); break;
-		mul(GROUP_PTR_AND_SZ(n + 1));
+		BINARY_OP("mulop");
+		if(n) mul(GROUP_PTR_AND_SZ(n + 1));
+		break;
 	case 19:
 		n = getnameloc(namedcapture = "unaryop", *ptable); break;
 	case 9:
@@ -226,74 +210,13 @@ int callout_test(pcre2_callout_block* a, void* b)
 		n = getnameloc(namedcapture = "arrowordot", *ptable); break;
 	case 12:
 
-		ntoclear = getnameloc("typenamerev", *ptable);
-		//if (a->offset_vector[2 * ntoclear] == a->offset_vector[2 * ntoclear + 1] && a->offset_vector[2 * ntoclear + 1] == -1)
-		{
-			ntoclear = getnameloc("cond0", *ptable);
-
-			if (a->offset_vector[2 * ntoclear + 1] != -1)
-			{
-				//n = (getnameloc(namedcapture = "abstrptr", *ptable)); break;
-			}
-			//else
-			//return 0;
-		}
-
-
-		//ntoclear = getnameloc("abstrptrrev", *ptable);
-		//if (a->offset_vector[2 * ntoclear + 1] != -1)
-		//{
-			//ntoclear = getnameloc("abstdeclinside", *ptable);
-			//if (a->offset_vector[2 * ntoclear] == a->offset_vector[2 * ntoclear + 1] && a->offset_vector[2 * ntoclear + 1] == -1)
-				//return 0;
-		//}
-
 		n = getnameloc(namedcapture = "abstrsubs", *ptable); break;
 	case 14:
 		message = "end sizeof\n"; break;
 	case 15:
 		message = "begin sizeof\n"; break;
-	case 16:
-		ntoclear = getnameloc("typenamerev", *ptable);
 
-		if (a->offset_vector[2 * ntoclear + 1] != -1)
-		{
-			//ntoclear = getnameloc("cond0", *ptable);
-			//a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = 0;
-		}
-
-		for (ntoclear = getnameloc("typenamebegin", *ptable); ntoclear <= getnameloc("typenameend", *ptable); ++ntoclear)
-			a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
-		break;
-		/*case 17:
-			ntoclear = getnameloc("cond0", *ptable);
-			a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = 0;
-			//message = "begin reverse\n";
-			break;
-		case 18:
-			ntoclear = getnameloc("cond0", *ptable);
-			a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
-			break;*/
 	case 11:
-		ntoclear = getnameloc("typenamerev", *ptable);
-
-		//if (a->offset_vector[2 * ntoclear] == a->offset_vector[2 * ntoclear + 1] && a->offset_vector[2 * ntoclear + 1] == -1)
-		{
-			ntoclear = getnameloc("cond0", *ptable);
-
-			if (a->offset_vector[2 * ntoclear + 1] != -1)
-			{
-				//n = (getnameloc(namedcapture = "abstrptr", *ptable)); break;
-			}
-			//else
-				//return 0;
-		}
-
-		//ntoclear = getnameloc("abstrptrrev", *ptable);
-
-		//if (a->offset_vector[2 * ntoclear + 1] != -1)
-			//return 0;
-
 		n = (getnameloc(namedcapture = "abstrptr", *ptable)); break;
 #else
 	case 12:
@@ -377,6 +300,9 @@ print:
 		(unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]),
 		a->subject + a->offset_vector[2 * n]
 	);
+
+	//if(n && n == ntoclear)
+	//	a->offset_vector[2 * n] = a->offset_vector[2 * n + 1] = -1;
 #ifdef DEBUG
 	debug_insert_match(n, (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]), a->subject + a->offset_vector[2 * n], namedcapture);
 #endif

@@ -1,4 +1,4 @@
 (?<unary>(?<prefixarith>\s*([+][+]|--))(?&unaryexpr)(?C10)|(?&unaryop)(?&castexpr)|sizeof(?C15)((?&typename)|(?&unaryexpr))(?C14))
 
 
-						(?<#restrictoutsidefacet>(?<unaryop>\s*([\&\*\+\-\~\!]))(?!(?&castexpr)(?C19))|(?&unaryop))
+						(?<#restrictoutsidefacet>(?<unaryop>\s*([\&\*\+\-\~\!])(?C19))(?!(?&castexpr)(?C19))|(?&unaryop))

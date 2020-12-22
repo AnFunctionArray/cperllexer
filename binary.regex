@@ -1,27 +1,24 @@
-(?<binaryops>(?&inner)(?>(?&addmulplusrest))??)
 
-(?<assignexpr>(?&unaryexpr)(?<assignop>(=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)(?&assignorternary)(?C30)))
+(?<assignexpr>(?&unary)(?<assignop>(=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)(?&assignorternary)(?C30)))
 
 (?<assignorternary>(?&assignexpr)|(?&ternary))
 
-(?<orlogicplusrest>(?<orlogicop>(\|\|)(?&binaryops)(?!(?&andlogicplusrestfacet))(?C29))|(?&andlogicplusrest)(?&orlogicop)?)
-(?<andlogicplusrest>(?<andlogicop>(&&)(?&binaryops)(?!(?&orplusrestfacet))(?C28))|(?&orplusrest)(?&andlogicop)?)
-(?<orplusrest>(?<orop>(?!\|\|)(\|)(?&binaryops)(?!(?&xorplusrestfacet))(?C27))|(?&xorplusrest)(?&orop)?)
-(?<xorplusrest>(?<xorop>(\^)(?&binaryops)(?!(?&andplusrestfacet))(?C26))|(?&andplusrest)(?&xorop)?)
-(?<andplusrest>(?<andop>(?!&&)(&)(?&binaryops)(?!(?&eqplusrestfacet))(?C25))|(?&eqplusrest)(?&andop)?)
-(?<eqplusrest>(?<eqop>(==|!=)(?&binaryops)(?!(?&relplusrestfacet))(?C24))|(?&relplusrest)(?&eqop)?)
-(?<relplusrest>(?<relop>((?!<<)<|(?!>>)>|<=|>=)(?&binaryops)(?!(?&shiftplusrestfacet))(?C23))|(?&shiftplusrest)(?&relop)?)
-(?<shiftplusrest>(?<shiftop>(<<|>>)(?&binaryops)(?!(?&addmulplusrestfacet))(?C22))|(?&addmulplusrest)(?&shiftop)?)
-(?<addmulplusrest>(?<addmulplusrestinner>(?&muloprest)(?<addop>([\+\-])(?&addmulplusrestinner))(?=(?&addmulplusrestinnerfacet))|(?C20)(?&muloprestfacet))(?&addopfacet)*+)
+(?<orlogicplusrest>(?<orlogicplusrestinner>(?&andlogicplusrest)(?<orlogicop>(\|\|)(?&orlogicplusrestinner)(?=(?&orlogicplusrestinnerfacet)))|(?C29)(?&andlogicplusrestfacet))(?&orlogicopfacet)*+)
+(?<andlogicplusrest>(?<andlogicplusrestinner>(?&orplusrest)(?<andlogicop>(&&)(?&andlogicplusrestinner)(?=(?&andlogicplusrestinnerfacet))(?C28))|(?&orplusrestfacet))(?&andlogicopfacet)*+)
+(?<orplusrest>(?<orplusrestinner>(?&xorplusrest)(?<orop>(?!\|\|)(\|)(?&orplusrestinner)(?=(?&orplusrestinnerfacet)))|(?C27)(?&xorplusrestfacet))(?&oropfacet)*+)
+(?<xorplusrest>(?<xorplusrestinner>(?&andplusrest)(?<xorop>(\^)(?&xorplusrestinner)(?=(?&xorplusrestinnerfacet)))|(?C26)(?&andplusrestfacet))(?&xoropfacet)*+)
+(?<andplusrest>(?<andplusrestinner>(?&eqplusrest)(?<andop>(?!&&)(&)(?&andplusrestinner)(?=(?&andplusrestinnerfacet)))|(?C25)(?&eqplusrestfacet))(?&andopfacet)*+)
+(?<eqplusrest>(?<eqplusrestinner>(?&relplusrest)(?<eqop>(==|!=)(?&eqplusrestinner)(?=(?&eqplusrestinnerfacet)))|(?C24)(?&relplusrestfacet))(?&eqopfacet)*+)
+(?<relplusrest>(?<relplusrestinner>(?&shiftplusrest)(?<relop>((?!<<)<|(?!>>)>|<=|>=)(?&relplusrestinner)(?=(?&relplusrestinnerfacet)))|(?C23)(?&shiftplusrestfacet))(?&relopfacet)*+)
+(?<shiftplusrest>(?<shiftplusrestinner>(?&addmulplusrest)(?<shiftop>(<<|>>)(?&shiftplusrestinner)(?=(?&shiftplusrestinnerfacet)))|(?C22)(?&addmulplusrestfacet))(?&shiftopfacet)*+)
+(?<addmulplusrest>(?<addmulplusrestinner>(?&muloprest)(?<addop>(?!\+\+|--)([\+\-])(?&addmulplusrestinner))(?=(?&addmulplusrestinnerfacet))|(?C20)(?&muloprestfacet))(?&addopfacet)*+)
 
-(?<muloprest>(?<muloprestinner>(?&inner)(?<mulop>([\*\/\%])(?&muloprestinner))(?=(?&muloprestinnerfacet))|(?C21)(?&innerfacet))(?&mulopfacet)*+)
+(?<muloprest>(?<muloprestinner>(?&castexpr)(?<mulop>([\*\/\%])(?&muloprestinner))(?=(?&muloprestinnerfacet))|(?C21)(?&castexpr))(?&mulopfacet)*+)
 
 (?<commaplusrest>(?<commaop>,(?&primexpr)(?!(?&assignexprfacet))(?C31))|(?&ternaryplusrest)(?&commaop)?)
 
-(?<ternary>(?&binaryops)\?(?C33)(?&primexpr):(?C32)(?&ternary)(?C34)|(?&binaryops))
+(?<ternary>(?&orlogicplusrest)\?(?C33)(?&primexpr):(?C32)(?&ternary)(?C34)|(?&orlogicplusrest))
 
 (?<ternaryplusrest>(?&ternary)|(?&orlogicplusrest))
 
 (?<primexprternary>(?&primexpr)(?&ternary))
-
-(\?(?C33)(?&primexpr):(?C32)((?&unaryexpr)|(?&typenamerev))(?&binaryops)??(?C34))?

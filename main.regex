@@ -1,14 +1,16 @@
 #include "unary.regex", "typename.regex", "inner.regex", "binary.regex"
-#entry ^addmulplusrest
+#entry ^orlogicplusrest
 
-(?<entry>(?<primexpr>\s*((?&binaryops)|(?&assignexpr)|(?&ternary))(,(?C35)(?&assignorternary))*?\s*))
+(?<entry>(?<primexpr>\s*((?&orlogicplusrest)|(?&assignexpr)|(?&ternary))(,(?C35)(?&assignorternary))*?\s*))
 
-(((?<castexpr>(?<unaryexpr>(?&inner)(((\[(?&primexpr)\]|[(](?C7)(?&primexpr)[)](?C13))\s*
+(?<castexpr>(?<unaryexpr>(?&inner)(((\[(?&orlogicplusrest)\]|[(](?C7)(?&primexpr)[)](?C13))\s*
 						|(?<arrowordot>([.]|->))(?C8)(?&identifier)
 						|(?<postfixarith>([+][+]|--)\s*)(?C9)))*+|
-						(?<inparenths>\s*[(](?&primexpr)[)]\s*)
-						|(?&unary))|(?&typename)(?&castexpr))|(?&binaryops)|(?&assignexpr))|(?&ternary))
+						(?<inparenths>\s*[(](?&orlogicplusrest)[)]\s*)
+						|(?&unary))|(?&typename)(?&castexpr))
 
+(?<testxpr>(?&inner)|(?&inparenths))
+						
 (?<jumpstatement>\s*(goto(?&identifier);|continue\s*;|break\s*;|return(?&primexpr)?+;)\s*)
 (?<iterationstatement>\s*(while\s*[(](?&primexpr)[)](?&statement)|do(?&statement)while\s*[(](?&primexpr)[)]\s*;
 	|for\s*[(]((?&declaration)|(?&exprstatement))?+(?&exprstatement)?+(?&primexpr)?+[)](?&statement))\s*)
