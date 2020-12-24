@@ -11,8 +11,8 @@
 
 (?<typedefnamefacet>(?&identifiermine2))
 
-(?<identifiermine#restrictpcre2only>\s*+(?!(?&keywordlist))((?&identifierraw))(?C39)\s*+)
-(?<identifiermine2#restrictpcre2only>\s*+(?!(?&keywordlist))((?&identifierraw))(??C38)\s*+)
+(?<identifiermine>\s*+(?!(?&keywordlist))((?&identifierraw))(?C39)\s*+)
+(?<identifiermine2>\s*+(?!(?&keywordlist))((?&identifierraw))(??C38)\s*+)
 
 (?<keywordlist>(?&typesandqualifiersmask)|struct|enum|__[_a-zA-Z0-9]*+|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)
 
@@ -25,7 +25,7 @@
 
 (?<abstdeclinsidetypedef>(?&abstrptr)*+(\s*+([(](?&abstdeclfacet)[)]|(?&identifier))\s*+)?+(?&abstrsubsfacet)*+)
 
-(?<abstrbitfield>\s*+:\s*+(?&primexpr))
+(?<abstrbitfield>\s*+:\s*+(?&assignorsomething))
 (?<designator>\s*+(\[(?&primexpr)\]|\.\s*+(?&identifier))\s*+)
 (?<initializer>(?&assignorsomething)|\s*+[{]((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*+[}]\s*+)
 (?<abstrinitialization>=(?&initializer))
