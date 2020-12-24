@@ -2,6 +2,8 @@
 
 use re 'eval';
 
+use experimental 'switch';
+
 $filename = "main.regex";
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
@@ -27,6 +29,8 @@ my $mainregexfinal = "((*F)";
 
 my $entryregex;
 
+my $matchinperl = 0;
+
 $mainregexfilecontent =~/$metaregexfilecontent/;
 
 parseregexfile((substr $mainregexfilecontent, length $&), 1);
@@ -35,13 +39,17 @@ $mainregexfinal = $mainregexfinal . ")|" . $entryregex;
 
 my $typedefidentifiers = "";
 
-$mainregexfinal =~s/\s|\n//g;
+$mainregexfinal =~s/\s|\n//g if(not $matchinperl);
 
-startmatching($subject, $mainregexfinal);
+startmatching($subject, $mainregexfinal) if(not $matchinperl);
 
-#$subject =~/$mainregexfinal/xx;
+exit if(not $matchinperl);
 
-#print $&;
+#print $mainregexfinal;
+
+$subject =~/$mainregexfinal/xx;
+
+print $&;
 
 sub addtypdefidentifier {
     $typedefidentifiers = $typedefidentifiers . $+{identifierraw} . "|" if(not $mute_callbacks and $+{typedefkeyword});
@@ -51,8 +59,46 @@ sub getypedefidentifiers {
     return substr $typedefidentifiers, 0, -1;
 }
 
+sub printifdefined{
+    print $_[0] if($_[1]);
+}
+
 sub defaultcallback {
-    print "$_[0]\n" if (not $mute_callbacks);
+    given ($_[0])
+    {
+    	print("comma\n") when 35;
+        print("ternary0\n") when 34;
+        print("ternary1\n") when 33;
+        print("ternary2\n") when 32;
+
+        printifdefined("$+{assignopraw}\n", $+{assignopraw}) when 30;
+        printifdefined("$+{orlogicopraw}\n", $+{orlogicopraw}) when 29;
+        printifdefined("$+{andlogicopraw}\n", $+{andlogicopraw}) when 28;
+        printifdefined("$+{oropraw}\n", $+{oropraw}) when 27;
+        printifdefined("$+{xoropraw}\n", $+{xoropraw}) when 26;
+        printifdefined("$+{andopraw}\n", $+{andopraw}) when 25;
+        printifdefined("$+{eqopraw}\n", $+{eqopraw}) when 24;
+        printifdefined("$+{relopraw}\n", $+{relopraw}) when 23;
+        printifdefined("$+{shiftopraw}\n", $+{shiftopraw}) when 22;
+        printifdefined("$+{addopraw}\n", $+{addopraw}) when 20;
+        printifdefined("$+{mulopraw}\n", $+{mulopraw}) when 21;
+        printifdefined("$+{unaryopraw}\n", $+{unaryopraw}) when 19;
+        printifdefined("postfix arithmetic:\n$+{postfixarithraw}\n", $+{postfixarithraw}) when 9;
+        printifdefined("prefix arithmetic:\n$+{prefixarithraw}\n", $+{prefixarithraw}) when 10;
+        printifdefined("$+{escaperaw}\n", $+{escaperaw}) when 1;
+        printifdefined("$+{numberliteralraw}\n", $+{numberliteralraw}) when 5;
+        printifdefined("$+{textraw}\n", $+{textraw}) when 2;
+        printifdefined("$+{identifierraw}\n", $+{identifierraw}) when 6;
+        print("start string\n") when 4;
+        print("start function call\n") when 7;
+        print("end function call\n") when 13;
+        printifdefined("member access operator:\n$+{arrowordotraw}\n", $+{arrowordotraw}) when 8;
+        print("end sizeof\n") when 14;
+        print("begin sizeof\n") when 15;
+        printifdefined("$+{qualifiers}\n", $+{qualifiers}) when 11;
+
+        default {print "bad call $_[0]\n"; exit}
+    }
 }
 
 sub entryregexmain {
@@ -74,11 +120,23 @@ sub parseregexfile {
         $regexfilecontent = $_[0];
     }
 
+    $regexfilecontent =~s/\(\?\?C(\d++)\)/(??{return defaultcallback($1)})/g if($matchinperl);
+
+    $regexfilecontent =~s/#restrictperlonly//g if($matchinperl);
+
+    $regexfilecontent =~s/#restrictpcre2only//g if(not $matchinperl);
+
+    $regexfilecontent =~s/(\(\?<\w+)#restrictpcre2only>/((*F)/g if($matchinperl);
+
+    $regexfilecontent =~s/(\(\?<\w+)#restrictperlonly>/((*F)/g if(not $matchinperl);
+
     my $regexfile = $regexfilecontent; 
     
     $regexfile =~s/#restrictoutsidefacet\b//g;
 
-    $regexfile =~s/\(\?\?C(\d++)\)/(?C$1)/g;
+    $regexfile =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
+
+    $regexfile =~s/\(\?C(\d++)\)/(?{defaultcallback($1)})/g if($matchinperl);
 
     my $regexfilecontentcopy = $regexfilecontent;
 
@@ -88,11 +146,9 @@ sub parseregexfile {
 
     replacefacetgroups($1, $_[1]) while($regexfilecontentcopy =~/(\(\?<\w+)facet>/g);
 
-
-
     $regexfilecontent =~s/\(\?C(\d++)\)//g;
 
-    $regexfilecontent =~s/\(\?\?C(\d++)\)/(?C$1)/g;
+    $regexfilecontent =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
     $regexfilecontent =~s/[(]\?&(\w+?)(facet)?[)]/(?&$1facet)/g;
 

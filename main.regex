@@ -5,8 +5,8 @@
 
 
 (?<castexpr>(?<unaryexpr>(?&inner)(((\[(?&primexpr)\]|[(](?C7)(?&primexpr)[)](?C13))\s*+
-						|(?<arrowordot>([.]|->))(?C8)(?&identifier)
-						|(?<postfixarith>([+][+]|--)\s*+)(?C9)))*+|
+						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?C8)(?&identifier)
+						|(?<postfixarith>(?<postfixarithraw>[+][+]|--)\s*+)(?C9)))*+|
 						(?<inparenths>\s*+[(](?&primexpr)[)]\s*+)
 						|(?&unary))|(?&typename)(?&castexpr))
 
@@ -14,11 +14,15 @@
 
 (?<testxpr>(?&inner)|(?&inparenths))
 
-	(?<assignorsomething>((?&unaryexpr)(?<assignop>(=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+(?&unaryexpr)))(?!(?&assignopfacet))|(?&assignorsomethingfacet)*+(?&orlogiorsomething))
+	(?<assignorsomething>(?=(?&assignornothingfacet))(?<assignornothing>(?&unaryexpr)(?<assignop>(?<assignopraw>=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+))
+		(?&assignorsomething)(?C30)|(?=(?&ternaryorsomethinggreedy))(?&ternaryorsomething))
 
-	(?<ternaryorsomething>((?&orlogiorsomething)(?&ternaryrest))*+(?&orlogiorsomething))
+	(?<ternaryorsomething>(?=(?&ternornothingfacet))(?<ternornothing>(?&orlogiorsomething)(?&ternaryrest))(?&ternaryorsomething)(?C34)
+		|(?=(?&orlogiorsomethinggreedyfacet))(?&orlogiorsomething))
 
-	(?<ternaryrest>\?(?C33)(?&primexpr):)
+	(?<ternaryorsomethinggreedy>((?&orlogiorsomethinggreedy)(?&ternaryrest))*(?&orlogiorsomething))
+
+	(?<ternaryrest>\?(?C33)(?&primexpr):(?C32))
 
 	(?<orlogiorsomething>(?&castexpr)((?&orlogicplusrest)?+)*?)
 

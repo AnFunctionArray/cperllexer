@@ -1,17 +1,8 @@
 #!/usr/bin/perl
 
-$text = "7*7*4*5*6*7+(4*4*4+3*7*4);7*7*4*5*6*7+(4*4*4+3*7*4)";
+$text = "abcd+6";
 
-$result = $text =~/((*F)
-    (?<addmulplusrest>(?>(?&muloprest))((?!\+\+|--)(?<addop>[\+\-])(?&addmulplusrest))|(?&muloprestfacet)(?{print "$+{addop}\n" if(debug(1));}))
-
-    (?<muloprest>(?>(?&testxpr))((?<mulop>[\*\/\%])(?&muloprest))|(?&testxprfacet)(?{print "$+{mulop}\n" if(debug(1));}))
-    (?<testxpr>(?<number>\d++)(??{print "$+{number}\n" if(debug(1)); return "(*F)";})|(?<inparenth>[(](?&addmulplusrest)[)]))
-
-    (?<addmulplusrestfacet>(?>(?&muloprestfacet))((?!\+\+|--)([\+\-])(?&addmulplusrestfacet))|(?&muloprestfacet))
-
-    (?<muloprestfacet>(?>(?&testxprfacet))([\*\/\%](?&muloprestfacet))|(?&testxprfacet))
-    (?<testxprfacet>(\d++)|([(](?&addmulplusrestfacet)[)])))|(?&addmulplusrest);(?&addmulplusrest)/xx;
+$result = $text =~/(?<test>(abcd)(?{print %-{test}[1]})\+6)/xx;
 						
 						
 print $&;

@@ -1,29 +1,29 @@
 
-(?<orlogicplusrest>(?<orlogicop>(\|\|)(?&orlogiorsomething)(?!(?&andlogicplusrestfacet))
+(?<orlogicplusrest>(?<orlogicop>(?<orlogicopraw>\|\|)(?&orlogiorsomething)(?!(?&andlogicplusrestfacet))
     (?C29))|(?&andlogicplusrest)(?&orlogicop)?)
 
-(?<andlogicplusrest>(?<andlogicop>(&&)(?&orlogiorsomething)(?!(?&orplusrestfacet))
+(?<andlogicplusrest>(?<andlogicop>(?<andlogicopraw>&&)(?&orlogiorsomething)(?!(?&orplusrestfacet))
     (?C28))|(?&orplusrest)(?&andlogicop)?)
 
-(?<orplusrest>(?<orop>(?!\|\|)(\|)(?&orlogiorsomething)(?!(?&xorplusrestfacet))
+(?<orplusrest>(?<orop>(?!\|\|)(?<oropraw>\|)(?&orlogiorsomething)(?!(?&xorplusrestfacet))
     (?C27))|(?&xorplusrest)(?&orop)?)
 
-(?<xorplusrest>(?<xorop>(\^)(?&orlogiorsomething)(?!(?&andplusrestfacet))
+(?<xorplusrest>(?<xorop>(?<xoropraw>\^)(?&orlogiorsomething)(?!(?&andplusrestfacet))
     (?C26))|(?&andplusrest)(?&xorop)?)
 
-(?<andplusrest>(?<andop>(?!&&)(&)(?&orlogiorsomething)(?!(?&eqplusrestfacet))
+(?<andplusrest>(?<andop>(?!&&)(?<andopraw>&)(?&orlogiorsomething)(?!(?&eqplusrestfacet))
     (?C25))|(?&eqplusrest)(?&andop)?)
 
-(?<eqplusrest>(?<eqop>(==|!=)(?&orlogiorsomething)(?!(?&relplusrestfacet))
+(?<eqplusrest>(?<eqop>(?<eqopraw>==|!=)(?&orlogiorsomething)(?!(?&relplusrestfacet))
     (?C24))|(?&relplusrest)(?&eqop)?)
 
-(?<relplusrest>(?<relop>((?!<<)<|(?!>>)>|<=|>=)(?&orlogiorsomething)(?!(?&shiftplusrestfacet))
+(?<relplusrest>(?<relop>(?<relopraw>(?!<<)<|(?!>>)>|<=|>=)(?&orlogiorsomething)(?!(?&shiftplusrestfacet))
     (?C23))|(?&shiftplusrest)(?&relop)?)
 
-(?<shiftplusrest>(?<shiftop>(<<|>>)(?&orlogiorsomething)(?!(?&addmulplusrestfacet))
+(?<shiftplusrest>(?<shiftop>(?<shiftopraw><<|>>)(?&orlogiorsomething)(?!(?&addmulplusrestfacet))
     (?C22))|(?&addmulplusrest)(?&shiftop)?)
 
-(?<addmulplusrest>(?<addop>([\+\-])((?&orlogiorsomething)(?!(?&mulopfacet))
+(?<addmulplusrest>(?<addop>(?<addopraw>[\+\-])((?&orlogiorsomething)(?!(?&mulopfacet))
     (?C20)))|(?&mulop)(?&addop)?)
 
-(?<mulop>([\*\/\%])(?&orlogiorsomething)(?C21))
+(?<mulop>(?<mulopraw>[\*\/\%])(?&orlogiorsomething)(?C21))
