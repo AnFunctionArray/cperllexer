@@ -1,13 +1,17 @@
 #!/usr/bin/perl
 
-$text = "(char(*restrict(*restrict(*const)[1][2])[3])[4])";
+$text = "7*7*4*5*6*7+(4*4*4+3*7*4);7*7*4*5*6*7+(4*4*4+3*7*4)";
 
-$result = $text =~/(?<typename>[(]
-						(?<typesandqualifiers>\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b))*
-						(?<abstdecl>((?<abstrptrrev>(?<abstrptr>[*](?<ptrqualifs>(?&qualifiers))*+)(?!(?&abstrptrrev)(?{print "$+{ptrqualifs}\n" if(debug(1));}))
-						(?<abstrrest>(?<abstrmostoutter>[(](?&abstdecl)[)])?+(?<abstrsubs>\[(?<abstrsubsinner>\d++)\]
-						(?{print "$+{abstrsubsinner}\n" if(debug(2));}))*+(?{print "$+{ptrqualifs}\n" if(debug(1));}))|(?&abstrptr))|(?&abstrrest))(?<abstdeclinside>(?&abstrptr)*+
-                        ([(](?&abstdeclinside)[)])?+(\[(\d++)\])*+))[)])/xx;
+$result = $text =~/((*F)
+    (?<addmulplusrest>(?>(?&muloprest))((?!\+\+|--)(?<addop>[\+\-])(?&addmulplusrest))|(?&muloprestfacet)(?{print "$+{addop}\n" if(debug(1));}))
+
+    (?<muloprest>(?>(?&testxpr))((?<mulop>[\*\/\%])(?&muloprest))|(?&testxprfacet)(?{print "$+{mulop}\n" if(debug(1));}))
+    (?<testxpr>(?<number>\d++)(??{print "$+{number}\n" if(debug(1)); return "(*F)";})|(?<inparenth>[(](?&addmulplusrest)[)]))
+
+    (?<addmulplusrestfacet>(?>(?&muloprestfacet))((?!\+\+|--)([\+\-])(?&addmulplusrestfacet))|(?&muloprestfacet))
+
+    (?<muloprestfacet>(?>(?&testxprfacet))([\*\/\%](?&muloprestfacet))|(?&testxprfacet))
+    (?<testxprfacet>(\d++)|([(](?&addmulplusrestfacet)[)])))|(?&addmulplusrest);(?&addmulplusrest)/xx;
 						
 						
 print $&;

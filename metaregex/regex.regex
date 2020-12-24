@@ -1,2 +1,1 @@
-#include\s*(\"(?<filename>.*?)\"(?C1)\s*,?+\s*)++\s*#entry\s*(?<prefix>\^)?+\s*(?<entrygroup>\w+)(?C2)
-    
+^#include\s*(\"(?<filename>.*?)\"(?{parseregexfile($+{filename})})\s*,?+\s*)++\s*#entry\s*(?<prefix>\^)?\s*(?<entrygroup>\w+)(?{entryregexmain($+{entrygroup}, $+{prefix})})

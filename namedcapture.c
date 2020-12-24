@@ -146,7 +146,8 @@ int callout_test(pcre2_callout_block* a, void* b)
 		message = "ternary2\n"; break;
 
 #define BINARY_OP(name) \
-	ntoclear = n = a->offset_vector[(n = getnameloc(namedcapture = name, *ptable))*2] != -1 ? n : 0
+		n = getnameloc(namedcapture = name, *ptable)
+	//ntoclear = n = a->offset_vector[((n = getnameloc(namedcapture = name, *ptable)) + 1)*2] != -1 ? n : 0
 
 	case 30:
 		BINARY_OP("assignop"); break;

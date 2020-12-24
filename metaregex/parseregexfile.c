@@ -143,7 +143,7 @@ char* create_regex_facets(const char *regex, size_t *szregex, char **outprocesse
 
 	error = pcre2_substitute(pcode, CURR, szstrin, 0, PCRE2_SUBSTITUTE_GLOBAL, pmatch_data, match_context, "", 0, PRIOR, szregex);
 
-	pcode = pcre2_compile("[(]\\?C\\d++[)]", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
+	pcode = pcre2_compile("([(]\\?{.*?;\\s*}\\s*[)])", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
 
 #define PRIOR OPTION1
 #define CURR OPTION0
