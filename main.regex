@@ -17,7 +17,7 @@
 	(?<assignorsomething>(?=(?&assignornothingfacet))(?<assignornothing>(?&unaryexpr)(?<assignop>(?<assignopraw>=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+))
 		(?&assignorsomething)(?!(?&orplusrestfacet))(?C30)|(?&ternaryorsomething))
 
-	(?<ternaryorsomething>(?=(?&ternornothingfacet))(?<ternornothing>(?&orlogiorsomething)(?&ternaryrest))(?&ternaryorsomething)(?C34)
+	(?<ternaryorsomething>(?=(?&ternornothingfacet))(?<ternornothing>(?&orlogiorsomething)(?&ternaryrest))(?&ternaryorsomething)(?!(?&orplusrestfacet))(?C34)
 		|(?&orlogiorsomething))
 
 	(?<ternaryrest>\?(?C33)(?&primexpr):(?C32))

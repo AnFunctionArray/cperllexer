@@ -1,4 +1,4 @@
-(c?(a):(a=*f=d)^(*(char*const)a=c)+1*7*6);
+(c?(a):(a=*f=d * 9 + 1 ? 20 : 4 + 6 & 7)^(*(char*const)a=c)+1*7*6);
 	
 char b = { .a[4] = 9 * 7, 76 };
 typedef int jk;
