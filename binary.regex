@@ -27,11 +27,3 @@
     (?C20)))|(?&mulop)(?&addop)?)
 
 (?<mulop>([\*\/\%])(?&primexprnoternary)(?C21))
-
-(?<assignexpr>(?&unary)(?<assignop>(=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)(?&assignorternary)
-    (?C30)))
-
-(?<assignorternary>(?&assignexpr)|(?&ternary))
-
-(?<ternary>(?&primexprnoternary)\?(?C33)(?&primexpr):
-    (?C32)(?&ternary)(?C34))

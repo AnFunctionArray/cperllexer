@@ -60,7 +60,7 @@ sub entryregexmain {
 }
 
 sub parseregexfile {
-    my $regexfilecontent;
+
     if(not defined $_[1])
     {
         my $filename = $_[0];
@@ -83,11 +83,12 @@ sub parseregexfile {
     my $regexfilecontentcopy = $regexfilecontent;
 
     sub replacefacetgroups {
-
         $regexfilecontent =~s/\Q$_[0]\E(facet)?>/(/g;
     }
 
-    replacefacetgroups($1) while($regexfilecontentcopy =~/(\(\?<\w+)facet>/g);
+    replacefacetgroups($1, $_[1]) while($regexfilecontentcopy =~/(\(\?<\w+)facet>/g);
+
+
 
     $regexfilecontent =~s/\(\?C(\d++)\)//g;
 

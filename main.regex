@@ -1,26 +1,44 @@
 #include "typename.regex", "inner.regex", "unary.regex", "binary.regex"
-#entry ^testentry
+#entry ^exprstatement	
 
-(?<primexpr>((?&primexprnoternary)|(?&assignexpr)|(?&ternary))(,(?C35)(?&assignorternary))*?)
+(?<primexpr>(?&primexprnoternary))
 
-(?<castexpr>(?<unaryexpr>(?&inner)(((\[(?&orlogicplusrest)\]|[(](?C7)(?&primexpr)[)](?C13))\s*
+
+(?<castexpr>(?<unaryexpr>(?&inner)(((\[(?&primexpr)\]|[(](?C7)(?&primexpr)[)](?C13))\s*+
 						|(?<arrowordot>([.]|->))(?C8)(?&identifier)
-						|(?<postfixarith>([+][+]|--)\s*)(?C9)))*+|
-						(?<inparenths>\s*[(](?&innertest)[)]\s*)
+						|(?<postfixarith>([+][+]|--)\s*+)(?C9)))*+|
+						(?<inparenths>\s*+[(](?&primexpr)[)]\s*+)
 						|(?&unary))|(?&typename)(?&castexpr))
 
 (?<testentry>(?<innertest>(?&primexprnoternary));)
 
 (?<testxpr>(?&inner)|(?&inparenths))
 
-(?<primexprnoternary>(?&testxpr)((?&orlogicplusrest)?+)*?)
+(?<primexprnoternary>(?<assignorsomething>(?=(?&assignactuallyfacet))(?<assignactually>(?&unaryexpr)
+	(?<assignop>(=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+(?&assignorsomethinggreedy))(?C30))
+	|(?&ternaryorsomething))(,(?C35)\s*+(?&assignorsomething))*)
 
-(?<jumpstatement>\s*(goto(?&identifier);|continue\s*;|break\s*;|return(?&primexpr)?+;)\s*)
-(?<iterationstatement>\s*(while\s*[(](?&primexpr)[)](?&statement)|do(?&statement)while\s*[(](?&primexpr)[)]\s*;
-	|for\s*[(]((?&declaration)|(?&exprstatement))?+(?&exprstatement)?+(?&primexpr)?+[)](?&statement))\s*)
-(?<exprstatement>(?&primexpr)?;\s*)
-(?<compoundstatement>\s*[{]((?&declaration)|(?&statement))*+[}]\s*)
-(?<selectionstatement>\s*(if\s*[(](?&primexpr)[)](?&statement)(else(?&statement))?+|switch\s*[(](?&primexpr)[)](?&statement))\s*)
+	(?<ternaryorsomething>(?&orlogiorsomething)(?<ternaryrest>\?(?C33)(?&primexpr):
+    (?C32)(?=(?&orlogiorsomethinggreedy)(?&ternaryrest)??(?C34))(?&ternaryorsomethingfacet))??)
+
+	(?<assignorsomethinggreedy>(?&ternaryorsomethinggreedy)|(?&assignorsomething))
+
+	(?<ternaryorsomethinggreedy>(?&orlogiorsomethinggreedy)(\?(?C33)(?&primexpr):
+    (?C32)(?=(?&orlogiorsomethinggreedyfacet)(?&ternaryrestfacet)?(?C34))(?&ternaryorsomething))?)
+
+	(?<orlogiorsomething>(?&castexpr)((?&orlogicplusrest)?+)*?)
+
+	(?<orlogiorsomethinggreedy>(?&castexpr)((?&orlogicplusrest)?+)*)
+
+	
+
+
+(?<jumpstatement>\s*+(goto(?&identifier);|continue\s*+;|break\s*+;|return(?&primexpr)?+;)\s*+)
+(?<iterationstatement>\s*+(while\s*+[(](?&primexpr)[)](?&statement)|do(?&statement)while\s*+[(](?&primexpr)[)]\s*+;
+	|for\s*+[(]((?&declaration)|(?&exprstatement))?+(?&exprstatement)?+(?&primexpr)?+[)](?&statement))\s*+)
+(?<exprstatement>(?&primexpr)?;\s*+)
+(?<compoundstatement>\s*+[{]((?&declaration)|(?&statement))*+[}]\s*+)
+(?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?&statement)(else(?&statement))?+|switch\s*+[(](?&primexpr)[)](?&statement))\s*+)
 (?<statement>(?&label)?+((?&exprstatement)|(?&compoundstatement)|(?&selectionstatement)|(?&iterationstatement)|(?&jumpstatement)))
 (?<label>((?&identifier)|case(?&primexpr)|default):)
-(?<cprogram>((?&typenameinside)((?&compoundstatement)|(?&abstrinitialization)?(,(?&abstdecloutside)(?&abstrinitialization)?+)*+\s*;\s*))*+)
+(?<cprogram>((?&typenameinside)((?&compoundstatement)|(?&abstrinitialization)?(,(?&abstdecloutside)(?&abstrinitialization)?+)*+\s*+;\s*+))*+)
