@@ -1,5 +1,4 @@
-(a[!*&(((char* const(*restrict(*restrict(* const)[1][2])[3])[4])(char const(* const(*restrict * restrict(* const* const)[2][2])[3])[4])sizeof++--"a"++->a7++[*&!7] * 8))]
-			(4[2] + 2 > 6 & *2 << 2 ? a, b : (a = 0 < 5 & 2 * 8 + 4) ^ (*(char* const)a = 0) ? 1 : 0, 4[2] + 2 > 6 & *2 << 2 ? 2 : (a = 0) ^ (*(char* const)a = 0) ? 1 : 0, c));
+(c?(a):(a=*f=d)^(*(char*const)a=c)+1*7*6);
 	
 char b = { .a[4] = 9 * 7, 76 };
 typedef int jk;

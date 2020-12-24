@@ -15,12 +15,10 @@
 (?<testxpr>(?&inner)|(?&inparenths))
 
 	(?<assignorsomething>(?=(?&assignornothingfacet))(?<assignornothing>(?&unaryexpr)(?<assignop>(?<assignopraw>=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+))
-		(?&assignorsomething)(?C30)|(?=(?&ternaryorsomethinggreedy))(?&ternaryorsomething))
+		(?&assignorsomething)(?!(?&orplusrestfacet))(?C30)|(?&ternaryorsomething))
 
 	(?<ternaryorsomething>(?=(?&ternornothingfacet))(?<ternornothing>(?&orlogiorsomething)(?&ternaryrest))(?&ternaryorsomething)(?C34)
-		|(?=(?&orlogiorsomethinggreedyfacet))(?&orlogiorsomething))
-
-	(?<ternaryorsomethinggreedy>((?&orlogiorsomethinggreedy)(?&ternaryrest))*(?&orlogiorsomething))
+		|(?&orlogiorsomething))
 
 	(?<ternaryrest>\?(?C33)(?&primexpr):(?C32))
 
