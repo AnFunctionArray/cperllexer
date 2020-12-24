@@ -1,7 +1,7 @@
 #include "typename.regex", "inner.regex", "unary.regex", "binary.regex"
 #entry ^exprstatement	
 
-(?<primexpr>(?&primexprnoternary))
+(?<primexpr>(?&assignorsomething)(,(?C35)\s*+(?&assignorsomething))*)
 
 
 (?<castexpr>(?<unaryexpr>(?&inner)(((\[(?&primexpr)\]|[(](?C7)(?&primexpr)[)](?C13))\s*+
@@ -10,21 +10,15 @@
 						(?<inparenths>\s*+[(](?&primexpr)[)]\s*+)
 						|(?&unary))|(?&typename)(?&castexpr))
 
-(?<testentry>(?<innertest>(?&primexprnoternary));)
+(?<testentry>(?<innertest>(?&orlogiorsomething));)
 
 (?<testxpr>(?&inner)|(?&inparenths))
 
-(?<primexprnoternary>(?<assignorsomething>(?=(?&assignactuallyfacet))(?<assignactually>(?&unaryexpr)
-	(?<assignop>(=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+(?&assignorsomethinggreedy))(?C30))
-	|(?&ternaryorsomething))(,(?C35)\s*+(?&assignorsomething))*)
+	(?<assignorsomething>((?&unaryexpr)(?<assignop>(=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+(?&unaryexpr)))(?!(?&assignopfacet))|(?&assignorsomethingfacet)*+(?&orlogiorsomething))
 
-	(?<ternaryorsomething>(?&orlogiorsomething)(?<ternaryrest>\?(?C33)(?&primexpr):
-    (?C32)(?=(?&orlogiorsomethinggreedy)(?&ternaryrest)??(?C34))(?&ternaryorsomethingfacet))??)
+	(?<ternaryorsomething>((?&orlogiorsomething)(?&ternaryrest))*+(?&orlogiorsomething))
 
-	(?<assignorsomethinggreedy>(?&ternaryorsomethinggreedy)|(?&assignorsomething))
-
-	(?<ternaryorsomethinggreedy>(?&orlogiorsomethinggreedy)(\?(?C33)(?&primexpr):
-    (?C32)(?=(?&orlogiorsomethinggreedyfacet)(?&ternaryrestfacet)?(?C34))(?&ternaryorsomething))?)
+	(?<ternaryrest>\?(?C33)(?&primexpr):)
 
 	(?<orlogiorsomething>(?&castexpr)((?&orlogicplusrest)?+)*?)
 

@@ -1,4 +1,4 @@
-(4[2] + 2 > 6 & *2 << 2 ? a, b : (a = 0 < 5 & 2 * 8 + 4) ^ (*(char* const)a = b ? d : c);
+(c?(a):(a=f)^(*(char*const)a=c));
 	
 char b = { .a[4] = 9 * 7, 76 };
 typedef int jk;
