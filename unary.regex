@@ -1,5 +1,6 @@
 (?<unary>(?<prefixarith>\s*+(?<prefixarithraw>[+][+]|--))(?&unaryexpr)(?C10)
-	|(?&unaryop)(?&castexpr)|sizeof((?&typename)|(?&unaryexpr)))
+	|((?<#restrictoutsidefacet>(?&unaryopfacet)(?!(?&castexpr)))|(?&unaryop)(?&castexprfacet))
+	|sizeof((?&typename)|(?&unaryexpr)))
 
 
 						(?<unaryop>\s*+([\&\*\+\-\~\!])(?C19))

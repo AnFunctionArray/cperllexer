@@ -8,7 +8,7 @@
 						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?C8)(?&identifier)
 						|(?<postfixarith>(?<postfixarithraw>[+][+]|--)\s*+)(?C9)))*+|
 						(?<inparenths>\s*+[(](?&primexpr)[)]\s*+)
-						|(?&unary))|(?&typename)(?&castexpr))
+						|(?&unary))|(?&typenamerev))
 
 (?<testentry>(?<innertest>(?&orlogiorsomething));)
 

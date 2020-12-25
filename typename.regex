@@ -2,7 +2,7 @@
 						((?<typesandqualifiers>\s*+(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b)|
 						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
 						|(?<storageclass>(?>(?<typedefkeyword>\btypedef\b))|\bextern\b|\bstatic\b|\bauto\b|\bregister\b)|__[_a-zA-Z0-9]*+)\s*+)
-						|(?&typedefnamefacet)|(?&structorunion))++
+						|(?&typedefnamefacet)|(?&structorunion))*+
 						(?<abstdecloutside>(?<abstdecl>(?<abstrptrrev#restrictoutsidefacet>(?<abstrptr>\s*+[*]\s*+((?&qualifiers))*+)
 						(?!(?&abstrptrrev)(?C11))
 						(?<abstrrest>(?<abstrmostoutter>\s*+([(](?&abstdecl)[)]|(?&identifiermine))\s*+)?+(?<abstrsubs>\s*+(\[(?&primexpr)\]
@@ -16,10 +16,7 @@
 
 (?<keywordlist>(?&typesandqualifiersmask)|struct|enum|__[_a-zA-Z0-9]*+|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)
 
-(?<typenamerev>(?&typenamefacet)
-						(?!(?&unaryexpr))|(?&typename)(?&unaryexprfacet))
-
-(?<typenamerevfacet>(?&typenamefacet)(?&unaryexprfacet))
+(?<typenamerev>(?<#restrictoutsidefacet>(?&typenamefacet)(?!(?&castexpr)))|(?&typename)(?&castexprfacet))
 
 (?<abstdeclinside>(?&abstrptr)*+(?&abstrmostoutter)?+(?&abstrsubsfacet)*+)
 

@@ -18,7 +18,7 @@ my $metaregexfilecontent = do { local $/; <$fh> };
 
 close $fh;
 
-$filename = "maintest.c";
+$filename = $ARGV[0];
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
 my $subject = do { local $/; <$fh> };
@@ -132,7 +132,9 @@ sub parseregexfile {
 
     my $regexfile = $regexfilecontent; 
     
-    $regexfile =~s/#restrictoutsidefacet\b//g;
+    $regexfile =~s/(?<!<)#restrictoutsidefacet\b//g;
+
+    $regexfile =~s/\(\?<#restrictoutsidefacet>/(/g;
 
     $regexfile =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
@@ -155,6 +157,8 @@ sub parseregexfile {
     $regexfilecontent =~s/(\(\?<\w+)>/$1facet>/g;
 
     $regexfilecontent =~s/(\(\?<\w+)#restrictoutsidefacet>/$1facet>(*F)/g;
+
+    $regexfilecontent =~s/\(\?<#restrictoutsidefacet>/((*F)/g;
 
     $mainregexfinal = $mainregexfinal . $regexfile . $regexfilecontent;
 }
