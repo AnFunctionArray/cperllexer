@@ -30,6 +30,6 @@
 (?<structorunion>\s*+(struct|union)((?&identifier)?+\s*+[{]\s*+((?&typenameinside)?+(?&abstrbitfield)?+(,(?&abstdecloutside)(?&abstrbitfield)?+)*+\s*+;\s*+)*+[}]\s*+|(?&identifier))|(?&enum))
 (?<enum>\s*+enum((?&identifier)?+\s*+[{](?<enumerator>(?&identifier)(=(?&assignorsomething))?+)?+(,(?&enumerator))*+,?+\s*+[}]\s*+|(?&identifier)))
 
-(?<declaration>((?&typenameinside)(?&abstrinitialization)?+(,(?&abstdecloutside)(?&abstrinitialization)?+)*+\s*+;\s*+))
+(?<declaration>((?&typenameinside)(?&abstrinitialization)?+(,(?C43)(?&abstdecloutside)(?&abstrinitialization)?+)*+\s*+(?C42);\s*+))
 
 (,(?&abstdecloutside)(?&abstrinitialization)?+)*+

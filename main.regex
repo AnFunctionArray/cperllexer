@@ -33,7 +33,7 @@
 (?<iterationstatement>\s*+(while\s*+[(](?&primexpr)[)](?&statement)|do(?&statement)while\s*+[(](?&primexpr)[)]\s*+;
 	|for\s*+[(]((?&declaration)|(?&exprstatement))?+(?&exprstatement)?+(?&primexpr)?+[)](?&statement))\s*+)
 (?<exprstatement>(?&primexpr)?;\s*+)
-(?<compoundstatement>\s*+[{]((?&declaration)|(?&statement))*+[}]\s*+)
+(?<compoundstatement>\s*+[{](?C44)((?&declaration)|(?&statement))*+[}](?C45)\s*+)
 (?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?&statement)(else(?&statement))?+|switch\s*+[(](?&primexpr)[)](?&statement))\s*+)
 (?<statement>(?&label)?+((?&exprstatement)|(?&compoundstatement)|(?&selectionstatement)|(?&iterationstatement)|(?&jumpstatement)))
 (?<label>((?&identifier)|case(?&primexpr)|default):)

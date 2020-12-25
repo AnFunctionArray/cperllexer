@@ -100,7 +100,7 @@ int callout_test(pcre2_callout_block *a, void *b)
 	goto showgroup;
 #endif
 	//printf("callout id %d\n", a->callout_number);
-	static int istypedefdecl, isinsidedecl;
+	static int istypedefdecl, isinsidedecl, islocal;
 #define GROUP_PTR_AND_SZ(n) a->subject + a->offset_vector[2 * (n)], (unsigned int)(a->offset_vector[2 * (n) + 1] - a->offset_vector[2 * (n)])
 	switch (a->callout_number)
 	{
@@ -116,6 +116,12 @@ int callout_test(pcre2_callout_block *a, void *b)
 #endif
 		//case 14:
 		//justacheckforescape = !justacheckforescape;
+	case 44:
+		addtypedefsscope();
+		break;
+	case 45:
+		removetypedefsscope();
+		break;
 	case 43:
 		isinsidedecl = true;
 		break;

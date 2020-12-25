@@ -5,7 +5,17 @@
 
 static std::string gluedregex, facetor;
 
-static std::vector<std::string> typedefs{};
+static std::vector<std::vector<std::string>> typedefs{1};
+
+extern "C" void addtypedefsscope()
+{
+	typedefs.push_back({});
+}
+
+extern "C" void removetypedefsscope()
+{
+	typedefs.pop_back();
+}
 
 extern "C" void addtotypedefs(const char* identifier, size_t szcontent)
 {
@@ -13,7 +23,7 @@ extern "C" void addtotypedefs(const char* identifier, size_t szcontent)
 
 	contentstr.assign(identifier, szcontent);
 
-	typedefs.push_back(contentstr);
+	typedefs.back().push_back(contentstr);
 }
 
 extern "C" int istypedefinvecotr(const char* identifier, size_t szcontent)
@@ -22,7 +32,10 @@ extern "C" int istypedefinvecotr(const char* identifier, size_t szcontent)
 
 	contentstr.assign(identifier, szcontent);
 
-	int res = std::find(typedefs.begin(), typedefs.end(), contentstr) == typedefs.end();
+	int res = 1;
+
+	for(const auto &a : typedefs)
+		if(!(res = res && std::find(a.begin(), a.end(), contentstr) == a.end())) break;
 
 	return res;
 }
