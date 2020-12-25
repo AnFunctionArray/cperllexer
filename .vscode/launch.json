@@ -4,14 +4,14 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        
+
 
         {
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceRoot}/cparser",
-            "args": [ "./main.pl" ],
+            "args": [ "./main.pl", "maintest.c" ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

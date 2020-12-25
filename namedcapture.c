@@ -100,7 +100,7 @@ int callout_test(pcre2_callout_block *a, void *b)
 	goto showgroup;
 #endif
 	//printf("callout id %d\n", a->callout_number);
-	static int istypedefdecl, isinsidetypename;
+	static int istypedefdecl, isinsidedecl;
 #define GROUP_PTR_AND_SZ(n) a->subject + a->offset_vector[2 * (n)], (unsigned int)(a->offset_vector[2 * (n) + 1] - a->offset_vector[2 * (n)])
 	switch (a->callout_number)
 	{
@@ -116,6 +116,12 @@ int callout_test(pcre2_callout_block *a, void *b)
 #endif
 		//case 14:
 		//justacheckforescape = !justacheckforescape;
+	case 43:
+		isinsidedecl = true;
+		break;
+	case 42:
+		isinsidedecl = false;
+		break;
 	case 41:
 		endconstantexpr();
 		break;
@@ -124,7 +130,7 @@ int callout_test(pcre2_callout_block *a, void *b)
 		break;
 	case 39:;
 		ntoclear = getnameloc("typedefkeyword", *ptable);
-		istypedefdecl = a->offset_vector[2 * ntoclear] != -1;
+		if(!isinsidedecl) istypedefdecl = a->offset_vector[2 * ntoclear] != -1;
 		if (istypedefdecl)
 		{
 			void addtotypedefs(const char *identifier, size_t szcontent);
@@ -132,7 +138,7 @@ int callout_test(pcre2_callout_block *a, void *b)
 			addtotypedefs(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]));
 			n = 0;
 		}
-		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+		//a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
 		n = getnameloc(namedcapture = "identifiermine", *ptable);
 		break;
 	case 38:;
