@@ -8,7 +8,7 @@ extern "C" {
 #include <stddef.h>
 #endif
     void insertinttoimm(const char *str, size_t szstr);
-    void mul(const char *str, size_t szstr);
+    void binary(const char *str, size_t szstr);
     void beginconstantexpr();
     void endconstantexpr();
 #ifdef __cplusplus

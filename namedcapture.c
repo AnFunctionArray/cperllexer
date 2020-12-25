@@ -176,35 +176,43 @@ int callout_test(pcre2_callout_block *a, void *b)
 		break;
 	case 29:
 		BINARY_OP("orlogicop");
+		binary(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 28:
 		BINARY_OP("andlogicop");
+		binary(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 27:
 		BINARY_OP("orop");
+		binary(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 26:
 		BINARY_OP("xorop");
+		binary(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 25:
 		BINARY_OP("andop");
+		binary(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 24:
 		BINARY_OP("eqop");
+		binary(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 23:
 		BINARY_OP("relop");
+		binary(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 22:
 		BINARY_OP("shiftop");
+		binary(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 20:
 		BINARY_OP("addop");
+		binary(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 21:
 		BINARY_OP("mulop");
-		if (n)
-			mul(GROUP_PTR_AND_SZ(n + 1));
+		binary(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 19:
 		n = getnameloc(namedcapture = "unaryop", *ptable);
