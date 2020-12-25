@@ -30,7 +30,7 @@
 (?<initializer>(?&assignorsomething)|\s*+[{]((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*+[}]\s*+)
 (?<abstrinitialization>=(?&initializer))
 
-(?<structorunion>\s*+(struct|union)((?&identifier)|(?&identifier)?+\s*+[{]\s*+((?&typenameinside)?+(?&abstrbitfield)?+(,(?&abstdecloutside)(?&abstrbitfield)?+)*+\s*+;\s*+)*+[}]\s*+)|(?&enum))
+(?<structorunion>\s*+(struct|union)((?&identifier)?+\s*+[{]\s*+((?&typenameinside)?+(?&abstrbitfield)?+(,(?&abstdecloutside)(?&abstrbitfield)?+)*+\s*+;\s*+)*+[}]\s*+|(?&identifier))|(?&enum))
 (?<enum>\s*+enum((?&identifier)?+\s*+[{](?<enumerator>(?&identifier)(=(?&assignorsomething))?+)?+(,(?&enumerator))*+,?+\s*+[}]\s*+|(?&identifier)))
 
 (?<declaration>((?&typenameinside)(?&abstrinitialization)?+(,(?&abstdecloutside)(?&abstrinitialization)?+)*+\s*+;\s*+))
