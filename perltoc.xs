@@ -13,16 +13,19 @@ MODULE = _6a4h8
 
 PROTOTYPES: ENABLE
 
-void startmatching(SV *in, SV *secondin)
+void startmatching(SV *in, SV *in1, SV *in2)
 PREINIT:
     STRLEN len;
     STRLEN secondlen;
+    STRLEN thirdlen;
     char* s;
     char* s1;
+    char* s2;
 CODE:
     {
-        int secondmain(char *subject, size_t szsubject, char *pattern, size_t szpattern);
+        int secondmain(char *subject, size_t szsubject, char *pattern, size_t szpattern, char *modulename, size_t szmodulename);
         s = SvPVutf8(in, len);
-        s1 = SvPVutf8(secondin, secondlen);
-        secondmain(s, len, s1, secondlen);
+        s1 = SvPVutf8(in1, secondlen);
+        s2 = SvPVutf8(in2, thirdlen);
+        secondmain(s, len, s1, secondlen, s2, thridlen);
     }

@@ -1,6 +1,6 @@
 
 
-int array[(7 * 8 + 9 << 1 == 1 || 1)^8];
+int array[(7 * 8 + 9 << 1 == 1 || 1)^8] = 98, second;
 
 char b = { .a[4] = 9 * 7, 76 };
 typedef int jk1, l, jk;

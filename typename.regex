@@ -2,17 +2,18 @@
 						((?<typesandqualifiers>\s*+(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b)|
 						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
 						|(?<storageclass>(?>(?<typedefkeyword>\btypedef\b))|\bextern\b|\bstatic\b|\bauto\b|\bregister\b)|__[_a-zA-Z0-9]*+)\s*+)
-						|(?&typedefnamefacet)|(?&structorunion))*+
+						|(?&typedefname)|(?&structorunion))*+
 						(?<abstdecloutside>(?<abstdecl>(?<abstrptrrev#restrictoutsidefacet>(?<abstrptr>\s*+[*]\s*+((?&qualifiers))*+)
 						(?!(?&abstrptrrev)(?C11))
 						(?<abstrrest>(?<abstrmostoutter>\s*+([(](?&abstdecl)[)]|(?&identifiermine))\s*+)?+(?<abstrsubs>\s*+(\[(?C40)(?&primexpr)\](?C41)
-						|[(](?&typenameinside)?+(,(?&typenameinside))*+[)])\s*+)*+(?C11))|
-						(?&abstrptr))(?&abstdeclinside))|(?&abstrmostoutter)?+(?&abstrsubs)*+))[)]\s*+)
+						|[(](?C47)(?&typenameinside)?+(,(?&typenameinside)(?C46))*+[)](?C48))\s*+)*+(?C11))|
+						(?&abstrptr))(?&abstdeclinside))|(?&abstrmostoutter)?+(?&abstrsubs)*+))[)](?C46)\s*+)
 
-(?<typedefnamefacet>(?&identifiermine2))
+(?<typedefname>(?&identifiermine2))
 
 (?<identifiermine>\s*+(?!(?&keywordlist))((?&identifierraw))(?C39)\s*+)
-(?<identifiermine2>\s*+(?!(?&keywordlist))((?&identifierraw))(??C38)\s*+)
+(?<identifiermine2#restrictpcre2only>\s*+(?!(?&keywordlist))((?&identifierraw#nofacet))(??C38)\s*+)
+(?<identifiermine2#restrictperlonly>\s*+(??C38)\s*+)
 
 (?<keywordlist>(?&typesandqualifiersmask)|struct|enum|__[_a-zA-Z0-9]*+|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)
 

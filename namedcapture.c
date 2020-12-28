@@ -20,23 +20,23 @@ enum
 struct match
 {
 	int n;
-	char *startmatch, *namedcpture;
+	char* startmatch, * namedcpture;
 };
 
 struct debugstr
 {
 	int last_capture_n;
-	char *pattern, *patternrest, *matching;
+	char* pattern, * patternrest, * matching;
 	struct match matches[maxsize];
 	int ba, b;
 } tmp;
 
 static struct debugstr debugarray[maxsize];
 
-static struct match *currmatch = tmp.matches;
-static struct debugstr *currdebug = debugarray;
+static struct match* currmatch = tmp.matches;
+static struct debugstr* currdebug = debugarray;
 
-void debug_insert_common(int nlast, unsigned int a, char *pa, unsigned int b, char *pb, unsigned int c, char *pc, int ba)
+void debug_insert_common(int nlast, unsigned int a, char* pa, unsigned int b, char* pb, unsigned int c, char* pc, int ba)
 {
 	memset(&tmp, 0, sizeof tmp);
 	tmp.last_capture_n = nlast;
@@ -51,7 +51,7 @@ void debug_insert_common(int nlast, unsigned int a, char *pa, unsigned int b, ch
 	currmatch = tmp.matches;
 }
 
-void debug_insert_match(int n, unsigned int a, char *pa, char *pnamedcapture)
+void debug_insert_match(int n, unsigned int a, char* pa, char* pnamedcapture)
 {
 	struct match match;
 
@@ -71,15 +71,15 @@ extern void debug()
 	return;
 }
 
-int callout_test(pcre2_callout_block *a, void *b)
+int callout_test(pcre2_callout_block* a, void* b)
 {
-	struct calloutinfo *ptable = b;
+	struct calloutinfo* ptable = b;
 	int n = //a->callout_number == 2 ? getnameloc("inner", *ptable) : getnameloc("middle", *ptable);
 		//a->callout_number == 1 ? getnameloc("escape", *ptable) : a->callout_number == 5 ? getnameloc("numberliteral", *ptable) : getnameloc("text", *ptable);
 		0,
 		ntoclear;
 
-	char *message = NULL, *namedcapture = 0;
+	char* message = NULL, * namedcapture = 0;
 
 	int szntoprint = 1, y, cond = 1;
 
@@ -91,8 +91,8 @@ int callout_test(pcre2_callout_block *a, void *b)
 
 #ifdef DEBUG
 	debug_insert_common(a->capture_last, (unsigned int)a->next_item_length, ptable->pattern + a->pattern_position,
-						(unsigned int)(ptable->szpattern - (a->pattern_position + a->next_item_length)), ptable->pattern + a->pattern_position + a->next_item_length,
-						(unsigned int)(a->subject_length - a->current_position), a->subject + a->current_position, a->pattern_position);
+		(unsigned int)(ptable->szpattern - (a->pattern_position + a->next_item_length)), ptable->pattern + a->pattern_position + a->next_item_length,
+		(unsigned int)(a->subject_length - a->current_position), a->subject + a->current_position, a->pattern_position);
 #endif
 
 	//static int justacheckforescape = 0;
@@ -101,6 +101,8 @@ int callout_test(pcre2_callout_block *a, void *b)
 #endif
 	//printf("callout id %d\n", a->callout_number);
 	static int istypedefdecl, isinsidedecl, islocal;
+	static size_t typedefname[2] = {-1, -1};
+	int res;
 #define GROUP_PTR_AND_SZ(n) a->subject + a->offset_vector[2 * (n)], (unsigned int)(a->offset_vector[2 * (n) + 1] - a->offset_vector[2 * (n)])
 	switch (a->callout_number)
 	{
@@ -116,42 +118,68 @@ int callout_test(pcre2_callout_block *a, void *b)
 #endif
 		//case 14:
 		//justacheckforescape = !justacheckforescape;
+	case 48:
+		startfunctionparamdecl();
+		break;
+	case 47:
+		endfunctionparamdecl();
+		break;
+	case 46:
+		typedefname[0] = typedefname[1] = -1;
+		finalizedeclarationtypename();
+		break;
 	case 44:
 		addtypedefsscope();
+		beginscope();
 		break;
 	case 45:
 		removetypedefsscope();
+		endscope();
 		break;
 	case 43:
 		isinsidedecl = true;
+		enddeclaration();
 		break;
 	case 42:
 		isinsidedecl = false;
+		typedefname[0] = typedefname[1] = -1;
+		finalizedeclaration();
 		break;
 	case 41:
+		addsubtotype();
 		endconstantexpr();
 		break;
 	case 40:
 		beginconstantexpr();
 		break;
 	case 39:;
+		n = getnameloc(namedcapture = "identifiermine", *ptable) + 1;
+		bool bwhich = typedefname[0] == -1;
+		if (bwhich)
+			ntoprint[1] = getnameloc("typesandqualifiers", *ptable);
+
 		ntoclear = getnameloc("typedefkeyword", *ptable);
-		if(!isinsidedecl) istypedefdecl = a->offset_vector[2 * ntoclear] != -1;
+		if (!isinsidedecl) istypedefdecl = a->offset_vector[2 * ntoclear] != -1;
 		if (istypedefdecl)
 		{
-			void addtotypedefs(const char *identifier, size_t szcontent);
-			n = getnameloc(namedcapture = "identifiermine", *ptable) + 1;
+			void addtotypedefs(const char* identifier, size_t szcontent);
 			addtotypedefs(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]));
-			n = 0;
-		}
+			startdeclaration(GROUP_PTR_AND_SZ(n), isinsidedecl, true, GROUP_PTR_AND_SZ(ntoprint[1] + 1), bwhich);
+		} else startdeclaration(GROUP_PTR_AND_SZ(n), isinsidedecl, false, GROUP_PTR_AND_SZ(ntoprint[1] + 1), bwhich);
 		//a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
-		n = getnameloc(namedcapture = "identifiermine", *ptable);
+		n--;
 		break;
 	case 38:;
-		int istypedefinvecotr(const char *identifier, size_t szcontent);
+		int istypedefinvecotr(const char* identifier, size_t szcontent);
 		n = getnameloc(namedcapture = "identifiermine2", *ptable) + 1;
 		if (a->offset_vector[2 * n] != -1)
-			return istypedefinvecotr(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]));
+		{
+			if(res = istypedefinvecotr(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n])))
+				return res;
+			typedefname[0] = a->offset_vector[2 * n];
+			typedefname[1] = a->offset_vector[2 * n + 1];
+			return res;
+		}
 		n = 0;
 		break;
 	case 35:
@@ -272,6 +300,8 @@ int callout_test(pcre2_callout_block *a, void *b)
 
 	case 11:
 		n = (getnameloc(namedcapture = "abstrptr", *ptable));
+
+		addptrtotype(GROUP_PTR_AND_SZ(n + 1));
 		break;
 #else
 	case 12:
@@ -293,10 +323,10 @@ int callout_test(pcre2_callout_block *a, void *b)
 		ntoprint[0] = ++n;
 	else
 		szntoprint = 0;
-		//else cond = n, printf("\n\n");
+	//else cond = n, printf("\n\n");
 
 #ifdef SHOW_GROUP
-showgroup:
+	showgroup :
 	//if(0[ptable->pattern + a->pattern_position - 1] == ')')
 	if (a->capture_last >= SHOW_GROUP && a->capture_last <= SHOW_GROUP_LAST)
 	{
@@ -311,87 +341,87 @@ showgroup:
 			return 0;
 		case -1:
 			printf("capture n - %d\n", a->capture_last);
-		}
+	}
 #elif PATTERN_FLAGS & PCRE2_AUTO_CALLOUT
 	printf("capture n - %d\n", a->capture_last),
 #endif
 #ifndef HIDE_DETAILS
 		printf("pattern - %.*s\n", (unsigned int)a->next_item_length, ptable->pattern + a->pattern_position),
-			printf("pattern rest - %.*s\n", (unsigned int)(ptable->szpattern - (a->pattern_position + a->next_item_length)), ptable->pattern + a->pattern_position + a->next_item_length),
-			printf("matching - %.*s\n", (unsigned int)(a->subject_length - a->current_position), a->subject + a->current_position);
+		printf("pattern rest - %.*s\n", (unsigned int)(ptable->szpattern - (a->pattern_position + a->next_item_length)), ptable->pattern + a->pattern_position + a->next_item_length),
+		printf("matching - %.*s\n", (unsigned int)(a->subject_length - a->current_position), a->subject + a->current_position);
 #endif
-		0;
+	0;
 #ifdef SHOW_GROUP
-	}
-	return 0;
+}
+return 0;
 #endif
 
-	//if (a->callout_number == 1)
-	//if (a->capture_top == 1)
-	//	return printf("end\n"), 0;
-	//else return 0;
+//if (a->callout_number == 1)
+//if (a->capture_top == 1)
+//	return printf("end\n"), 0;
+//else return 0;
 
-	if (message)
-		printf(message);
-	if (!message || PATTERN_FLAGS & PCRE2_AUTO_CALLOUT)
-		for (n = 0; n < a->capture_top; ++n)
-		{
-		print:
-			for (y = 0; y < szntoprint; ++y)
-				if (ntoprint[y] == n)
-					break;
-			if (szntoprint && szntoprint == y)
-				--y;
+if (message)
+printf(message);
+if (!message || PATTERN_FLAGS & PCRE2_AUTO_CALLOUT)
+for (n = 0; n < a->capture_top; ++n)
+{
+print:
+	for (y = 0; y < szntoprint; ++y)
+		if (ntoprint[y] == n)
+			break;
+	if (szntoprint && szntoprint == y)
+		--y;
 
-			//if (cond)
-			if (ntoprint[y] != n)
-				if (!(PATTERN_FLAGS & PCRE2_AUTO_CALLOUT) && cond)
-					continue;
-				else
-					;
-			else
+	//if (cond)
+	if (ntoprint[y] != n)
+		if (!(PATTERN_FLAGS & PCRE2_AUTO_CALLOUT) && cond)
+			continue;
+		else
+			;
+	else
 #ifndef HIDE_DETAILS
-				printf("namedcapture: %s\n", namedcapture);
+		printf("namedcapture: %s\n", namedcapture);
 #else
-			{
-				printf(
-					" %d - %.*s\n",
-					n,
-					(unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]),
-					a->subject + a->offset_vector[2 * n]);
-				break;
-			}
+	{
+		printf(
+			" %d - %.*s\n",
+			n,
+			(unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]),
+			a->subject + a->offset_vector[2 * n]);
+		break;
+	}
 #endif
 
-			printf(
-				"%s %d - %.*s\n",
-				getnameloc(-n, *ptable),
-				n,
-				(unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]),
-				a->subject + a->offset_vector[2 * n]);
+	printf(
+		"%s %d - %.*s\n",
+		getnameloc(-n, *ptable),
+		n,
+		(unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]),
+		a->subject + a->offset_vector[2 * n]);
 
-			//if(n && n == ntoclear)
-			//	a->offset_vector[2 * n] = a->offset_vector[2 * n + 1] = -1;
+	//if(n && n == ntoclear)
+	//	a->offset_vector[2 * n] = a->offset_vector[2 * n + 1] = -1;
 #ifdef DEBUG
-			debug_insert_match(n, (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]), a->subject + a->offset_vector[2 * n], namedcapture);
+	debug_insert_match(n, (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]), a->subject + a->offset_vector[2 * n], namedcapture);
 #endif
-		}
+}
 
 #ifdef DEBUG
-	debug();
+debug();
 #endif
 
-	if (!cond || PATTERN_FLAGS & PCRE2_AUTO_CALLOUT)
-		printf("\n\n");
+if (!cond || PATTERN_FLAGS & PCRE2_AUTO_CALLOUT)
+printf("\n\n");
 
 #ifdef DEBUG_PHYSIC
-	if (!((1 << 15) & GetAsyncKeyState(VK_RETURN)))
-		_sleep(1000);
-	system("cls");
+if (!((1 << 15) & GetAsyncKeyState(VK_RETURN)))
+_sleep(1000);
+system("cls");
 #endif
 
-	if (a->callout_number == 254)
-		exit(-1);
+if (a->callout_number == 254)
+exit(-1);
 
-	return 0;
+return 0;
 }

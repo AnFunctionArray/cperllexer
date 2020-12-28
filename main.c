@@ -186,9 +186,13 @@ int main(int argc, char **argv, char **env)
 	exit(EXIT_SUCCESS);
 }
 
-secondmain(char *subject, size_t szsubject, char *pattern, size_t szpattern)
+#include "llvm/llvmgen.h"
+
+secondmain(char *subject, size_t szsubject, char *pattern, size_t szpattern, char *modulename, size_t szmodulename)
 {
+	startmodule(modulename, szmodulename);
 	int stat = compile_pattern_and_execute(pattern, subject, callout_test, szpattern, szsubject, 1, 0, PATTERN_FLAGS);
+	endmodule();
 }
 
 #if 0

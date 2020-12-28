@@ -4,6 +4,8 @@ use re 'eval';
 
 use experimental 'switch';
 
+use File::Basename;
+
 $filename = "main.regex";
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
@@ -25,23 +27,28 @@ my $subject = do { local $/; <$fh> };
 
 close $fh;
 
-my $mainregexfinal = "((*F)";
+my $mainregexfinal = "(?(DEFINE)";
 
 my $entryregex;
 
-my $matchinperl = 0;
+my $matchinperl = 1;
 
 $mainregexfilecontent =~/$metaregexfilecontent/;
 
+#(?{parseregexfile($+{filename})})
+#(?{entryregexmain($+{entrygroup}, $+{prefix})})
+
+entryregexmain($-{entrygroup}[0], $-{prefix}[0]);
+
 parseregexfile((substr $mainregexfilecontent, length $&), 1);
 
-$mainregexfinal = $mainregexfinal . ")|" . $entryregex;
+$mainregexfinal = $mainregexfinal . ")" . $entryregex;
 
 my $typedefidentifiers = "";
 
 $mainregexfinal =~s/\s|\n//g if(not $matchinperl);
 
-startmatching($subject, $mainregexfinal) if(not $matchinperl);
+startmatching($subject, $mainregexfinal, basename($ARGV[0], @suffixlist)) if(not $matchinperl);
 
 exit if(not $matchinperl);
 
@@ -64,12 +71,20 @@ sub printifdefined{
 }
 
 sub defaultcallback {
+    print "in";
     given ($_[0])
     {
+        when (38) {return getypedefidentifiers() if $+{identifierraw};};
+
+        when (39) {addtypdefidentifier() if $+{identifierraw};};
+
     	print("comma\n") when 35;
         print("ternary0\n") when 34;
         print("ternary1\n") when 33;
         print("ternary2\n") when 32;
+
+        print("start func decl params") when 47;
+        print("end func decl params") when 48;
 
         printifdefined("$+{assignopraw}\n", $+{assignopraw}) when 30;
         printifdefined("$+{orlogicopraw}\n", $+{orlogicopraw}) when 29;
@@ -97,7 +112,7 @@ sub defaultcallback {
         print("begin sizeof\n") when 15;
         printifdefined("$+{qualifiers}\n", $+{qualifiers}) when 11;
 
-        default {print "bad call $_[0]\n"; exit}
+        #default {print "bad call $_[0]\n"; exit}
     }
 }
 
@@ -136,6 +151,8 @@ sub parseregexfile {
 
     $regexfile =~s/\(\?<#restrictoutsidefacet>/(/g;
 
+    $regexfile =~s/[(]\?&(\w+?)#nofacet[)]/(?&$1)/g;
+
     $regexfile =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
     $regexfile =~s/\(\?C(\d++)\)/(?{defaultcallback($1)})/g if($matchinperl);
@@ -153,6 +170,8 @@ sub parseregexfile {
     $regexfilecontent =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
     $regexfilecontent =~s/[(]\?&(\w+?)(facet)?[)]/(?&$1facet)/g;
+
+    $regexfilecontent =~s/[(]\?&(\w+?)#nofacet[)]/(?&$1)/g;
 
     $regexfilecontent =~s/(\(\?<\w+)>/$1facet>/g;
 
