@@ -1,12 +1,12 @@
 (?<typename>\s*+[(](?<typenameinside>
 						((?<typesandqualifiers>\s*+(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b)|
 						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
-						|(?<storageclass>(?>(?<typedefkeyword>\btypedef\b))|\bextern\b|\bstatic\b|\bauto\b|\bregister\b)|__[_a-zA-Z0-9]*+)\s*+)
+						|(?<storageclass>(?>(?<typedefkeyword>\btypedef\b))|\bextern\b|\bstatic\b|\bauto\b|\bregister\b)|__[_a-zA-Z0-9]*+)(?C49)\s*+)
 						|(?&typedefname)|(?&structorunion))*+
 						(?<abstdecloutside>(?<abstdecl>(?<abstrptrrev#restrictoutsidefacet>(?<abstrptr>\s*+[*]\s*+((?&qualifiers))*+)
 						(?!(?&abstrptrrev)(?C11))
 						(?<abstrrest>(?<abstrmostoutter>\s*+([(](?&abstdecl)[)]|(?&identifiermine))\s*+)?+(?<abstrsubs>\s*+(\[(?C40)(?&primexpr)\](?C41)
-						|[(](?C47)(?&typenameinside)?+(,(?&typenameinside)(?C46))*+[)](?C48))\s*+)*+(?C11))|
+						|[(](?C47)(?&typenameinside)?+(,(?C46)(?&typenameinside))*+[)](?C48))\s*+)*+(?C11))|
 						(?&abstrptr))(?&abstdeclinside))|(?&abstrmostoutter)?+(?&abstrsubs)*+))[)](?C46)\s*+)
 
 (?<typedefname>(?&identifiermine2))

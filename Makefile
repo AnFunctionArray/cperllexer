@@ -1,17 +1,17 @@
-CC=gcc
+CC=gcc-10
 CXX=g++-10
-CFLAGS=-I/usr/local/lib/perl5/5.32.0/x86_64-linux/CORE -g
+CFLAGS=-I$(HOME)/localperl/lib/5.32.0/x86_64-linux/CORE -g
 CPPFLAGS=$(CFLAGS) -std=gnu++2a
-LDFLAGS=-l:libpcre2-8.a -l:llvm-10/lib/libLLVM.so -L/usr/local/lib/perl5/5.32.0/x86_64-linux/CORE -lperl -lm -lcrypt
-DEPS = main.h
+LDFLAGS=-l:libpcre2-8.a -l:llvm-10/lib/libLLVM.so -L$(HOME)/localperl/lib/5.32.0/x86_64-linux/CORE -lperl -lm -lcrypt -lpthread
+DEPS = main.h ./llvmgen/llvmgen.h
 
-%.o: %.c ./metaregex/%.c $(DEPS) ./llvmgen/llvmgen.h
+%.o: %.c ./metaregex/%.c $(DEPS) 
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-%.o: ./metaregex/%.cpp
+%.o: ./metaregex/%.cpp $(DEPS) 
 	$(CXX) -c -o $@ $< $(CPPFLAGS)
 
-%.o: ./llvmgen/%.cpp ./llvmgen/llvmgen.h
+%.o: ./llvmgen/%.cpp $(DEPS)
 	$(CXX) -c -o $@ $< $(CPPFLAGS)
 
 %.c: %.xs

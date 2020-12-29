@@ -101,9 +101,10 @@ int callout_test(pcre2_callout_block* a, void* b)
 #endif
 	//printf("callout id %d\n", a->callout_number);
 	static int istypedefdecl, isinsidedecl, islocal;
-	static size_t typedefname[2] = {-1, -1};
+	static size_t typedefname[2] = { -1, -1 };
 	int res;
 #define GROUP_PTR_AND_SZ(n) a->subject + a->offset_vector[2 * (n)], (unsigned int)(a->offset_vector[2 * (n) + 1] - a->offset_vector[2 * (n)])
+#define GROUP_SZ_AND_PTR(n) (unsigned int)(a->offset_vector[2 * (n) + 1] - a->offset_vector[2 * (n)]), a->subject + a->offset_vector[2 * (n)]
 	switch (a->callout_number)
 	{
 #if 1
@@ -118,15 +119,43 @@ int callout_test(pcre2_callout_block* a, void* b)
 #endif
 		//case 14:
 		//justacheckforescape = !justacheckforescape;
-	case 48:
-		startfunctionparamdecl();
+	/*case 50:
+		flushqualifortype();
+		n = getnameloc(namedcapture = "identifiermine2", *ptable) + 1;
+		if(a->offset_vector[2 * n] != - 1)
+			printf("and typedef name: %.*s", GROUP_SZ_AND_PTR(n));
+
+		printf("\n");
+		n = 0;
+		break;*/
+	case 50:
+		endfunctiondef();
 		break;
-	case 47:
+	case 49:
+		n = getnameloc("typesandqualifiers", *ptable);
+		void addqualifortype(const char* currqualifortype, size_t szstr);
+		addqualifortype(GROUP_PTR_AND_SZ(n + 1));
+
+		n = 0;
+		break;
+	case 48:
+		message = "end of function declr\n";
 		endfunctionparamdecl();
 		break;
+	case 47:
+		message = "start of function declr\n";
+		setypedefspec(typedefname, a->subject);
+		startfunctionparamdecl();
+		printqualifntype(typedefname, a->subject);
+		break;
 	case 46:
-		typedefname[0] = typedefname[1] = -1;
+		//ntoprint[1] = getnameloc(namedcapture = "identifiermine", *ptable) + 1;
+		//bool bwhich = typedefname[0] == -1;
+		//if (bwhich)
+		//	ntoprint[1] = getnameloc("typesandqualifiers", *ptable);
+		setypedefspec(typedefname, a->subject);
 		finalizedeclarationtypename();
+		printqualifntype(typedefname, a->subject);
 		break;
 	case 44:
 		addtypedefsscope();
@@ -138,25 +167,26 @@ int callout_test(pcre2_callout_block* a, void* b)
 		break;
 	case 43:
 		isinsidedecl = true;
-		enddeclaration();
+		//enddeclaration();
 		break;
 	case 42:
 		isinsidedecl = false;
-		typedefname[0] = typedefname[1] = -1;
-		finalizedeclaration();
+		//typedefname[0] = typedefname[1] = -1;
+		//finalizedeclaration();
 		break;
 	case 41:
 		addsubtotype();
 		endconstantexpr();
 		break;
 	case 40:
+		setypedefspec(typedefname, a->subject);
 		beginconstantexpr();
+		printqualifntype(typedefname, a->subject);
 		break;
 	case 39:;
 		n = getnameloc(namedcapture = "identifiermine", *ptable) + 1;
-		bool bwhich = typedefname[0] == -1;
-		if (bwhich)
-			ntoprint[1] = getnameloc("typesandqualifiers", *ptable);
+
+		setypedefspec(typedefname, a->subject);
 
 		ntoclear = getnameloc("typedefkeyword", *ptable);
 		if (!isinsidedecl) istypedefdecl = a->offset_vector[2 * ntoclear] != -1;
@@ -164,17 +194,23 @@ int callout_test(pcre2_callout_block* a, void* b)
 		{
 			void addtotypedefs(const char* identifier, size_t szcontent);
 			addtotypedefs(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]));
-			startdeclaration(GROUP_PTR_AND_SZ(n), isinsidedecl, true, GROUP_PTR_AND_SZ(ntoprint[1] + 1), bwhich);
-		} else startdeclaration(GROUP_PTR_AND_SZ(n), isinsidedecl, false, GROUP_PTR_AND_SZ(ntoprint[1] + 1), bwhich);
+			//startdeclaration(GROUP_PTR_AND_SZ(n), isinsidedecl, true, GROUP_PTR_AND_SZ(ntoprint[1] + 1), bwhich);
+		} //else startdeclaration(GROUP_PTR_AND_SZ(n), isinsidedecl, false, GROUP_PTR_AND_SZ(ntoprint[1] + 1), bwhich);
 		//a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+
+		startdeclaration(GROUP_PTR_AND_SZ(n), isinsidedecl, istypedefdecl);
+
 		n--;
+
+		printqualifntype(typedefname, a->subject);
+
 		break;
 	case 38:;
 		int istypedefinvecotr(const char* identifier, size_t szcontent);
 		n = getnameloc(namedcapture = "identifiermine2", *ptable) + 1;
 		if (a->offset_vector[2 * n] != -1)
 		{
-			if(res = istypedefinvecotr(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n])))
+			if (res = istypedefinvecotr(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n])))
 				return res;
 			typedefname[0] = a->offset_vector[2 * n];
 			typedefname[1] = a->offset_vector[2 * n + 1];
@@ -288,7 +324,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 		n = getnameloc(namedcapture = "arrowordot", *ptable);
 		break;
 	case 12:
-
+		
 		n = getnameloc(namedcapture = "abstrsubs", *ptable);
 		break;
 	case 14:
@@ -301,7 +337,14 @@ int callout_test(pcre2_callout_block* a, void* b)
 	case 11:
 		n = (getnameloc(namedcapture = "abstrptr", *ptable));
 
+		setypedefspec(typedefname, a->subject);
+
+		n = 0;
+
 		addptrtotype(GROUP_PTR_AND_SZ(n + 1));
+
+		printqualifntype(typedefname, a->subject);
+		
 		break;
 #else
 	case 12:
@@ -341,7 +384,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 			return 0;
 		case -1:
 			printf("capture n - %d\n", a->capture_last);
-	}
+		}
 #elif PATTERN_FLAGS & PCRE2_AUTO_CALLOUT
 	printf("capture n - %d\n", a->capture_last),
 #endif
@@ -352,7 +395,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 #endif
 	0;
 #ifdef SHOW_GROUP
-}
+	}
 return 0;
 #endif
 
@@ -424,4 +467,21 @@ if (a->callout_number == 254)
 exit(-1);
 
 return 0;
+}
+
+void setypedefspec(size_t *typedefname, const char *subject)
+{
+	if (typedefname[0] != -1) settypedefname(typedefname[1] - typedefname[0], subject + typedefname[0]);
+}
+
+void printqualifntype(size_t *typedefname, const char *subject)
+{
+	bool flushqualifortype(), isanythingprinted = flushqualifortype();
+
+	if (typedefname[0] != -1)
+		printf("and typedef name: %.*s", typedefname[1] - typedefname[0], subject + typedefname[0]);
+
+	if (isanythingprinted) printf("\n");
+
+	typedefname[0] = typedefname[1] = -1;
 }

@@ -27,5 +27,5 @@ CODE:
         s = SvPVutf8(in, len);
         s1 = SvPVutf8(in1, secondlen);
         s2 = SvPVutf8(in2, thirdlen);
-        secondmain(s, len, s1, secondlen, s2, thridlen);
+        secondmain(s, len, s1, secondlen, s2, thirdlen);
     }

@@ -27,11 +27,11 @@ my $subject = do { local $/; <$fh> };
 
 close $fh;
 
-my $mainregexfinal = "(?(DEFINE)";
+my $mainregexfinal = "((*F)";
 
 my $entryregex;
 
-my $matchinperl = 1;
+my $matchinperl = 0;
 
 $mainregexfilecontent =~/$metaregexfilecontent/;
 
@@ -42,7 +42,7 @@ entryregexmain($-{entrygroup}[0], $-{prefix}[0]);
 
 parseregexfile((substr $mainregexfilecontent, length $&), 1);
 
-$mainregexfinal = $mainregexfinal . ")" . $entryregex;
+$mainregexfinal = $mainregexfinal . ")|" . $entryregex;
 
 my $typedefidentifiers = "";
 
@@ -74,7 +74,7 @@ sub defaultcallback {
     print "in";
     given ($_[0])
     {
-        when (38) {return getypedefidentifiers() if $+{identifierraw};};
+        when (38) {return getypedefidentifiers() if $+{identifierraw}; return "";};
 
         when (39) {addtypdefidentifier() if $+{identifierraw};};
 

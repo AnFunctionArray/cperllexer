@@ -37,4 +37,4 @@
 (?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?&statement)(else(?&statement))?+|switch\s*+[(](?&primexpr)[)](?&statement))\s*+)
 (?<statement>(?&label)?+((?&exprstatement)|(?&compoundstatement)|(?&selectionstatement)|(?&iterationstatement)|(?&jumpstatement)))
 (?<label>((?&identifier)|case(?&primexpr)|default):)
-(?<cprogram>((?&typenameinside)((?&compoundstatement)|(?&abstrinitialization)?(,(?C43)(?&abstdecloutside)(?&abstrinitialization)?+)*+\s*+(?C42);\s*+))*+)
+(?<cprogram>((?&typenameinside)((?&compoundstatement)(?C50)|(?&abstrinitialization)?(,(?C43)(?&abstdecloutside)(?&abstrinitialization)?+)*+\s*+(?C42);\s*+))*+)
