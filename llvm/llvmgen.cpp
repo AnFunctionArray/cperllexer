@@ -558,10 +558,7 @@ extern "C" void endfunctioncall()
 
     lastblock->getInstList().push_back(
         llvm::dyn_cast<llvm::Instruction>
-        (llvmbuilder.CreateInvoke(hndlbase.immidiates.front(),
-            pcurrblock.back(),
-            nullptr,
-            hndlbase.immidiates)));
+        (llvmbuilder.CreateInvoke(llvm::FunctionCallee{ dyn_cast<llvm::FunctionType>(hndlbase.immidiates.front()->getType()), hndlbase.immidiates.front() }, pcurrblock.back(), nullptr, hndlbase.immidiates)));
 }
 
 extern "C" void endfunctionparamdecl(bool bisrest)

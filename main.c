@@ -2,7 +2,7 @@
 #define PCRE2_STATIC
 #define _LARGEFILE64_SOURCE
 
-#include <pcre2.h>
+#include <pcre\pcre2.h>
 #include <stdio.h>
 //#include <boost/preprocessor/stringize.hpp>
 #include <string.h>
@@ -156,6 +156,16 @@ char *openfile(char *chname, size_t *szfileout)
 	return filecontent;
 }
 
+#include "llvm/llvmgen.h"
+
+secondmain(char* subject, size_t szsubject, char* pattern, size_t szpattern, char* modulename, size_t szmodulename)
+{
+	foutput = fopen("output.txt", "wt");
+	startmodule(modulename, szmodulename);
+	int stat = compile_pattern_and_execute(pattern, subject, callout_test, szpattern, szsubject, 1, 0, PATTERN_FLAGS);
+	endmodule();
+}
+
 #include <EXTERN.h> /* from the Perl distribution     */
 #include <perl.h>	/* from the Perl distribution     */
 #include <XSUB.h>
@@ -172,8 +182,6 @@ static PerlInterpreter *my_perl; /***    The Perl interpreter    ***/
 
 int main(int argc, char **argv, char **env)
 {
-	foutput = fopen("output.txt", "wt");
-
 	PERL_SYS_INIT3(&argc, &argv, &env);
 	my_perl = perl_alloc();
 	perl_construct(my_perl);
@@ -184,15 +192,6 @@ int main(int argc, char **argv, char **env)
 	perl_free(my_perl);
 	PERL_SYS_TERM();
 	exit(EXIT_SUCCESS);
-}
-
-#include "llvm/llvmgen.h"
-
-secondmain(char *subject, size_t szsubject, char *pattern, size_t szpattern, char *modulename, size_t szmodulename)
-{
-	startmodule(modulename, szmodulename);
-	int stat = compile_pattern_and_execute(pattern, subject, callout_test, szpattern, szsubject, 1, 0, PATTERN_FLAGS);
-	endmodule();
 }
 
 #if 0

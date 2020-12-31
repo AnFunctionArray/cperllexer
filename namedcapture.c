@@ -1,7 +1,7 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #define PCRE2_STATIC
 
-#include <pcre2.h>
+#include <pcre\pcre2.h>
 #include <stdio.h>
 //#include <boost/preprocessor/stringize.hpp>
 #include <string.h>
@@ -35,6 +35,9 @@ static struct debugstr debugarray[maxsize];
 
 static struct match* currmatch = tmp.matches;
 static struct debugstr* currdebug = debugarray;
+
+void setypedefspec(size_t* typedefname, const char* subject);
+void printqualifntype(size_t* typedefname, const char* subject);
 
 void debug_insert_common(int nlast, unsigned int a, char* pa, unsigned int b, char* pb, unsigned int c, char* pc, int ba)
 {
