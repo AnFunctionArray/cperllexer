@@ -345,3 +345,5 @@ healthchecksdb
 *.o
 
 cparser
+
+./build/

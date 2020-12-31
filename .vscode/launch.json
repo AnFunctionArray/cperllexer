@@ -11,12 +11,13 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceRoot}/cparser",
-            "args": [ "./main.pl", "maintest.c" ],
+            "args": [ "./main.pl", "test.c" ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+            "preLaunchTask": "makeproject",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",

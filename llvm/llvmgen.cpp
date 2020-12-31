@@ -8,6 +8,8 @@
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/Bitcode/BitcodeWriter.h>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -37,13 +39,15 @@ static struct nonconstructable
     };
 } nonconstructable;
 
-static std::vector<llvm::Function> funcs{};
+static std::vector<llvm::Function*> funcs{};
 
-static std::vector<llvm::GlobalVariable> globals{};
+static llvm::Function* currfunc;
 
-static std::vector<llvm::Constant*> immidiates;
+static std::vector<std::unique_ptr<llvm::GlobalVariable>> globals{};
 
 static llvm::LLVMContext llvmctx;
+
+static llvm::IRBuilder<> llvmbuilder{ llvmctx };
 
 struct basehndl
 {
@@ -81,16 +85,29 @@ struct basehndl
 
     virtual void insertinttoimm(const char* str, size_t szstr)
     {
-    }
-};
+        std::string imm;
 
-auto getops()
-{
-    return std::array{ immidiates.front(), immidiates.back() };
-}
+        imm.assign(str, szstr);
+
+        std::istringstream in{ imm };
+
+        uint64_t val;
+
+        in >> val;
+
+        immidiates.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(llvmctx), val));
+    }
+
+    std::vector<llvm::Value*> immidiates;
+};
 
 struct handlecnstexpr : basehndl
 {
+    auto getops()
+    {
+        return std::array{ immidiates.front(), immidiates.back() };
+    }
+
     virtual void mlutiplylasttwovalues()
     {
         std::array ops = getops();
@@ -177,7 +194,15 @@ struct handlecnstexpr : basehndl
 
         immidiates.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(llvmctx), val));
     }
+
+    std::vector<llvm::Constant*> immidiates;
 };
+
+static handlecnstexpr hndlcnstexpr{};
+
+static basehndl hndlbase{};
+
+static basehndl* phndl = &hndlbase;
 
 static std::string currdeclidentifier{};
 
@@ -191,8 +216,6 @@ enum class currdecltypeenum {
 };
 
 static currdecltypeenum currdecltype{ currdecltypeenum::NONE };
-
-static std::vector<std::string> currdeclspec;
 
 std::string currdeclspectypedef;
 
@@ -209,7 +232,7 @@ struct bascitypespec
 {
     std::array<std::string, 4> basic;
     pointrtypequalifiers qualifiers;
-}
+};
 /*
 0 - last signed/unsigned
 1 - last basic type
@@ -247,18 +270,18 @@ bascitypespec parsebasictype(const std::vector<std::string>& qualifs)
     {
     case "unsigned"_h:
     case "signed"_h:
-        ret[0] = spec; break;
+        ret.basic[0] = a; break;
     case "int"_h:
     case "long"_h:
     case "short"_h:
     case "char"_h:
     case "float"_h:
     case "double"_h:
-        ret[1] = spec; break;
+        ret.basic[1] = a; break;
     case "static"_h:
     case "extern"_h:
     case "auto"_h:
-        ret[2] = spec; break;
+        ret.basic[2] = a; break;
     case "const"_h:
         ret.qualifiers[0] = 1; break;
     case "restrict"_h:
@@ -267,7 +290,7 @@ bascitypespec parsebasictype(const std::vector<std::string>& qualifs)
         ret.qualifiers[2] = 1;
         break;
     default:
-        std::cerr << "invalid specifier: " << spec << std::endl;
+        std::cerr << "invalid specifier: " << a << std::endl;
         std::terminate();
     }
     return ret;
@@ -285,7 +308,10 @@ struct type {
     type(typetype a) : spec(a) {};
 
     typedef uint64_t arraytype;
-    typedef std::vector<var> functype;
+    struct functype {
+        std::vector<var> parametertypes;
+        bool bisvariadic;
+    };
 
     type(const type& a) : spec(a.uniontype) {
 
@@ -297,7 +323,7 @@ struct type {
         std::array lambdas = { std::function{[&] {spec.basicdeclspec.~bascitypespec();}},
                                 std::function{[&] {spec.ptrqualifiers.~bitset();}},
                                 std::function{[&] {}},
-                                std::function{[&] {spec.parametertypes.~vector();}} };
+                                std::function{[&] {spec.func.~functype();}} };
         lambdas[uniontype]();
     }
 
@@ -306,7 +332,7 @@ struct type {
         std::array lambdas = { std::function{[&] {spec.basicdeclspec = type.spec.basicdeclspec;}},
                                std::function{[&] {spec.ptrqualifiers = type.spec.ptrqualifiers;}},
                                std::function{[&] {spec.arraysz = type.spec.arraysz;}},
-                               std::function{[&] {spec.parametertypes = type.spec.parametertypes;}} };
+                               std::function{[&] {spec.func = type.spec.func;}} };
         lambdas[uniontype]();
 
         return *this;
@@ -318,14 +344,14 @@ struct type {
             std::array lambdas = { std::function{[&] {new (&basicdeclspec) bascitypespec{};}},
                                 std::function{[&] {new (&ptrqualifiers) pointrtypequalifiers{};}},
                                 std::function{[&] {arraysz = 0;}},
-                                std::function{[&] {new (&parametertypes) functype{};}} };
+                                std::function{[&] {new (&func) functype{};}} };
             lambdas[type]();
         }
         ~typespec() {}
         bascitypespec basicdeclspec;
         pointrtypequalifiers ptrqualifiers;
         arraytype arraysz;
-        functype parametertypes;
+        functype func;
     } spec;
 };
 
@@ -339,23 +365,69 @@ static std::vector<std::vector<var>> scopevar{ 1 };
 
 static var currdecltypevector{};
 
-static std::vector<var&> currtypevectorbeingbuild{ 1, currdecltypevector };
+static std::vector<var*> currtypevectorbeingbuild{ 1, &currdecltypevector };
+
+static std::string currstring;
+
+extern "C" void obtainvalbyidentifier(const char* identifier, size_t szstr)
+{
+    std::string ident{ identifier, szstr };
+
+    hndlbase.immidiates.push_back(nonconstructable.mainmodule.getFunction(identifier));
+}
+
+extern "C" void addplaintexttostring(const char* str, size_t szstr)
+{
+    currstring += std::string{ str,szstr };
+}
+
+extern "C" void addescapesequencetostring(const char* str, size_t szstr)
+{
+    std::string escape{ str, szstr };
+
+    switch (stringhash(escape.c_str()))
+    {
+    case "\\n"_h:
+        currstring += '\n';
+        break;
+    }
+}
+
+
+extern "C" void constructstring()
+{
+    hndlbase.immidiates.push_back(llvmbuilder.CreateGlobalStringPtr(currstring));
+}
 
 void begindeclarationifnone()
 {
     if (currdecltype != currdecltypeenum::NONE) return;
 
-    if (qualifsandtypes.empty())
-        currdeclspec.push_back("int");
-    else currdeclspec = qualifsandtypes;
+    if (!currtypevectorbeingbuild.back()->type.size() ||
+        currtypevectorbeingbuild.back()->type.back().uniontype != type::FUNCTION)
+    {
+        currdecltype = currdecltypeenum::UNKNOWN;
+    add_basic_type:
+        {
+            type basic{ type::BASIC };
 
-    if (currtypevectorbeingbuild.back().type.back().uniontype == type::FUNCTION)
+            if (qualifsandtypes.empty())
+                basic.spec.basicdeclspec.basic[1] = "int";
+            else basic.spec.basicdeclspec = parsebasictype(::qualifsandtypes);
+
+            basic.spec.basicdeclspec.basic[3] = ::currdeclspectypedef;
+
+            currtypevectorbeingbuild.back()->type.push_back(basic);
+        }
+    }
+    else
     {
         currdecltype = currdecltypeenum::PARAMS;
-        currtypevectorbeingbuild.back().type.back().spec.parametertypes.push_back({});
-        currtypevectorbeingbuild.push_back(currtypevectorbeingbuild.back().type.back().spec.parametertypes.back());
+        currtypevectorbeingbuild.back()->type.back().spec.func.parametertypes.push_back({});
+        currtypevectorbeingbuild.push_back(&currtypevectorbeingbuild.back()->type.back().spec.func.parametertypes.back());
+
+        goto add_basic_type;
     }
-    else currdecltype = currdecltypeenum::UNKNOWN;
 }
 
 void addvar()
@@ -368,7 +440,7 @@ void addvar()
 
     const var& lastvar = scopevar.back().back();
 
-    const char* lastvartypestoragespec = lastvartype.type.back().spec.basicdeclspec[2].c_str();
+    const char* lastvartypestoragespec = lastvar.type.back().spec.basicdeclspec.basic[2].c_str();
 
     switch (scopevar.size())
     {
@@ -384,14 +456,14 @@ void addvar()
             linkagetype = llvm::GlobalValue::LinkageTypes::InternalLinkage;
         }
 
-        switch (lastvartype[0].uniontype)
+        switch (lastvar.type[0].uniontype)
         {
         case type::POINTER:
         case type::ARRAY:
         case type::BASIC:
-            globals.push_back(llvm::GlobalVariable{ lastvar.pllvmtype, false, linkagetype, nullptr, lastvar.identifier });
+            globals.push_back(std::make_unique<llvm::GlobalVariable>(lastvar.pllvmtype, false, linkagetype, nullptr, lastvar.identifier));
         case type::FUNCTION:
-            funcs.push_back(llvm::Function{ lastvar.pllvmtype, linkagetype, static_cast<unsigned>(-1), lastvar.identifier, nonconstructable.mainmodule });
+            funcs.push_back(llvm::Function::Create(llvm::dyn_cast<llvm::FunctionType>(lastvar.pllvmtype), linkagetype, lastvar.identifier, nonconstructable.mainmodule));
             break;
         }
         break;
@@ -414,7 +486,7 @@ llvm::Type* createllvmtype(std::vector<type> decltypevector)
     llvm::Type* pcurrtype;
 
     std::array lambdas = { std::function{[&](const type& type) {
-            switch (stringhash(type.spec.basicdeclspec[2].c_str()))
+            switch (stringhash(type.spec.basicdeclspec.basic[2].c_str()))
             {
                 case "int"_h:
                     pcurrtype = dyn_cast<llvm::Type>(llvm::Type::getInt32Ty(llvmctx)); break;
@@ -442,7 +514,12 @@ llvm::Type* createllvmtype(std::vector<type> decltypevector)
         std::function{[&](const type& type) {
                 pcurrtype = dyn_cast<llvm::Type>(llvm::ArrayType::get(pcurrtype, type.spec.arraysz));
             }},
-        std::function{[&](const type& type) {}} };
+        std::function{[&](const type& type) {
+            std::vector<llvm::Type*> paramtype;
+            for (auto& a : type.spec.func.parametertypes)
+                paramtype.push_back(a.pllvmtype);
+            pcurrtype = dyn_cast<llvm::Type>(llvm::FunctionType::get(pcurrtype, paramtype, type.spec.func.bisvariadic ));
+        }} };
 
     std::reverse(decltypevector.begin(), decltypevector.end());
 
@@ -452,11 +529,14 @@ llvm::Type* createllvmtype(std::vector<type> decltypevector)
     return pcurrtype;
 }
 
-static llvm::BasicBlock* pcurrblock;
+static std::vector<llvm::BasicBlock*> pcurrblock;
 
 extern "C" void beginscope()
 {
-    pcurrblock = llvm::BasicBlock::Create(llvmctx, "", &funcs.back());
+    if (scopevar.size() == 1)
+        currfunc = funcs.back();
+
+    pcurrblock.push_back(llvm::BasicBlock::Create(llvmctx, "", currfunc));
     scopevar.push_back({});
 }
 
@@ -466,14 +546,31 @@ extern "C" void endscope()
     scopevar.pop_back();
 }
 
-extern "C" void endfunctiondef()
+extern "C" void endfunctioncall()
 {
+    auto lastblock = pcurrblock.back();
+
+    pcurrblock.push_back(llvm::BasicBlock::Create(llvmctx, "", currfunc));
+
+    llvm::Value* callee = hndlbase.immidiates.front();
+
+    hndlbase.immidiates.erase(hndlbase.immidiates.begin());
+
+    lastblock->getInstList().push_back(
+        llvm::dyn_cast<llvm::Instruction>
+        (llvmbuilder.CreateInvoke(hndlbase.immidiates.front(),
+            pcurrblock.back(),
+            nullptr,
+            hndlbase.immidiates)));
 }
 
-extern "C" void endfunctionparamdecl()
+extern "C" void endfunctionparamdecl(bool bisrest)
 {
     currtypevectorbeingbuild.pop_back();
+    currtypevectorbeingbuild.back()->type.back().spec.func.bisvariadic = bisrest;
 }
+
+extern "C" void addptrtotype(const char* quailifers, size_t szstr);
 
 extern "C" void startfunctionparamdecl()
 {
@@ -482,21 +579,16 @@ extern "C" void startfunctionparamdecl()
     if (currtypevectorbeingbuild.size() > 1) //if declaring a function inside another declaration
         addptrtotype("", 0);
     //currdecltype = currdecltypeenum::PARAMS;
-    currtypevectorbeingbuild.back().type.push_back({ type::FUNCTION });
+    currtypevectorbeingbuild.back()->type.push_back({ type::FUNCTION });
 }
 
 extern "C" void finalizedeclarationtypename()
 {
     begindeclarationifnone();
 
-    currtypevectorbeingbuild.back().type.push_back({ type::BASIC });
-    currtypevectorbeingbuild.back().type.back().spec.basicdeclspec = parsebasictype(currdeclspec);
-    currtypevectorbeingbuild.back().type.back().spec.basicdeclspec[3] = currdeclspectypedef;
-
-    currtypevectorbeingbuild.back().pllvmtype = createllvmtype(currtypevectorbeingbuild.back().type);
+    currtypevectorbeingbuild.back()->pllvmtype = createllvmtype(currtypevectorbeingbuild.back()->type);
 
     currdecltype = currdecltypeenum::NONE;
-    currdeclspec = "";
     currdeclspectypedef = "";
 }
 
@@ -506,11 +598,10 @@ extern "C" void addsubtotype()
 
     type arraytype{ type::ARRAY };
 
-    auto res = dyn_cast<llvm::ConstantInt>(immidiates.back());
+    auto res = llvm::dyn_cast<llvm::ConstantInt>(hndlcnstexpr.immidiates.back());
 
     arraytype.spec.arraysz = *res->getValue().getRawData();
-
-    (currdecltype == currdecltypeenum::PARAMS ? currdecltypevector.back().spec.parametertypes.back().type : currdecltypevector).push_back(arraytype);
+    currtypevectorbeingbuild.back()->type.push_back(arraytype);
 }
 
 extern "C" void addptrtotype(const char* quailifers, size_t szstr)
@@ -519,16 +610,10 @@ extern "C" void addptrtotype(const char* quailifers, size_t szstr)
 
     type ptrtype{ type::POINTER };
 
-    ptrtype = std::string{ quailifers, szstr };
+    ptrtype.spec.ptrqualifiers = parsequalifiers(std::string{ quailifers, szstr });
 
-    (currdecltype == currdecltypeenum::PARAMS ? currdecltypevector.back().spec.parametertypes.back().type : currdecltypevector).push_back(ptrtype);
+    currtypevectorbeingbuild.back()->type.push_back(ptrtype);
 }
-
-static handlecnstexpr hndlcnstexpr{};
-
-static basehndl hndlbase{};
-
-static basehndl* phndl = &hndlbase;
 
 extern "C" void insertinttoimm(const char* str, size_t szstr) { phndl->insertinttoimm(str, szstr); }
 
@@ -539,11 +624,11 @@ extern "C" void beginconstantexpr()
 
 extern "C" void endconstantexpr()
 {
-    assert(immidiates.size() == 1);
+    assert(hndlcnstexpr.immidiates.size() == 1);
 
     //auto res = dyn_cast<llvm::ConstantInt>(immidiates.back());
 
-    immidiates.pop_back();
+    hndlcnstexpr.immidiates.pop_back();
 
     //std::cout << "computed value: " << *res->getValue().getRawData() << std::endl;
 
@@ -557,7 +642,9 @@ extern "C" void startmodule(const char* modulename, size_t szmodulename)
 
 extern "C" void endmodule()
 {
-
+    std::error_code code{};
+    llvm::raw_fd_ostream output{std::string{nonconstructable.mainmodule.getName()} + ".bc", code};
+    llvm::WriteBitcodeToFile(nonconstructable.mainmodule, output);
 }
 
 extern "C" void binary(const char* str, size_t szstr)

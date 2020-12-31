@@ -1,7 +1,7 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #define PCRE2_STATIC
 
-#include "lib/pcre2.h"
+#include <pcre2.h>
 #include <stdio.h>
 //#include <boost/preprocessor/stringize.hpp>
 #include <string.h>
@@ -128,8 +128,8 @@ int callout_test(pcre2_callout_block* a, void* b)
 		printf("\n");
 		n = 0;
 		break;*/
-	case 50:
-		endfunctiondef();
+	case 51:
+		constructstring();
 		break;
 	case 49:
 		n = getnameloc("typesandqualifiers", *ptable);
@@ -140,7 +140,10 @@ int callout_test(pcre2_callout_block* a, void* b)
 		break;
 	case 48:
 		message = "end of function declr\n";
-		endfunctionparamdecl();
+		n = getnameloc("rest", *ptable);
+		endfunctionparamdecl(a->offset_vector[2 * n] > 0);
+		if(a->offset_vector[2 * n] < 0) n = 0;
+		else n--;
 		break;
 	case 47:
 		message = "start of function declr\n";
@@ -291,6 +294,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 		break;
 	case 1:
 		n = getnameloc(namedcapture = "escape", *ptable);
+		addescapesequencetostring(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 5:
 		n = getnameloc(namedcapture = "numberliteral", *ptable);
@@ -298,10 +302,12 @@ int callout_test(pcre2_callout_block* a, void* b)
 		break;
 	case 2:
 		n = getnameloc(namedcapture = "text", *ptable);
+		addplaintexttostring(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 6:;
 		printf("identifier:\n");
 		n = getnameloc(namedcapture = "identifier", *ptable);
+		obtainvalbyidentifier(GROUP_PTR_AND_SZ(n + 1));
 		//cond = n = 0; break;
 		break;
 	case 4:
@@ -312,11 +318,13 @@ int callout_test(pcre2_callout_block* a, void* b)
 		/*; static test = 0;
 		if (a->capture_top <= getnameloc("arrowordot", *ptable))
 			if(!test++)*/
+		//startfunctioncall();
 		message = "start function call\n";
 		break;
 		/*	else cond = n = 0;
 		else ; break;*/
 	case 13:
+		endfunctioncall();
 		message = "end function call\n";
 		break;
 	case 8:
@@ -471,7 +479,7 @@ return 0;
 
 void setypedefspec(size_t *typedefname, const char *subject)
 {
-	if (typedefname[0] != -1) settypedefname(typedefname[1] - typedefname[0], subject + typedefname[0]);
+	if (typedefname[0] != -1) settypedefname(subject + typedefname[0], typedefname[1] - typedefname[0]);
 }
 
 void printqualifntype(size_t *typedefname, const char *subject)

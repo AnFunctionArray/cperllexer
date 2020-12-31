@@ -1,7 +1,7 @@
 (?<inner>\s*+((("|(?<begincharliteral>'))
 						(?C4)((?<escape>(?<escaperaw>\\(?:(x)[0-9a-fA-F]++|(?:(b)[01]++|(?:(0)[0-7]++|(\d++|(?(<begincharliteral>)'|")|t|n))))))
 						(?C1)|
-						(?<text>(?<textraw>((?!(?&escape)|(?(<begincharliteral>)'|")).)++)(?C2)))*+(?(<begincharliteral>)'|")
+						(?<text>(?<textraw>((?!(?&escape)|(?(<begincharliteral>)'|")).)++)(?C2)))*+(?(<begincharliteral>)'|")(?C51)
 						|(?<numberliteral>(?<numberliteralraw>(?:(0x)[0-9a-fA-F]++|(?:(0b)[01]++|(?:(0)[0-7]++|(\d++)))))(?C5))
 						|(?<identifier>\s*+(?!(?&keywordlist))((?&identifierraw))(?C6)\s*+)))\s*+)
 

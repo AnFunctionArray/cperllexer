@@ -5,7 +5,7 @@
 extern "C" {
 #else
 
-#define JUST_PARSE
+//#define JUST_PARSE
 
 #include <stdint.h>
 #include <stddef.h>
@@ -19,7 +19,7 @@ extern "C" {
 #define LLVM_FUNCS_DEF ;
 #endif
     LLVM_FUNCS_MODIFIERS void startfunctionparamdecl() LLVM_FUNCS_DEF
-    LLVM_FUNCS_MODIFIERS void endfunctionparamdecl() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void endfunctionparamdecl(bool bisrest) LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void endmodule() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void startmodule(const char*modulename, size_t szmodulename) LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void insertinttoimm(const char *str, size_t szstr) LLVM_FUNCS_DEF
@@ -27,13 +27,17 @@ extern "C" {
     LLVM_FUNCS_MODIFIERS void beginconstantexpr() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void endconstantexpr() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void startdeclaration(const char* str, size_t szstr, int isinsidedecl, bool bistypedef) LLVM_FUNCS_DEF
-    LLVM_FUNCS_MODIFIERS void finalizedeclaration() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void finalizedeclarationtypename() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void addsubtotype() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void addptrtotype(const char *quailifers, size_t szstr) LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void beginscope() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void endscope() LLVM_FUNCS_DEF
-    LLVM_FUNCS_MODIFIERS void endfunctiondef() LLVM_FUNCS_DEF
+    //LLVM_FUNCS_MODIFIERS void startfunctioncall() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void constructstring() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void addplaintexttostring(const char*str, size_t szstr) LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void addescapesequencetostring(const char*str, size_t szstr) LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void endfunctioncall() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void obtainvalbyidentifier(const char*identifier, size_t szstr) LLVM_FUNCS_DEF
 #ifdef __cplusplus
 }
 #endif
