@@ -202,15 +202,19 @@ int callout_test(pcre2_callout_block* a, void* b)
 
 		setypedefspec(typedefname, a->subject);
 
-		ntoclear = getnameloc("typedefkeyword", *ptable);
-		if (!isinsidedecl) istypedefdecl = a->offset_vector[2 * ntoclear] != -1;
+		ntoprint[0] = getnameloc("typedefkeyword", *ptable), ntoprint[1] = getnameloc("typedefkeywordmine", *ptable);
+		if (!isinsidedecl) istypedefdecl = a->offset_vector[2 * ntoprint[0]] != -1 || a->offset_vector[2 * ntoprint[1]] != -1;
 		if (istypedefdecl)
 		{
 			void addtotypedefs(const char* identifier, size_t szcontent);
 			addtotypedefs(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]));
 			//startdeclaration(GROUP_PTR_AND_SZ(n), isinsidedecl, true, GROUP_PTR_AND_SZ(ntoprint[1] + 1), bwhich);
 		} //else startdeclaration(GROUP_PTR_AND_SZ(n), isinsidedecl, false, GROUP_PTR_AND_SZ(ntoprint[1] + 1), bwhich);
-		//a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+		ntoclear = ntoprint[0];
+		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+		ntoclear = ntoprint[1];
+		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+		ntoclear = 0;
 
 		startdeclaration(GROUP_PTR_AND_SZ(n), isinsidedecl, istypedefdecl);
 

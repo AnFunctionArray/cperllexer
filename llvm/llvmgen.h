@@ -5,7 +5,7 @@
 extern "C" {
 #else
 
-//#define JUST_PARSE
+#define JUST_PARSE
 
 #include <stdint.h>
 #include <stddef.h>
