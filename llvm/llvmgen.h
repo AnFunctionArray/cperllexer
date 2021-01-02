@@ -32,8 +32,10 @@ extern "C" {
     LLVM_FUNCS_MODIFIERS void addptrtotype(const char *quailifers, size_t szstr) LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void beginscope() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void endscope() LLVM_FUNCS_DEF
-    //LLVM_FUNCS_MODIFIERS void startfunctioncall() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void finalizedeclaration() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void enddeclaration() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void constructstring() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void endreturn() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void addplaintexttostring(const char*str, size_t szstr) LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void addescapesequencetostring(const char*str, size_t szstr) LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void endfunctioncall() LLVM_FUNCS_DEF

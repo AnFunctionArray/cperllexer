@@ -1,5 +1,6 @@
 int printf(const char*fmt, ...);
 
 main() {
-	printf("hello world\n");
+	printf("hello world %d\n", 9);
+	return 0;
 }

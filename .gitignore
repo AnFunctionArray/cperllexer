@@ -344,6 +344,11 @@ healthchecksdb
 
 *.o
 
+*.obj
+*.exe
+*.bc
+*.exe.*
+
 cparser
 
 ./build/

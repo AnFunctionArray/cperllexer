@@ -131,6 +131,10 @@ int callout_test(pcre2_callout_block* a, void* b)
 		printf("\n");
 		n = 0;
 		break;*/
+	case 52:
+		message = "end return\n";
+		endreturn();
+		break;
 	case 51:
 		constructstring();
 		break;
@@ -144,9 +148,13 @@ int callout_test(pcre2_callout_block* a, void* b)
 	case 48:
 		message = "end of function declr\n";
 		n = getnameloc("rest", *ptable);
-		endfunctionparamdecl(a->offset_vector[2 * n] > 0);
-		if(a->offset_vector[2 * n] < 0) n = 0;
-		else n--;
+		endfunctionparamdecl(a->offset_vector[2 * n] != -1);
+		if (a->offset_vector[2 * n] == -1) n = 0;
+		else printf(
+			" %d - %.*s\n",
+			n,
+			(unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]),
+			a->subject + a->offset_vector[2 * n]), a->offset_vector[2 * n] = a->offset_vector[2 * n + 1] = -1;
 		break;
 	case 47:
 		message = "start of function declr\n";
@@ -173,12 +181,12 @@ int callout_test(pcre2_callout_block* a, void* b)
 		break;
 	case 43:
 		isinsidedecl = true;
-		//enddeclaration();
+		enddeclaration();
 		break;
 	case 42:
 		isinsidedecl = false;
 		//typedefname[0] = typedefname[1] = -1;
-		//finalizedeclaration();
+		finalizedeclaration();
 		break;
 	case 41:
 		addsubtotype();
@@ -321,7 +329,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 		/*; static test = 0;
 		if (a->capture_top <= getnameloc("arrowordot", *ptable))
 			if(!test++)*/
-		//startfunctioncall();
+			//startfunctioncall();
 		message = "start function call\n";
 		break;
 		/*	else cond = n = 0;
@@ -335,7 +343,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 		n = getnameloc(namedcapture = "arrowordot", *ptable);
 		break;
 	case 12:
-		
+
 		n = getnameloc(namedcapture = "abstrsubs", *ptable);
 		break;
 	case 14:
@@ -355,7 +363,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 		addptrtotype(GROUP_PTR_AND_SZ(n + 1));
 
 		printqualifntype(typedefname, a->subject);
-		
+
 		break;
 #else
 	case 12:
@@ -480,12 +488,12 @@ exit(-1);
 return 0;
 }
 
-void setypedefspec(size_t *typedefname, const char *subject)
+void setypedefspec(size_t* typedefname, const char* subject)
 {
 	if (typedefname[0] != -1) settypedefname(subject + typedefname[0], typedefname[1] - typedefname[0]);
 }
 
-void printqualifntype(size_t *typedefname, const char *subject)
+void printqualifntype(size_t* typedefname, const char* subject)
 {
 	bool flushqualifortype(), isanythingprinted = flushqualifortype();
 
