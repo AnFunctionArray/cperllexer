@@ -8,7 +8,7 @@ Currently the last challenge I was faced with was capturing/triggering the callb
 
 # Usage
 
-You would need to install pcre2, perl with dynamic modules and finally llvm. Of-course you would need a g++ and gcc compiler.
+You would need to install pcre2, perl with dynamic modules and finally llvm. Of-course you would need a g++ and gcc compiler (or msvc).
 
 Preprocessor (any of it - including #line) and attributes are not supported.
 
