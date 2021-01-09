@@ -311,10 +311,40 @@ int callout_test(pcre2_callout_block* a, void* b)
 		n = getnameloc(namedcapture = "escape", *ptable);
 		addescapesequencetostring(GROUP_PTR_AND_SZ(n + 1));
 		break;
-	case 5:
+	case 5:;
+	{
+		unsigned int type;
 		n = getnameloc(namedcapture = "numberliteral", *ptable);
-		insertinttoimm(GROUP_PTR_AND_SZ(n + 1));
-		break;
+
+		ntoprint[0] = getnameloc("uns", *ptable);
+
+		ntoprint[1] = getnameloc("lng", *ptable);
+
+		const char* groups[] = { "hex", "bin", "oct", "dec" };
+
+		for (const char* *pgroup = groups; pgroup != 1[&groups]; ++pgroup)
+		{
+			ntoclear = getnameloc(*pgroup, *ptable);
+			if (a->offset_vector[2 * ntoclear] != -1)
+			{
+				type = pgroup - groups << 2 | (a->offset_vector[2 * ntoprint[0]] != -1) | (a->offset_vector[2 * ntoprint[1]] != -1) << 1;
+				
+				insertinttoimm(GROUP_PTR_AND_SZ(ntoclear), type);
+
+				a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+
+				break; 
+			}
+		}
+
+		ntoclear = ntoprint[0];
+		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+		ntoclear = ntoprint[1];
+		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+
+		ntoclear = 0;
+	}
+	break;
 	case 2:
 		n = getnameloc(namedcapture = "text", *ptable);
 		addplaintexttostring(GROUP_PTR_AND_SZ(n + 1));

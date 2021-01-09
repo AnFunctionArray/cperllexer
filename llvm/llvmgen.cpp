@@ -19,6 +19,9 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include <ranges>
+#include <locale>
+#include <stdint.h>
 
 unsigned constexpr stringhash(char const* input)
 {
@@ -48,170 +51,6 @@ static std::vector<std::unique_ptr<llvm::GlobalVariable>> globals{};
 static llvm::LLVMContext llvmctx;
 
 static llvm::IRBuilder<> llvmbuilder{ llvmctx };
-
-struct basehndl
-{
-	virtual void mlutiplylasttwovalues()
-	{
-	}
-
-	virtual void dividelasttwovalues()
-	{
-	}
-
-	virtual void modulolasttwovalues()
-	{
-	}
-
-	virtual void addlasttwovalues(bool bminus)
-	{
-	}
-
-	virtual void shifttwovalues(bool bright)
-	{
-	}
-
-	virtual void bitwisetwovalues(llvm::Constant* op(llvm::Constant*, llvm::Constant*))
-	{
-	}
-
-	virtual void relatetwovalues(llvm::CmpInst::Predicate pred)
-	{
-	}
-
-	virtual void logictwovalues(bool bisand)
-	{
-	}
-
-	virtual void insertinttoimm(const char* str, size_t szstr)
-	{
-		std::string imm;
-
-		imm.assign(str, szstr);
-
-		std::istringstream in{ imm };
-
-		uint64_t val;
-
-		in >> val;
-
-		immidiates.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvmctx), val));
-	}
-
-	std::vector<llvm::Value*> immidiates;
-};
-
-struct handlecnstexpr : basehndl
-{
-	auto getops()
-	{
-		return std::array{ immidiates.front(), immidiates.back() };
-	}
-
-	virtual void mlutiplylasttwovalues()
-	{
-		std::array ops = getops();
-		immidiates.erase(immidiates.end() - 2, immidiates.end());
-
-		immidiates.push_back(llvm::ConstantExpr::getMul(ops[0], ops[1]));
-	}
-
-	virtual void dividelasttwovalues()
-	{
-		std::array ops = getops();
-		immidiates.erase(immidiates.end() - 2, immidiates.end());
-
-		immidiates.push_back(llvm::ConstantExpr::getSDiv(ops[0], ops[1]));
-	}
-
-	virtual void modulolasttwovalues()
-	{
-		std::array ops = getops();
-		immidiates.erase(immidiates.end() - 2, immidiates.end());
-
-		immidiates.push_back(llvm::ConstantExpr::getSRem(ops[0], ops[1]));
-	}
-
-	virtual void addlasttwovalues(bool bminus)
-	{
-		std::array ops = getops();
-		immidiates.erase(immidiates.end() - 2, immidiates.end());
-
-		immidiates.push_back(llvm::ConstantExpr::getAdd(ops[0],
-			!bminus ? ops[1] : llvm::ConstantExpr::getNeg(ops[1])));
-	}
-
-	virtual void shifttwovalues(bool bright)
-	{
-		std::array ops = getops();
-		immidiates.erase(immidiates.end() - 2, immidiates.end());
-
-		immidiates.push_back(
-			(!bright ? llvm::ConstantExpr::getLShr
-				: llvm::ConstantExpr::getAShr)(ops[0], ops[1], false));
-	}
-
-	virtual void relatetwovalues(llvm::CmpInst::Predicate pred)
-	{
-		std::array ops = getops();
-		immidiates.erase(immidiates.end() - 2, immidiates.end());
-
-		immidiates.push_back(llvm::ConstantExpr::getICmp(pred, ops[0], ops[1]));
-	}
-
-	virtual void bitwisetwovalues(llvm::Constant* op(llvm::Constant*, llvm::Constant*))
-	{
-		std::array ops = getops();
-		immidiates.erase(immidiates.end() - 2, immidiates.end());
-
-		immidiates.push_back(op(ops[0], ops[1]));
-	}
-
-	virtual void logictwovalues(bool bisand)
-	{
-		std::array ops = getops();
-		immidiates.erase(immidiates.end() - 2, immidiates.end());
-
-		const auto valzero = llvm::ConstantInt::getIntegerValue(llvm::Type::getInt64Ty(llvmctx), llvm::APInt{});
-
-		immidiates.push_back(
-			(!bisand ? llvm::ConstantExpr::getOr : llvm::ConstantExpr::getAnd)(
-				llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_NE, ops[0], valzero),
-				llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_NE, ops[1], valzero)));
-	}
-
-	virtual void insertinttoimm(const char* str, size_t szstr)
-	{
-		basehndl::insertinttoimm(str, szstr);
-		immidiates.push_back(llvm::dyn_cast<llvm::Constant>(basehndl::immidiates.back()));
-		basehndl::immidiates.pop_back();
-	}
-
-	std::vector<llvm::Constant*> immidiates;
-};
-
-static handlecnstexpr hndlcnstexpr{};
-
-static basehndl hndlbase{};
-
-static basehndl* phndl = &hndlbase;
-
-//static std::string currdeclidentifier{};
-
-enum class currdecltypeenum {
-	TYPEDEF,
-	CAST,
-	PARAMS,
-	NORMAL,
-	UNKNOWN,
-	NONE
-};
-
-static currdecltypeenum currdecltype{ currdecltypeenum::NONE };
-
-std::string currdeclspectypedef;
-
-extern std::vector<std::string> qualifsandtypes;
 
 typedef std::bitset<3> pointrtypequalifiers;
 /*
@@ -264,6 +103,7 @@ bascitypespec parsebasictype(const std::vector<std::string>& qualifs)
 	case "signed"_h:
 		ret.basic[0] = a; break;
 	case "int"_h:
+		if (ret.basic[1] != "") break;
 	case "long"_h:
 	case "short"_h:
 	case "char"_h:
@@ -355,6 +195,396 @@ struct var {
 	std::string identifier;
 	llvm::Type* pllvmtype;
 };
+
+static std::vector<llvm::BasicBlock*> pcurrblock;
+
+/*struct valueorconstant {
+	template<class T> requires std::same_as<T, llvm::Value*> || std::same_as<T, llvm::Constant*> || std::same_as<T, void*>
+	operator T()
+	{
+		return (T)p;
+	}
+
+	template<class T> requires std::same_as<T, llvm::Value*> || std::same_as<T, llvm::Constant*> || std::same_as<T, void*>
+	valueorconstant& operator=(T p)
+	{
+		this->p = p;
+		return *this;
+	}
+
+	void* p;
+};*/
+
+llvm::Type* createllvmtype(std::vector<type> decltypevector);
+
+struct basehndl
+{
+	virtual llvm::Value* CreateCastInst(llvm::Instruction::CastOps op, llvm::Value* S, llvm::Type* Ty)
+	{
+		return llvm::CastInst::Create(op, S, Ty, "", pcurrblock.back());
+	}
+
+	struct valandtype { llvm::Value* value; std::vector<::type> currtype; } integralpromotions(valandtype in)
+	{
+		assert(in.currtype.size() == 1);
+
+		switch (stringhash(in.currtype.back().spec.basicdeclspec.basic[1].c_str()))
+		{
+		case "char"_h:
+		case "short"_h:
+			switch (stringhash(in.currtype.back().spec.basicdeclspec.basic[0].c_str()))
+			{
+			default:
+			case "signed"_h:
+				in.value = CreateCastInst(llvm::Instruction::CastOps::SExt, in.value, llvm::Type::getInt32Ty(llvmctx)); break;
+			case "unsigned"_h:
+				in.value = CreateCastInst(llvm::Instruction::CastOps::ZExt, in.value, llvm::Type::getInt32Ty(llvmctx)); break;
+			}
+			in.currtype.back().spec.basicdeclspec.basic[0] = "";
+			in.currtype.back().spec.basicdeclspec.basic[1] = "int";
+		}
+		return in;
+	}
+
+	std::array<valandtype, 2> usualarithmeticconversions(std::array<valandtype, 2> ops)
+	{
+		for (auto i = 0; i < 2; ++i)
+			if (ops[i].currtype.back().spec.basicdeclspec.basic[1] == "long" && ops[i].currtype.back().spec.basicdeclspec.basic[0] == "unsigned")
+				if (ops[!i].currtype.back().spec.basicdeclspec.basic[1] != "long" || ops[!i].currtype.back().spec.basicdeclspec.basic[0] != "unsigned")
+					return ops[!i].currtype.back().spec.basicdeclspec.basic[1] = "long", ops[!i].currtype.back().spec.basicdeclspec.basic[0] = "unsigned",
+					ops[!i].value = CreateCastInst(ops[!i].currtype.back().spec.basicdeclspec.basic[0] == "unsigned" ?
+						llvm::Instruction::CastOps::ZExt : llvm::Instruction::CastOps::SExt, ops[!i].value, llvm::Type::getInt64Ty(llvmctx)), ops;
+				else return ops;
+
+		for (auto i = 0; i < 2; ++i)
+			if (ops[i].currtype.back().spec.basicdeclspec.basic[1] == "long" && ops[i].currtype.back().spec.basicdeclspec.basic[0] != "unsigned")
+				if (ops[!i].currtype.back().spec.basicdeclspec.basic[1] == "int" && ops[!i].currtype.back().spec.basicdeclspec.basic[0] == "unsigned")
+					return ops[!i].currtype.back().spec.basicdeclspec.basic[1] = "long", ops[!i].currtype.back().spec.basicdeclspec.basic[0] = "",
+					ops[!i].value = CreateCastInst(llvm::Instruction::CastOps::ZExt, ops[!i].value, llvm::Type::getInt64Ty(llvmctx)), ops;
+
+		for (auto i = 0; i < 2; ++i)
+			if (ops[i].currtype.back().spec.basicdeclspec.basic[1] == "long" && ops[i].currtype.back().spec.basicdeclspec.basic[0] != "unsigned")
+				return ops[!i].currtype.back().spec.basicdeclspec.basic[1] = "long", ops[!i].currtype.back().spec.basicdeclspec.basic[0] = "",
+				ops[!i].value = CreateCastInst(ops[!i].currtype.back().spec.basicdeclspec.basic[0] == "unsigned" ?
+					llvm::Instruction::CastOps::ZExt : llvm::Instruction::CastOps::SExt, ops[!i].value, llvm::Type::getInt64Ty(llvmctx)), ops;
+
+		for (auto i = 0; i < 2; ++i)
+			if (ops[i].currtype.back().spec.basicdeclspec.basic[1] == "int" && ops[i].currtype.back().spec.basicdeclspec.basic[0] == "unsigned")
+				return ops[!i].currtype.back().spec.basicdeclspec.basic[1] = "int", ops[!i].currtype.back().spec.basicdeclspec.basic[0] = "unsigned",
+				ops[!i].value = CreateCastInst(ops[!i].currtype.back().spec.basicdeclspec.basic[0] == "unsigned" ?
+					llvm::Instruction::CastOps::ZExt : llvm::Instruction::CastOps::SExt, ops[!i].value, llvm::Type::getInt32Ty(llvmctx)), ops;
+
+		return ops;
+	}
+
+	auto getops(bool busual = true)
+	{
+		auto ops = std::array{ integralpromotions(*(immidiates.end() - 2)),
+			integralpromotions(immidiates.back()) };
+
+		if (busual) ops = usualarithmeticconversions(ops);
+
+		immidiates.erase(immidiates.end() - 2, immidiates.end());
+
+		return ops;
+	}
+
+	virtual void mlutiplylasttwovalues()
+	{
+		std::array ops = getops();
+
+		ops[0].value = llvmbuilder.CreateMul(ops[0].value, ops[1].value);
+
+		immidiates.push_back(ops[0]);
+	}
+
+	virtual void dividelasttwovalues()
+	{
+		std::array ops = getops();
+
+		if (ops[0].currtype.back().spec.basicdeclspec.basic[0] != "unsigned")
+			ops[0].value = llvmbuilder.CreateSDiv(ops[0].value, ops[1].value);
+		else ops[0].value = llvmbuilder.CreateUDiv(ops[0].value, ops[1].value);
+
+		immidiates.push_back(ops[0]);
+	}
+
+	virtual void modulolasttwovalues()
+	{
+		std::array ops = getops();
+
+		if (ops[0].currtype.back().spec.basicdeclspec.basic[0] != "unsigned")
+			ops[0].value = llvmbuilder.CreateSRem(ops[0].value, ops[1].value);
+		else ops[0].value = llvmbuilder.CreateURem(ops[0].value, ops[1].value);
+
+		immidiates.push_back(ops[0]);
+	}
+
+	virtual void addlasttwovalues(bool bminus)
+	{
+		std::array ops = getops();
+
+		ops[0].value = llvmbuilder.CreateAdd(ops[0].value, !bminus ? ops[1].value : llvmbuilder.CreateNeg(ops[1].value));
+
+		immidiates.push_back(ops[0]);
+	}
+
+	virtual void shifttwovalues(bool bright)
+	{
+		std::array ops = getops(false);
+
+		if (!bright) ops[0].value = llvmbuilder.CreateShl(ops[0].value, ops[1].value);
+		else if (ops[0].currtype.back().spec.basicdeclspec.basic[0] != "unsigned")
+			ops[0].value = llvmbuilder.CreateAShr(ops[0].value, ops[1].value);
+		else ops[0].value = llvmbuilder.CreateLShr(ops[0].value, ops[1].value);
+
+		immidiates.push_back(ops[0]);
+	}
+
+	virtual void relatetwovalues(llvm::CmpInst::Predicate pred)
+	{
+		std::array ops = getops();
+
+		if (ops[0].currtype.back().spec.basicdeclspec.basic[0] != "unsigned")
+			ops[0].value = llvmbuilder.CreateICmp(pred, ops[0].value, ops[1].value);
+		else ops[0].value = llvmbuilder.CreateCmp(pred, ops[0].value, ops[1].value);
+
+		ops[0].value = CreateCastInst(llvm::Instruction::CastOps::ZExt, ops[0].value, llvm::Type::getInt32Ty(llvmctx));
+
+		ops[0].currtype.back().spec.basicdeclspec.basic[1] = "int", ops[0].currtype.back().spec.basicdeclspec.basic[0] = "";
+
+		immidiates.push_back(ops[0]);
+	}
+
+	virtual void bitwisetwovalues(llvm::Instruction::BinaryOps op)
+	{
+		std::array ops = getops();
+
+		ops[0].value = llvmbuilder.CreateBinOp(op, ops[0].value, ops[1].value);
+
+		immidiates.push_back(ops[0]);
+	}
+
+	virtual void logictwovalues(bool bisand)
+	{
+		std::array ops = getops();
+
+		ops[0].value = llvmbuilder.CreateICmp(llvm::CmpInst::Predicate::ICMP_NE, ops[0].value, llvm::ConstantInt::getIntegerValue(ops[0].value->getType(), llvm::APInt{}));
+
+		ops[1].value = llvmbuilder.CreateICmp(llvm::CmpInst::Predicate::ICMP_NE, ops[1].value, llvm::ConstantInt::getIntegerValue(ops[1].value->getType(), llvm::APInt{}));
+
+		ops[0].value = !bisand ? llvmbuilder.CreateOr(ops[0].value, ops[1].value) : llvmbuilder.CreateAnd(ops[0].value, ops[1].value);
+
+		ops[0].value = llvm::CastInst::Create(llvm::Instruction::CastOps::ZExt, ops[0].value, llvm::Type::getInt32Ty(llvmctx), "", pcurrblock.back());
+
+		ops[0].currtype.back().spec.basicdeclspec.basic[1] = "int", ops[0].currtype.back().spec.basicdeclspec.basic[0] = "";
+
+		immidiates.push_back(ops[0]);
+	}
+
+	void insertinttoimm(const char* str, size_t szstr, unsigned int type)
+	{
+		std::string imm;
+
+		imm.assign(str, szstr);
+
+		std::vector<::type> currtype = { 1, ::type::BASIC };
+
+		const bool isunsigned = type & 1;
+
+		const bool islong = type & 2;
+
+		type >>= 2;
+
+		const int base[] = { 16, 2, 7, 10 };
+
+		const auto val = std::stoull(imm, nullptr, base[type]);
+
+		if (type == 3 && !isunsigned && !islong)
+			if (val <= INT_MAX)
+				currtype.back().spec.basicdeclspec.basic[1] = "int";
+			else if (val <= LLONG_MAX)
+				currtype.back().spec.basicdeclspec.basic[1] = "long";
+			else if (val <= ULLONG_MAX)
+				currtype.back().spec.basicdeclspec.basic[1] = "long",
+				currtype.back().spec.basicdeclspec.basic[0] = "unsigned";
+			else;
+		else if (!isunsigned && !islong)
+			if (val <= INT_MAX)
+				currtype.back().spec.basicdeclspec.basic[1] = "int";
+			else if (val <= UINT_MAX)
+				currtype.back().spec.basicdeclspec.basic[1] = "int",
+				currtype.back().spec.basicdeclspec.basic[0] = "unsigned";
+			else if (val <= LLONG_MAX)
+				currtype.back().spec.basicdeclspec.basic[1] = "long";
+			else if (val <= ULLONG_MAX)
+				currtype.back().spec.basicdeclspec.basic[1] = "long",
+				currtype.back().spec.basicdeclspec.basic[0] = "unsigned";
+			else;
+		else if (isunsigned && !islong)
+			if (val <= UINT_MAX)
+				currtype.back().spec.basicdeclspec.basic[1] = "int",
+				currtype.back().spec.basicdeclspec.basic[0] = "unsigned";
+			else if (val <= ULLONG_MAX)
+				currtype.back().spec.basicdeclspec.basic[1] = "long",
+				currtype.back().spec.basicdeclspec.basic[0] = "unsigned";
+			else;
+		else if (!isunsigned && islong)
+			if (val <= LLONG_MAX)
+				currtype.back().spec.basicdeclspec.basic[1] = "long";
+			else if (val <= ULLONG_MAX)
+				currtype.back().spec.basicdeclspec.basic[1] = "long",
+				currtype.back().spec.basicdeclspec.basic[0] = "unsigned";
+			else;
+		else if (isunsigned && islong)
+			currtype.back().spec.basicdeclspec.basic[1] = "long",
+			currtype.back().spec.basicdeclspec.basic[0] = "unsigned";
+
+		auto valval = llvm::ConstantInt::get(createllvmtype(currtype), val);
+
+		immidiates.push_back(valandtype{ valval, currtype });
+	}
+
+	std::vector<valandtype> immidiates;
+};
+
+struct handlecnstexpr : basehndl
+{
+	struct valandtype { llvm::Constant* value; std::vector<::type> currtype; };
+
+	std::vector<valandtype>& immidiates = reinterpret_cast<std::vector<valandtype>&>(basehndl::immidiates);
+
+	auto getops(bool busual = true)
+	{
+		auto ops = basehndl::getops();
+
+		return reinterpret_cast<std::array<valandtype, 2>&&>(ops);
+	}
+
+	virtual void mlutiplylasttwovalues()
+	{
+		std::array ops = getops();
+
+		ops[0].value = llvm::ConstantExpr::getMul(ops[0].value, ops[1].value);
+
+		immidiates.push_back(ops[0]);
+	}
+
+	virtual void dividelasttwovalues()
+	{
+		std::array ops = getops();
+
+		if (ops[0].currtype.back().spec.basicdeclspec.basic[0] != "unsigned")
+			ops[0].value = llvm::ConstantExpr::getSDiv(ops[0].value, ops[1].value);
+		else ops[0].value = llvm::ConstantExpr::getUDiv(ops[0].value, ops[1].value);
+
+		immidiates.push_back(ops[0]);
+	}
+
+	virtual void modulolasttwovalues()
+	{
+		std::array ops = getops();
+
+		if (ops[0].currtype.back().spec.basicdeclspec.basic[0] != "unsigned")
+			ops[0].value = llvm::ConstantExpr::getSRem(ops[0].value, ops[1].value);
+		else ops[0].value = llvm::ConstantExpr::getURem(ops[0].value, ops[1].value);
+
+		immidiates.push_back(ops[0]);
+	}
+
+	virtual void addlasttwovalues(bool bminus)
+	{
+		std::array ops = getops();
+
+		ops[0].value = llvm::ConstantExpr::getAdd(ops[0].value, !bminus ? ops[1].value : llvm::ConstantExpr::getNeg(ops[1].value));
+
+		immidiates.push_back(ops[0]);
+	}
+
+	virtual void shifttwovalues(bool bright)
+	{
+		std::array ops = getops(false);
+
+		if (!bright) ops[0].value = llvm::ConstantExpr::getShl(ops[0].value, ops[1].value);
+		else if (ops[0].currtype.back().spec.basicdeclspec.basic[0] != "unsigned")
+			ops[0].value = llvm::ConstantExpr::getAShr(ops[0].value, ops[1].value);
+		else ops[0].value = llvm::ConstantExpr::getLShr(ops[0].value, ops[1].value);
+
+		immidiates.push_back(ops[0]);
+	}
+
+	virtual void relatetwovalues(llvm::CmpInst::Predicate pred)
+	{
+		std::array ops = getops();
+
+		if (ops[0].currtype.back().spec.basicdeclspec.basic[0] != "unsigned")
+			ops[0].value = llvm::ConstantExpr::getICmp(pred, ops[0].value, ops[1].value);
+		else ops[0].value = llvm::ConstantExpr::getCompare(pred, ops[0].value, ops[1].value);
+
+		ops[0].value = CreateCastInst(llvm::Instruction::CastOps::ZExt, ops[0].value, llvm::Type::getInt32Ty(llvmctx));
+
+		ops[0].currtype.back().spec.basicdeclspec.basic[1] = "int", ops[0].currtype.back().spec.basicdeclspec.basic[0] = "";
+
+		immidiates.push_back(ops[0]);
+	}
+
+	virtual void bitwisetwovalues(llvm::Instruction::BinaryOps op)
+	{
+		std::array ops = getops();
+
+		ops[0].value = llvm::ConstantExpr::get(op, ops[0].value, ops[1].value);
+
+		immidiates.push_back(ops[0]);
+	}
+
+	virtual void logictwovalues(bool bisand)
+	{
+		std::array ops = getops();
+
+		ops[0].value = llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_NE, ops[0].value, llvm::ConstantInt::getIntegerValue(((llvm::Constant*)ops[0].value)->getType(), llvm::APInt{}));
+
+		ops[1].value = llvm::ConstantExpr::getICmp(llvm::CmpInst::Predicate::ICMP_NE, ops[1].value, llvm::ConstantInt::getIntegerValue(((llvm::Constant*)ops[1].value)->getType(), llvm::APInt{}));
+
+		ops[0].value = !bisand ? llvm::ConstantExpr::getOr(ops[0].value, ops[1].value) : llvm::ConstantExpr::getAnd(ops[0].value, ops[1].value);
+
+		ops[0].value = CreateCastInst(llvm::Instruction::CastOps::ZExt, ops[0].value, llvm::Type::getInt32Ty(llvmctx));
+
+		ops[0].currtype.back().spec.basicdeclspec.basic[1] = "int", ops[0].currtype.back().spec.basicdeclspec.basic[0] = "";
+
+		immidiates.push_back(ops[0]);
+	}
+
+	virtual llvm::Constant* CreateCastInst(llvm::Instruction::CastOps op, llvm::Constant* S, llvm::Type* Ty)
+	{
+		return llvm::ConstantExpr::getCast(op, S, Ty);
+	}
+};
+
+static handlecnstexpr hndlcnstexpr{};
+
+static basehndl hndlbase{};
+
+static basehndl* phndl = &hndlbase;
+
+static std::remove_cvref<decltype(basehndl::immidiates)>::type::iterator cnstexpriterstart{};
+
+//static std::string currdeclidentifier{};
+
+enum class currdecltypeenum {
+	TYPEDEF,
+	CAST,
+	PARAMS,
+	NORMAL,
+	UNKNOWN,
+	NONE
+};
+
+static currdecltypeenum currdecltype{ currdecltypeenum::NONE };
+
+std::string currdeclspectypedef;
+
+extern std::vector<std::string> qualifsandtypes;
+
 static std::vector<std::vector<var>> scopevar{ 1 };
 
 static var currdecltypevector{};
@@ -367,7 +597,20 @@ extern "C" void obtainvalbyidentifier(const char* identifier, size_t szstr)
 {
 	std::string ident{ identifier, szstr };
 
-	hndlbase.immidiates.push_back(nonconstructable.mainmodule.getFunction(ident));
+	const ::var* var;
+
+	std::find_if(scopevar.begin(), scopevar.end(), [&](const std::vector<::var>& scope) {
+		auto iter = std::find_if(scope.begin(), scope.end(), [&](const ::var& scopevar) {
+			return scopevar.identifier == ident;
+			});
+
+		if (iter != scope.end())
+			return (bool)(var = &*iter);
+		return false;
+		});
+
+	if(var->type.front().uniontype == ::type::FUNCTION)
+		phndl->immidiates.push_back({ nonconstructable.mainmodule.getFunction(ident), var->type });
 }
 
 extern "C" void addplaintexttostring(const char* str, size_t szstr)
@@ -390,7 +633,15 @@ extern "C" void addescapesequencetostring(const char* str, size_t szstr)
 
 extern "C" void constructstring()
 {
-	hndlbase.immidiates.push_back(llvmbuilder.CreateGlobalStringPtr(currstring, "", 0, &nonconstructable.mainmodule));
+	std::vector<::type> stirngtype{1, ::type::ARRAY};
+
+	stirngtype.back().spec.arraysz = currstring.size() + 1;
+
+	stirngtype.push_back({ ::type::BASIC });
+
+	stirngtype.back().spec.basicdeclspec.basic[1] = "char";
+
+	hndlbase.immidiates.push_back({ llvmbuilder.CreateGlobalStringPtr(currstring, "", 0, &nonconstructable.mainmodule), stirngtype });
 }
 
 void begindeclarationifnone()
@@ -412,6 +663,8 @@ void begindeclarationifnone()
 
 			basic.spec.basicdeclspec.basic[3] = ::currdeclspectypedef;
 
+			currdeclspectypedef = "";
+
 			currtypevectorbeingbuild.back()->type.push_back(basic);
 		}
 	}
@@ -427,13 +680,7 @@ void begindeclarationifnone()
 
 void addvar()
 {
-	scopevar.back().push_back(currdecltypevector);
-
-	currdecltypevector.~var();
-
-	new (&currdecltypevector) var{};
-
-	const var& lastvar = scopevar.back().back();
+	const var& lastvar = currdecltypevector;
 
 	const char* lastvartypestoragespec = lastvar.type.back().spec.basicdeclspec.basic[2].c_str();
 
@@ -456,15 +703,24 @@ void addvar()
 		case type::POINTER:
 		case type::ARRAY:
 		case type::BASIC:
-			globals.push_back(std::make_unique<llvm::GlobalVariable>(lastvar.pllvmtype, false, linkagetype, nullptr, lastvar.identifier)); break;
+			globals.push_back(std::make_unique<llvm::GlobalVariable>(lastvar.pllvmtype, false, linkagetype, nullptr, lastvar.identifier));
+			scopevar.front().push_back(lastvar);
+			break;
 		case type::FUNCTION:
 			funcs.push_back(llvm::Function::Create(llvm::dyn_cast<llvm::FunctionType>(lastvar.pllvmtype), linkagetype, lastvar.identifier, nonconstructable.mainmodule));
+			scopevar.front().push_back(lastvar);
 			break;
 		}
 		break;
 	default:
+		scopevar.back().push_back(currdecltypevector);
+
 		break;
 	}
+
+	currdecltypevector.~var();
+
+	new (&currdecltypevector) var{};
 }
 
 extern "C" void startdeclaration(const char* str, size_t szstr, int isinsidedecl, bool bistypedef) try
@@ -491,6 +747,8 @@ extern "C" void finalizedeclaration()
 	new (&currdecltypevector) var{};
 
 	assert(currtypevectorbeingbuild.size() == 1);
+
+	currdecltype = currdecltypeenum::NONE;
 }
 
 llvm::Type* createllvmtype(std::vector<type> decltypevector)
@@ -541,14 +799,14 @@ llvm::Type* createllvmtype(std::vector<type> decltypevector)
 	return pcurrtype;
 }
 
-static std::vector<llvm::BasicBlock*> pcurrblock;
+extern std::vector<llvm::BasicBlock*> pcurrblock;
 
 void finalizedecl();
 
 extern "C" void beginscope()
 {
 	if (currdecltype != currdecltypeenum::NONE) //if begin a function definiton
-		finalizedecl(), addvar();
+		finalizedeclaration();
 	if (scopevar.size() == 1)
 		currfunc = funcs.back();
 
@@ -567,19 +825,23 @@ extern "C" void endfunctioncall()
 {
 	auto lastblock = pcurrblock.back();
 
-	llvm::Function* callee = llvm::dyn_cast<llvm::Function>(hndlbase.immidiates.front());
+	llvm::Function* callee = llvm::dyn_cast<llvm::Function>(hndlbase.immidiates.front().value);
 
 	hndlbase.immidiates.erase(hndlbase.immidiates.begin());
 
 	llvmbuilder.SetInsertPoint(lastblock);
 
-	llvmbuilder.CreateCall(callee->getFunctionType(), llvm::dyn_cast<llvm::Value>(callee), hndlbase.immidiates);
+	std::vector<llvm::Value*> immidiates;
+
+	std::transform(hndlbase.immidiates.begin(), hndlbase.immidiates.end(), std::back_inserter(immidiates), [](const basehndl::valandtype& elem) { return elem.value; });
+
+	llvmbuilder.CreateCall(callee->getFunctionType(), llvm::dyn_cast<llvm::Value>(callee), immidiates);
 }
 
 extern "C" void endreturn()
 {
 	llvmbuilder.SetInsertPoint(pcurrblock.back());
-	llvmbuilder.CreateRet(hndlbase.immidiates.back());
+	llvmbuilder.CreateRet(hndlbase.immidiates.back().value);
 }
 
 extern "C" void endfunctionparamdecl(bool bisrest)
@@ -631,7 +893,6 @@ extern "C" void finalizedeclarationtypename()
 	finalizedecl();
 
 	currdecltype = currdecltypeenum::NONE;
-	currdeclspectypedef = "";
 }
 
 extern "C" void addsubtotype()
@@ -640,7 +901,7 @@ extern "C" void addsubtotype()
 
 	type arraytype{ type::ARRAY };
 
-	auto res = llvm::dyn_cast<llvm::ConstantInt>(hndlcnstexpr.immidiates.back());
+	auto res = llvm::dyn_cast<llvm::ConstantInt>(hndlcnstexpr.immidiates.back().value);
 
 	arraytype.spec.arraysz = *res->getValue().getRawData();
 	currtypevectorbeingbuild.back()->type.push_back(arraytype);
@@ -657,16 +918,18 @@ extern "C" void addptrtotype(const char* quailifers, size_t szstr)
 	currtypevectorbeingbuild.back()->type.push_back(ptrtype);
 }
 
-extern "C" void insertinttoimm(const char* str, size_t szstr) { phndl->insertinttoimm(str, szstr); }
+extern "C" void insertinttoimm(const char* str, size_t szstr, int type) { phndl->insertinttoimm(str, szstr, type); }
 
 extern "C" void beginconstantexpr()
 {
+	cnstexpriterstart = phndl->immidiates.end();
+
 	phndl = &hndlcnstexpr;
 }
 
 extern "C" void endconstantexpr()
 {
-	assert(hndlcnstexpr.immidiates.size() == 1);
+	assert(cnstexpriterstart == phndl->immidiates.end() - 1);
 
 	//auto res = dyn_cast<llvm::ConstantInt>(immidiates.back());
 
@@ -725,11 +988,11 @@ extern "C" void binary(const char* str, size_t szstr)
 	case "!="_h:
 		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_NE); break;
 	case "&"_h:
-		phndl->bitwisetwovalues(llvm::ConstantExpr::getAnd); break;
+		phndl->bitwisetwovalues(llvm::Instruction::And); break;
 	case "^"_h:
-		phndl->bitwisetwovalues(llvm::ConstantExpr::getXor); break;
+		phndl->bitwisetwovalues(llvm::Instruction::Xor); break;
 	case "|"_h:
-		phndl->bitwisetwovalues(llvm::ConstantExpr::getOr); break;
+		phndl->bitwisetwovalues(llvm::Instruction::Or); break;
 	case "&&"_h:
 		phndl->logictwovalues(true); break;
 	case "||"_h:

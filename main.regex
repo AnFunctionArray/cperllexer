@@ -1,7 +1,7 @@
 #include "typename.regex", "inner.regex", "unary.regex", "binary.regex"
 #entry ^cprogram	
 
-(?<primexpr>(?&assignorsomething)(,(?C35)\s*+(?&assignorsomething))*+)
+(?<primexpr>(?&assignorsomething)(,(?C35)\s*+(?&assignorsomething))*)
 
 
 (?<castexpr>(?<unaryexpr>((?&inner)|(?<inparenths>\s*+[(](?&primexpr)[)]\s*+))(((\[(?&primexpr)\]|[(](?C7)(?&primexpr)[)](?C13))\s*+
