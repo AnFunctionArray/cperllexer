@@ -283,6 +283,7 @@ struct basehndl
 			integralpromotions(immidiates.back()) };
 
 		if (busual) ops = usualarithmeticconversions(ops);
+		else ops[1].currtype = ops[0].currtype, ops[1].value = CreateCastInst(llvm::Instruction::CastOps::ZExt, ops[1].value, ops[0].value->getType());
 
 		immidiates.erase(immidiates.end() - 2, immidiates.end());
 
