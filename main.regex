@@ -4,7 +4,7 @@
 (?<primexpr>(?&assignorsomething)(,(?C35)\s*+(?&assignorsomething))*)
 
 
-(?<castexpr>(?<unaryexpr>((?&inner)|(?<inparenths>\s*+[(](?&primexpr)[)]\s*+))(((\[(?&primexpr)\]|[(](?C7)(?&primexpr)[)](?C13))\s*+
+(?<castexpr>(?<unaryexpr>((?&inner)|(?<inparenths>\s*+[(](?&primexpr)[)]\s*+))(((\[(?&primexpr)\](?C54)|[(](?C7)(?&primexpr)?[)](?C13))\s*+
 						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?C8)(?&identifier)
 						|(?<postfixarith>(?<postfixarithraw>[+][+]|--)\s*+)(?C9)))*+
 						|(?&unary))|(?&typenamerev))
@@ -31,9 +31,9 @@
 (?<jumpstatement>\s*+(goto(?&identifier);|continue\s*+;|break\s*+;|return(?&primexpr)?+(?C52);)\s*+)
 (?<iterationstatement>\s*+(while\s*+[(](?&primexpr)[)](?&statement)|do(?&statement)while\s*+[(](?&primexpr)[)]\s*+;
 	|for\s*+[(]((?&declaration)|(?&exprstatement))?+(?&exprstatement)?+(?&primexpr)?+[)](?&statement))\s*+)
-(?<exprstatement>(?&primexpr)?;\s*+)
+(?<exprstatement>(?&primexpr)?;(?C53)\s*+)
 (?<compoundstatement>\s*+[{](?C44)((?&declaration)|(?&statement))*+[}](?C45)\s*+)
 (?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?&statement)(else(?&statement))?+|switch\s*+[(](?&primexpr)[)](?&statement))\s*+)
 (?<statement>(?(?=(&labelfacet))(?&label))((?&exprstatement)|(?&compoundstatement)|(?&selectionstatement)|(?&iterationstatement)|(?&jumpstatement)))
 (?<label>((?&identifier)|case(?&primexpr)|default):)
-(?<cprogram>((?&typenameinside)((?&compoundstatement)|(?&abstrinitialization)?(,(?C43)(?&abstdecloutside)(?&abstrinitialization)?+)*+\s*+(?C42);\s*+))*)
+(?<cprogram>((?&typenameinside)(?C42)((?&compoundstatement)|(?&abstrinitialization)?(,(?C43)(?&abstdecloutside)(?C42)(?&abstrinitialization)?+)*+\s*+;\s*+))*)

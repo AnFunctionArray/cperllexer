@@ -2,7 +2,7 @@
 #define PCRE2_STATIC
 #define _LARGEFILE64_SOURCE
 
-#include <pcre\pcre2.h>
+#include <pcre2.h>
 #include <stdio.h>
 //#include <boost/preprocessor/stringize.hpp>
 #include <string.h>
@@ -106,9 +106,9 @@ int compile_pattern_and_execute(const char *pattern, const char *subject, int (*
 	pcre2_set_callout(match_context, callback, &nametable);
 
 	if (msgs)
-		printf("\n\n");
+		printf("\n\n", 0);
 
-	rc = pcre2_match(pcode, subject, szsubject, 0, 0, pmatch_data, match_context);
+	rc = pcre2_match(pcode, subject, szsubject, 0, PCRE2_PARTIAL_HARD, pmatch_data, match_context);
 
 	printf("%d\n", rc);
 

@@ -351,6 +351,10 @@ healthchecksdb
 
 cparser
 
+cparser2
+
+a.out
+
 ./build/
 
 *.ll

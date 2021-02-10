@@ -1,7 +1,7 @@
 #include <stdio.h>
 #define PCRE2_CODE_UNIT_WIDTH 8
 #define PCRE2_STATIC
-#include <pcre/pcre2.h>
+#include <pcre2.h>
 #include "../main.h"
 #include <stdlib.h>
 

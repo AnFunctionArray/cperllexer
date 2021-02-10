@@ -1,18 +1,18 @@
-CC=gcc-10
-CXX=g++-10
-CFLAGS=-I$(HOME)/localperl/lib/5.32.0/x86_64-linux/CORE -g -fsanitize=address -O0
-CPPFLAGS=$(CFLAGS) -std=gnu++2a
-LDFLAGS=-l:libpcre2-8.a -l:llvm-10/lib/libLLVM.so -L$(HOME)/localperl/lib/5.32.0/x86_64-linux/CORE -lperl -lm -lcrypt -lpthread -fsanitize=address
+CC=clang-11
+CXX=clang++-11
+CFLAGS=-I$(HOME)/localperl/lib/5.32.0/x86_64-linux/CORE -g -O0 -I/usr/include/llvm-11 -I/usr/include/llvm-c-11
+CXXFLAGS=$(CFLAGS) -std=c++20  -I/usr/include/llvm-11
+LDFLAGS=-l:libpcre2-8.a -l:llvm-11/lib/libLLVM.so -L$(HOME)/localperl/lib/5.32.0/x86_64-linux/CORE -lperl -lm -lcrypt -lpthread
 DEPS = main.h ./llvm/llvmgen.h
 
 %.o: %.c ./metaregex/%.c $(DEPS) 
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 %.o: ./metaregex/%.cpp $(DEPS) 
-	$(CXX) -c -o $@ $< $(CPPFLAGS)
+	$(CXX) -c -o $@ $< $(CXXFLAGS)
 
-%.o: ./llvmgen/%.cpp $(DEPS)
-	$(CXX) -c -o $@ $< $(CPPFLAGS)
+%.o: ./llvm/%.cpp $(DEPS)
+	$(CXX) -c -o $@ $< $(CXXFLAGS)
 
 %.c: %.xs
 	xsubpp $< > $@

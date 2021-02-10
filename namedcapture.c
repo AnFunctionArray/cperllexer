@@ -1,7 +1,7 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #define PCRE2_STATIC
 
-#include <pcre\pcre2.h>
+#include <pcre2.h>
 #include <stdio.h>
 //#include <boost/preprocessor/stringize.hpp>
 #include <string.h>
@@ -131,6 +131,14 @@ int callout_test(pcre2_callout_block* a, void* b)
 		printf("\n");
 		n = 0;
 		break;*/
+	case 54:
+		subscript();
+		message = "end subscript\n";
+		break;
+	case 53:
+		message = "end statement\n";
+		endexpression();
+		break;
 	case 52:
 		message = "end return\n";
 		endreturn();
@@ -156,21 +164,6 @@ int callout_test(pcre2_callout_block* a, void* b)
 			(unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]),
 			a->subject + a->offset_vector[2 * n]), a->offset_vector[2 * n] = a->offset_vector[2 * n + 1] = -1;
 		break;
-	case 47:
-		message = "start of function declr\n";
-		setypedefspec(typedefname, a->subject);
-		startfunctionparamdecl();
-		printqualifntype(typedefname, a->subject);
-		break;
-	case 46:
-		//ntoprint[1] = getnameloc(namedcapture = "identifiermine", *ptable) + 1;
-		//bool bwhich = typedefname[0] == -1;
-		//if (bwhich)
-		//	ntoprint[1] = getnameloc("typesandqualifiers", *ptable);
-		setypedefspec(typedefname, a->subject);
-		finalizedeclarationtypename();
-		printqualifntype(typedefname, a->subject);
-		break;
 	case 44:
 		addtypedefsscope();
 		beginscope();
@@ -178,10 +171,6 @@ int callout_test(pcre2_callout_block* a, void* b)
 	case 45:
 		removetypedefsscope();
 		endscope();
-		break;
-	case 43:
-		isinsidedecl = true;
-		enddeclaration();
 		break;
 	case 42:
 		isinsidedecl = false;
@@ -193,9 +182,9 @@ int callout_test(pcre2_callout_block* a, void* b)
 		endconstantexpr();
 		break;
 	case 40:
-		setypedefspec(typedefname, a->subject);
+		//setypedefspec(typedefname, a->subject);
 		beginconstantexpr();
-		printqualifntype(typedefname, a->subject);
+		//printqualifntype(typedefname, a->subject);
 		break;
 	case 39:;
 		n = getnameloc(namedcapture = "identifiermine", *ptable) + 1;
@@ -216,12 +205,21 @@ int callout_test(pcre2_callout_block* a, void* b)
 		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
 		ntoclear = 0;
 
-		startdeclaration(GROUP_PTR_AND_SZ(n), isinsidedecl, istypedefdecl);
+		adddeclarationident(GROUP_PTR_AND_SZ(n), istypedefdecl);
 
 		n--;
 
-		printqualifntype(typedefname, a->subject);
+		//printqualifntype(typedefname, a->subject);
 
+		break;
+	case 55:
+		startdeclaration();
+		break;
+	case 43:
+		continuedeclaration();
+		break;
+	case 47:
+		startfunctionparamdecl();
 		break;
 	case 38:;
 		int istypedefinvecotr(const char* identifier, size_t szcontent);
@@ -255,6 +253,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 
 	case 30:
 		BINARY_OP("assignop");
+		binary(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 29:
 		BINARY_OP("orlogicop");
@@ -298,14 +297,17 @@ int callout_test(pcre2_callout_block* a, void* b)
 		break;
 	case 19:
 		n = getnameloc(namedcapture = "unaryop", *ptable);
+		unary(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 9:
-		printf("postfix arithmetic:\n");
+		printf("postfix arithmetic:\n", 0);
 		n = getnameloc(namedcapture = "postfixarith", *ptable);
+		//unaryincdec(GROUP_PTR_AND_SZ(n + 1), true);
 		break;
 	case 10:
-		printf("prefix arithmetic:\n");
+		printf("prefix arithmetic:\n", 0);
 		n = getnameloc(namedcapture = "prefixarith", *ptable);
+		//unaryincdec(GROUP_PTR_AND_SZ(n + 1), false);
 		break;
 	case 1:
 		n = getnameloc(namedcapture = "escape", *ptable);
@@ -350,7 +352,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 		addplaintexttostring(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 6:;
-		printf("identifier:\n");
+		printf("identifier:\n", 0);
 		n = getnameloc(namedcapture = "identifier", *ptable);
 		obtainvalbyidentifier(GROUP_PTR_AND_SZ(n + 1));
 		//cond = n = 0; break;
@@ -365,6 +367,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 			if(!test++)*/
 			//startfunctioncall();
 		message = "start function call\n";
+		startfunctioncall();
 		break;
 		/*	else cond = n = 0;
 		else ; break;*/
@@ -373,7 +376,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 		message = "end function call\n";
 		break;
 	case 8:
-		printf("member access operator:\n");
+		printf("member access operator:\n", 0);
 		n = getnameloc(namedcapture = "arrowordot", *ptable);
 		break;
 	case 12:
@@ -390,13 +393,11 @@ int callout_test(pcre2_callout_block* a, void* b)
 	case 11:
 		n = (getnameloc(namedcapture = "abstrptr", *ptable));
 
-		setypedefspec(typedefname, a->subject);
-
-		n = 0;
+		//n = 0;
 
 		addptrtotype(GROUP_PTR_AND_SZ(n + 1));
 
-		printqualifntype(typedefname, a->subject);
+		printf("pointer", 0);
 
 		break;
 #else
@@ -458,7 +459,7 @@ return 0;
 //else return 0;
 
 if (message)
-printf(message);
+printf(message, 0);
 if (!message || PATTERN_FLAGS & PCRE2_AUTO_CALLOUT)
 for (n = 0; n < a->capture_top; ++n)
 {
@@ -508,7 +509,7 @@ debug();
 #endif
 
 if (!cond || PATTERN_FLAGS & PCRE2_AUTO_CALLOUT)
-printf("\n\n");
+printf("\n\n", 0);
 
 #ifdef DEBUG_PHYSIC
 if (!((1 << 15) & GetAsyncKeyState(VK_RETURN)))
@@ -534,7 +535,7 @@ void printqualifntype(size_t* typedefname, const char* subject)
 	if (typedefname[0] != -1)
 		printf("and typedef name: %.*s", typedefname[1] - typedefname[0], subject + typedefname[0]);
 
-	if (isanythingprinted) printf("\n");
+	if (isanythingprinted) printf("\n", 0);
 
 	typedefname[0] = typedefname[1] = -1;
 }

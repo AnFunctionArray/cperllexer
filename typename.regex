@@ -1,14 +1,14 @@
 (?<typename>\s*+[(](?<typenameinsidenooptional>(?<allqualifs>(?<typesandqualifiers>\s*+(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b)|
 						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
 						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b)|__[_a-zA-Z0-9]*+)(?C49)\s*+)
-						|(?&typedefname)|(?&structorunion)|\s*+(?>(?<typedefkeyword>\btypedef\b))\s*+)++
+						|(?&typedefname)|(?&structorunion)|\s*+(?>(?<typedefkeyword>\btypedef\b))\s*+)++(?C55)
 						((?<abstdecl>(?<abstrptrrev#restrictoutsidefacet>(?<abstrptr>\s*+[*]\s*+((?&qualifiers))*+)
 						(?!(?&abstrptrrev)(?C11))
 						(?<abstrrest>(?<abstrmostoutter>\s*+([(](?&abstdecl)[)]|(?&identifiermine))\s*+)?+(?<abstrsubs>\s*+(\[(?C40)(?&primexpr)\](?C41)
 						|[(](?C47)(?&typenameinsidenooptional)?+(,(?C46)(?&typenameinsidenooptional))*(?<rest>,\s*+\.\.\.\s*+)?+[)](?C48))\s*+)*+(?C11))|
 						(?&abstrptr))(?&abstdeclinside))|(?&abstrmostoutter)?+(?&abstrsubs)*+))[)](?C46)\s*+)
 
-(?<typenameinside>(\s*+(?>(?<typedefkeywordmine>\btypedef\b))\s*+|(?&allqualifs))*+(?&abstdecloutside))
+(?<typenameinside>(\s*+(?>(?<typedefkeywordmine>\btypedef\b))\s*+|(?&allqualifs))*+(?C55)(?&abstdecloutside))
 
 (?<abstdecloutside>(?&abstdecl)|(?&abstrmostoutter)(?&abstrsubs)*+)
 
@@ -34,6 +34,6 @@
 (?<structorunion>\s*+(struct|union)((?&identifier)?+\s*+[{]\s*+((?&typenameinsidenooptional)?+(?&abstrbitfield)?+(,(?&abstdecloutside)(?&abstrbitfield)?+)*+\s*+;\s*+)*+[}]\s*+|(?&identifier))|(?&enum))
 (?<enum>\s*+enum((?&identifier)?+\s*+[{](?<enumerator>(?&identifier)(=(?&assignorsomething))?+)?+(,(?&enumerator))*+,?+\s*+[}]\s*+|(?&identifier)))
 
-(?<declaration>((?&typenameinsidenooptional)(?&abstrinitialization)?+(,(?C43)(?&abstdecloutside)(?&abstrinitialization)?+)*+\s*+(?C42);\s*+))
+(?<declaration>((?&typenameinsidenooptional)(?C42)(?&abstrinitialization)?+(,(?C43)(?&abstdecloutside)(?C42)(?&abstrinitialization)?+)*+\s*+;\s*+))
 
 (,(?&abstdecloutside)(?&abstrinitialization)?+)*+

@@ -6,7 +6,7 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #define PCRE2_STATIC
 
-#include <pcre\pcre2.h>
+#include <pcre2.h>
 #include "main.h"
 
 MODULE = _6a4h8
