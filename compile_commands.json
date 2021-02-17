@@ -6,7 +6,7 @@
     },
     {
         "directory": "/home/users/mms00544/cparser2",
-        "command": "/usr/bin/clang-11 -I~/localperl/lib/5.32.0/x86_64-linux/CORE -I/usr/include/llvm-11 -I/usr/include/llvm-c-11 -o namedcapture.o",
+        "command": "/usr/bin/clang-11 namedcapture.c -I~/localperl/lib/5.32.0/x86_64-linux/CORE -I/usr/include/llvm-11 -I/usr/include/llvm-c-11 -o namedcapture.o",
         "file": "namedcapture.c"
     }
 ]

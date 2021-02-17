@@ -1,7 +1,11 @@
+#include "llvm/IR/Constant.h"
+#include "llvm/Support/Casting.h"
 #include <array>
 #include <bitset>
+#include <cstddef>
 #include <functional>
 #include <iostream>
+#include <list>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Constants.h>
@@ -28,6 +32,13 @@ unsigned constexpr stringhash (char const *input) {
                   : 5381;
 }
 
+void printtype (llvm::Type *ptype, std::string identifier) {
+    std::string type_str;
+    llvm::raw_string_ostream rso (type_str);
+    ptype->print (rso);
+    std::cout << identifier << " is " << rso.str () << std::endl;
+}
+
 constexpr inline auto operator"" _h (char const *p, size_t) {
     return stringhash (p);
 }
@@ -39,12 +50,6 @@ static struct nonconstructable {
         llvm::Module mainmodule;
     };
 } nonconstructable;
-
-static std::vector<llvm::Function *> funcs{};
-
-static llvm::Function *currfunc;
-
-static std::vector<llvm::GlobalVariable *> globals{};
 
 static llvm::LLVMContext llvmctx;
 
@@ -138,7 +143,7 @@ struct type {
 
     typedef uint64_t arraytype;
     struct functype {
-        std::vector<var> parametertypes;
+        std::list<std::list<var>> parametertypes_list{1};
         bool bisvariadic;
     };
 
@@ -194,7 +199,10 @@ struct var {
     bool bistypedef;
     std::string identifier;
     llvm::Type *pllvmtype;
+    llvm::Value *pValue;
 };
+
+static std::list<var>::iterator currfunc;
 
 static std::vector<llvm::BasicBlock *> pcurrblock;
 
@@ -216,12 +224,17 @@ operator=(T p)
         void* p;
 };*/
 
-struct valandtype {
-    llvm::Value *value;
-    std::vector<::type> currtype;
+template <class valueT = llvm::Value> struct valandtype {
+    valueT *value;
+    std::vector<::type> type;
 };
 
-static std::vector<valandtype> callees{};
+template <class valueT = llvm::Value> struct val : valandtype<valueT> {
+    std::list<valandtype<valueT>> lvalues = {};
+    std::string originident = "[[immidiate]]";
+};
+
+static std::list<std::list<::val<>>::iterator> callees{};
 
 llvm::Type *createllvmtype (std::vector<type> decltypevector);
 
@@ -244,17 +257,17 @@ struct basehndl {
         return llvm::CastInst::Create (op, S, Ty, "", pcurrblock.back ());
     }
 
-    using valandtype = ::valandtype;
+    using val = ::val<>;
 
-    valandtype integralpromotions (valandtype in) {
-        assert (in.currtype.size () == 1);
+    val integralpromotions (val in) {
+        assert (in.type.size () == 1);
 
-        switch (stringhash (
-            in.currtype.back ().spec.basicdeclspec.basic[1].c_str ())) {
+        switch (
+            stringhash (in.type.back ().spec.basicdeclspec.basic[1].c_str ())) {
         case "char"_h:
         case "short"_h:
             switch (stringhash (
-                in.currtype.back ().spec.basicdeclspec.basic[0].c_str ())) {
+                in.type.back ().spec.basicdeclspec.basic[0].c_str ())) {
             default:
             case "signed"_h:
                 in.value =
@@ -267,29 +280,29 @@ struct basehndl {
                                     llvm::Type::getInt32Ty (llvmctx));
                 break;
             }
-            in.currtype.back ().spec.basicdeclspec.basic[0] = "";
-            in.currtype.back ().spec.basicdeclspec.basic[1] = "int";
+            in.type.back ().spec.basicdeclspec.basic[0] = "";
+            in.type.back ().spec.basicdeclspec.basic[1] = "int";
         }
         return in;
     }
 
-    std::array<valandtype, 2>
-    usualarithmeticconversions (std::array<valandtype, 2> ops) {
+    std::array<val, 2> usualarithmeticconversions (std::array<val, 2> ops) {
+        assert (ops[0].type.size () == 1 && ops[1].type.size () == 1);
+
         for (auto i = 0; i < 2; ++i)
-            if (ops[i].currtype.back ().spec.basicdeclspec.basic[1] == "long" &&
-                ops[i].currtype.back ().spec.basicdeclspec.basic[0] ==
-                    "unsigned")
-                if (ops[!i].currtype.back ().spec.basicdeclspec.basic[1] !=
+            if (ops[i].type.back ().spec.basicdeclspec.basic[1] == "long" &&
+                ops[i].type.back ().spec.basicdeclspec.basic[0] == "unsigned")
+                if (ops[!i].type.back ().spec.basicdeclspec.basic[1] !=
                         "long" ||
-                    ops[!i].currtype.back ().spec.basicdeclspec.basic[0] !=
+                    ops[!i].type.back ().spec.basicdeclspec.basic[0] !=
                         "unsigned")
                     return ops[!i]
-                               .currtype.back ()
+                               .type.back ()
                                .spec.basicdeclspec
                                .basic[1] = "long",
-          ops[!i].currtype.back ().spec.basicdeclspec.basic[0] = "unsigned",
+          ops[!i].type.back ().spec.basicdeclspec.basic[0] = "unsigned",
           ops[!i].value = CreateCastInst (
-              ops[!i].currtype.back ().spec.basicdeclspec.basic[0] == "unsigned"
+              ops[!i].type.back ().spec.basicdeclspec.basic[0] == "unsigned"
                   ? llvm::Instruction::CastOps::ZExt
                   : llvm::Instruction::CastOps::SExt,
               ops[!i].value, llvm::Type::getInt64Ty (llvmctx)),
@@ -298,85 +311,82 @@ struct basehndl {
                     return ops;
 
         for (auto i = 0; i < 2; ++i)
-            if (ops[i].currtype.back ().spec.basicdeclspec.basic[1] == "long" &&
-                ops[i].currtype.back ().spec.basicdeclspec.basic[0] !=
-                    "unsigned")
-                if (ops[!i].currtype.back ().spec.basicdeclspec.basic[1] ==
-                        "int" &&
-                    ops[!i].currtype.back ().spec.basicdeclspec.basic[0] ==
+            if (ops[i].type.back ().spec.basicdeclspec.basic[1] == "long" &&
+                ops[i].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
+                if (ops[!i].type.back ().spec.basicdeclspec.basic[1] == "int" &&
+                    ops[!i].type.back ().spec.basicdeclspec.basic[0] ==
                         "unsigned")
                     return ops[!i]
-                               .currtype.back ()
-                               .spec.basicdeclspec
-                               .basic[1] = "long",
-          ops[!i].currtype.back ().spec.basicdeclspec.basic[0] = "",
-          ops[!i].value = CreateCastInst (llvm::Instruction::CastOps::ZExt,
-                                          ops[!i].value,
-                                          llvm::Type::getInt64Ty (llvmctx)),
-          ops;
+                               .type.back ()
+                               .spec.basicdeclspec.basic[1] = "long",
+                             ops[!i].type.back ().spec.basicdeclspec.basic[0] =
+                                 "",
+                             ops[!i].value = CreateCastInst (
+                                 llvm::Instruction::CastOps::ZExt,
+                                 ops[!i].value,
+                                 llvm::Type::getInt64Ty (llvmctx)),
+                             ops;
 
         for (auto i = 0; i < 2; ++i)
-            if (ops[i].currtype.back ().spec.basicdeclspec.basic[1] == "long" &&
-                ops[i].currtype.back ().spec.basicdeclspec.basic[0] !=
-                    "unsigned")
+            if (ops[i].type.back ().spec.basicdeclspec.basic[1] == "long" &&
+                ops[i].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
                 return ops[!i]
-                           .currtype.back ()
-                           .spec.basicdeclspec
-                           .basic[1] = "long",
-      ops[!i].currtype.back ().spec.basicdeclspec.basic[0] = "",
-      ops[!i].value = CreateCastInst (
-          ops[!i].currtype.back ().spec.basicdeclspec.basic[0] == "unsigned"
-              ? llvm::Instruction::CastOps::ZExt
-              : llvm::Instruction::CastOps::SExt,
-          ops[!i].value, llvm::Type::getInt64Ty (llvmctx)),
-      ops;
+                           .type.back ()
+                           .spec.basicdeclspec.basic[1] = "long",
+                         ops[!i].type.back ().spec.basicdeclspec.basic[0] = "",
+                         ops[!i].value = CreateCastInst (
+                             ops[!i].type.back ().spec.basicdeclspec.basic[0] ==
+                                     "unsigned"
+                                 ? llvm::Instruction::CastOps::ZExt
+                                 : llvm::Instruction::CastOps::SExt,
+                             ops[!i].value, llvm::Type::getInt64Ty (llvmctx)),
+                         ops;
 
         for (auto i = 0; i < 2; ++i)
-            if (ops[i].currtype.back ().spec.basicdeclspec.basic[1] == "int" &&
-                ops[i].currtype.back ().spec.basicdeclspec.basic[0] ==
-                    "unsigned")
+            if (ops[i].type.back ().spec.basicdeclspec.basic[1] == "int" &&
+                ops[i].type.back ().spec.basicdeclspec.basic[0] == "unsigned")
                 return ops[!i]
-                           .currtype.back ()
-                           .spec.basicdeclspec
-                           .basic[1] = "int",
-      ops[!i].currtype.back ().spec.basicdeclspec.basic[0] = "unsigned",
-      ops[!i].value = CreateCastInst (
-          ops[!i].currtype.back ().spec.basicdeclspec.basic[0] == "unsigned"
-              ? llvm::Instruction::CastOps::ZExt
-              : llvm::Instruction::CastOps::SExt,
-          ops[!i].value, llvm::Type::getInt32Ty (llvmctx)),
-      ops;
+                           .type.back ()
+                           .spec.basicdeclspec.basic[1] = "int",
+                         ops[!i].type.back ().spec.basicdeclspec.basic[0] =
+                             "unsigned",
+                         ops[!i].value = CreateCastInst (
+                             ops[!i].type.back ().spec.basicdeclspec.basic[0] ==
+                                     "unsigned"
+                                 ? llvm::Instruction::CastOps::ZExt
+                                 : llvm::Instruction::CastOps::SExt,
+                             ops[!i].value, llvm::Type::getInt32Ty (llvmctx)),
+                         ops;
 
         return ops;
     }
 
     auto getops (bool busual = true, bool bassign = false) {
-        extern basehndl::valandtype getrvalue (basehndl::valandtype lvalue);
+        extern valandtype<> getrvalue (valandtype<> lvalue);
 
-        auto ops =
-            std::array{*(immidiates.end () - 2),
-                       integralpromotions (getrvalue (immidiates.back ()))};
+        auto ops = std::array{*(----immidiates.end ()), immidiates.back ()};
 
         auto op0type = ops[0].value->getType ();
 
-        if (bassign)
-            op0type = op0type->getPointerElementType ();
-        else
-            ops[0] = integralpromotions (getrvalue (ops[0]));
+        if (!bassign)
+            ops[0] = integralpromotions (ops[0]);
+
+        if (ops[1].type.front ().uniontype == type::BASIC)
+            ops[1] = integralpromotions (ops[1]);
 
         ops[0].value =
             /*gen_pointer_to_elem_if_ptr_to_array*/ (ops[0].value);
 
         if (busual)
             ops = usualarithmeticconversions (ops);
-        else
-            ops[1].currtype = ops[0].currtype,
+        else if (ops[1].type.front ().uniontype == type::BASIC &&
+                 op0type != ops[1].value->getType ())
+            ops[1].type = ops[0].type,
             ops[1].value = llvmbuilder.CreateIntCast (
                 ops[1].value, op0type,
-                ops[0].currtype.back ().spec.basicdeclspec.basic[0] !=
-                    "unsigned");
+                ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned");
 
-        immidiates.erase (immidiates.end () - 2, immidiates.end ());
+        immidiates.erase (----immidiates.end (), immidiates.end ());
 
         return ops;
     }
@@ -392,7 +402,7 @@ struct basehndl {
     virtual void dividelasttwovalues () {
         std::array ops = getops ();
 
-        if (ops[0].currtype.back ().spec.basicdeclspec.basic[0] != "unsigned")
+        if (ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
             ops[0].value = llvmbuilder.CreateSDiv (ops[0].value, ops[1].value);
         else
             ops[0].value = llvmbuilder.CreateUDiv (ops[0].value, ops[1].value);
@@ -403,7 +413,7 @@ struct basehndl {
     virtual void modulolasttwovalues () {
         std::array ops = getops ();
 
-        if (ops[0].currtype.back ().spec.basicdeclspec.basic[0] != "unsigned")
+        if (ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
             ops[0].value = llvmbuilder.CreateSRem (ops[0].value, ops[1].value);
         else
             ops[0].value = llvmbuilder.CreateURem (ops[0].value, ops[1].value);
@@ -412,6 +422,7 @@ struct basehndl {
     }
 
     virtual void addlasttwovalues (bool bminus) {
+        extern valandtype<> getrvalue (valandtype<> lvalue);
         if (!bminus && subscripttwovalues ()) {
             getaddress ();
             return;
@@ -430,8 +441,7 @@ struct basehndl {
 
         if (!bright)
             ops[0].value = llvmbuilder.CreateShl (ops[0].value, ops[1].value);
-        else if (ops[0].currtype.back ().spec.basicdeclspec.basic[0] !=
-                 "unsigned")
+        else if (ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
             ops[0].value = llvmbuilder.CreateAShr (ops[0].value, ops[1].value);
         else
             ops[0].value = llvmbuilder.CreateLShr (ops[0].value, ops[1].value);
@@ -442,7 +452,7 @@ struct basehndl {
     virtual void relatetwovalues (llvm::CmpInst::Predicate pred) {
         std::array ops = getops ();
 
-        if (ops[0].currtype.back ().spec.basicdeclspec.basic[0] != "unsigned")
+        if (ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
             ops[0].value =
                 llvmbuilder.CreateICmp (pred, ops[0].value, ops[1].value);
         else
@@ -453,10 +463,8 @@ struct basehndl {
             CreateCastInst (llvm::Instruction::CastOps::ZExt, ops[0].value,
                             llvm::Type::getInt32Ty (llvmctx));
 
-        ops[0].currtype.back ().spec.basicdeclspec.basic[1] = "int",
-                             ops[0]
-                                 .currtype.back ()
-                                 .spec.basicdeclspec.basic[0] = "";
+        ops[0].type.back ().spec.basicdeclspec.basic[1] = "int",
+                         ops[0].type.back ().spec.basicdeclspec.basic[0] = "";
 
         immidiates.push_back (ops[0]);
     }
@@ -490,10 +498,8 @@ struct basehndl {
             llvm::Instruction::CastOps::ZExt, ops[0].value,
             llvm::Type::getInt32Ty (llvmctx), "", pcurrblock.back ());
 
-        ops[0].currtype.back ().spec.basicdeclspec.basic[1] = "int",
-                             ops[0]
-                                 .currtype.back ()
-                                 .spec.basicdeclspec.basic[0] = "";
+        ops[0].type.back ().spec.basicdeclspec.basic[1] = "int",
+                         ops[0].type.back ().spec.basicdeclspec.basic[0] = "";
 
         immidiates.push_back (ops[0]);
     }
@@ -501,32 +507,42 @@ struct basehndl {
     virtual void assigntwovalues () {
         std::array ops = getops (false, true);
 
-        llvmbuilder.CreateStore (ops[1].value, ops[0].value);
+        printtype (ops[0].lvalues.back ().value->getType (),
+                   ops[0].originident);
+        printtype (ops[1].value->getType (), ops[1].originident);
 
-        immidiates.push_back (ops[1]);
+        llvmbuilder.CreateStore (ops[1].value, ops[0].lvalues.back ().value);
+
+        immidiates.push_back ({ops[1].value, ops[1].type, ops[1].lvalues});
     }
 
     virtual bool subscripttwovalues () {
-        extern basehndl::valandtype getrvalue (basehndl::valandtype lvalue);
+        extern valandtype<> getrvalue (valandtype<> lvalue);
 
-        auto ops = std::array{getrvalue (*(immidiates.end () - 2)),
-                              getrvalue (immidiates.back ())};
+        auto ops = std::array{*(----immidiates.end ()), immidiates.back ()};
 
         for (auto i = 0; i < 2; ++i)
-            if (ops[i].currtype.front ().uniontype != type::BASIC) {
-                if (ops[i].currtype.front ().uniontype == type::POINTER ||
-                    ops[i].currtype.front ().uniontype == type::ARRAY) {
-                    immidiates.erase (immidiates.end () - 2, immidiates.end ());
+            if (ops[i].type.front ().uniontype != type::BASIC) {
+                if (ops[i].type.front ().uniontype == type::POINTER ||
+                    ops[i].type.front ().uniontype == type::ARRAY) {
+                    extern ::val<> decay (::val<> lvalue);
+                    ops[i] = decay (ops[i]);
+                    immidiates.erase (----immidiates.end (), immidiates.end ());
+                    ops[i].type.erase (ops[i].type.begin ());
+                    llvm::Value *lvalue = llvmbuilder.CreateGEP (ops[i].value,
+
+                                                                 ops[!i].value);
                     immidiates.push_back (
-                        {llvmbuilder.CreateGEP (
-                             ops[i].value,
-                             {llvmbuilder.getInt64 (0),
-                              llvmbuilder.CreateIntCast (
-                                  ops[!i].value,
-                                  llvm::Type::getInt64Ty (llvmctx), true)}),
-                         ops[i].currtype});
-                    immidiates.back ().currtype.erase (
-                        immidiates.back ().currtype.begin ());
+                        {ops[i].type.front ().uniontype != type::FUNCTION
+                             ? llvmbuilder.CreateLoad (lvalue)
+                             : lvalue,
+                         ops[i].type, ops[i].lvalues, ops[i].originident});
+                    immidiates.back ().lvalues.push_back (
+                        {lvalue, ops[i].type});
+                    printtype (lvalue->getType (), ops[i].originident);
+                    printtype (immidiates.back ().value->getType (),
+                               ops[i].originident);
+                    printtype (ops[!i].value->getType (), ops[!i].originident);
                     return true;
                 }
             }
@@ -534,28 +550,23 @@ struct basehndl {
     }
 
     virtual void getaddress () {
-        auto op = immidiates.back ();
-
-        if (op.value->getType ()->isArrayTy ())
-            op.value = llvmbuilder.CreatePointerCast (
-                op.value, op.value->getType ()->getPointerTo ());
-
-        immidiates.pop_back ();
-
-        op.currtype.push_back (type{type::POINTER});
-
-        std::rotate (op.currtype.rbegin (), op.currtype.rbegin () + 1,
-                     op.currtype.rend ());
-        immidiates.push_back (op);
+        extern void printvaltype (val);
+        auto &val = immidiates.back ();
+        assert (val.lvalues.size ());
+        auto lval = val.lvalues.back ();
+        val.value = lval.value;
+        val.type.insert (val.type.begin (), {type::POINTER});
+        val.lvalues.pop_back ();
+        printvaltype (val);
     }
 
     virtual void applyindirection () {
+        extern valandtype<> getrvalue (valandtype<> lvalue);
+        extern ::val<> decay (::val<> lvalue);
+
         unsigned int type = 3 << 2 | 2;
 
-        if (immidiates.back ().currtype.front ().uniontype == ::type::POINTER)
-
-            immidiates.back ().currtype.erase (
-                immidiates.back ().currtype.begin ());
+        auto immlvalue = immidiates.back ();
 
         insertinttoimm ("0", sizeof "0" - 1, type);
 
@@ -632,25 +643,23 @@ struct basehndl {
 
         auto valval = llvm::ConstantInt::get (createllvmtype (currtype), val);
 
-        immidiates.push_back (valandtype{valval, currtype});
+        immidiates.push_back ({valval, currtype});
     }
 
-    std::vector<valandtype> immidiates;
+    std::list<val> immidiates;
 };
 
 struct handlecnstexpr : basehndl {
-    struct valandtype {
-        llvm::Constant *value;
-        std::vector<::type> currtype;
-    };
 
-    std::vector<valandtype> &immidiates =
-        reinterpret_cast<std::vector<valandtype> &> (basehndl::immidiates);
+    using val = ::val<llvm::Constant>;
+
+    std::list<val> &immidiates =
+        reinterpret_cast<std::list<val> &> (basehndl::immidiates);
 
     auto getops (bool busual = true) {
         auto ops = basehndl::getops ();
 
-        return reinterpret_cast<std::array<valandtype, 2> &&> (ops);
+        return reinterpret_cast<std::array<val, 2> &&> (ops);
     }
 
     virtual void mlutiplylasttwovalues () {
@@ -664,7 +673,7 @@ struct handlecnstexpr : basehndl {
     virtual void dividelasttwovalues () {
         std::array ops = getops ();
 
-        if (ops[0].currtype.back ().spec.basicdeclspec.basic[0] != "unsigned")
+        if (ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
             ops[0].value =
                 llvm::ConstantExpr::getSDiv (ops[0].value, ops[1].value);
         else
@@ -677,7 +686,7 @@ struct handlecnstexpr : basehndl {
     virtual void modulolasttwovalues () {
         std::array ops = getops ();
 
-        if (ops[0].currtype.back ().spec.basicdeclspec.basic[0] != "unsigned")
+        if (ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
             ops[0].value =
                 llvm::ConstantExpr::getSRem (ops[0].value, ops[1].value);
         else
@@ -703,8 +712,7 @@ struct handlecnstexpr : basehndl {
         if (!bright)
             ops[0].value =
                 llvm::ConstantExpr::getShl (ops[0].value, ops[1].value);
-        else if (ops[0].currtype.back ().spec.basicdeclspec.basic[0] !=
-                 "unsigned")
+        else if (ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
             ops[0].value =
                 llvm::ConstantExpr::getAShr (ops[0].value, ops[1].value);
         else
@@ -717,7 +725,7 @@ struct handlecnstexpr : basehndl {
     virtual void relatetwovalues (llvm::CmpInst::Predicate pred) {
         std::array ops = getops ();
 
-        if (ops[0].currtype.back ().spec.basicdeclspec.basic[0] != "unsigned")
+        if (ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
             ops[0].value =
                 llvm::ConstantExpr::getICmp (pred, ops[0].value, ops[1].value);
         else
@@ -728,10 +736,8 @@ struct handlecnstexpr : basehndl {
             CreateCastInst (llvm::Instruction::CastOps::ZExt, ops[0].value,
                             llvm::Type::getInt32Ty (llvmctx));
 
-        ops[0].currtype.back ().spec.basicdeclspec.basic[1] = "int",
-                             ops[0]
-                                 .currtype.back ()
-                                 .spec.basicdeclspec.basic[0] = "";
+        ops[0].type.back ().spec.basicdeclspec.basic[1] = "int",
+                         ops[0].type.back ().spec.basicdeclspec.basic[0] = "";
 
         immidiates.push_back (ops[0]);
     }
@@ -765,10 +771,8 @@ struct handlecnstexpr : basehndl {
             CreateCastInst (llvm::Instruction::CastOps::ZExt, ops[0].value,
                             llvm::Type::getInt32Ty (llvmctx));
 
-        ops[0].currtype.back ().spec.basicdeclspec.basic[1] = "int",
-                             ops[0]
-                                 .currtype.back ()
-                                 .spec.basicdeclspec.basic[0] = "";
+        ops[0].type.back ().spec.basicdeclspec.basic[1] = "int",
+                         ops[0].type.back ().spec.basicdeclspec.basic[0] = "";
 
         immidiates.push_back (ops[0]);
     }
@@ -800,43 +804,81 @@ std::string currdeclspectypedef;
 
 extern std::vector<std::string> qualifsandtypes;
 
-static std::vector<std::vector<var>> scopevar{1};
+static std::list<std::list<var>> scopevar{1};
 
 struct currtypevectorbeingbuild {
-    std::vector<var> *p;
+    std::list<std::list<var>>::iterator p;
     currdecltypeenum currdecltype;
 };
 
-std::vector<struct currtypevectorbeingbuild> currtypevectorbeingbuild = {
-    {&scopevar.back (), currdecltypeenum::NORMAL}};
+std::list<struct currtypevectorbeingbuild> currtypevectorbeingbuild = {
+    {scopevar.begin (), currdecltypeenum::NORMAL}};
 
 static std::string currstring;
+
+void printvaltype (val<> val) {
+    std::string type_str;
+    llvm::raw_string_ostream rso (type_str);
+    val.value->getType ()->print (rso);
+    std::string name = val.value->getName ().str ();
+    name = name.size () ? name : val.originident;
+    std::cout << name << " is " << rso.str () << std::endl;
+}
+
+extern valandtype<> getrvalue (valandtype<> lvalue);
 
 extern "C" void obtainvalbyidentifier (const char *identifier, size_t szstr) {
     std::string ident{identifier, szstr};
 
-    const ::var *var;
+    const ::var *var = nullptr;
 
-    llvm::GlobalVariable *pglobal;
-
-    std::find_if (scopevar.begin (), scopevar.end (),
-                  [&] (const std::vector<::var> &scope) {
+    std::find_if (scopevar.rbegin (), scopevar.rend (),
+                  [&] (const std::list<::var> &scope) {
                       auto iter =
-                          std::find_if (scope.begin (), scope.end (),
+                          std::find_if (scope.rbegin (), scope.rend (),
                                         [&] (const ::var &scopevar) {
                                             return scopevar.identifier == ident;
                                         });
 
-                      if (iter != scope.end ())
-                          return (bool)(var = &*iter);
+                      if (iter != scope.rend ())
+                          return var = &*iter, true;
                       return false;
                   });
 
-    if (var->type.front ().uniontype == ::type::FUNCTION)
+    /*if (var->type.front ().uniontype == ::type::FUNCTION)
         phndl->immidiates.push_back (
-            {nonconstructable.mainmodule.getFunction (ident), var->type});
+            {pglobal = nonconstructable.mainmodule.getFunction (ident),
+             var->type, true});
     else if (pglobal = nonconstructable.mainmodule.getGlobalVariable (ident))
-        phndl->immidiates.push_back ({pglobal, var->type});
+        phndl->immidiates.push_back ({pglobal, var->type, true});*/
+
+    val<> immidiate;
+
+    if (!var) {
+        auto &currfunctype =
+            currfunc->type.front ().spec.func.parametertypes_list.front ();
+
+        var = &*std::find_if (
+            currfunctype.begin (), currfunctype.end (),
+            [&] (const ::var &param) { return param.identifier == ident; });
+    }
+
+    llvm::Value *pglobal;
+
+    immidiate.type = var->type;
+
+    pglobal = immidiate.value = var->pValue;
+
+    immidiate.originident = var->identifier;
+
+    immidiate.lvalues.push_back (immidiate);
+
+    if (!immidiate.value->getType ()->getPointerElementType ()->isFunctionTy ())
+        immidiate.value = llvmbuilder.CreateLoad (immidiate.value);
+
+    phndl->immidiates.push_back (immidiate);
+
+    printvaltype (immidiate);
 }
 
 extern "C" void addplaintexttostring (const char *str, size_t szstr) {
@@ -866,6 +908,7 @@ extern "C" void constructstring () {
         {llvmbuilder.CreateGlobalStringPtr (currstring, "", 0,
                                             &nonconstructable.mainmodule),
          stirngtype});
+    hndlbase.immidiates.back ().lvalues.push_back (hndlbase.immidiates.back ());
     currstring = "";
 }
 
@@ -892,23 +935,24 @@ void addvar (var &lastvar) {
         case type::ARRAY:
         case type::BASIC:
             if (scopevar.size () == 1)
-                globals.push_back (new llvm::GlobalVariable (
+                lastvar.pValue = new llvm::GlobalVariable (
                     nonconstructable.mainmodule, lastvar.pllvmtype, false,
                     linkagetype,
                     llvm::Constant::getNullValue (lastvar.pllvmtype),
-                    lastvar.identifier));
+                    lastvar.identifier);
             // scopevar.front ().push_back (lastvar);
             break;
         case type::FUNCTION:
-            funcs.push_back (llvm::Function::Create (
+            lastvar.pValue = llvm::Function::Create (
                 llvm::dyn_cast<llvm::FunctionType> (lastvar.pllvmtype),
-                linkagetype, lastvar.identifier, nonconstructable.mainmodule));
+                linkagetype, lastvar.identifier, nonconstructable.mainmodule);
             // scopevar.front ().push_back (lastvar);
             break;
         }
         break;
     default:
-
+        lastvar.pValue = llvmbuilder.CreateAlloca (lastvar.pllvmtype, nullptr,
+                                                   lastvar.identifier);
         break;
     }
 }
@@ -1007,7 +1051,7 @@ llvm::Type *createllvmtype (std::vector<type> decltypevector) {
         }},
         std::function{[&] (const type &type) {
             std::vector<llvm::Type *> paramtype;
-            for (auto &a : type.spec.func.parametertypes)
+            for (auto &a : type.spec.func.parametertypes_list.front ())
                 paramtype.push_back (a.pllvmtype);
             pcurrtype = dyn_cast<llvm::Type> (llvm::FunctionType::get (
                 pcurrtype, paramtype, type.spec.func.bisvariadic));
@@ -1026,14 +1070,37 @@ extern std::vector<llvm::BasicBlock *> pcurrblock;
 void finalizedecl ();
 
 extern "C" void beginscope () {
-    if (scopevar.size () == 1)
-        currfunc = funcs.back ();
+    if (scopevar.size () == 1) {
+        var current_arg;
+        currfunc = --scopevar.back ().end ();
+        auto iter_params = currfunc->type.front ()
+                               .spec.func.parametertypes_list.front ()
+                               .begin ();
+        for (auto &arg : dyn_cast<llvm::Function> (currfunc->pValue)->args ())
+            iter_params++->pValue = &arg;
+    }
 
-    pcurrblock.push_back (llvm::BasicBlock::Create (llvmctx, "", currfunc));
+    pcurrblock.push_back (llvm::BasicBlock::Create (
+        llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue)));
     llvmbuilder.SetInsertPoint (pcurrblock.back ());
     scopevar.push_back ({});
     currtypevectorbeingbuild.push_back (
-        {&scopevar.back (), currdecltypeenum::NORMAL});
+        {--scopevar.end (), currdecltypeenum::NORMAL});
+
+    var OrigParamValue;
+
+    for (auto &param :
+         currfunc->type.front ().spec.func.parametertypes_list.front ())
+        OrigParamValue = param, addvar (param),
+        phndl->immidiates.push_back ({param.pValue, param.type}),
+        printvaltype ({param.pValue, param.type, {}, param.identifier}),
+        phndl->immidiates.back ().lvalues.push_back (phndl->immidiates.back ()),
+        phndl->immidiates.push_back ({OrigParamValue.pValue, param.type}),
+        printvaltype ({OrigParamValue.pValue,
+                       OrigParamValue.type,
+                       {},
+                       OrigParamValue.identifier}),
+        phndl->assigntwovalues (), phndl->immidiates.pop_back ();
 }
 
 extern "C" void endscope () {
@@ -1045,30 +1112,88 @@ extern "C" void endscope () {
 
 extern "C" void endexpression () { phndl->immidiates.clear (); }
 
-basehndl::valandtype getrvalue (basehndl::valandtype lvalue) {
-    if (lvalue.value->getType ()->isPtrOrPtrVectorTy () &&
-        lvalue.currtype.front ().uniontype != type::POINTER &&
-        lvalue.currtype.front ().uniontype != type::ARRAY) {
+val<> decay (val<> lvalue) {
+    auto &currtype = lvalue.type;
+    if (currtype.front ().uniontype == type::ARRAY) {
+        ::type ptrtype{::type::POINTER};
+
+        currtype.erase (currtype.begin ());
+        currtype.push_back (ptrtype);
+        std::rotate (currtype.rbegin (), currtype.rbegin () + 1,
+                     currtype.rend ());
+
+        assert (currtype.front ().uniontype == ::type::POINTER);
+
+        printvaltype (lvalue);
+
+        lvalue.value = lvalue.lvalues.back ().value;
+
+        lvalue.lvalues.pop_back ();
+
+        if (lvalue.value->getType ()->getPointerElementType ()->isArrayTy ())
+            lvalue.value = llvmbuilder.CreateGEP (
+                lvalue.value,
+                {llvmbuilder.getInt64 (0), llvmbuilder.getInt64 (0)});
+    }
+    return lvalue;
+}
+
+valandtype<> getrvalue (valandtype<> lvalue) {
+    auto &currtype = lvalue.type;
+    if (currtype.front ().uniontype != type::FUNCTION) {
+        if (lvalue.value->getType ()->getPointerElementType ()->isFunctionTy ())
+            return lvalue;
         std::cout << "rvalue" << std::endl;
-        return {llvmbuilder.CreateLoad (
-                    /*gen_pointer_to_elem_if_ptr_to_array*/ (lvalue.value)),
-                lvalue.currtype};
+        basehndl::val ret = {
+            llvmbuilder.CreateLoad (
+                /*gen_pointer_to_elem_if_ptr_to_array*/ (lvalue.value)),
+            currtype};
+        printvaltype (ret);
+        return ret;
     }
     return lvalue;
 }
 
 extern "C" void startfunctioncall () {
-    callees.push_back (hndlbase.immidiates.back ());
-    hndlbase.immidiates.erase (hndlbase.immidiates.end ());
+    callees.push_back (--hndlbase.immidiates.end ());
 }
+
+std::vector<::type> getreturntype (std::vector<::type> type) {
+    for (auto iter = type.begin (); iter < type.end (); ++iter)
+        if (iter->uniontype == type::FUNCTION) {
+            type.erase (type.begin (), iter + 1);
+            return type;
+        }
+    return type;
+}
+
+/*val<> getfunctionptr(val<> fptr) {
+    for(auto a = fptr.type.begin(); a != fptr.type.end(); ++a)
+        if(a->uniontype == type::FUNCTION) break;
+        else fptr.type.erase(a), fptr.value = llvmbuilder.CreatePointerCast
+(value, type->getPointerTo ())
+}*/
 
 extern "C" void endfunctioncall () {
     auto lastblock = pcurrblock.back ();
 
-    valandtype calleevalntype = callees.back ();
+    auto argsiter = callees.back ();
 
-    llvm::Function *callee =
-        llvm::dyn_cast<llvm::Function> (calleevalntype.value);
+    auto calleevalntype = *argsiter;
+
+    assert (calleevalntype.value->getType ()->isPointerTy ());
+
+    /*std::string type_str;
+    llvm::raw_string_ostream rso (type_str);
+    calleevalntype.value->getType ()->print (rso);
+    std::cout << calleevalntype.value->getName ().str () << " is " << rso.str ()
+              << std::endl;*/
+
+    llvm::Value *callee = calleevalntype.value;
+
+    auto functype = createllvmtype (calleevalntype.type);
+
+    llvm::Value *pval;
 
     callees.pop_back ();
 
@@ -1076,18 +1201,26 @@ extern "C" void endfunctioncall () {
 
     std::vector<llvm::Value *> immidiates;
 
-    std::transform (hndlbase.immidiates.begin (), hndlbase.immidiates.end (),
-                    std::back_inserter (immidiates),
-                    [] (const basehndl::valandtype &elem) {
-                        return getrvalue (elem).value;
-                    });
+    std::transform (
+        ++argsiter, hndlbase.immidiates.end (), std::back_inserter (immidiates),
+        [] (const basehndl::val &elem) { return decay (elem).value; });
+
+    hndlbase.immidiates.erase (--argsiter, hndlbase.immidiates.end ());
+
+    printvaltype (calleevalntype);
+
+    // if (functype->isPtrOrPtrVectorTy ())
+    pval = llvmbuilder.CreateCall (
+        llvm::dyn_cast<llvm::FunctionType> (
+            callee->getType ()->getPointerElementType ()),
+        callee, immidiates);
+    // else
+    // pval = llvmbuilder.CreateCall (
+    // llvm::dyn_cast<llvm::Function> (callee)->getFunctionType (),
+    // llvm::dyn_cast<llvm::Value> (callee), immidiates);
 
     phndl->immidiates.push_back (
-        valandtype{llvmbuilder.CreateCall (callee->getFunctionType (),
-                                           llvm::dyn_cast<llvm::Value> (callee),
-                                           immidiates),
-                   std::vector<::type>{calleevalntype.currtype.begin () + 1,
-                                       calleevalntype.currtype.end ()}});
+        val<>{pval, getreturntype (calleevalntype.type)});
 }
 
 extern "C" void endreturn () {
@@ -1137,11 +1270,12 @@ extern "C" void startfunctionparamdecl () {
     currtypevectorbeingbuild.back ().p->back ().type.push_back (
         {type::FUNCTION});
 
-    currtypevectorbeingbuild.push_back ({&currtypevectorbeingbuild.back ()
-                                              .p->back ()
-                                              .type.back ()
-                                              .spec.func.parametertypes,
-                                         currdecltypeenum::PARAMS});
+    currtypevectorbeingbuild.push_back (
+        {currtypevectorbeingbuild.back ()
+             .p->back ()
+             .type.back ()
+             .spec.func.parametertypes_list.begin (),
+         currdecltypeenum::PARAMS});
 }
 
 extern "C" void addsubtotype () {
@@ -1209,9 +1343,10 @@ extern "C" void unary (const char *str, size_t szstr) {
     imm.assign (str, szstr);
 
     switch (stringhash (imm.c_str ())) {
-    case "&"_h:
+    case "&"_h: {
         phndl->getaddress ();
         break;
+    }
     case "*"_h:
         phndl->applyindirection ();
         break;
