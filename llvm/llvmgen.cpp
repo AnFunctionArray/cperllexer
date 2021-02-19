@@ -1,4 +1,5 @@
 #include "llvm/IR/Constant.h"
+#include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/Casting.h"
 #include <array>
 #include <bitset>
@@ -194,12 +195,24 @@ struct type {
     } spec;
 };
 
+template <class valueT = llvm::Value> struct valandtype {
+    valueT *value;
+    std::vector<::type> type;
+};
+
+template <class valueT = llvm::Value> struct val : valandtype<valueT> {
+    std::list<valandtype<valueT>> lvalues = {};
+    std::string originident = "[[immidiate]]";
+};
+
 struct var {
     std::vector<::type> type;
     bool bistypedef;
     std::string identifier;
     llvm::Type *pllvmtype;
     llvm::Value *pValue;
+
+    operator val<> () { return {pValue, type, {}, identifier}; }
 };
 
 static std::list<var>::iterator currfunc;
@@ -223,16 +236,6 @@ operator=(T p)
 
         void* p;
 };*/
-
-template <class valueT = llvm::Value> struct valandtype {
-    valueT *value;
-    std::vector<::type> type;
-};
-
-template <class valueT = llvm::Value> struct val : valandtype<valueT> {
-    std::list<valandtype<valueT>> lvalues = {};
-    std::string originident = "[[immidiate]]";
-};
 
 static std::list<std::list<::val<>>::iterator> callees{};
 
@@ -853,15 +856,14 @@ extern "C" void obtainvalbyidentifier (const char *identifier, size_t szstr) {
         phndl->immidiates.push_back ({pglobal, var->type, true});*/
 
     val<> immidiate;
+    auto &currfunctype =
+        currfunc->type.front ().spec.func.parametertypes_list.front ();
 
-    if (!var) {
-        auto &currfunctype =
-            currfunc->type.front ().spec.func.parametertypes_list.front ();
-
-        var = &*std::find_if (
+    if (auto findparam = std::find_if (
             currfunctype.begin (), currfunctype.end (),
             [&] (const ::var &param) { return param.identifier == ident; });
-    }
+        findparam != currfunctype.end ())
+        var = &*findparam;
 
     llvm::Value *pglobal;
 
@@ -904,11 +906,13 @@ extern "C" void constructstring () {
 
     stirngtype.back ().spec.basicdeclspec.basic[1] = "char";
 
+    auto lvalue = llvmbuilder.CreateGlobalStringPtr (
+        currstring, "", 0, &nonconstructable.mainmodule);
+
     hndlbase.immidiates.push_back (
-        {llvmbuilder.CreateGlobalStringPtr (currstring, "", 0,
-                                            &nonconstructable.mainmodule),
-         stirngtype});
+        {llvmbuilder.CreateLoad (lvalue), stirngtype, {}, "[[stringliteral]]"});
     hndlbase.immidiates.back ().lvalues.push_back (hndlbase.immidiates.back ());
+    hndlbase.immidiates.back ().lvalues.back ().value = lvalue;
     currstring = "";
 }
 
@@ -991,6 +995,69 @@ void endpriordecl () {
             .p->back ()
             .pllvmtype = createllvmtype (currtype),
           addvar (currtypevectorbeingbuild.back ().p->back ());
+}
+
+size_t getbasictypesz (type basictype) {
+    if (basictype.uniontype == type::POINTER)
+        return sizeof (void *);
+
+    assert (basictype.uniontype == type::BASIC);
+
+    switch (stringhash (basictype.spec.basicdeclspec.basic[1].c_str ())) {
+    case "int"_h:
+        return sizeof (int);
+    case "char"_h:
+        return sizeof (char);
+    case "long"_h:
+        return sizeof (long);
+    case "short"_h:
+        return sizeof (short);
+    }
+
+    throw "invalid type";
+}
+
+void pushsizeoftype (std::vector<type> type) {
+    size_t szoftype = 1;
+
+    ::type sztype{::type::BASIC};
+
+    sztype.spec.basicdeclspec.basic[0] = "unsigned";
+
+    sztype.spec.basicdeclspec.basic[1] = "long";
+
+    for (;;)
+        if (type.front ().uniontype == type::ARRAY)
+            szoftype *= type.front ().spec.arraysz, type.erase (type.begin());
+
+        else if (type.front ().uniontype == type::BASIC ||
+                 type.front ().uniontype == type::POINTER)
+            return (void)(szoftype *= getbasictypesz (type.front ()),
+                phndl->immidiates.push_back (
+                    {llvm::ConstantInt::getIntegerValue (
+                         llvm::IntegerType::get (llvmctx, 64),
+                         llvm::APInt{64, szoftype}),
+                     {sztype},
+                     {},
+                     "[[sizeoftypename]]"}));
+}
+
+extern "C" void endsizeoftypename () {
+
+    auto currtype = currtypevectorbeingbuild.back ().p->back ().type;
+
+    std::rotate (currtype.begin (), currtype.begin () + 1, currtype.end ());
+
+    currtypevectorbeingbuild.back ().p->pop_back ();
+
+    pushsizeoftype (currtype);
+}
+
+extern "C" void endsizeofexpr () {
+    auto lastimmtype = phndl->immidiates.back ().type;
+    printtype (createllvmtype(lastimmtype), phndl->immidiates.back ().originident);
+    phndl->immidiates.pop_back ();
+    pushsizeoftype (lastimmtype);
 }
 
 extern "C" void adddeclarationident (const char *str, size_t szstr,
@@ -1090,17 +1157,14 @@ extern "C" void beginscope () {
     var OrigParamValue;
 
     for (auto &param :
-         currfunc->type.front ().spec.func.parametertypes_list.front ())
-        OrigParamValue = param, addvar (param),
-        phndl->immidiates.push_back ({param.pValue, param.type}),
-        printvaltype ({param.pValue, param.type, {}, param.identifier}),
-        phndl->immidiates.back ().lvalues.push_back (phndl->immidiates.back ()),
-        phndl->immidiates.push_back ({OrigParamValue.pValue, param.type}),
-        printvaltype ({OrigParamValue.pValue,
-                       OrigParamValue.type,
-                       {},
-                       OrigParamValue.identifier}),
-        phndl->assigntwovalues (), phndl->immidiates.pop_back ();
+         currfunc->type.front ().spec.func.parametertypes_list.front ()) {
+        auto origparamvalue = param.pValue;
+
+        addvar (param);
+
+        llvmbuilder.CreateStore (origparamvalue, param.pValue);
+    }
+    std::cout << "begin scope finished" << std::endl;
 }
 
 extern "C" void endscope () {
@@ -1231,8 +1295,7 @@ extern "C" void endreturn () {
 extern "C" void endfunctionparamdecl (bool bisrest) {
 
     for (auto &a : *currtypevectorbeingbuild.back ().p)
-        std::rotate (a.type.begin (), a.type.begin () + 1, a.type.end ()),
-            a.pllvmtype = createllvmtype (a.type);
+        a.pllvmtype = createllvmtype (a.type);
 
     currtypevectorbeingbuild.pop_back ();
 

@@ -26,6 +26,8 @@ extern "C" {
     LLVM_FUNCS_MODIFIERS void binary(const char *str, size_t szstr) LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void unary(const char *str, size_t szstr) LLVM_FUNCS_DEF
     //LLVM_FUNCS_MODIFIERS void unaryincdec(const char *str, size_t szstr, bool postfix) LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void endsizeoftypename() LLVM_FUNCS_DEF;
+    LLVM_FUNCS_MODIFIERS void endsizeofexpr() LLVM_FUNCS_DEF;
     LLVM_FUNCS_MODIFIERS void subscript() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void beginconstantexpr() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void endconstantexpr() LLVM_FUNCS_DEF

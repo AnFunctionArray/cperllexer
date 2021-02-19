@@ -212,6 +212,14 @@ int callout_test(pcre2_callout_block* a, void* b)
 		//printqualifntype(typedefname, a->subject);
 
 		break;
+	case 57:
+		message = "end sizeof typename\n";
+		endsizeoftypename();
+		break;
+	case 56:
+		message = "end sizeof\n";
+		endsizeofexpr();
+		break;
 	case 55:
 		startdeclaration();
 		break;

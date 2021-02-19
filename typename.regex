@@ -5,7 +5,7 @@
 						((?<abstdecl>(?<abstrptrrev#restrictoutsidefacet>(?<abstrptr>\s*+[*]\s*+((?&qualifiers))*+)
 						(?!(?&abstrptrrev)(?C11))
 						(?<abstrrest>(?<abstrmostoutter>\s*+([(](?&abstdecl)[)]|(?&identifiermine))\s*+)?+(?<abstrsubs>\s*+(\[(?C40)(?&primexpr)\](?C41)
-						|[(](?C47)(?&typenameinsidenooptional)?+(,(?C46)(?&typenameinsidenooptional))*(?<rest>,\s*+\.\.\.\s*+)?+[)](?C48))\s*+)*+(?C11))|
+						|[(](?C47)((?&typenameinsidenooptional)(?C42))?+(,(?&typenameinsidenooptional)(?C42))*(?<rest>,\s*+\.\.\.\s*+)?+[)](?C48))\s*+)*+(?C11))|
 						(?&abstrptr))(?&abstdeclinside))|(?&abstrmostoutter)?+(?&abstrsubs)*+))[)](?C46)\s*+)
 
 (?<typenameinside>(\s*+(?>(?<typedefkeywordmine>\btypedef\b))\s*+|(?&allqualifs))*+(?C55)(?&abstdecloutside))
