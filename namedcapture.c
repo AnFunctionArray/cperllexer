@@ -212,6 +212,21 @@ int callout_test(pcre2_callout_block* a, void* b)
 		//printqualifntype(typedefname, a->subject);
 
 		break;
+	case 60:
+		message = "end building\n";
+		endbuildingstructorunion();
+		break;
+	case 59:
+		message = "start building\n";
+		startbuildingstructorunion();
+		break;
+	case 58:
+		n = getnameloc(namedcapture = "identifierminestruct", *ptable);
+		ntoprint[1] = getnameloc(namedcapture = "structorunion", *ptable) + 1;
+		setcurrstructorunion(GROUP_PTR_AND_SZ(ntoprint[1]), GROUP_PTR_AND_SZ(n + 1));
+		szntoprint++;
+		printf("begin struct\n");
+		break;
 	case 57:
 		message = "end sizeof typename\n";
 		endsizeoftypename();
@@ -385,7 +400,10 @@ int callout_test(pcre2_callout_block* a, void* b)
 		break;
 	case 8:
 		printf("member access operator:\n", 0);
-		n = getnameloc(namedcapture = "arrowordot", *ptable);
+		n = getnameloc(namedcapture = "identifierminemember", *ptable);
+		ntoprint[1] = getnameloc(namedcapture = "arrowordot", *ptable) + 1;
+		memberaccess(GROUP_PTR_AND_SZ(ntoprint[1]), GROUP_PTR_AND_SZ(n + 1));
+		szntoprint++;
 		break;
 	case 12:
 
@@ -475,11 +493,9 @@ print:
 	for (y = 0; y < szntoprint; ++y)
 		if (ntoprint[y] == n)
 			break;
-	if (szntoprint && szntoprint == y)
-		--y;
 
 	//if (cond)
-	if (ntoprint[y] != n)
+	if (szntoprint == y)
 		if (!(PATTERN_FLAGS & PCRE2_AUTO_CALLOUT) && cond)
 			continue;
 		else
@@ -494,7 +510,7 @@ print:
 			n,
 			(unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]),
 			a->subject + a->offset_vector[2 * n]);
-		break;
+		continue;
 	}
 #endif
 

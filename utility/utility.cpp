@@ -3,12 +3,21 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <utility>
 
 static std::string gluedregex, facetor;
 
 static std::vector<std::vector<std::string>> typedefs{ 1 };
 
 std::vector<std::string> qualifsandtypes{};
+
+std::pair<std::string, std::string> currstruct;
+
+extern "C" void setcurrstructorunion(const char* structorunion, size_t szstr, const char* name, size_t szstr1) 
+{
+	currstruct.first = {structorunion, szstr};
+	currstruct.second = {name, szstr1};
+}
 
 extern std::string currdeclspectypedef;
 

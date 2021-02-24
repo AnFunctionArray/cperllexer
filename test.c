@@ -17,6 +17,10 @@ test (int a, int *p) { return printf ("%p %p %p %d\n", &*p, &p[0], *&*(p + 2)=7,
 
 call (int pfun ()) { return (7 + pfun ()); }
 
+notajokenow(struct notajoke{ int n; } n) {
+    return printf("%d\n", n.n);
+}
+
 main () {
     b = 9UL;
     a = 9UL << 1 + 6;
@@ -28,5 +32,30 @@ main () {
     (&printf) ("hello world %d %p %p\n", (*b[0]) (actualfun), d, &d + 1);
     test (9, d);
     printf("%d %d %c\n", d[2], sizeof b, **(&"test" + 1));
+    {
+        int a[2][2];
+
+        a[1][1] = 5;
+
+        printf("%p %p %d\n", a, *(a + 1) + 1, *(*(a + 1) + 1) + 2);
+
+        struct test {
+            int a, b;
+            struct test *ptest[2];
+        } test, test2[2];
+
+        test.a = 4;
+        test.b = 7;
+        *test.ptest = &test;
+        printf("%d %d\n", test.a, test.b);
+
+        struct notajoke tmp;
+
+        tmp.n = (*test.ptest)->a;
+
+        printf("%lu %d\n", test2 - test2 + 1, test.b);
+
+        notajokenow(tmp);
+    }
     return 0;
 }

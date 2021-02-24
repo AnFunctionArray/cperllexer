@@ -5,9 +5,11 @@
 
 
 (?<castexpr>(?<unaryexpr>((?&inner)|(?<inparenths>\s*+[(](?&primexpr)[)]\s*+))(((\[(?&primexpr)\](?C54)|[(](?C7)(?&primexpr)?[)](?C13))\s*+
-						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?C8)(?&identifier)
+						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?&identifierminemember)
 						|(?<postfixarith>(?<postfixarithraw>[+][+]|--)\s*+)(?C9)))*+
 						|(?&unary))|(?&typenamerev))
+
+(?<identifierminemember>\s*+(?!(?&keywordlist))((?&identifierraw))(?C8)\s*+)
 
 (?<testentry>(?<innertest>(?&orlogiorsomething));)
 

@@ -13,7 +13,7 @@ my $mainregexfilecontent = do { local $/; <$fh> };
 
 close $fh;
 
-$filename = "./metaregex/regex.regex";
+$filename = "./utility/regex.regex";
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
 my $metaregexfilecontent = do { local $/; <$fh> };

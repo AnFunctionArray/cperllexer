@@ -32,6 +32,9 @@ extern "C" {
     LLVM_FUNCS_MODIFIERS void beginconstantexpr() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void endconstantexpr() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void startdeclaration() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void startbuildingstructorunion() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void endbuildingstructorunion() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void memberaccess(const char*arrowordot, size_t szstr, const char*ident, size_t szstr1) LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void continuedeclaration() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void adddeclarationident(const char*str, size_t szstr, bool bistypedef) LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void finalizedeclarationtypename() LLVM_FUNCS_DEF

@@ -358,3 +358,4 @@ a.out
 ./build/
 
 *.ll
+*.s

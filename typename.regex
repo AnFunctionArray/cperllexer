@@ -31,8 +31,10 @@
 (?<initializer>(?&assignorsomething)|\s*+[{]((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*+[}]\s*+)
 (?<abstrinitialization>=(?&initializer))
 
-(?<structorunion>\s*+(struct|union)((?&identifier)?+\s*+[{]\s*+((?&typenameinsidenooptional)?+(?&abstrbitfield)?+(,(?&abstdecloutside)(?&abstrbitfield)?+)*+\s*+;\s*+)*+[}]\s*+|(?&identifier))|(?&enum))
+(?<structorunion>\s*+(struct|union)((?&identifierminestruct)?+\s*+[{](?C59)\s*+((?&typenameinsidenooptional)(?&abstrbitfield)?+(?C42)(,(?C43)(?&abstdecloutside)(?&abstrbitfield)?+(?C42))*+\s*+;\s*+)*+[}](?C60)\s*+|(?&identifierminestruct))|(?&enum))
 (?<enum>\s*+enum((?&identifier)?+\s*+[{](?<enumerator>(?&identifier)(=(?&assignorsomething))?+)?+(,(?&enumerator))*+,?+\s*+[}]\s*+|(?&identifier)))
+
+(?<identifierminestruct>\s*+(?!(?&keywordlist))((?&identifierraw))(?C58)\s*+)
 
 (?<declaration>((?&typenameinsidenooptional)(?C42)(?&abstrinitialization)?+(,(?C43)(?&abstdecloutside)(?C42)(?&abstrinitialization)?+)*+\s*+;\s*+))
 
