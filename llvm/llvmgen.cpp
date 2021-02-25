@@ -1,10 +1,8 @@
-#include "llvm/IR/Constant.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/Support/Casting.h"
 #include <array>
 #include <bitset>
 #include <cstddef>
 #include <functional>
+#include <initializer_list>
 #include <iostream>
 #include <list>
 #include <llvm/Bitcode/BitcodeWriter.h>
@@ -23,12 +21,21 @@
 #include <llvm/IR/Type.h>
 #include <locale>
 #include <range/v3/view.hpp>
+#include <range/v3/iterator/concepts.hpp>
+#include <range/v3/iterator/traits.hpp>
+#include <range/v3/range/concepts.hpp>
+#include <range/v3/range/traits.hpp>
+#include <range/v3/view/istream.hpp>
+#include <range/v3/view/drop.hpp>
+#include <range/v3/iterator/common_iterator.hpp>
+#include <range/v3/algorithm/find.hpp>
 #include <sstream>
 #include <stdexcept>
 #include <stdint.h>
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <string_view>
 
 unsigned constexpr stringhash (char const *input) {
     return *input ? static_cast<unsigned int> (*input) +
@@ -1009,7 +1016,7 @@ extern "C" void endbuildingstructorunion () {
     auto &lastmembers = structorunionmembers.back ().back ();
     auto &structvar = lastmembers.front ();
 
-    for (auto &a : lastmembers | ranges::view::drop (1))
+    for (auto &a : lastmembers | ranges::views::drop (1))
         a.pllvmtype = createllvmtype (a.type);
 
     std::vector<llvm::Type *> structtypes;
@@ -1057,6 +1064,36 @@ extern "C" void startdeclaration () {
     var.type.push_back (basic);
 
     currtypevectorbeingbuild.back ().p->push_back (var);
+}
+
+bool bIsBasicInteger(const type &type) {
+    std::set integertraits{"unsigned", "signed", ""};
+    return type.uniontype == type::BASIC && ranges::find(integertraits, type.spec.basicdeclspec.basic[0]) != integertraits.end();
+}
+
+extern "C" void applycast() {
+    auto lasttypevar = currtypevectorbeingbuild.back ().p->back();
+
+    currtypevectorbeingbuild.back ().p->pop_back();
+
+    auto &currtype = lasttypevar.type;
+
+    std::rotate (currtype.begin (), currtype.begin () + 1, currtype.end ());
+
+    auto target = phndl->immidiates.back();
+
+    phndl->immidiates.pop_back();
+
+    target.type = currtype;
+
+    if(bIsBasicInteger(currtype.front()))
+        target.value = llvmbuilder.CreateIntCast (
+                target.value, createllvmtype(target.type),
+                target.type.front ().spec.basicdeclspec.basic[0] != "unsigned");
+    else target.value = llvmbuilder.CreateBitCast (
+                target.value, createllvmtype(target.type));
+
+    phndl->immidiates.push_back(target);
 }
 
 void endpriordecl () {

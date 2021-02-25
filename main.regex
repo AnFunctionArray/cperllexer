@@ -7,7 +7,7 @@
 (?<castexpr>(?<unaryexpr>((?&inner)|(?<inparenths>\s*+[(](?&primexpr)[)]\s*+))(((\[(?&primexpr)\](?C54)|[(](?C7)(?&primexpr)?[)](?C13))\s*+
 						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?&identifierminemember)
 						|(?<postfixarith>(?<postfixarithraw>[+][+]|--)\s*+)(?C9)))*+
-						|(?&unary))|(?&typenamerev))
+						|(?&unary))|(?&typenamerev)(?C61))
 
 (?<identifierminemember>\s*+(?!(?&keywordlist))((?&identifierraw))(?C8)\s*+)
 

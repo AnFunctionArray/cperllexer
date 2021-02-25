@@ -212,6 +212,10 @@ int callout_test(pcre2_callout_block* a, void* b)
 		//printqualifntype(typedefname, a->subject);
 
 		break;
+	case 61:
+		message = "applying cast\n";
+		applycast();
+		break;
 	case 60:
 		message = "end building\n";
 		endbuildingstructorunion();

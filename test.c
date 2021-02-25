@@ -32,6 +32,7 @@ main () {
     (&printf) ("hello world %d %p %p\n", (*b[0]) (actualfun), d, &d + 1);
     test (9, d);
     printf("%d %d %c\n", d[2], sizeof b, **(&"test" + 1));
+    if(a)
     {
         int a[2][2];
 
@@ -53,7 +54,7 @@ main () {
 
         tmp.n = (*test.ptest)->a;
 
-        printf("%lu %d\n", test2 - test2 + 1, test.b);
+        printf("%lu %d %d\n", test2 - test2 + (int)(char)7 % 2, test.b, 1[*(int(*)[2])&test]);
 
         notajokenow(tmp);
     }
