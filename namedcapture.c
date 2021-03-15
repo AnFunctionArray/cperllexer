@@ -190,8 +190,11 @@ int callout_test(pcre2_callout_block* a, void* b)
 		beginconstantexpr();
 		//printqualifntype(typedefname, a->subject);
 		break;
+	case 64:
+		startswitch();
+		break;
 	case 39:;
-		n = getnameloc(namedcapture = "identifiermine", *ptable) + 1;
+		n = getnameloc(namedcapture = "identifierminedecl", *ptable) + 1;
 
 		setypedefspec(typedefname, a->subject);
 
@@ -215,6 +218,16 @@ int callout_test(pcre2_callout_block* a, void* b)
 
 		//printqualifntype(typedefname, a->subject);
 
+		break;
+	case 63:
+		printf("goto\n");
+		n = getnameloc(namedcapture = "identifierminegoto", *ptable);
+		gotolabel(GROUP_PTR_AND_SZ(n + 1));
+		break;
+	case 62:
+		printf("label\n");
+		n = getnameloc(namedcapture = "identifierminelabel", *ptable);
+		splitbb(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 61:
 		message = "applying cast\n";
@@ -254,7 +267,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 		break;
 	case 38:;
 		int istypedefinvecotr(const char* identifier, size_t szcontent);
-		n = getnameloc(namedcapture = "identifiermine2", *ptable) + 1;
+		n = getnameloc(namedcapture = "identifierminetypedef", *ptable) + 1;
 		if (a->offset_vector[2 * n] != -1)
 		{
 			if (res = istypedefinvecotr(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n])))

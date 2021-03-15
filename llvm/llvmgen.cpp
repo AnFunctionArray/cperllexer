@@ -1,3 +1,4 @@
+#include "llvm/IR/Instructions.h"
 #include <array>
 #include <bitset>
 #include <cstddef>
@@ -1368,12 +1369,18 @@ extern "C" void beginscope () {
     std::cout << "begin scope finished" << std::endl;
 }
 
+void fixuplabels();
+
 extern "C" void endscope () {
     // nonconstructable.mainmodule.
     // endexpression();
+    pcurrblock.pop_back();
     scopevar.pop_back ();
     currtypevectorbeingbuild.pop_back ();
     structorunionmembers.pop_back ();
+
+    if(scopevar.size() == 1) //end of a function
+        fixuplabels();
 }
 
 extern "C" void endexpression () { phndl->immidiates.clear (); }
@@ -1422,6 +1429,30 @@ valandtype<> getrvalue (valandtype<> lvalue) {
 
 extern "C" void startfunctioncall () {
     callees.push_back (--hndlbase.immidiates.end ());
+}
+
+std::list<std::pair<llvm::BranchInst *, std::string>> branches;
+
+extern "C" void splitbb(const char *identifier, size_t szident) {
+    pcurrblock.pop_back();
+    pcurrblock.push_back (llvm::BasicBlock::Create (
+        llvmctx, std::string{identifier, szident}, dyn_cast<llvm::Function> (currfunc->pValue)));
+    llvmbuilder.SetInsertPoint (pcurrblock.back ());
+}
+
+extern "C" void gotolabel(const char *identifier, size_t szident) {
+    branches.push_back({llvmbuilder.CreateBr(pcurrblock.back()), std::string{identifier, szident}});
+}
+
+void fixuplabels() {
+    for(auto &[branchinst, ident] : branches)
+    for(auto &bb : dyn_cast<llvm::Function> (currfunc->pValue)->getBasicBlockList())
+        if(bb.getName() == ident) branchinst->setSuccessor(0, &bb);
+    branches.clear();
+}
+
+extern "C" void startswitch() {
+    
 }
 
 std::vector<::type> getreturntype (std::vector<::type> type) {
@@ -1490,7 +1521,7 @@ extern "C" void endfunctioncall () {
 }
 
 extern "C" void endreturn () {
-    llvmbuilder.SetInsertPoint (pcurrblock.back ());
+    //llvmbuilder.SetInsertPoint (pcurrblock.back ());
     llvmbuilder.CreateRet (hndlbase.immidiates.back ().value);
 }
 

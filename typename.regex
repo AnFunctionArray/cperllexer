@@ -4,7 +4,7 @@
 						|(?&typedefname)|(?&structorunion)|\s*+(?>(?<typedefkeyword>\btypedef\b))\s*+)++(?C55)
 						((?<abstdecl>(?<abstrptrrev#restrictoutsidefacet>(?<abstrptr>\s*+[*]\s*+((?&qualifiers))*+)
 						(?!(?&abstrptrrev)(?C11))
-						(?<abstrrest>(?<abstrmostoutter>\s*+([(](?&abstdecl)[)]|(?&identifiermine))\s*+)?+(?<abstrsubs>\s*+(\[(?C40)(?&primexpr)\](?C41)
+						(?<abstrrest>(?<abstrmostoutter>\s*+([(](?&abstdecl)[)]|(?&identifierminedecl))\s*+)?+(?<abstrsubs>\s*+(\[(?C40)(?&primexpr)\](?C41)
 						|[(](?C47)((?&typenameinsidenooptional)(?C42))?+(,(?&typenameinsidenooptional)(?C42))*(?<rest>,\s*+\.\.\.\s*+)?+[)](?C48))\s*+)*+(?C11))|
 						(?&abstrptr))(?&abstdeclinside))|(?&abstrmostoutter)?+(?&abstrsubs)*+))[)](?C46)\s*+)
 
@@ -12,11 +12,11 @@
 
 (?<abstdecloutside>(?&abstdecl)|(?&abstrmostoutter)(?&abstrsubs)*+)
 
-(?<typedefname>(?&identifiermine2))
+(?<typedefname>(?&identifierminetypedef))
 
-(?<identifiermine>\s*+(?!(?&keywordlist))((?&identifierraw))(?C39)\s*+)
-(?<identifiermine2#restrictpcre2only>\s*+(?!(?&keywordlist))((?&identifierraw#nofacet))(??C38)\s*+)
-(?<identifiermine2#restrictperlonly>\s*+(??C38)\s*+)
+(?<identifierminedecl>\s*+(?!(?&keywordlist))((?&identifierraw))(?C39)\s*+)
+(?<identifierminetypedef#restrictpcre2only>\s*+(?!(?&keywordlist))((?&identifierraw#nofacet))(??C38)\s*+)
+(?<identifierminetypedef#restrictperlonly>\s*+(??C38)\s*+)
 
 (?<keywordlist>(?&typesandqualifiersmask)|struct|enum|__[_a-zA-Z0-9]*+|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)
 
