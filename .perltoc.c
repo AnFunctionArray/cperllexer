@@ -6,7 +6,7 @@
  *
  */
 
-#line 1 "C:\\\\Users\\\\sasho\\\\source\\\\repos\\\\bsld\\\\cparser2\\\\perltoc.xs"
+#line 1 "C:\\\\Users\\\\sasho\\\\source\\\\repos\\\\cparser2\\\\perltoc.xs"
 #define PERL_NO_GET_CONTEXT
 #define PERL_EUPXS_ALWAYS_EXPORT
 #include "EXTERN.h"
@@ -15,10 +15,14 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #define PCRE2_STATIC
 
-#include <pcre\pcre2.h>
+#if !defined(_WIN32) & !defined(_WIN64)
+#include <pcre2.h>
+#else
+#include <pcre/pcre2.h>
+#endif
 #include "main.h"
 
-#line 22 "C:\\Users\\sasho\\source\\repos\\bsld\\cparser2\\perltoc.c"
+#line 26 "C:\\Users\\sasho\\source\\repos\\cparser2\\perltoc.c"
 #ifndef PERL_UNUSED_VAR
 #  define PERL_UNUSED_VAR(var) if (0) var = var
 #endif
@@ -162,7 +166,7 @@ S_croak_xs_usage(const CV *const cv, const char *const params)
 #  define newXS_deffile(a,b) Perl_newXS_deffile(aTHX_ a,b)
 #endif
 
-#line 166 "C:\\Users\\sasho\\source\\repos\\bsld\\cparser2\\perltoc.c"
+#line 170 "C:\\Users\\sasho\\source\\repos\\cparser2\\perltoc.c"
 
 XS_EUPXS(XS__startmatching); /* prototype to pass -Wmissing-prototypes */
 XS_EUPXS(XS__startmatching)
@@ -171,21 +175,21 @@ XS_EUPXS(XS__startmatching)
     if (items != 3)
        croak_xs_usage(cv,  "in, in1, in2");
     {
-#line 18 "C:\\\\Users\\\\sasho\\\\source\\\\repos\\\\bsld\\\\cparser2\\\\perltoc.xs"
+#line 22 "C:\\\\Users\\\\sasho\\\\source\\\\repos\\\\cparser2\\\\perltoc.xs"
     STRLEN len;
     STRLEN secondlen;
     STRLEN thirdlen;
     char* s;
     char* s1;
     char* s2;
-#line 182 "C:\\Users\\sasho\\source\\repos\\bsld\\cparser2\\perltoc.c"
+#line 186 "C:\\Users\\sasho\\source\\repos\\cparser2\\perltoc.c"
 	SV *	in = ST(0)
 ;
 	SV *	in1 = ST(1)
 ;
 	SV *	in2 = ST(2)
 ;
-#line 25 "C:\\\\Users\\\\sasho\\\\source\\\\repos\\\\bsld\\\\cparser2\\\\perltoc.xs"
+#line 29 "C:\\\\Users\\\\sasho\\\\source\\\\repos\\\\cparser2\\\\perltoc.xs"
     {
         int secondmain(char *subject, size_t szsubject, char *pattern, size_t szpattern, char *modulename, size_t szmodulename);
         s = SvPVutf8(in, len);
@@ -193,7 +197,7 @@ XS_EUPXS(XS__startmatching)
         s2 = SvPVutf8(in2, thirdlen);
         secondmain(s, len, s1, secondlen, s2, thirdlen);
     }
-#line 197 "C:\\Users\\sasho\\source\\repos\\bsld\\cparser2\\perltoc.c"
+#line 201 "C:\\Users\\sasho\\source\\repos\\cparser2\\perltoc.c"
     }
     XSRETURN_EMPTY;
 }

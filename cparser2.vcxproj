@@ -158,15 +158,11 @@
     <ClCompile Include="maintest.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="metaregex\parseregexfile.c" />
-    <ClCompile Include="metaregex\parseregexfilecpp.cpp">
-      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">stdcpplatest</LanguageStandard>
-      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpplatest</LanguageStandard>
-    </ClCompile>
     <ClCompile Include="namedcapture.c" />
     <ClCompile Include="test.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="utility\utility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="llvm\llvmgen.h" />
@@ -182,6 +178,9 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.%(Filename).c</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="main.pl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

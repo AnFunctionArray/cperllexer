@@ -2,7 +2,11 @@
 #define PCRE2_STATIC
 #define _LARGEFILE64_SOURCE
 
+#if !defined(_WIN32) & !defined(_WIN64)
 #include <pcre2.h>
+#else
+#include <pcre/pcre2.h>
+#endif
 #include <stdio.h>
 //#include <boost/preprocessor/stringize.hpp>
 #include <string.h>

@@ -21,12 +21,6 @@
     <ClCompile Include="namedcapture.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="metaregex\parseregexfile.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="metaregex\parseregexfilecpp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="llvm\llvmgen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -34,6 +28,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="test.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="utility\utility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -49,5 +46,10 @@
     <CustomBuild Include="perltoc.xs">
       <Filter>Source Files</Filter>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="main.pl">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

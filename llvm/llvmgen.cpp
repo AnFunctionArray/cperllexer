@@ -810,10 +810,6 @@ struct handlecnstexpr : basehndl {
         immidiates.push_back (ops[0]);
     }
 
-    virtual void assigntwovalues () { assert (0); };
-
-    virtual bool subscripttwovalues () { assert (0); }
-
     virtual llvm::Constant *CreateCastInst (llvm::Instruction::CastOps op,
                                             llvm::Constant *S, llvm::Type *Ty) {
         return llvm::ConstantExpr::getCast (op, S, Ty);
@@ -1157,14 +1153,15 @@ void pushsizeoftype (std::vector<type> type) {
                                "[[sizeoftypename]]"}));
 }
 
+extern const std::list<::var> *getstructorunion (std::string ident);
+
 extern "C" void memberaccess (const char *arrowordot, size_t szstr,
                               const char *ident, size_t szstr1) {
-    auto &lastvar = phndl->immidiates.back ();
-
     if (std::string{arrowordot, szstr} == "->")
         phndl->applyindirection ();
 
-    extern const std::list<::var> *getstructorunion (std::string ident);
+    auto &lastvar = phndl->immidiates.back ();
+
     auto pliststruct =
         getstructorunion (lastvar.type.front ().spec.basicdeclspec.basic[3]);
 

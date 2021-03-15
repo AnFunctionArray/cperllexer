@@ -1,7 +1,11 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #define PCRE2_STATIC
 
+#if !defined(_WIN32) & !defined(_WIN64)
 #include <pcre2.h>
+#else
+#include <pcre/pcre2.h>
+#endif
 #include <stdio.h>
 //#include <boost/preprocessor/stringize.hpp>
 #include <string.h>
