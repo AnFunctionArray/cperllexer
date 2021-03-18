@@ -33,6 +33,9 @@
     <ClCompile Include="utility\utility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="idamain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="llvm\llvmgen.h">
@@ -49,6 +52,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="main.pl">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include=".clang-format" />
+    <None Include=".clang-tidy" />
+    <None Include="start.idc">
       <Filter>Source Files</Filter>
     </None>
   </ItemGroup>

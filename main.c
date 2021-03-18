@@ -168,6 +168,7 @@ secondmain(char* subject, size_t szsubject, char* pattern, size_t szpattern, cha
 	startmodule(modulename, szmodulename);
 	int stat = compile_pattern_and_execute(pattern, subject, callout_test, szpattern, szsubject, 1, 0, PATTERN_FLAGS);
 	endmodule();
+	fflush(foutput);
 }
 
 #include <EXTERN.h> /* from the Perl distribution     */
@@ -184,7 +185,7 @@ static void
 
 static PerlInterpreter *my_perl; /***    The Perl interpreter    ***/
 
-int main(int argc, char **argv, char **env)
+int main(int argc, const char **argv, char **env)
 {
 	PERL_SYS_INIT3(&argc, &argv, &env);
 	my_perl = perl_alloc();

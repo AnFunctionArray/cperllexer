@@ -112,6 +112,14 @@ int callout_test(pcre2_callout_block* a, void* b)
 	int res;
 #define GROUP_PTR_AND_SZ(n) a->subject + a->offset_vector[2 * (n)], (unsigned int)(a->offset_vector[2 * (n) + 1] - a->offset_vector[2 * (n)])
 #define GROUP_SZ_AND_PTR(n) (unsigned int)(a->offset_vector[2 * (n) + 1] - a->offset_vector[2 * (n)]), a->subject + a->offset_vector[2 * (n)]
+	if (PATTERN_FLAGS & PCRE2_AUTO_CALLOUT) {
+
+		printf("%.*s\n", a->next_item_length, ptable->pattern + a->pattern_position);
+
+		printf("%.*s\n", a->subject_length - a->current_position, a->subject + a->current_position);
+
+		if (a->callout_number == 255) return 0;
+	}
 	switch (a->callout_number)
 	{
 #if 1
@@ -368,18 +376,18 @@ int callout_test(pcre2_callout_block* a, void* b)
 
 		const char* groups[] = { "hex", "bin", "oct", "dec" };
 
-		for (const char* *pgroup = groups; pgroup != 1[&groups]; ++pgroup)
+		for (const char** pgroup = groups; pgroup != 1[&groups]; ++pgroup)
 		{
 			ntoclear = getnameloc(*pgroup, *ptable);
 			if (a->offset_vector[2 * ntoclear] != -1)
 			{
 				type = pgroup - groups << 2 | (a->offset_vector[2 * ntoprint[0]] != -1) | (a->offset_vector[2 * ntoprint[1]] != -1) << 1;
-				
+
 				insertinttoimm(GROUP_PTR_AND_SZ(ntoclear), type);
 
 				a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
 
-				break; 
+				break;
 			}
 		}
 

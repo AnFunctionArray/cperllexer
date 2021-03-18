@@ -1348,6 +1348,8 @@ extern "C" void beginscope () {
 
     pcurrblock.push_back (llvm::BasicBlock::Create (
         llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue)));
+    if(pcurrblock.size() > 1)
+        llvmbuilder.CreateBr(pcurrblock.back());
     llvmbuilder.SetInsertPoint (pcurrblock.back ());
     scopevar.push_back ({});
     currtypevectorbeingbuild.push_back (
@@ -1437,6 +1439,7 @@ extern "C" void splitbb(const char *identifier, size_t szident) {
     pcurrblock.pop_back();
     pcurrblock.push_back (llvm::BasicBlock::Create (
         llvmctx, std::string{identifier, szident}, dyn_cast<llvm::Function> (currfunc->pValue)));
+    llvmbuilder.CreateBr(pcurrblock.back());
     llvmbuilder.SetInsertPoint (pcurrblock.back ());
 }
 
@@ -1447,7 +1450,8 @@ extern "C" void gotolabel(const char *identifier, size_t szident) {
 void fixuplabels() {
     for(auto &[branchinst, ident] : branches)
     for(auto &bb : dyn_cast<llvm::Function> (currfunc->pValue)->getBasicBlockList())
-        if(bb.getName() == ident) branchinst->setSuccessor(0, &bb);
+        if(bb.getName() == ident)
+            branchinst->setSuccessor(0, &bb);
     branches.clear();
 }
 
