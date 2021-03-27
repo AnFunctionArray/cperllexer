@@ -30,19 +30,19 @@
 	
 
 
-(?<jumpstatement>\s*+(goto(?&identifierminegoto);|continue\s*+;|break\s*+;|return(?&primexpr)?+(?C52);)\s*+)
-(?<identifierminegoto>\s++(?!(?&keywordlist))((?&identifierraw))(?C63)\s*+)
+(?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+;|break\s*+;|return(?&primexpr)?+(?C52);)\s*+)
+(?<identifierminegoto>\s*+(?!(?&keywordlist))((?&identifierraw))(?C63)\s*+)
 
-(?<iterationstatement>\s*+(while\s*+[(](?&primexpr)[)](?&statement)|do(?&statement)while\s*+[(](?&primexpr)[)]\s*+;
-	|for\s*+[(]((?&declaration)|(?&exprstatement))?+(?&exprstatement)?+(?&primexpr)?+[)](?&statement))\s*+)
+(?<iterationstatement>\s*+(while\s*+[(](?C73)(?&primexpr)[)](?C76)(?C74)(?&statement)(?C75)|do\b(?C77)(?&statement)while\s*+[(](?&primexpr)[)](?C78)\s*+;
+	|for\s*+[(]((?&declaration)|(?&exprstatement))?+(?C73)(?&primexpr)?;(?C76)\s*+(?&primexpr)?+(?C74)[)](?&statement)(?C75))\s*+)
 (?<exprstatement>(?&primexpr)?;(?C53)\s*+)
 (?<compoundstatement>\s*+[{](?C44)((?&declaration)|(?&statement))*+[}](?C45)\s*+)
-(?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?&statement)(else(?&statement))?+|switch\s*+[(](?&primexpr)[)](?C64)(?&statement)(?C66))\s*+)
+(?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?C70)(?&statement)(else\b(?C71)(?&statement))?+(?C72)|switch\s*+[(](?&primexpr)[)](?C64)(?&statement)(?C66))\s*+)
 
 (?<statement>(?=(?&labelfacet)++(?&statementinnerfacet))(?&label)++(?&statementinner)|(?&statementinner))
 (?<statementinner>(?&exprstatement)|(?&compoundstatement)|(?&selectionstatement)|(?&iterationstatement)|(?&jumpstatement))
 
-(?<label>(?&identifierminelabel)|\s*+(case\s++(?C40)(?&primexpr):(?C65)|default\s*+:(?C67))\s*+)
+(?<label>(?&identifierminelabel)|\s*+(case\b(?C40)(?&primexpr):(?C65)|default\s*+:(?C67))\s*+)
 (?<identifierminelabel>\s*+(?!(?&keywordlist))((?&identifierraw))\s*+:(?C62)\s*+)
 
 (?<cprogram>((?&typenameinside)(?C42)((?&compoundstatement)|(?&abstrinitialization)?(,(?C43)(?&abstdecloutside)(?C42)(?&abstrinitialization)?+)*+\s*+;\s*+))*)

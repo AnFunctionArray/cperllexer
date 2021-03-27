@@ -56,8 +56,12 @@ main () {
         *test.ptest = &test;
         printf("%d %d\n", test.a, test.b);
 
-        switch(test.b)
-    case 7: printf("match\n");
+        if (test.b != 7)
+            printf("match\n");
+        else if (test.b == 6) printf("no match\n");
+        else printf("default\n");
+
+        printf("end if\n");
 
         struct notajoke tmp;
 
@@ -72,6 +76,14 @@ main () {
         mid = 3.14;
 
         int arr[2], *parr;
+
+        int i;
+
+        i = 0;
+
+        do
+            printf("%d\n", i++);
+        while (0);
 
         parr = arr;
 

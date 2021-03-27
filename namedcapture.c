@@ -150,6 +150,24 @@ int callout_test(pcre2_callout_block* a, void* b)
 		printf("\n");
 		n = 0;
 		break;*/
+	case 77:
+		startdowhileloop();
+		break;
+	case 78:
+		enddowhileloop();
+		break;
+	case 76:
+		endforloopcond();
+		break;
+	case 73:
+		startforloopcond();
+		break;
+	case 74:
+		addforloopiter();
+		break;
+	case 75:
+		endforloop();
+		break;
 	case 54:
 		subscript();
 		message = "end subscript\n";
@@ -377,6 +395,18 @@ int callout_test(pcre2_callout_block* a, void* b)
 		printf("prefix arithmetic:\n", 0);
 		n = getnameloc(namedcapture = "prefixarith", *ptable);
 		unaryincdec(GROUP_PTR_AND_SZ(n + 1), false);
+		break;
+	case 70:
+		startifstatement();
+		message = "starting if\n";
+		break;
+	case 71:
+		continueifstatement();
+		message = "starting else if\n";
+		break;
+	case 72:
+		endifstatement();
+		message = "ending if\n";
 		break;
 	case 1:
 		n = getnameloc(namedcapture = "escape", *ptable);

@@ -28,6 +28,9 @@ extern "C" {
         const char* fractionpart, size_t szstr2,
         const char* exponent, size_t szstr3,
         const char* exponentsign, size_t szstr4) LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void startifstatement() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void endifstatement() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void continueifstatement() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void binary(const char *str, size_t szstr) LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void unary(const char *str, size_t szstr) LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void unaryincdec(const char *str, size_t szstr, bool postfix) LLVM_FUNCS_DEF
@@ -41,7 +44,13 @@ extern "C" {
     LLVM_FUNCS_MODIFIERS void endbuildingstructorunion() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void memberaccess(const char*arrowordot, size_t szstr, const char*ident, size_t szstr1) LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void applycast() LLVM_FUNCS_DEF
-    LLVM_FUNCS_MODIFIERS void splitbb(const char *identifier, size_t szident) LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void *splitbb(const char *identifier, size_t szident) LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void startforloopcond() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void endforloopcond() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void addforloopiter() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void endforloop() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void startdowhileloop() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void enddowhileloop() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void gotolabel(const char *identifier, size_t szident) LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void startswitch() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void endswitch() LLVM_FUNCS_DEF

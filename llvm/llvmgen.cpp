@@ -1618,6 +1618,50 @@ extern "C" void endsizeoftypename() {
 	pushsizeoftype(currtype);
 }
 
+std::list<std::pair<std::array<llvm::BranchInst*, 2>, llvm::BasicBlock*>> ifstatements;
+
+extern "C" llvm::BranchInst * splitbb(const char* identifier, size_t szident);
+
+extern "C" void insertinttoimm(const char* str, size_t szstr, const char* suffix, size_t szstr1, int type);
+
+extern "C" void startifstatement() {
+	auto dummyblock = llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue));
+
+	if (!immidiates.size())
+		insertinttoimm("1", sizeof "1" - 1, "", 0, 3);
+
+	phndl->getlogicalnot();
+
+	phndl->getlogicalnot();
+
+	auto value = llvmbuilder.CreateIntCast(immidiates.back().value, llvm::IntegerType::get(llvmctx, 1), true);
+
+	ifstatements.push_back({ {llvmbuilder.CreateCondBr(value, dummyblock, dummyblock)}, dummyblock });
+
+	splitbb("", 0);
+
+	ifstatements.back().first[0]->setSuccessor(0, pcurrblock.back());
+
+	immidiates.pop_back();
+}
+
+extern "C" void continueifstatement() {
+	ifstatements.back().first[1] = splitbb("", 0);
+	ifstatements.back().first[0]->setSuccessor(1, pcurrblock.back());
+}
+
+extern "C" void endifstatement() {
+	splitbb("", 0);
+	if (auto lastbranchif = ifstatements.back().first[1])
+		lastbranchif->setSuccessor(0, pcurrblock.back());
+
+	if(ifstatements.back().first[0]->getSuccessor(1) == ifstatements.back().second)
+		ifstatements.back().first[0]->setSuccessor(1, pcurrblock.back());
+
+	ifstatements.back().second->eraseFromParent();
+	ifstatements.pop_back();
+}
+
 extern "C" void endsizeofexpr() {
 	auto lastimmtype = phndl->immidiates.back().type;
 	printtype(createllvmtype(lastimmtype),
@@ -1733,7 +1777,7 @@ void finalizedecl();
 
 static std::list<std::pair<llvm::SwitchInst*, llvm::BasicBlock*>> currswitch;
 
-extern "C" void splitbb(const char* identifier, size_t szident);
+extern "C" llvm::BranchInst *splitbb(const char* identifier, size_t szident);
 
 extern "C" void beginscope() {
 	bool beginofafnuc = scopevar.size() == 1;
@@ -1790,6 +1834,61 @@ extern "C" void endscope() {
 
 extern "C" void endexpression() { phndl->immidiates.clear(); }
 
+std::list<llvm::BasicBlock*> dowhileloops;
+
+extern "C" void startdowhileloop() {
+	splitbb("", 0);
+
+	dowhileloops.push_back(pcurrblock.back());
+}
+
+extern "C" void enddowhileloop() {
+	startifstatement();
+	ifstatements.back().first[0]->setSuccessor(1, pcurrblock.back());
+	ifstatements.back().first[0]->setSuccessor(0, dowhileloops.back());
+	ifstatements.back().second->eraseFromParent();
+	ifstatements.pop_back();
+	dowhileloops.pop_back();
+}
+
+std::list<std::array<llvm::BasicBlock*,2>> forloops;
+
+extern "C" void startforloopcond() {
+	std::array<llvm::BasicBlock*, 2> bb;
+	splitbb("", 0);
+	bb[0] = pcurrblock.back();
+	
+	forloops.push_back(bb);
+}
+
+extern "C" void endforloopcond() {
+	startifstatement();
+	endexpression();
+	//insertinttoimm("0", sizeof "0" - 1, "", 0, 3);
+	//startifstatement();
+	auto lastblcok = pcurrblock.back();
+
+	forloops.back()[1] = lastblcok;
+}
+
+extern "C" void addforloopiter() {
+	llvmbuilder.CreateBr(forloops.back()[0]);
+	splitbb("", 0);
+
+	//endifstatement();
+	ifstatements.back().first[0]->setSuccessor(0, pcurrblock.back());
+}
+
+extern "C" void endforloop() {
+	llvmbuilder.CreateBr(forloops.back()[1]);
+	forloops.pop_back();
+	//endifstatement();
+	splitbb("", 0);
+	ifstatements.back().first[0]->setSuccessor(1, pcurrblock.back());
+	ifstatements.back().second->eraseFromParent();
+	ifstatements.pop_back();
+}
+
 val decay(val lvalue) {
 	auto& currtype = lvalue.type;
 	if (currtype.front().uniontype == type::ARRAY) {
@@ -1838,16 +1937,18 @@ extern "C" void startfunctioncall() {
 
 std::list<std::pair<llvm::BranchInst*, std::string>> branches;
 
-extern "C" void splitbb(const char* identifier, size_t szident) {
+extern "C" llvm::BranchInst *splitbb(const char* identifier, size_t szident) {
 	bool bareweabrupt = bareweinabrupt();
 	if (pcurrblock.size())
 		pcurrblock.pop_back();
 	else bareweabrupt = true;
 	pcurrblock.push_back(llvm::BasicBlock::Create(
 		llvmctx, std::string{ identifier, szident }, dyn_cast<llvm::Function> (currfunc->pValue)));
+	llvm::BranchInst* preturn;
 	if (!bareweabrupt)
-		llvmbuilder.CreateBr(pcurrblock.back());
+		preturn = llvmbuilder.CreateBr(pcurrblock.back());
 	llvmbuilder.SetInsertPoint(pcurrblock.back());
+	return preturn;
 }
 
 extern "C" void gotolabel(const char* identifier, size_t szident) {
