@@ -18,7 +18,7 @@
 (?<identifierminetypedef#restrictpcre2only>\s*+(?!(?&keywordlist))((?&identifierraw#nofacet))(??C38)\s*+)
 (?<identifierminetypedef#restrictperlonly>\s*+(??C38)\s*+)
 
-(?<keywordlist>(?&typesandqualifiersmask)|struct|enum|__[_a-zA-Z0-9]*+|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)
+(?<keywordlist>(?&typesandqualifiersmask)|\b(struct|enum|__[_a-zA-Z0-9]*+|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)\b)
 
 (?<typenamerev>(?<#restrictoutsidefacet>(?&typenamefacet)(?!(?&castexpr)))|(?&typename)(?&castexprfacet))
 

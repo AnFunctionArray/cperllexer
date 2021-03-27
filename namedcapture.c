@@ -78,6 +78,9 @@ extern void debug()
 	return;
 }
 
+static size_t wholepart[2] = { -1, -1 }, fractionpart[2] = { -1, -1 },
+exponent[2] = { -1, -1 }, exponent_sign[2] = { -1, -1 };
+
 int callout_test(pcre2_callout_block* a, void* b)
 {
 	struct calloutinfo* ptable = b;
@@ -112,6 +115,10 @@ int callout_test(pcre2_callout_block* a, void* b)
 	int res;
 #define GROUP_PTR_AND_SZ(n) a->subject + a->offset_vector[2 * (n)], (unsigned int)(a->offset_vector[2 * (n) + 1] - a->offset_vector[2 * (n)])
 #define GROUP_SZ_AND_PTR(n) (unsigned int)(a->offset_vector[2 * (n) + 1] - a->offset_vector[2 * (n)]), a->subject + a->offset_vector[2 * (n)]
+#define CHECKED_PTR_AND_SZ_START_END(start, end) (start) != -1 ? a->subject + start : "", \
+							(end) != -1 ? (unsigned int)((end) - (start)) : 0
+#define CHECKED_PTR_AND_SZ(n) CHECKED_PTR_AND_SZ_START_END(a->offset_vector[2 * (n)], a->offset_vector[2 * (n) + 1])
+
 	if (PATTERN_FLAGS & PCRE2_AUTO_CALLOUT) {
 
 		printf("%.*s\n", a->next_item_length, ptable->pattern + a->pattern_position);
@@ -193,6 +200,10 @@ int callout_test(pcre2_callout_block* a, void* b)
 		addsubtotype();
 		endconstantexpr();
 		break;
+	case 65:
+		addCase();
+		endconstantexpr();
+		break;
 	case 40:
 		//setypedefspec(typedefname, a->subject);
 		beginconstantexpr();
@@ -200,6 +211,12 @@ int callout_test(pcre2_callout_block* a, void* b)
 		break;
 	case 64:
 		startswitch();
+		break;
+	case 66:
+		endswitch();
+		break;
+	case 67:
+		addDefaultCase();
 		break;
 	case 39:;
 		n = getnameloc(namedcapture = "identifierminedecl", *ptable) + 1;
@@ -354,23 +371,69 @@ int callout_test(pcre2_callout_block* a, void* b)
 	case 9:
 		printf("postfix arithmetic:\n", 0);
 		n = getnameloc(namedcapture = "postfixarith", *ptable);
-		//unaryincdec(GROUP_PTR_AND_SZ(n + 1), true);
+		unaryincdec(GROUP_PTR_AND_SZ(n + 1), true);
 		break;
 	case 10:
 		printf("prefix arithmetic:\n", 0);
 		n = getnameloc(namedcapture = "prefixarith", *ptable);
-		//unaryincdec(GROUP_PTR_AND_SZ(n + 1), false);
+		unaryincdec(GROUP_PTR_AND_SZ(n + 1), false);
 		break;
 	case 1:
 		n = getnameloc(namedcapture = "escape", *ptable);
 		addescapesequencetostring(GROUP_PTR_AND_SZ(n + 1));
 		break;
+	case 68:
+	{
+		if (a->offset_vector[2 * (ntoclear = getnameloc("wholeopt", *ptable))] == -1)
+			if (a->offset_vector[2 * (ntoclear = getnameloc("whole", *ptable))] == -1)
+				if (a->offset_vector[2 * (ntoclear = getnameloc("wholenodot", *ptable))] == -1)
+					goto rest;
+
+		switch (wholepart[0]) case -1: switch (wholepart[1]) case -1:
+			wholepart[0] = a->offset_vector[2 * ntoclear],
+				wholepart[1] = a->offset_vector[2 * ntoclear + 1];
+rest:
+		ntoclear = getnameloc("fraction", *ptable);
+
+	switch (fractionpart[0]) case -1: switch (fractionpart[1]) case -1:
+		fractionpart[0] = a->offset_vector[2 * ntoclear],
+			fractionpart[1] = a->offset_vector[2 * ntoclear + 1];
+
+		ntoclear = getnameloc("sign", *ptable);
+
+	switch (exponent_sign[0]) case -1: switch (exponent_sign[1]) case -1:
+		exponent_sign[0] = a->offset_vector[2 * ntoclear],
+			exponent_sign[1] = a->offset_vector[2 * ntoclear + 1];
+
+		ntoclear = getnameloc("exponent", *ptable) + 2;
+
+	switch (exponent[0]) case -1: switch (exponent[1]) case -1:
+		exponent[0] = a->offset_vector[2 * ntoclear],
+			exponent[1] = a->offset_vector[2 * ntoclear + 1];
+
+		break;
+	}
+	case 69:
+	{
+		ntoclear = getnameloc("flt", *ptable);
+
+		insertfloattoimm(CHECKED_PTR_AND_SZ(ntoclear), CHECKED_PTR_AND_SZ_START_END(wholepart[0], wholepart[1]),
+			CHECKED_PTR_AND_SZ_START_END(fractionpart[0], fractionpart[1]),
+			CHECKED_PTR_AND_SZ_START_END(exponent[0], exponent[1]),
+			CHECKED_PTR_AND_SZ_START_END(exponent_sign[0], exponent_sign[1]));
+
+		exponent[0] = exponent[1] = exponent_sign[0] = exponent_sign[1] =
+			fractionpart[0] = fractionpart[1] = wholepart[0] =
+			wholepart[1] = -1;
+
+		break;
+	}
 	case 5:;
 	{
 		unsigned int type;
 		n = getnameloc(namedcapture = "numberliteral", *ptable);
 
-		ntoprint[0] = getnameloc("uns", *ptable);
+		//ntoprint[0] = getnameloc("uns", *ptable);
 
 		ntoprint[1] = getnameloc("lng", *ptable);
 
@@ -381,20 +444,20 @@ int callout_test(pcre2_callout_block* a, void* b)
 			ntoclear = getnameloc(*pgroup, *ptable);
 			if (a->offset_vector[2 * ntoclear] != -1)
 			{
-				type = pgroup - groups << 2 | (a->offset_vector[2 * ntoprint[0]] != -1) | (a->offset_vector[2 * ntoprint[1]] != -1) << 1;
+				type = pgroup - groups; //<< 2;//| (a->offset_vector[2 * ntoprint[0]] != -1) | (a->offset_vector[2 * ntoprint[1]] != -1) << 1;
 
-				insertinttoimm(GROUP_PTR_AND_SZ(ntoclear), type);
+				insertinttoimm(GROUP_PTR_AND_SZ(ntoclear), CHECKED_PTR_AND_SZ(ntoprint[1]), type);
 
-				a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+				//a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
 
 				break;
 			}
 		}
 
-		ntoclear = ntoprint[0];
-		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
-		ntoclear = ntoprint[1];
-		a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+		//ntoclear = ntoprint[0];
+		//a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+		//ntoclear = ntoprint[1];
+		//a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
 
 		ntoclear = 0;
 	}
@@ -574,21 +637,21 @@ if (a->callout_number == 254)
 exit(-1);
 
 return 0;
-}
+	}
 
-void setypedefspec(size_t* typedefname, const char* subject)
-{
-	if (typedefname[0] != -1) settypedefname(subject + typedefname[0], typedefname[1] - typedefname[0]);
-}
+	void setypedefspec(size_t* typedefname, const char* subject)
+	{
+		if (typedefname[0] != -1) settypedefname(subject + typedefname[0], typedefname[1] - typedefname[0]);
+	}
 
-void printqualifntype(size_t* typedefname, const char* subject)
-{
-	bool flushqualifortype(), isanythingprinted = flushqualifortype();
+	void printqualifntype(size_t* typedefname, const char* subject)
+	{
+		bool flushqualifortype(), isanythingprinted = flushqualifortype();
 
-	if (typedefname[0] != -1)
-		printf("and typedef name: %.*s", typedefname[1] - typedefname[0], subject + typedefname[0]);
+		if (typedefname[0] != -1)
+			printf("and typedef name: %.*s", typedefname[1] - typedefname[0], subject + typedefname[0]);
 
-	if (isanythingprinted) printf("\n", 0);
+		if (isanythingprinted) printf("\n", 0);
 
-	typedefname[0] = typedefname[1] = -1;
-}
+		typedefname[0] = typedefname[1] = -1;
+	}

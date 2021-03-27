@@ -1,6 +1,7 @@
 int printf (const char *fmt, ...);
 
-struct test {
-    int a, b;
-    struct test *ptest;
-} test;
+main() {
+    printf("%llu\n", 0UL - 1LL);
+
+    return 0;
+}

@@ -36,6 +36,9 @@
     <ClCompile Include="idamain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="test.test.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="llvm\llvmgen.h">

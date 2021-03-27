@@ -31,18 +31,18 @@
 
 
 (?<jumpstatement>\s*+(goto(?&identifierminegoto);|continue\s*+;|break\s*+;|return(?&primexpr)?+(?C52);)\s*+)
-(?<identifierminegoto>\s*+(?!(?&keywordlist))((?&identifierraw))(?C63)\s*+)
+(?<identifierminegoto>\s++(?!(?&keywordlist))((?&identifierraw))(?C63)\s*+)
 
 (?<iterationstatement>\s*+(while\s*+[(](?&primexpr)[)](?&statement)|do(?&statement)while\s*+[(](?&primexpr)[)]\s*+;
 	|for\s*+[(]((?&declaration)|(?&exprstatement))?+(?&exprstatement)?+(?&primexpr)?+[)](?&statement))\s*+)
 (?<exprstatement>(?&primexpr)?;(?C53)\s*+)
 (?<compoundstatement>\s*+[{](?C44)((?&declaration)|(?&statement))*+[}](?C45)\s*+)
-(?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?&statement)(else(?&statement))?+|switch\s*+[(](?&primexpr)[)](?C64)(?&statement))\s*+)
+(?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?&statement)(else(?&statement))?+|switch\s*+[(](?&primexpr)[)](?C64)(?&statement)(?C66))\s*+)
 
-(?<statement>(?=(?&labelfacet)(?&statementinnerfacet))(?&label)(?&statementinner)|(?&statementinner))
+(?<statement>(?=(?&labelfacet)++(?&statementinnerfacet))(?&label)++(?&statementinner)|(?&statementinner))
 (?<statementinner>(?&exprstatement)|(?&compoundstatement)|(?&selectionstatement)|(?&iterationstatement)|(?&jumpstatement))
 
-(?<label>(?&identifierminelabel)|case(?C40)(?&primexpr)(?C41):(?65)|default\s*+:(?66))
+(?<label>(?&identifierminelabel)|\s*+(case\s++(?C40)(?&primexpr):(?C65)|default\s*+:(?C67))\s*+)
 (?<identifierminelabel>\s*+(?!(?&keywordlist))((?&identifierraw))\s*+:(?C62)\s*+)
 
 (?<cprogram>((?&typenameinside)(?C42)((?&compoundstatement)|(?&abstrinitialization)?(,(?C43)(?&abstdecloutside)(?C42)(?&abstrinitialization)?+)*+\s*+;\s*+))*)

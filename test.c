@@ -21,7 +21,10 @@ notajokenow(struct notajoke{ int n; } n) {
     return printf("%d\n", n.n);
 }
 
+unsigned long long longlong;
+
 main () {
+    longlong = 18446744073709551615u;
     b = 9UL;
     a = 9UL << 1 + 6;
     f = 3;
@@ -32,9 +35,11 @@ main () {
     (&printf) ("hello world %d %p %p\n", (*b[0]) (actualfun), d, &d + 1);
     test (9, d);
     printf("%d %d %c\n", d[2], sizeof b, **(&"test" + 1));
-    goto testlabel;
-    if(a)
+    switch(a)
     {
+        {
+    default:
+    case 4:;
         int a[2][2];
 
         a[1][1] = 5;
@@ -43,7 +48,7 @@ main () {
 
         struct test {
             int a, b;
-            struct test *ptest[2];
+            struct test* ptest[2];
         } test, test2[2];
 
         test.a = 4;
@@ -51,14 +56,37 @@ main () {
         *test.ptest = &test;
         printf("%d %d\n", test.a, test.b);
 
+        switch(test.b)
+    case 7: printf("match\n");
+
         struct notajoke tmp;
 
         tmp.n = (*test.ptest)->a;
 
-testlabel:
-        printf("%lu %d %d\n", test2 - test2 + (int)(char)7 % 2, test.b, 1[*(int(*)[2])&test]);
+        long long last;
+
+        last = 4294967295u + 1ll;
+
+        double mid;
+
+        mid = 3.14;
+
+        int arr[2], *parr;
+
+        parr = arr;
+
+        arr[0] = arr[1] = 69;
+
+        arr[1] = 77;
+
+        printf("%u %d %d %f %llu %lld %d %d\n", 2u - 10, test.b, 1[*(int(*)[4])&test.a], mid--, 5UL - 2ULL, last++, *parr, *++parr);
+
+        printf("%p %p\n", arr + 0, arr + 1);
+
+        printf("%f %lld\n", ++mid, last);
 
         notajokenow(tmp);
-        return 0;
+        }
     }
+    return 0;
 }
