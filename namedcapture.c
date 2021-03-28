@@ -306,7 +306,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 		endsizeofexpr();
 		break;
 	case 55:
-		startdeclaration();
+		startdeclaration(CHECKED_PTR_AND_SZ_START_END(typedefname[0], typedefname[1]));
 		break;
 	case 43:
 		continuedeclaration();

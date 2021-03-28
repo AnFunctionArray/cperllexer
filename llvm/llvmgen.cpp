@@ -148,8 +148,9 @@ bascitypespec parsebasictype(const std::vector<std::string>& qualifs) {
 		case "long"_h:
 			ret.longspecsn++;
 			if (ret.basic[1].empty())
-				ret.basic[1] = "long";
+				ret.basic[1] = a;
 			break;
+		case "__int64"_h:
 		case "int"_h:
 		case "short"_h:
 		case "char"_h:
@@ -239,7 +240,7 @@ struct type {
 
 struct valandtype {
 	union {
-		llvm::Value* value;
+		llvm::Value* value{};
 		llvm::Constant* constant;
 	};
 	std::vector<::type> type;
@@ -407,6 +408,8 @@ struct basehndl {
 			case "int"_h:
 			case "long"_h:
 				return 2 + basictyp.spec.basicdeclspec.longspecsn;
+			case "__int64"_h:
+				return 4;
 			}
 		}
 
@@ -1218,6 +1221,8 @@ std::list<currtypevectorbeingbuild> currtypevectorbeingbuild = {
 static std::string currstring;
 
 void printvaltype(val val) {
+	if (!val.value)
+		return;
 	std::string type_str;
 	llvm::raw_string_ostream rso(type_str);
 	val.value->getType()->print(rso);
@@ -1275,7 +1280,7 @@ extern "C" void obtainvalbyidentifier(const char* identifier, size_t szstr) {
 
 	printvaltype(immidiate);
 
-	if (!immidiate.value->getType()->getPointerElementType()->isFunctionTy())
+	if (immidiate.value && !immidiate.value->getType()->getPointerElementType()->isFunctionTy())
 		immidiate.value = llvmbuilder.CreateLoad(immidiate.value);
 
 	phndl->immidiates.push_back(immidiate);
@@ -1320,6 +1325,11 @@ void addvar(var& lastvar) {
 
 	const char* lastvartypestoragespec =
 		lastvar.type.back().spec.basicdeclspec.basic[2].c_str();
+
+	if (lastvar.bistypedef)
+		for (lastvar.type.back().spec.basicdeclspec.basic[2] = "typedef";;)
+			for(lastvar.pValue = nullptr/*(llvm::Value *)lastvar.pllvmtype*/;;)
+				return;
 
 	switch (scopevar.size()) {
 	case 1:
@@ -1401,19 +1411,22 @@ extern "C" void endbuildingstructorunion() {
 	currstruct.second = structvar.type.back().spec.basicdeclspec.basic[3];
 }
 
-extern "C" void startdeclaration() {
-
+extern "C" void startdeclaration(const char *str_typedefname, size_t szstr) {
+	std::string typedefname{ str_typedefname , szstr };
 	var var;
 
 	type basic{ type::BASIC };
 
-	if (qualifsandtypes.empty() && currstruct.first.empty())
+	if (qualifsandtypes.empty() && currstruct.first.empty() && typedefname.empty())
 		assert(!(scopevar.size() > 1)),
 		basic.spec.basicdeclspec.basic[1] = "int";
 	else
 		basic.spec.basicdeclspec = parsebasictype(::qualifsandtypes);
 
-	basic.spec.basicdeclspec.basic[3] = ::currdeclspectypedef;
+	if(!(basic.spec.basicdeclspec.basic[3] = typedefname).empty())
+		obtainvalbyidentifier(basic.spec.basicdeclspec.basic[3].data(), basic.spec.basicdeclspec.basic[3].size()),
+		var.type = immidiates.back().type,
+		immidiates.pop_back();
 
 	currdeclspectypedef = "";
 
@@ -1427,7 +1440,8 @@ extern "C" void startdeclaration() {
 
 	currstruct.second.clear();
 
-	var.type.push_back(basic);
+	if(var.type.empty())
+		var.type.push_back(basic);
 
 	currtypevectorbeingbuild.back().p->push_back(var);
 }
@@ -1655,7 +1669,7 @@ extern "C" void endifstatement() {
 	if (auto lastbranchif = ifstatements.back().first[1])
 		lastbranchif->setSuccessor(0, pcurrblock.back());
 
-	if(ifstatements.back().first[0]->getSuccessor(1) == ifstatements.back().second)
+	if (ifstatements.back().first[0]->getSuccessor(1) == ifstatements.back().second)
 		ifstatements.back().first[0]->setSuccessor(1, pcurrblock.back());
 
 	ifstatements.back().second->eraseFromParent();
@@ -1712,7 +1726,7 @@ llvm::Type* createllvmtype(std::vector<type> decltypevector) {
 				break;
 			case "int"_h:
 			case "long"_h:
-				if (type.spec.basicdeclspec.longspecsn > 1)
+				if (type.spec.basicdeclspec.longspecsn > 1) case "__int64"_h:
 					pcurrtype = dyn_cast<llvm::Type> (llvm::Type::getInt64Ty(llvmctx));
 				else pcurrtype = dyn_cast<llvm::Type> (llvm::Type::getInt32Ty(llvmctx));
 				break;
@@ -1743,8 +1757,12 @@ llvm::Type* createllvmtype(std::vector<type> decltypevector) {
 					break;
 				case "union"_h:
 					break;
-				default: // typedef
+				default: { // typedef
+					obtainvalbyidentifier(type.spec.basicdeclspec.basic[3].data(), type.spec.basicdeclspec.basic[3].size());
+					pcurrtype = (llvm::Type*)immidiates.back().value;
+					immidiates.pop_back();
 					break;
+				}
 				}
 			}
 		}},
@@ -1777,7 +1795,7 @@ void finalizedecl();
 
 static std::list<std::pair<llvm::SwitchInst*, llvm::BasicBlock*>> currswitch;
 
-extern "C" llvm::BranchInst *splitbb(const char* identifier, size_t szident);
+extern "C" llvm::BranchInst * splitbb(const char* identifier, size_t szident);
 
 extern "C" void beginscope() {
 	bool beginofafnuc = scopevar.size() == 1;
@@ -1883,13 +1901,13 @@ void fixupcontinuebranches() {
 	continuebranches.pop_back();
 }
 
-std::list<std::array<llvm::BasicBlock*,2>> forloops;
+std::list<std::array<llvm::BasicBlock*, 2>> forloops;
 
 extern "C" void startforloopcond() {
 	std::array<llvm::BasicBlock*, 2> bb;
 	splitbb("", 0);
 	bb[0] = pcurrblock.back();
-	
+
 	forloops.push_back(bb);
 	breakbranches.push_back({});
 	continuebranches.push_back({});
@@ -1973,7 +1991,7 @@ extern "C" void startfunctioncall() {
 
 std::list<std::pair<llvm::BranchInst*, std::string>> branches;
 
-extern "C" llvm::BranchInst *splitbb(const char* identifier, size_t szident) {
+extern "C" llvm::BranchInst * splitbb(const char* identifier, size_t szident) {
 	bool bareweabrupt = bareweinabrupt();
 	if (pcurrblock.size())
 		pcurrblock.pop_back();
@@ -2331,7 +2349,7 @@ extern "C" void unaryincdec(const char* str, size_t szstr, bool postfix) {
 
 	insertinttoimm("1", sizeof "1" - 1, "", 0, type);
 
-	if(immlvalue.type.front().uniontype != type::POINTER)
+	if (immlvalue.type.front().uniontype != type::POINTER)
 
 		immidiates.back() = convertTo(immidiates.back(), immlvalue.type);
 

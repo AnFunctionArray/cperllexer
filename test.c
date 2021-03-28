@@ -81,12 +81,20 @@ main () {
 
         i = 0;
 
+        typedef int testint;
+
         do {
             printf("%d\n", i++);
             if (i < 4) continue;
             printf("lower\n");
         }
         while (i < 8);
+
+        testint obj;
+
+        obj = 9;
+
+        printf("obj - %d\n", obj);
 
         if(i == 1) switch(i)
     case 1:
