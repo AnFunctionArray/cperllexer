@@ -1836,19 +1836,51 @@ extern "C" void endexpression() { phndl->immidiates.clear(); }
 
 std::list<llvm::BasicBlock*> dowhileloops;
 
+std::list<std::list<llvm::BranchInst*>> breakbranches;
+
+std::list<std::list<llvm::BranchInst*>> continuebranches;
+
+void fixupcontinuebranches(), fixupbrakebranches();
+
 extern "C" void startdowhileloop() {
 	splitbb("", 0);
 
 	dowhileloops.push_back(pcurrblock.back());
+	breakbranches.push_back({});
+	continuebranches.push_back({});
 }
 
 extern "C" void enddowhileloop() {
+	fixupcontinuebranches();
 	startifstatement();
+	fixupbrakebranches();
 	ifstatements.back().first[0]->setSuccessor(1, pcurrblock.back());
 	ifstatements.back().first[0]->setSuccessor(0, dowhileloops.back());
 	ifstatements.back().second->eraseFromParent();
 	ifstatements.pop_back();
 	dowhileloops.pop_back();
+}
+
+extern "C" void addbreak() {
+	breakbranches.back().push_back(llvmbuilder.CreateBr(pcurrblock.back()));
+}
+
+extern "C" void addcontinue() {
+	continuebranches.back().push_back(llvmbuilder.CreateBr(pcurrblock.back()));
+}
+
+void fixupbrakebranches() {
+	for (auto branch : breakbranches.back())
+		branch->setSuccessor(0, pcurrblock.back());
+
+	breakbranches.pop_back();
+}
+
+void fixupcontinuebranches() {
+	for (auto branch : continuebranches.back())
+		branch->setSuccessor(0, pcurrblock.back());
+
+	continuebranches.pop_back();
 }
 
 std::list<std::array<llvm::BasicBlock*,2>> forloops;
@@ -1859,6 +1891,8 @@ extern "C" void startforloopcond() {
 	bb[0] = pcurrblock.back();
 	
 	forloops.push_back(bb);
+	breakbranches.push_back({});
+	continuebranches.push_back({});
 }
 
 extern "C" void endforloopcond() {
@@ -1880,10 +1914,12 @@ extern "C" void addforloopiter() {
 }
 
 extern "C" void endforloop() {
+	fixupcontinuebranches();
 	llvmbuilder.CreateBr(forloops.back()[1]);
 	forloops.pop_back();
 	//endifstatement();
 	splitbb("", 0);
+	fixupbrakebranches();
 	ifstatements.back().first[0]->setSuccessor(1, pcurrblock.back());
 	ifstatements.back().second->eraseFromParent();
 	ifstatements.pop_back();
@@ -1968,6 +2004,7 @@ extern "C" void startswitch() {
 	//pcurrblock.push_back(llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue)));
 	auto dummyblock = llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue));
 	currswitch.push_back({ llvmbuilder.CreateSwitch(phndl->immidiates.back().value, dummyblock), dummyblock });
+	breakbranches.push_back({});
 
 	//llvmbuilder.SetInsertPoint(pcurrblock.back());
 	phndl->immidiates.pop_back();
@@ -1989,6 +2026,7 @@ bool bareweinabrupt(bool barewe) {
 
 extern "C" void endswitch() {
 	splitbb("", 0);
+	fixupbrakebranches();
 	if (currswitch.back().first->getDefaultDest() == currswitch.back().second)
 		currswitch.back().first->setDefaultDest(pcurrblock.back());
 	currswitch.back().second->eraseFromParent();

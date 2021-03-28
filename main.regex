@@ -30,7 +30,7 @@
 	
 
 
-(?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+;|break\s*+;|return(?&primexpr)?+(?C52);)\s*+)
+(?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?C79);|break\s*+(?C80);|return(?&primexpr)?+(?C52);)\s*+)
 (?<identifierminegoto>\s*+(?!(?&keywordlist))((?&identifierraw))(?C63)\s*+)
 
 (?<iterationstatement>\s*+(while\s*+[(](?C73)(?&primexpr)[)](?C76)(?C74)(?&statement)(?C75)|do\b(?C77)(?&statement)while\s*+[(](?&primexpr)[)](?C78)\s*+;

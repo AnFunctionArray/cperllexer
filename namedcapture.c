@@ -150,6 +150,12 @@ int callout_test(pcre2_callout_block* a, void* b)
 		printf("\n");
 		n = 0;
 		break;*/
+	case 80:
+		addbreak();
+		break;
+	case 79:
+		addcontinue();
+		break;
 	case 77:
 		startdowhileloop();
 		break;

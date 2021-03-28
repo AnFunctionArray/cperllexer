@@ -50,6 +50,8 @@ extern "C" {
     LLVM_FUNCS_MODIFIERS void addforloopiter() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void endforloop() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void startdowhileloop() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void addbreak() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void addcontinue() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void enddowhileloop() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void gotolabel(const char *identifier, size_t szident) LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void startswitch() LLVM_FUNCS_DEF

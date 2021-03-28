@@ -81,9 +81,16 @@ main () {
 
         i = 0;
 
-        do
+        do {
             printf("%d\n", i++);
-        while (0);
+            if (i < 4) continue;
+            printf("lower\n");
+        }
+        while (i < 8);
+
+        if(i == 1) switch(i)
+    case 1:
+        break;
 
         parr = arr;
 
