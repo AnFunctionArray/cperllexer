@@ -120,6 +120,59 @@ sub entryregexmain {
     $entryregex = $_[1] . "(?&" . $_[0] . ")";
 }
 
+sub getnext {
+    $_[0] =~ s {\s*+(?<arg>\S+?)\s*+($|,)}{};
+
+    return $+{arg};
+}
+
+sub substitutetemplateinstances {
+    my $regexcontent = $_[0];
+
+    my $template = $+{template};
+
+    my $args = $+{args};
+
+    my $name = $+{name};
+
+    $regexcontent =~ m {\(\?<(?<params>.*?)>\)\s*+(?=\(\?<$template\b)(?<inpar>(?<!\\)\((
+                    ([^][()]|(?<=\\).)++|(?&inpar)|(?<insquare>(?<!\\)\[\^?+(.|\\.)(
+                    ([^]]|(?<=\\).)++|(?&insquare))*(?<!\\)\]))*(?<!\\)\))}gxx;
+
+    push @arrayoftemplates, $&;
+
+    my $params = $+{params};
+
+    my $body = $+{inpar};
+
+    while(1) {
+        my $arg = getnext($args);
+
+        $arg =~ m{(?<ident>[_a-zA-Z][_a-zA-Z0-9]*+)(?<qualifs>\S*+)};
+
+        my $argident = $+{ident};
+
+        my $argqualifs = $+{qualifs};
+
+        my $param = getnext($params);
+
+        last if(!$arg || !$param);
+
+        $body =~ s{\(\?&$param\)}{"(?&" . $argident . ")" . $argqualifs}eg;
+        
+    }
+
+    if($name) {
+        $body =~ s{(?<=\(\?<)$template\b}{$name}e;
+    } else {
+        $body =~ s{\(\?<$template\b.*?>}{(};
+    } 
+
+    return $body;
+
+    #replacefacetgroups($1, $_[1]) while($regexcontent =~ m {(\(([^()]++|(?1))*\))}gxx);
+}
+
 sub parseregexfile {
 
     if(not defined $_[1])
@@ -144,6 +197,14 @@ sub parseregexfile {
     $regexfilecontent =~s/(\(\?<\w+)#restrictpcre2only>/((*F)/g if($matchinperl);
 
     $regexfilecontent =~s/(\(\?<\w+)#restrictperlonly>/((*F)/g if(not $matchinperl);
+
+    @arrayoftemplates = ();
+
+    $regexfilecontent =~s {\(\?&(?<template>((?![)])\S)+)<(?<args>.*?)>(=(?<name>((?![)])\S)+))?\)}{substitutetemplateinstances($regexfilecontent)}gxxe;
+
+    foreach my $template (@arrayoftemplates) {
+        $regexfilecontent =~s {\Q$template\E}{}g ;
+    }
 
     my $regexfile = $regexfilecontent; 
     

@@ -84,6 +84,8 @@ exponent[2] = { -1, -1 }, exponent_sign[2] = { -1, -1 };
 int callout_test(pcre2_callout_block* a, void* b)
 {
 	struct calloutinfo* ptable = b;
+	//ptable->pcurrblock = a;
+	//ptable->compat = 1;
 	int n = //a->callout_number == 2 ? getnameloc("inner", *ptable) : getnameloc("middle", *ptable);
 		//a->callout_number == 1 ? getnameloc("escape", *ptable) : a->callout_number == 5 ? getnameloc("numberliteral", *ptable) : getnameloc("text", *ptable);
 		0,
@@ -247,7 +249,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 
 		setypedefspec(typedefname, a->subject);
 
-		ntoprint[0] = getnameloc("typedefkeyword", *ptable), ntoprint[1] = getnameloc("typedefkeywordmine", *ptable);
+		ntoprint[0] = getnameloc2("typedefkeyword", *ptable, a, 0), ntoprint[1] = getnameloc2("typedefkeywordmine", *ptable, a, 0);
 		if (!isinsidedecl) istypedefdecl = a->offset_vector[2 * ntoprint[0]] != -1 || a->offset_vector[2 * ntoprint[1]] != -1;
 		if (istypedefdecl)
 		{
@@ -313,6 +315,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 		break;
 	case 47:
 		startfunctionparamdecl();
+		message = "start function params\n";
 		break;
 	case 38:;
 		int istypedefinvecotr(const char* identifier, size_t szcontent);
@@ -545,14 +548,20 @@ rest:
 		break;
 
 	case 11:
-		n = (getnameloc(namedcapture = "abstrptr", *ptable));
+		n = (getnameloc2(namedcapture = "abstrptr", *ptable, a, 1));
 
 		//n = 0;
 
 		addptrtotype(GROUP_PTR_AND_SZ(n + 1));
 
-		printf("pointer", 0);
+		printf("pointer\n", 0);
 
+		break;
+	case 81:
+		n = (getnameloc2(namedcapture = "cc", *ptable, a, 1)) + 1;
+		if (a->offset_vector[2 * n] == -1)
+			n = 0;
+		else --n;
 		break;
 #else
 	case 12:

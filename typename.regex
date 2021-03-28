@@ -1,16 +1,51 @@
-(?<typename>\s*+[(](?<typenameinsidenooptional>(?<allqualifs>(?<typesandqualifiers>\s*+(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|\b__int64\b)|
+(?<typename>\s*+[(](?<allqualifs>(?<typesandqualifiers>\s*+(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|\b__int64\b)|
 						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
-						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b)|__[_a-zA-Z0-9]*+)(?C49)\s*+)
-						|(?&typedefname)|(?&structorunion)|\s*+(?>(?<typedefkeyword>\btypedef\b))\s*+)++(?C55)
-						((?<abstdecl>(?<abstrptrrev#restrictoutsidefacet>(?<abstrptr>\s*+[*]\s*+((?&qualifiers))*+)
+						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b))(?C49)\s*+)
+						|(?&typedefname)|(?&structorunion)|\s*+(?>(?<typedefkeyword>\btypedef\b))\s*+)++((?&callingconv))?+(?C55)
+						(?&abstdecloptoutter)[)](?C46)\s*+)
+
+(?<Tabstrrest, Tabstrrestalt, Tinside>)(?<abstdecl>(?<abstrptrrev#restrictoutsidefacet>(?<abstrptr>\s*+[*]\s*+((?&qualifiers))*+)
 						(?!(?&abstrptrrev)(?C11))
-						(?<abstrrest>(?<abstrmostoutter>\s*+([(](?&abstdecl)[)]|(?&identifierminedecl))\s*+)?+(?<abstrsubs>\s*+(\[(?C40)(?&primexpr)\](?C41)
-						|[(](?C47)((?&typenameinsidenooptional)(?C42))?+(,(?&typenameinsidenooptional)(?C42))*(?<rest>,\s*+\.\.\.\s*+)?+[)](?C48))\s*+)*+(?C11))|
-						(?&abstrptr))(?&abstdeclinside))|(?&abstrmostoutter)?+(?&abstrsubs)*+))[)](?C46)\s*+)
+						(?<abstrrest>(?&Tinside)(?<abstrsubs>\s*+(\[(?C40)(?&primexpr)\](?C41)
+						|[(](?C47)((?&typenameinsideparams)(?C42))?+(,(?&typenameinsideparams)(?C42))*(?<rest>,\s*+\.\.\.\s*+)?+[)](?C48))\s*+)*+(?C11))|
+						(?&abstrptr))(?&abstrptr)*+(?&Tabstrrest)|(?&Tabstrrestalt))
 
-(?<typenameinside>(\s*+(?>(?<typedefkeywordmine>\btypedef\b))\s*+|(?&allqualifs))*+(?C55)(?&abstdecloutside))
 
-(?<abstdecloutside>(?&abstdecl)|(?&abstrmostoutter)(?&abstrsubs)*+)
+(?&abstdecl<abstrdecloptrest, abstrdecloptrestalt, abstrmostoutteropt?+>=abstdecloptoutter)
+
+(?<abstrdecloptrestalt>(?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++)
+
+(?<abstrdecloptrest>(?&abstrmostoutteroptfacet)?+(?&abstrsubsfacet)*+)
+
+(?&abstdecl<abstrdeclrest, abstrdeclrestalt, abstrmostoutter>=abstdecloutter)
+
+(?<abstrdeclrestalt>(?&abstrmostoutter)(?&abstrsubs)*+)
+
+(?<abstrdeclrest>(?&abstrmostoutterfacet)(?&abstrsubsfacet)*+)
+
+(?&abstdecl<abstrdecloptrestparams, abstrdecloptrestaltparams, abstrmostoutterparams?+>=abstdecloutterparams)
+
+(?<abstrdecloptrestaltparams>(?&abstrmostoutterparams)(?&abstrsubs)*+|(?&abstrsubs)++)
+
+(?<abstrdecloptrestparams>(?&abstrmostoutterparamsfacet)?+(?&abstrsubsfacet)*+)
+
+(?<Tabstrdeclinside>)(?<abstrcommonoutter>[(](?<cc>((?&callingconv))?+)(?&Tabstrdeclinside)(?C81)[)])
+
+(?<abstrmostoutteropt>\s*+(?&abstrcommonoutter<abstdecloptoutter>)\s*+)
+
+(?<abstrmostoutter>\s*+((?&abstrcommonoutter<abstdecloutter>)|(?&identifierminedecl))\s*+)
+
+(?<abstrmostoutterparams>\s*+((?&abstrcommonoutter<abstdecloutterparams>)|(?&identifierminedecl))\s*+)
+
+(?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
+
+(?<typenameinside>(\s*+(?>(?<typedefkeywordmine>\btypedef\b))\s*+|(?&allqualifs))++((?&callingconv))?+(?C55)(?&abstdecloptoutter))
+
+(?<typenameinsideopt>(\s*+(?>(?<typedefkeywordmine>\btypedef\b))\s*+|(?&allqualifs))*+((?&callingconv))?+(?C55)(?&abstdecloutter))
+
+(?<typenameinsidedecl>(\s*+(?>(?<typedefkeyword>\btypedef\b))\s*+|(?&allqualifs))++((?&callingconv))?+(?C55)(?&abstdecloutter))
+
+(?<typenameinsideparams>(\s*+(?>(?<typedefkeyword>\btypedef\b))\s*+|(?&allqualifs))++((?&callingconv))?+(?C55)(?&abstdecloutterparams))
 
 (?<typedefname>(?&identifierminetypedef))
 
@@ -22,20 +57,17 @@
 
 (?<typenamerev>(?<#restrictoutsidefacet>(?&typenamefacet)(?!(?&castexpr)))|(?&typename)(?&castexprfacet))
 
-(?<abstdeclinside>(?&abstrptr)*+(?&abstrmostoutter)?+(?&abstrsubsfacet)*+)
-
-(?<abstdeclinsidetypedef>(?&abstrptr)*+(\s*+([(](?&abstdeclfacet)[)]|(?&identifier))\s*+)?+(?&abstrsubsfacet)*+)
 
 (?<abstrbitfield>\s*+:\s*+(?&assignorsomething))
 (?<designator>\s*+(\[(?&primexpr)\]|\.\s*+(?&identifier))\s*+)
 (?<initializer>(?&assignorsomething)|\s*+[{]((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*+[}]\s*+)
 (?<abstrinitialization>=(?&initializer))
 
-(?<structorunion>\s*+(struct|union)((?&identifierminestruct)?+\s*+[{](?C59)\s*+((?&typenameinsidenooptional)(?&abstrbitfield)?+(?C42)(,(?C43)(?&abstdecloutside)(?&abstrbitfield)?+(?C42))*+\s*+;\s*+)*+[}](?C60)\s*+|(?&identifierminestruct))|(?&enum))
+(?<structorunion>\s*+(struct|union)((?&identifierminestruct)?+\s*+[{](?C59)\s*+((?&typenameinsidedecl)(?&abstrbitfield)?+(?C42)(,(?C43)(?&abstdecloutter)(?&abstrbitfield)?+(?C42))*+\s*+;\s*+)*+[}](?C60)\s*+|(?&identifierminestruct))|(?&enum))
 (?<enum>\s*+enum((?&identifier)?+\s*+[{](?<enumerator>(?&identifier)(=(?&assignorsomething))?+)?+(,(?&enumerator))*+,?+\s*+[}]\s*+|(?&identifier)))
 
 (?<identifierminestruct>\s*+(?!(?&keywordlist))((?&identifierraw))(?C58)\s*+)
 
-(?<declaration>((?&typenameinsidenooptional)(?C42)(?&abstrinitialization)?+(,(?C43)(?&abstdecloutside)(?C42)(?&abstrinitialization)?+)*+\s*+;\s*+))
+(?<declaration>((?&typenameinsidedecl)(?C42)(?&abstrinitialization)?+(,(?C43)(?&abstdecloutter)(?C42)(?&abstrinitialization)?+)*+\s*+;\s*+))
 
-(,(?&abstdecloutside)(?&abstrinitialization)?+)*+
+(,(?&abstdecloutter)(?&abstrinitialization)?+)*+

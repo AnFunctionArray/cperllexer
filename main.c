@@ -19,25 +19,30 @@ FILE *foutput;
 
 int callout_test(pcre2_callout_block *a, void *b);
 
-char *getnameloc(long long int ntocompare, struct calloutinfo nametable)
+char *getnameloc2(long long int ntocompare, struct calloutinfo nametable, pcre2_callout_block* pcurrblock, int displ)
 {
 	PCRE2_SPTR tabptr = nametable.name_table;
 
 	char *str = (char *)ntocompare;
 
-	int namecount = nametable.namecount, n;
+	int namecount = nametable.namecount, n, lastvalidn;
 
 	for (; namecount--; tabptr += nametable.name_entry_size)
 	{
 		n = (tabptr[0] << 8) | tabptr[1];
 
-		if (ntocompare > 0 && !strcmp(tabptr + 2, str))
+		if (ntocompare > 0 && !strcmp(tabptr + 2, str) && (!pcurrblock || (lastvalidn = n, pcurrblock->offset_vector[2 *(n + displ)] != -1)))
 			return n;
 		else if (n == -ntocompare)
 			return tabptr + 2;
 	}
 
-	return "";
+	if (!(ntocompare > 0)) return "";
+	else return lastvalidn;
+}
+
+char* getnameloc(long long int ntocompare, struct calloutinfo nametable) {
+	return getnameloc2(ntocompare, nametable, 0, -1);
 }
 
 int compile_pattern_and_execute(const char *pattern, const char *subject, int (*callback)(pcre2_callout_enumerate_block *, void *), size_t szpattern, size_t szsubject, int msgs, size_t *plen, int flags)
