@@ -2,7 +2,7 @@
 						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
 						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b))(?C49)\s*+)
 						|(?&typedefname)|(?&structorunion)|\s*+(?>(?<typedefkeyword>\btypedef\b))\s*+)++((?&callingconv))?+(?C55)
-						(?&abstdecloptoutter)[)](?C46)\s*+)
+						(?&abstdecloptoutter)?+[)](?C46)\s*+)
 
 (?<Tabstrrest, Tabstrrestalt, Tinside>)(?<abstdecl>(?<abstrptrrev#restrictoutsidefacet>(?<abstrptr>\s*+[*]\s*+((?&qualifiers))*+)
 						(?!(?&abstrptrrev)(?C11))

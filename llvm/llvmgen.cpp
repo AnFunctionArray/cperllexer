@@ -829,6 +829,7 @@ struct basehndl {
 						ops[!i].value);
 					immidiates.push_back(
 						{ ops[i].type.front().uniontype != type::FUNCTION
+						&& ops[i].type.front().uniontype != type::ARRAY
 							 ? llvmbuilder.CreateLoad(lvalue)
 							 : lvalue,
 						 ops[i].type, ops[i].lvalues, ops[i].originident });
@@ -1483,7 +1484,7 @@ val convertTo(val target, std::vector<::type> to) {
 
 	target.type = to;
 
-	//target.lvalues.clear();
+	target.lvalues.clear();
 
 	return target;
 }

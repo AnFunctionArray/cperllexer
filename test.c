@@ -104,11 +104,11 @@ main () {
 
         arr[0] = arr[1] = 69;
 
-        arr[1] = 77;
+        *(double*)&arr[1] = 77.7;
 
         printf("%u %d %d %f %llu %lld %d %d\n", 2u - 10, test.b, 1[*(int(*)[4])&test.a], mid--, 5UL - 2ULL, last++, *parr, *++parr);
 
-        printf("%p %p\n", arr + 0, arr + 1);
+        printf("%p %p %f\n", arr + 0, arr + 1, 1[*(double(((*)[2])))&arr]);
 
         printf("%f %lld\n", ++mid, last);
 
