@@ -413,7 +413,7 @@ struct basehndl {
 			}
 		}
 
-		throw std::exception{ "not a integer" };
+		throw std::out_of_range{ "not a integer" };
 	}
 
 	std::array<val, 2> usualarithmeticconversions(std::array<val, 2> ops_in) {
@@ -1649,6 +1649,8 @@ extern "C" void startifstatement() {
 
 	phndl->getlogicalnot();
 
+	splitbb("", 0);
+
 	auto value = llvmbuilder.CreateIntCast(immidiates.back().value, llvm::IntegerType::get(llvmctx, 1), true);
 
 	ifstatements.push_back({ {llvmbuilder.CreateCondBr(value, dummyblock, dummyblock)}, dummyblock });
@@ -2235,7 +2237,7 @@ extern "C" void insertfloattoimm(const char* postfix_arg, size_t szstr,
 		(assert(ranges::contains(std::array{ "l", "L" }, postfix)),
 			currtype.back().spec.basicdeclspec.basic[1] = "double",
 			currtype.back().spec.basicdeclspec.longspecsn = 1,
-			pllvmtype = llvm::Type::getFloatingPointTy(llvmctx, llvm::APFloatBase::IEEEquad()),
+			pllvmtype = llvm::Type::getFP128Ty(llvmctx),
 			llvm::APFloatBase::IEEEquad());
 
 	llvm::APFloat floatlit{ floatsem };
