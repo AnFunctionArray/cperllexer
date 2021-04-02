@@ -1,12 +1,14 @@
+#include "llvmgen.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/Value.h"
 #include <array>
 #include <bitset>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <initializer_list>
 #include <iostream>
 #include <list>
-#include <llvm/Support/Error.h>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Constants.h>
@@ -21,57 +23,58 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Type.h>
+#include <llvm/Support/Error.h>
 #include <locale>
 #include <range/v3/algorithm/contains.hpp>
-#include <range/v3/view.hpp>
+#include <range/v3/algorithm/find.hpp>
+#include <range/v3/iterator/common_iterator.hpp>
 #include <range/v3/iterator/concepts.hpp>
 #include <range/v3/iterator/traits.hpp>
 #include <range/v3/range/concepts.hpp>
 #include <range/v3/range/traits.hpp>
-#include <range/v3/view/istream.hpp>
+#include <range/v3/view.hpp>
 #include <range/v3/view/drop.hpp>
-#include <range/v3/iterator/common_iterator.hpp>
-#include <range/v3/algorithm/find.hpp>
+#include <range/v3/view/istream.hpp>
 #include <sstream>
 #include <stdexcept>
 #include <stdint.h>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
-#include <string_view>
 
-unsigned constexpr stringhash(char const* input) {
+unsigned constexpr stringhash (char const *input) {
 	return *input ? static_cast<unsigned int> (*input) +
-		33 * stringhash(input + 1)
-		: 5381;
+						33 * stringhash (input + 1)
+				  : 5381;
 }
 
-void printtype(llvm::Type* ptype, std::string identifier) {
+void printtype (llvm::Type *ptype, std::string identifier) {
 	std::string type_str;
-	llvm::raw_string_ostream rso(type_str);
-	ptype->print(rso);
-	std::cout << identifier << " is " << rso.str() << std::endl;
+	llvm::raw_string_ostream rso (type_str);
+	ptype->print (rso);
+	std::cout << identifier << " is " << rso.str () << std::endl;
 }
 
-constexpr inline auto operator"" _h(char const* p, size_t) {
-	return stringhash(p);
+constexpr inline auto operator"" _h (char const *p, size_t) {
+	return stringhash (p);
 }
 
 static struct nonconstructable {
-	nonconstructable() {}
-	~nonconstructable() {}
+	nonconstructable () {}
+	~nonconstructable () {}
 	union {
 		llvm::Module mainmodule;
 	};
 } nonconstructable;
 
-llvm::DataLayout* pdatalayout;
+llvm::DataLayout *pdatalayout;
 
-bool bareweinabrupt(bool barewe = false);
+bool bareweinabrupt (bool barewe = false);
 
 static llvm::LLVMContext llvmctx;
 
-static llvm::IRBuilder<> llvmbuilder{ llvmctx };
+static llvm::IRBuilder<> llvmbuilder{llvmctx};
 
 typedef std::bitset<3> pointrtypequalifiers;
 /*
@@ -91,7 +94,7 @@ struct bascitypespec {
 	size_t longspecsn{}; //amount of long qualifiers
 	pointrtypequalifiers qualifiers;
 
-	bascitypespec& operator=(const bascitypespec& source) { // basic assignment
+	bascitypespec &operator= (const bascitypespec &source) { // basic assignment
 		basic[0] = source.basic[0];
 		basic[1] = source.basic[1];
 		basic[3] = source.basic[3];
@@ -99,27 +102,26 @@ struct bascitypespec {
 		return *this;
 	}
 
-	bool operator==(const bascitypespec& comparer) {
+	bool operator== (const bascitypespec &comparer) {
 		return comparer.basic[0] == basic[0] &&
-			comparer.basic[1] == basic[1] &&
-			comparer.basic[3] == basic[3] &&
-			comparer.longspecsn == longspecsn;
+			   comparer.basic[1] == basic[1] &&
+			   comparer.basic[3] == basic[3] &&
+			   comparer.longspecsn == longspecsn;
 	}
 
-	bool compareSign(const bascitypespec& comparer) {
-		return ranges::contains(std::array{ "", "signed" }, comparer.basic[0]) &&
-			ranges::contains(std::array{ "", "signed" }, basic[0]) ||
-			comparer.basic[0] == basic[0];
+	bool compareSign (const bascitypespec &comparer) {
+		return ranges::contains (std::array{"", "signed"}, comparer.basic[0]) &&
+				   ranges::contains (std::array{"", "signed"}, basic[0]) ||
+			   comparer.basic[0] == basic[0];
 	}
-
 };
 
-pointrtypequalifiers parsequalifiers(const std::string& qualifs) {
+pointrtypequalifiers parsequalifiers (const std::string &qualifs) {
 	pointrtypequalifiers ret;
-	std::stringstream ssqualifs{ qualifs };
+	std::stringstream ssqualifs{qualifs};
 	std::string spec{};
 	while (ssqualifs >> spec)
-		switch (stringhash(spec.c_str())) {
+		switch (stringhash (spec.c_str ())) {
 		case "const"_h:
 			ret[0] = 1;
 			break;
@@ -131,23 +133,23 @@ pointrtypequalifiers parsequalifiers(const std::string& qualifs) {
 			break;
 		default:
 			std::cerr << "invalid specifier: " << spec << std::endl;
-			std::terminate();
+			std::terminate ();
 		}
 	return ret;
 }
 
-bascitypespec parsebasictype(const std::vector<std::string>& qualifs) {
+bascitypespec parsebasictype (const std::vector<std::string> &qualifs) {
 	bascitypespec ret;
 
-	for (const auto& a : qualifs)
-		switch (stringhash(a.c_str())) {
+	for (const auto &a : qualifs)
+		switch (stringhash (a.c_str ())) {
 		case "unsigned"_h:
 		case "signed"_h:
 			ret.basic[0] = a;
 			break;
 		case "long"_h:
 			ret.longspecsn++;
-			if (ret.basic[1].empty())
+			if (ret.basic[1].empty ())
 				ret.basic[1] = a;
 			break;
 		case "__int64"_h:
@@ -174,63 +176,66 @@ bascitypespec parsebasictype(const std::vector<std::string>& qualifs) {
 			break;
 		default:
 			std::cerr << "invalid specifier: " << a << std::endl;
-			std::terminate();
+			std::terminate ();
 		}
 	return ret;
 }
 struct var;
 
 struct type {
-	enum typetype { BASIC, POINTER, ARRAY, FUNCTION } uniontype;
+	enum typetype { BASIC,
+					POINTER,
+					ARRAY,
+					FUNCTION } uniontype;
 
-	type(typetype a) : spec{ a }, uniontype{ a } {};
+	type (typetype a) : spec{a}, uniontype{a} {};
 
 	typedef uint64_t arraytype;
 	struct functype {
-		std::list<std::list<var>> parametertypes_list{ 1 };
+		std::list<std::list<var>> parametertypes_list{1};
 		bool bisvariadic;
 	};
 
-	type(const type& a) : spec{ a.uniontype }, uniontype{ a.uniontype } {
+	type (const type &a) : spec{a.uniontype}, uniontype{a.uniontype} {
 		*this = a;
 	}
 
-	~type() {
+	~type () {
 		std::array lambdas = {
-			std::function{[&] { spec.basicdeclspec.~bascitypespec(); }},
-			std::function{[&] { spec.ptrqualifiers.~bitset(); }},
+			std::function{[&] { spec.basicdeclspec.~bascitypespec (); }},
+			std::function{[&] { spec.ptrqualifiers.~bitset (); }},
 			std::function{[&] {}},
-			std::function{[&] { spec.func.~functype(); }} };
+			std::function{[&] { spec.func.~functype (); }}};
 		lambdas[uniontype]();
 	}
 
-	type& operator= (const type& type) {
+	type &operator= (const type &type) {
 
 		if (type.uniontype != uniontype)
-			this->~type(), new (this)::type{ type.uniontype };
+			this->~type (), new (this)::type{type.uniontype};
 		std::array lambdas = {
 			std::function{
 				[&] { spec.basicdeclspec = type.spec.basicdeclspec; }},
 			std::function{
 				[&] { spec.ptrqualifiers = type.spec.ptrqualifiers; }},
 			std::function{[&] { spec.arraysz = type.spec.arraysz; }},
-			std::function{[&] { spec.func = type.spec.func; }} };
+			std::function{[&] { spec.func = type.spec.func; }}};
 		lambdas[uniontype]();
 
 		return *this;
 	}
 
 	union typespec {
-		typespec(typetype type) {
+		typespec (typetype type) {
 			std::array lambdas = {
 				std::function{[&] { new (&basicdeclspec) bascitypespec{}; }},
 				std::function{
 					[&] { new (&ptrqualifiers) pointrtypequalifiers{}; }},
 				std::function{[&] { arraysz = 0; }},
-				std::function{[&] { new (&func) functype{}; }} };
+				std::function{[&] { new (&func) functype{}; }}};
 			lambdas[type]();
 		}
-		~typespec() {}
+		~typespec () {}
 		bascitypespec basicdeclspec;
 		pointrtypequalifiers ptrqualifiers;
 		arraytype arraysz;
@@ -240,8 +245,8 @@ struct type {
 
 struct valandtype {
 	union {
-		llvm::Value* value{};
-		llvm::Constant* constant;
+		llvm::Value *value{};
+		llvm::Constant *constant;
 	};
 	std::vector<::type> type;
 };
@@ -255,15 +260,15 @@ struct var {
 	std::vector<::type> type;
 	bool bistypedef;
 	std::string identifier;
-	llvm::Type* pllvmtype;
-	llvm::Value* pValue;
+	llvm::Type *pllvmtype;
+	llvm::Value *pValue;
 
-	operator val() { return { pValue, type, {}, identifier }; }
+	operator val () { return {pValue, type, {}, identifier}; }
 };
 
 static std::list<var>::iterator currfunc;
 
-static std::vector<llvm::BasicBlock*> pcurrblock;
+static std::vector<llvm::BasicBlock *> pcurrblock;
 
 /*struct valueorconstant {
 		template<class T> requires std::same_as<T, llvm::Value*> ||
@@ -285,9 +290,9 @@ operator=(T p)
 
 static std::list<std::list<::val>::iterator> callees{};
 
-llvm::Type* createllvmtype(std::vector<type> decltypevector);
+llvm::Type *createllvmtype (std::vector<type> decltypevector);
 
-val convertTo(val target, std::vector<::type> to);
+val convertTo (val target, std::vector<::type> to);
 
 /*auto gen_pointer_to_elem_if_ptr_to_array(llvm::Value* value,
 	llvm::Type** p_type = nullptr) {
@@ -302,105 +307,120 @@ val convertTo(val target, std::vector<::type> to);
 	return value;
 }*/
 
-static std::list<val> immidiates;
+static std::list<val> immidiates{1};
 
-bool bIsBasicInteger(const type& type);
+bool bIsBasicInteger (const type &type);
+
+//using ifstatiter = std::list<std::pair<std::array<llvm::BranchInst *, 2>, llvm::BasicBlock *>>::iterator;
+
+struct opscopeinfo {
+	std::list<val>::iterator immidiatesbegin;
+};
+
+static std::list<opscopeinfo> opsscopeinfo;
+
+//static std::list<std::pair<std::list<std::pair<llvm::BasicBlock *, std::array<llvm::Value *, 3>>>, val>> opbbs;
+
+//static std::list<var> currlogicopval{};
 
 struct basehndl {
-	virtual llvm::Value* CreateCastInst(llvm::Value* C, llvm::Type* Ty, bool bissigned) {
-		return llvmbuilder.CreateIntCast(C, Ty, bissigned);
+	friend void beginlogicalop (int blastorfirst);
+	virtual llvm::Value *CreateCastInst (llvm::Value *C, llvm::Type *Ty, bool bissigned) {
+		return llvmbuilder.CreateIntCast (C, Ty, bissigned);
 	}
 
-	virtual llvm::Constant* getValZero(val val) {
+	virtual llvm::Constant *getValZero (val val) {
 		llvm::APInt apint{};
 
-		if (bIsBasicInteger(val.type.front()))
-			apint = llvm::APInt{ dyn_cast<llvm::IntegerType>(val.value->getType())->getBitWidth(), 0 };
+		if (bIsBasicInteger (val.type.front ()))
+			apint = llvm::APInt{dyn_cast<llvm::IntegerType> (val.value->getType ())->getBitWidth (), 0};
 
-		return llvm::ConstantInt::getIntegerValue(val.value->getType(), apint);
+		return llvm::ConstantInt::getIntegerValue (val.value->getType (), apint);
 	}
 
 	using val = ::val;
 
-	std::list<val>& immidiates = ::immidiates;
+	std::list<val> &immidiates = ::immidiates;
 
-	virtual void getpositive() {
-		immidiates.back() = integralpromotions(immidiates.back());
+	virtual void getpositive () {
+		immidiates.back () = integralpromotions (immidiates.back ());
 	}
 
-	virtual void getnegative() {
-		immidiates.back() = integralpromotions(immidiates.back());
+	virtual void getnegative () {
+		immidiates.back () = integralpromotions (immidiates.back ());
 
-		immidiates.back().value = llvmbuilder.CreateNeg(immidiates.back().value);
+		immidiates.back ().value = llvmbuilder.CreateNeg (immidiates.back ().value);
 	}
 
-	virtual void getbitwisenot() {
-		immidiates.back() = integralpromotions(immidiates.back());
+	virtual void getbitwisenot () {
+		immidiates.back () = integralpromotions (immidiates.back ());
 
-		immidiates.back().value = llvmbuilder.CreateNot(immidiates.back().value);
+		immidiates.back ().value = llvmbuilder.CreateNot (immidiates.back ().value);
 	}
 
-	virtual void getlogicalnot() {
-		auto& op = immidiates.back();
+	virtual llvm::Value *getlogicalnot () {
+		auto &op = immidiates.back ();
 
-		extern void printvaltype(val);
+		llvm::Value *originstr;
 
-		printvaltype(op);
+		extern void printvaltype (val);
 
-		op.value = llvmbuilder.CreateICmp(
+		printvaltype (op);
+
+		originstr = op.value = llvmbuilder.CreateICmp (
 			llvm::CmpInst::Predicate::ICMP_EQ, op.value,
-			getValZero(op));
-		op.type.erase(op.type.begin(), --op.type.end());
+			getValZero (op));
+		op.type.erase (op.type.begin (), --op.type.end ());
 
-		op.value = CreateCastInst(op.value, llvm::Type::getInt32Ty(llvmctx), false);
+		op.value = CreateCastInst (op.value, llvm::Type::getInt32Ty (llvmctx), false);
 
-		extern void printvaltype(::val val);
+		extern void printvaltype (::val val);
 
-		printvaltype(op);
+		printvaltype (op);
 
-		op.type.back().spec.basicdeclspec.basic[1] = "int",
-			op.type.back().spec.basicdeclspec.basic[0] = "";
+		op.type.back ().spec.basicdeclspec.basic[1] = "int",
+					 op.type.back ().spec.basicdeclspec.basic[0] = "";
+
+		return originstr;
 	}
 
-	val integralpromotions(val in) {
-		assert(in.type.size() == 1);
+	val integralpromotions (val in) {
+		assert (in.type.size () == 1);
 
 		std::cout << "promoting" << std::endl;
 
-		extern void printvaltype(val);
+		extern void printvaltype (val);
 
-		printvaltype(in);
+		printvaltype (in);
 
 		switch (
-			stringhash(in.type.back().spec.basicdeclspec.basic[1].c_str())) {
+			stringhash (in.type.back ().spec.basicdeclspec.basic[1].c_str ())) {
 		case "char"_h:
 		case "short"_h:
-			switch (stringhash(
-				in.type.back().spec.basicdeclspec.basic[0].c_str())) {
+			switch (stringhash (
+				in.type.back ().spec.basicdeclspec.basic[0].c_str ())) {
 			default:
 			case "signed"_h:
 				in.value =
-					CreateCastInst(in.value, llvm::Type::getInt32Ty(llvmctx), true);
+					CreateCastInst (in.value, llvm::Type::getInt32Ty (llvmctx), true);
 				break;
 			case "unsigned"_h:
 				in.value =
-					CreateCastInst(in.value, llvm::Type::getInt32Ty(llvmctx), false);
+					CreateCastInst (in.value, llvm::Type::getInt32Ty (llvmctx), false);
 				break;
 			}
-			in.type.back().spec.basicdeclspec.basic[0] = "";
-			in.type.back().spec.basicdeclspec.basic[1] = "int";
+			in.type.back ().spec.basicdeclspec.basic[0] = "";
+			in.type.back ().spec.basicdeclspec.basic[1] = "int";
 		}
 		return in;
 	}
 
-	static int getrank(::type basictyp) {
-		switch (stringhash(basictyp.spec.basicdeclspec.basic[0].c_str()))
-		{
+	static int getrank (::type basictyp) {
+		switch (stringhash (basictyp.spec.basicdeclspec.basic[0].c_str ())) {
 		default:
 		case "signed"_h:
 		case "unsigned"_h:
-			switch (stringhash(basictyp.spec.basicdeclspec.basic[1].c_str()))
-			{
+			switch (stringhash (basictyp.spec.basicdeclspec.basic[1].c_str ())) {
 			case "char"_h:
 				return 0;
 			case "short"_h:
@@ -413,40 +433,40 @@ struct basehndl {
 			}
 		}
 
-		throw std::out_of_range{ "not a integer" };
+		throw std::out_of_range{"not a integer"};
 	}
 
-	std::array<val, 2> usualarithmeticconversions(std::array<val, 2> ops_in) {
-		std::array ops = { &ops_in[0], &ops_in[1] };
-		assert(ops[0]->type.size() == 1 && ops[1]->type.size() == 1);
+	std::array<val, 2> usualarithmeticconversions (std::array<val, 2> ops_in) {
+		std::array ops = {&ops_in[0], &ops_in[1]};
+		assert (ops[0]->type.size () == 1 && ops[1]->type.size () == 1);
 
-		std::array refspecops = { &ops[0]->type.back().spec.basicdeclspec,  &ops[1]->type.back().spec.basicdeclspec };
+		std::array refspecops = {&ops[0]->type.back ().spec.basicdeclspec, &ops[1]->type.back ().spec.basicdeclspec};
 
-		extern void printvaltype(val);
+		extern void printvaltype (val);
 
-		printvaltype(*ops[0]);
+		printvaltype (*ops[0]);
 
-		printvaltype(*ops[1]);
+		printvaltype (*ops[1]);
 
 		for (auto i = 0; i < 2; ++i)
-			if (ranges::contains(std::array{ "double", "float" }, refspecops[i]->basic[1]))
-				for (ops_in[!i] = convertTo(*ops[!i], ops[i]->type);;)
+			if (ranges::contains (std::array{"double", "float"}, refspecops[i]->basic[1]))
+				for (ops_in[!i] = convertTo (*ops[!i], ops[i]->type);;)
 					return ops_in;
 
-		ops_in[0] = integralpromotions(*ops[0]);
+		ops_in[0] = integralpromotions (*ops[0]);
 
-		ops_in[1] = integralpromotions(*ops[1]);
+		ops_in[1] = integralpromotions (*ops[1]);
 
-		refspecops = { &ops[0]->type.back().spec.basicdeclspec,  &ops[1]->type.back().spec.basicdeclspec };
+		refspecops = {&ops[0]->type.back ().spec.basicdeclspec, &ops[1]->type.back ().spec.basicdeclspec};
 
 		if (*refspecops[0] == *refspecops[1])
 			return ops_in;
 
-		if (refspecops[0]->compareSign(*refspecops[1])) {
-			if (getrank(ops[0]->type.back()) < getrank(ops[1]->type.back()))
-				std::swap(ops[0], ops[1]), std::swap(refspecops[0], refspecops[1]);
+		if (refspecops[0]->compareSign (*refspecops[1])) {
+			if (getrank (ops[0]->type.back ()) < getrank (ops[1]->type.back ()))
+				std::swap (ops[0], ops[1]), std::swap (refspecops[0], refspecops[1]);
 
-			ops[1]->value = CreateCastInst(ops[1]->value, ops[0]->value->getType(), refspecops[1]->basic[0] != "unsigned");
+			ops[1]->value = CreateCastInst (ops[1]->value, ops[0]->value->getType (), refspecops[1]->basic[0] != "unsigned");
 
 			*refspecops[1] = *refspecops[0];
 
@@ -454,34 +474,34 @@ struct basehndl {
 		}
 
 		if (refspecops[0]->basic[0] != "unsigned")
-			std::swap(ops[0], ops[1]), std::swap(refspecops[0], refspecops[1]);
+			std::swap (ops[0], ops[1]), std::swap (refspecops[0], refspecops[1]);
 
-		if (getrank(ops[0]->type.back()) >= getrank(ops[1]->type.back())) {
-			ops[1]->value = CreateCastInst(ops[1]->value, ops[0]->value->getType(), true);
+		if (getrank (ops[0]->type.back ()) >= getrank (ops[1]->type.back ())) {
+			ops[1]->value = CreateCastInst (ops[1]->value, ops[0]->value->getType (), true);
 
 			*refspecops[1] = *refspecops[0];
 
 			return ops_in;
 		}
 
-		if (ranges::contains(std::array{ refspecops[1]->longspecsn, refspecops[0]->longspecsn }, 2)) //if at least one is long long
+		if (ranges::contains (std::array{refspecops[1]->longspecsn, refspecops[0]->longspecsn}, 2)) //if at least one is long long
 			//otherwise there is no difference between int and long on windows
 
-			ops[0]->value = CreateCastInst(ops[0]->value, ops[1]->value->getType(), false),
+			ops[0]->value = CreateCastInst (ops[0]->value, ops[1]->value->getType (), false),
 
-			* refspecops[0] = *refspecops[1];
+			*refspecops[0] = *refspecops[1];
 		else {
-			auto tmptype = ops[1]->type.back();
+			auto tmptype = ops[1]->type.back ();
 
 			tmptype.spec.basicdeclspec.basic[0] = "unsigned";
 
-			ops[0]->value = CreateCastInst(ops[0]->value, createllvmtype({ tmptype }), false),
+			ops[0]->value = CreateCastInst (ops[0]->value, createllvmtype ({tmptype}), false),
 
-				* refspecops[0] = tmptype.spec.basicdeclspec;
+			*refspecops[0] = tmptype.spec.basicdeclspec;
 
-			ops[1]->value = CreateCastInst(ops[1]->value, createllvmtype({ tmptype }), true),
+			ops[1]->value = CreateCastInst (ops[1]->value, createllvmtype ({tmptype}), true),
 
-				* refspecops[1] = tmptype.spec.basicdeclspec;
+			*refspecops[1] = tmptype.spec.basicdeclspec;
 		}
 
 		return ops_in;
@@ -622,18 +642,18 @@ struct basehndl {
 		return ops;*/
 	}
 
-	auto getops(bool busual = true, bool bassign = false) {
-		extern valandtype getrvalue(valandtype lvalue);
+	auto getops (bool busual = true, bool bassign = false) {
+		extern valandtype getrvalue (valandtype lvalue);
 
-		auto ops = std::array{ *(----immidiates.end()), immidiates.back() };
+		auto ops = std::array{*(----immidiates.end ()), immidiates.back ()};
 
 		//auto op0type = ops[0].value->getType();
 
 		//if (!bassign)
-			//ops[0] = integralpromotions(ops[0]);
+		//ops[0] = integralpromotions(ops[0]);
 
 		//if (ops[1].type.front().uniontype == type::BASIC)
-			//ops[1] = integralpromotions(ops[1]);
+		//ops[1] = integralpromotions(ops[1]);
 
 		//ops[0].value =
 		//	/*gen_pointer_to_elem_if_ptr_to_array*/ (ops[0].value);
@@ -648,398 +668,492 @@ struct basehndl {
 				ops[0].type.back().spec.basicdeclspec.basic[0] != "unsigned");*/
 
 		if (busual)
-			ops = usualarithmeticconversions(ops);
+			ops = usualarithmeticconversions (ops);
 
-		immidiates.erase(----immidiates.end(), immidiates.end());
+		immidiates.erase (----immidiates.end (), immidiates.end ());
 
 		return ops;
 	}
 
-	virtual void mlutiplylasttwovalues() {
-		std::array ops = getops();
+	virtual void mlutiplylasttwovalues () {
+		std::array ops = getops ();
 
-		ops[0].value = llvmbuilder.CreateMul(ops[0].value, ops[1].value);
+		ops[0].value = llvmbuilder.CreateMul (ops[0].value, ops[1].value);
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void dividelasttwovalues() {
-		std::array ops = getops();
+	virtual void dividelasttwovalues () {
+		std::array ops = getops ();
 
-		if (ops[0].type.back().spec.basicdeclspec.basic[0] != "unsigned")
-			ops[0].value = llvmbuilder.CreateSDiv(ops[0].value, ops[1].value);
+		if (ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
+			ops[0].value = llvmbuilder.CreateSDiv (ops[0].value, ops[1].value);
 		else
-			ops[0].value = llvmbuilder.CreateUDiv(ops[0].value, ops[1].value);
+			ops[0].value = llvmbuilder.CreateUDiv (ops[0].value, ops[1].value);
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void modulolasttwovalues() {
-		std::array ops = getops();
+	virtual void modulolasttwovalues () {
+		std::array ops = getops ();
 
-		if (ops[0].type.back().spec.basicdeclspec.basic[0] != "unsigned")
-			ops[0].value = llvmbuilder.CreateSRem(ops[0].value, ops[1].value);
+		if (ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
+			ops[0].value = llvmbuilder.CreateSRem (ops[0].value, ops[1].value);
 		else
-			ops[0].value = llvmbuilder.CreateURem(ops[0].value, ops[1].value);
+			ops[0].value = llvmbuilder.CreateURem (ops[0].value, ops[1].value);
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void addlasttwovalues(bool bminus, bool busual = true) {
-		extern valandtype getrvalue(valandtype lvalue);
-		if (subscripttwovalues(bminus)) {
-			getaddress();
+	virtual void addlasttwovalues (bool bminus, bool busual = true) {
+		extern valandtype getrvalue (valandtype lvalue);
+		if (subscripttwovalues (bminus)) {
+			getaddress ();
 			return;
 		}
-		std::array ops = std::array{ *(----immidiates.end()), immidiates.back() };
+		std::array ops = std::array{*(----immidiates.end ()), immidiates.back ()};
 
-		immidiates.erase(----immidiates.end(), immidiates.end());
+		immidiates.erase (----immidiates.end (), immidiates.end ());
 
-		extern ::val decay(::val lvalue);
+		extern ::val decay (::val lvalue);
 
-		ops[0] = decay(ops[0]);
+		ops[0] = decay (ops[0]);
 
-		ops[1] = decay(ops[1]);
+		ops[1] = decay (ops[1]);
 
-		extern void printvaltype(val);
+		extern void printvaltype (val);
 
-		if (ops[0].value->getType()->isPointerTy() &&
-			ops[1].value->getType()->isPointerTy()) {
-			assert(bminus);
+		if (ops[0].value->getType ()->isPointerTy () &&
+			ops[1].value->getType ()->isPointerTy ()) {
+			assert (bminus);
 			ops[0].value =
-				llvmbuilder.CreatePtrDiff(ops[0].value, ops[1].value);
-			type ptr_diff{ type::BASIC };
+				llvmbuilder.CreatePtrDiff (ops[0].value, ops[1].value);
+			type ptr_diff{type::BASIC};
 			ptr_diff.spec.basicdeclspec.basic[1] = "int";
-			ops[0].type = { ptr_diff };
-		}
-		else
-			busual && (ops = usualarithmeticconversions(ops), 0),
-			printvaltype(ops[0]),
-			printvaltype(ops[1]),
-			ops[0].value = llvmbuilder.CreateAdd(
-				ops[0].value,
-				!bminus ? ops[1].value : llvmbuilder.CreateNeg(ops[1].value));
+			ops[0].type = {ptr_diff};
+		} else
+			busual && (ops = usualarithmeticconversions (ops), 0),
+				printvaltype (ops[0]),
+				printvaltype (ops[1]),
+				ops[0].value = llvmbuilder.CreateAdd (
+					ops[0].value,
+					!bminus ? ops[1].value : llvmbuilder.CreateNeg (ops[1].value));
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void shifttwovalues(bool bright) {
-		std::array ops = getops(false);
+	virtual void shifttwovalues (bool bright) {
+		std::array ops = getops (false);
 
 		if (!bright)
-			ops[0].value = llvmbuilder.CreateShl(ops[0].value, ops[1].value);
-		else if (ops[0].type.back().spec.basicdeclspec.basic[0] != "unsigned")
-			ops[0].value = llvmbuilder.CreateAShr(ops[0].value, ops[1].value);
+			ops[0].value = llvmbuilder.CreateShl (ops[0].value, ops[1].value);
+		else if (ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
+			ops[0].value = llvmbuilder.CreateAShr (ops[0].value, ops[1].value);
 		else
-			ops[0].value = llvmbuilder.CreateLShr(ops[0].value, ops[1].value);
+			ops[0].value = llvmbuilder.CreateLShr (ops[0].value, ops[1].value);
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void relatetwovalues(llvm::CmpInst::Predicate pred) {
-		std::array ops = getops();
+	virtual void relatetwovalues (llvm::CmpInst::Predicate pred) {
+		std::array ops = getops ();
 
-		if (ops[0].type.back().spec.basicdeclspec.basic[0] != "unsigned")
+		if (ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
 			ops[0].value =
-			llvmbuilder.CreateICmp(pred, ops[0].value, ops[1].value);
+				llvmbuilder.CreateICmp (pred, ops[0].value, ops[1].value);
 		else
 			ops[0].value =
-			llvmbuilder.CreateCmp(pred, ops[0].value, ops[1].value);
+				llvmbuilder.CreateCmp (pred, ops[0].value, ops[1].value);
 
 		ops[0].value =
-			CreateCastInst(ops[0].value, llvm::Type::getInt32Ty(llvmctx), false);
+			CreateCastInst (ops[0].value, llvm::Type::getInt32Ty (llvmctx), false);
 
-		ops[0].type.erase(ops[0].type.begin(), --ops[0].type.end());;
+		ops[0].type.erase (ops[0].type.begin (), --ops[0].type.end ());
+		;
 
-		ops[0].type.back().spec.basicdeclspec.basic[1] = "int",
-			ops[0].type.back().spec.basicdeclspec.basic[0] = "";
+		ops[0].type.back ().spec.basicdeclspec.basic[1] = "int",
+						 ops[0].type.back ().spec.basicdeclspec.basic[0] = "";
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void bitwisetwovalues(llvm::Instruction::BinaryOps op) {
-		std::array ops = getops();
+	virtual void bitwisetwovalues (llvm::Instruction::BinaryOps op) {
+		std::array ops = getops ();
 
-		ops[0].value = llvmbuilder.CreateBinOp(op, ops[0].value, ops[1].value);
+		ops[0].value = llvmbuilder.CreateBinOp (op, ops[0].value, ops[1].value);
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void logictwovalues(bool bisand) {
-		std::array ops = getops(false);
+	/*void endlast (llvm::BasicBlock *bb, var value) {
+		//llvm::Value *logicval = llvmbuilder.CreateICmp (
+		//llvm::CmpInst::Predicate::ICMP_NE, immidiates.back().value,
+		//getValZero (immidiates.back()));
 
-		ops[0].value = llvmbuilder.CreateICmp(
-			llvm::CmpInst::Predicate::ICMP_NE, ops[0].value, getValZero(ops[0]));
+		//llvmbuilder.CreateStore(logicval, pvalue);
 
-		ops[1].value = llvmbuilder.CreateICmp(
-			llvm::CmpInst::Predicate::ICMP_NE, ops[1].value, getValZero(ops[1]));
+		//immidiates.push_back()
 
-		ops[0].value = !bisand
-			? llvmbuilder.CreateOr(ops[0].value, ops[1].value)
-			: llvmbuilder.CreateAnd(ops[0].value, ops[1].value);
+		splitbb ("", 0);
 
-		ops[0].value = llvm::CastInst::Create(
+		extern std::list<std::pair<std::array<llvm::BranchInst *, 2>, llvm::BasicBlock *>> ifstatements;
+		auto &lastif = ifstatements.back ();
+
+		auto dummysuccessor = lastif.first[0]->getSuccessor (0);
+
+		if (dummysuccessor != lastif.second)
+			lastif.first[0]->setSuccessor (1, bb);
+		else
+			lastif.first[0]->setSuccessor (0, bb);
+
+		lastif.second->eraseFromParent ();
+		ifstatements.pop_back ();
+	}*/
+  private:
+	virtual llvm::Value *logictwovalues (bool bisand) {
+
+		std::array ops = getops (false);
+
+		llvm::Value *instr;
+
+		ops[0].value = llvmbuilder.CreateICmp (
+			llvm::CmpInst::Predicate::ICMP_NE, ops[0].value, getValZero (ops[0]));
+
+		ops[1].value = llvmbuilder.CreateICmp (
+			llvm::CmpInst::Predicate::ICMP_NE, ops[1].value, getValZero (ops[1]));
+
+		instr = ops[0].value = !bisand
+								   ? llvmbuilder.CreateOr (ops[0].value, ops[1].value)
+								   : llvmbuilder.CreateAnd (ops[0].value, ops[1].value);
+
+		ops[0].value = llvm::CastInst::Create (
 			llvm::Instruction::CastOps::ZExt, ops[0].value,
-			llvm::Type::getInt32Ty(llvmctx), "", pcurrblock.back());
+			llvm::Type::getInt32Ty (llvmctx), "", pcurrblock.back ());
 
-		ops[0].type.erase(ops[0].type.begin(), --ops[0].type.end());
+		ops[0].type.erase (ops[0].type.begin (), --ops[0].type.end ());
 
-		ops[0].type.back().spec.basicdeclspec.basic[1] = "int",
-			ops[0].type.back().spec.basicdeclspec.basic[0] = "";
+		ops[0].type.back ().spec.basicdeclspec.basic[1] = "int",
+						 ops[0].type.back ().spec.basicdeclspec.basic[0] = "";
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
+		return instr;
 	}
 
-	virtual void assigntwovalues() {
-		std::array ops = getops(false, true);
+  public:
+	virtual void logictwovalues_seq (bool bisand) {
 
-		extern ::val decay(::val lvalue);
+		/*auto plastopbb = opbbs.back ().first.back ();
 
-		ops[1] = decay(ops[1]);
+		opbbs.back ().first.pop_back ();
 
-		ops[1] = convertTo(ops[1], ops[0].lvalues.back().type);
+		extern std::list<std::pair<std::array<llvm::BranchInst *, 2>, llvm::BasicBlock *>> ifstatements;
 
-		printtype(ops[0].lvalues.back().value->getType(),
-			ops[0].originident);
-		printtype(ops[1].value->getType(), ops[1].originident);
+		auto lastif = ifstatements.back ();
 
-		llvmbuilder.CreateStore(ops[1].value, ops[0].lvalues.back().value);
+		lastif.first[0]->setSuccessor (1, plastopbb.first);
 
-		immidiates.push_back({ ops[1].value, ops[1].type, ops[1].lvalues });
+		lastif.second->eraseFromParent ();
+		ifstatements.pop_back ();
+
+		if (!bisand)
+			lastif.first[0]->swapSuccessors ();
+		//dyn_cast<llvm::Instruction>(plastopbb.second[0])->eraseFromParent(),
+		else
+			dyn_cast<llvm::StoreInst> (plastopbb.second[2])->setOperand (0, plastopbb.second[1]);
+
+		immidiates.erase (--immidiates.end ());
+
+		/*extern std::list<std::pair<std::array<llvm::BranchInst *, 2>, llvm::BasicBlock *>> ifstatements;
+		auto &lastif = ifstatements.back ();
+
+		if (opbbs.size () == 1)
+			opbbs.push_back ({});
+
+		//splitbb("", 0);
+
+		startifstatement ();
+
+		//lastif.first[0]->setSuccessor(0, pcurrblock.back());
+
+		//if (bisand)
+		//lastif.first[0]->swapSuccessors();*/
 	}
 
-	virtual bool subscripttwovalues(bool bminus = false) {
-		extern valandtype getrvalue(valandtype lvalue);
+	virtual llvm::Value *assigntwovalues () {
+		std::array ops = getops (false, true);
 
-		auto ops = std::array{ *(----immidiates.end()), immidiates.back() };
+		extern ::val decay (::val lvalue);
+
+		llvm::Value *instr;
+
+		ops[1] = decay (ops[1]);
+
+		ops[1] = convertTo (ops[1], ops[0].lvalues.back ().type);
+
+		printtype (ops[0].lvalues.back ().value->getType (),
+				   ops[0].originident);
+		printtype (ops[1].value->getType (), ops[1].originident);
+
+		instr = llvmbuilder.CreateStore (ops[1].value, ops[0].lvalues.back ().value);
+
+		immidiates.push_back ({ops[1].value, ops[1].type, ops[1].lvalues});
+
+		return instr;
+	}
+
+	virtual bool subscripttwovalues (bool bminus = false) {
+		extern valandtype getrvalue (valandtype lvalue);
+
+		auto ops = std::array{*(----immidiates.end ()), immidiates.back ()};
 
 		for (auto i = 0; i < 2; ++i)
-			if (ops[i].type.front().uniontype == type::POINTER ||
-				ops[i].type.front().uniontype == type::ARRAY)
-				if (ops[!i].type.front().uniontype == type::BASIC) {
-					extern ::val decay(::val lvalue);
-					ops[i] = decay(ops[i]);
-					immidiates.erase(----immidiates.end(), immidiates.end());
-					ops[i].type.erase(ops[i].type.begin());
+			if (ops[i].type.front ().uniontype == type::POINTER ||
+				ops[i].type.front ().uniontype == type::ARRAY)
+				if (ops[!i].type.front ().uniontype == type::BASIC) {
+					extern ::val decay (::val lvalue);
+					ops[i] = decay (ops[i]);
+					immidiates.erase (----immidiates.end (), immidiates.end ());
+					ops[i].type.erase (ops[i].type.begin ());
 					ops[!i].value = !bminus
-						? ops[!i].value
-						: llvmbuilder.CreateNeg(ops[!i].value);
-					llvm::Value* lvalue = llvmbuilder.CreateGEP(ops[i].value,
+										? ops[!i].value
+										: llvmbuilder.CreateNeg (ops[!i].value);
+					llvm::Value *lvalue = llvmbuilder.CreateGEP (ops[i].value,
 
-						ops[!i].value);
-					immidiates.push_back(
-						{ ops[i].type.front().uniontype != type::FUNCTION
-						&& ops[i].type.front().uniontype != type::ARRAY
-							 ? llvmbuilder.CreateLoad(lvalue)
+																 ops[!i].value);
+					immidiates.push_back (
+						{ops[i].type.front ().uniontype != type::FUNCTION && ops[i].type.front ().uniontype != type::ARRAY
+							 ? llvmbuilder.CreateLoad (lvalue)
 							 : lvalue,
-						 ops[i].type, ops[i].lvalues, ops[i].originident });
-					immidiates.back().lvalues.push_back(
-						{ lvalue, ops[i].type });
-					printtype(lvalue->getType(), ops[i].originident);
-					printtype(immidiates.back().value->getType(),
-						ops[i].originident);
-					printtype(ops[!i].value->getType(), ops[!i].originident);
+						 ops[i].type, ops[i].lvalues, ops[i].originident});
+					immidiates.back ().lvalues.push_back (
+						{lvalue, ops[i].type});
+					printtype (lvalue->getType (), ops[i].originident);
+					printtype (immidiates.back ().value->getType (),
+							   ops[i].originident);
+					printtype (ops[!i].value->getType (), ops[!i].originident);
 					return true;
 				}
 		return false;
 	}
 
-	virtual void getaddress() {
-		extern void printvaltype(val);
-		auto& val = immidiates.back();
-		assert(val.lvalues.size());
-		auto lval = val.lvalues.back();
+	virtual void getaddress () {
+		extern void printvaltype (val);
+		auto &val = immidiates.back ();
+		assert (val.lvalues.size ());
+		auto lval = val.lvalues.back ();
 		val.value = lval.value;
-		val.type.insert(val.type.begin(), { type::POINTER });
-		val.lvalues.pop_back();
-		printvaltype(val);
+		val.type.insert (val.type.begin (), {type::POINTER});
+		val.lvalues.pop_back ();
+		printvaltype (val);
 	}
 
-	virtual void applyindirection() {
-		extern valandtype getrvalue(valandtype lvalue);
-		extern ::val decay(::val lvalue);
+	virtual void applyindirection () {
+		extern valandtype getrvalue (valandtype lvalue);
+		extern ::val decay (::val lvalue);
 
-		unsigned int type = 3;// << 2 | 2;
+		unsigned int type = 3; // << 2 | 2;
 
-		auto immlvalue = immidiates.back();
+		auto immlvalue = immidiates.back ();
 
 		std::cout << "applying indirection" << std::endl;
 
-		insertinttoimm("0", sizeof "0" - 1, "ul", sizeof "ul" - 1, type);
+		insertinttoimm ("0", sizeof "0" - 1, "ul", sizeof "ul" - 1, type);
 
-		subscripttwovalues();
+		subscripttwovalues ();
 	}
 
-	void insertinttoimm(const char* str, size_t szstr, const char* suffix_in, size_t szstr1, int type) {
-		std::string imm, suffix{ suffix_in, szstr1 };
+	void insertinttoimm (const char *str, size_t szstr, const char *suffix_in, size_t szstr1, int type) {
+		std::string imm, suffix{suffix_in, szstr1};
 
-		imm.assign(str, szstr);
+		imm.assign (str, szstr);
 
-		std::vector<::type> currtype = { 1, ::type::BASIC };
+		std::vector<::type> currtype = {1, ::type::BASIC};
 
-		const bool isunsigned = suffix.find("u") != suffix.npos || suffix.find("U") != suffix.npos;
+		const bool isunsigned = suffix.find ("u") != suffix.npos || suffix.find ("U") != suffix.npos;
 
-		const bool islonglong = suffix.find("ll") != suffix.npos || suffix.find("LL") != suffix.npos;
+		const bool islonglong = suffix.find ("ll") != suffix.npos || suffix.find ("LL") != suffix.npos;
 
-		const bool islong = !islonglong && (suffix.find("l") != suffix.npos || suffix.find("L") != suffix.npos);
+		const bool islong = !islonglong && (suffix.find ("l") != suffix.npos || suffix.find ("L") != suffix.npos);
 
 		//type >>= 2;
 
-		const int base[] = { 16, 2, 7, 10 };
+		const int base[] = {16, 2, 7, 10};
 
-		const unsigned long long val = isunsigned ? std::stoull(imm, nullptr, base[type]) : std::stoll(imm, nullptr, base[type]);
+		const unsigned long long val = isunsigned ? std::stoull (imm, nullptr, base[type]) : std::stoll (imm, nullptr, base[type]);
 
 #define CHECK_VAL_RANGE(range) isunsigned ? val <= (range) : val <= ((long long)range)
 
-		auto& currbasictype = currtype.back().spec.basicdeclspec;
+		auto &currbasictype = currtype.back ().spec.basicdeclspec;
 
-		if (islonglong && isunsigned) goto ulonlong;
-		else if (islonglong) goto longlong;
-		else if (islong && isunsigned) goto ulong;
-		else if (islong) goto slong;
-		else if (isunsigned) goto uint;
+		if (islonglong && isunsigned)
+			goto ulonlong;
+		else if (islonglong)
+			goto longlong;
+		else if (islong && isunsigned)
+			goto ulong;
+		else if (islong)
+			goto slong;
+		else if (isunsigned)
+			goto uint;
 
-		if (CHECK_VAL_RANGE(INT_MAX))
+		if (CHECK_VAL_RANGE (INT_MAX))
 			currbasictype.basic[1] = "int";
-		else uint: if (CHECK_VAL_RANGE(UINT_MAX) && (base[type] != 10 || isunsigned))
-			currbasictype.basic[1] = "int",
-			currbasictype.basic[0] = "unsigned";
-		else slong : if (CHECK_VAL_RANGE(LONG_MAX))
-			currbasictype.basic[1] = "long",
-			currbasictype.longspecsn = 1;
-		else ulong : if (CHECK_VAL_RANGE(ULONG_MAX))
-			currbasictype.basic[0] = "unsigned",
-			currbasictype.basic[1] = "long",
-			currbasictype.longspecsn = 1;
-		else longlong : if (CHECK_VAL_RANGE(LLONG_MAX))
-			currbasictype.basic[1] = "long",
-			currbasictype.longspecsn = 2;
-		else ulonlong : if (CHECK_VAL_RANGE(ULLONG_MAX) && (base[type] != 10 || isunsigned))
-			currbasictype.basic[0] = "unsigned",
-			currbasictype.basic[1] = "long",
-			currbasictype.longspecsn = 2;
+		else
+		uint:
+			if (CHECK_VAL_RANGE (UINT_MAX) && (base[type] != 10 || isunsigned))
+				currbasictype.basic[1] = "int",
+				currbasictype.basic[0] = "unsigned";
+			else
+			slong:
+				if (CHECK_VAL_RANGE (LONG_MAX))
+					currbasictype.basic[1] = "long",
+					currbasictype.longspecsn = 1;
+				else
+				ulong:
+					if (CHECK_VAL_RANGE (ULONG_MAX))
+						currbasictype.basic[0] = "unsigned",
+						currbasictype.basic[1] = "long",
+						currbasictype.longspecsn = 1;
+					else
+					longlong:
+						if (CHECK_VAL_RANGE (LLONG_MAX))
+							currbasictype.basic[1] = "long",
+							currbasictype.longspecsn = 2;
+						else
+						ulonlong:
+							if (CHECK_VAL_RANGE (ULLONG_MAX) && (base[type] != 10 || isunsigned))
+								currbasictype.basic[0] = "unsigned",
+								currbasictype.basic[1] = "long",
+								currbasictype.longspecsn = 2;
 
-		auto valval = llvm::ConstantInt::get(createllvmtype(currtype), val, !isunsigned);
+		auto valval = llvm::ConstantInt::get (createllvmtype (currtype), val, !isunsigned);
 
-		immidiates.push_back({ valval, currtype });
+		immidiates.push_back ({valval, currtype});
 	}
 };
 
-const llvm::fltSemantics& getfloatsembytype(val val) {
-	if (val.type.front().spec.basicdeclspec.basic[1] == "float")
-		return llvm::APFloatBase::IEEEsingle();
-	else switch (val.type.front().spec.basicdeclspec.longspecsn)
-		case 1: return llvm::APFloatBase::IEEEquad();
-	return llvm::APFloatBase::IEEEdouble();
+const llvm::fltSemantics &getfloatsembytype (val val) {
+	if (val.type.front ().spec.basicdeclspec.basic[1] == "float")
+		return llvm::APFloatBase::IEEEsingle ();
+	else
+		switch (val.type.front ().spec.basicdeclspec.longspecsn)
+		case 1:
+			return llvm::APFloatBase::IEEEquad ();
+	return llvm::APFloatBase::IEEEdouble ();
 }
 
 struct handlefpexpr : basehndl {
 
-	virtual void getnegative() override {
+	virtual void getnegative () override {
 		//immidiates.back() = integralpromotions(immidiates.back());
 
-		immidiates.back().value = llvmbuilder.CreateFNeg(immidiates.back().value);
+		immidiates.back ().value = llvmbuilder.CreateFNeg (immidiates.back ().value);
 	}
 
-	virtual void getlogicalnot() override {
-		auto& op = immidiates.back();
+	virtual llvm::Value *getlogicalnot () override {
+		auto &op = immidiates.back ();
 
-		op.value = llvmbuilder.CreateFCmp(
+		llvm::Value *originstr;
+
+		originstr = op.value = llvmbuilder.CreateFCmp (
 			llvm::CmpInst::Predicate::FCMP_OEQ, op.value,
-			llvm::ConstantFP::get(llvmctx, llvm::APFloat{ getfloatsembytype(op) }));
+			llvm::ConstantFP::get (llvmctx, llvm::APFloat{getfloatsembytype (op)}));
 
-		op.type.erase(op.type.begin(), --op.type.end());
+		op.type.erase (op.type.begin (), --op.type.end ());
 
-		op.value = CreateCastInst(op.value, llvm::Type::getInt32Ty(llvmctx), false);
+		op.value = CreateCastInst (op.value, llvm::Type::getInt32Ty (llvmctx), false);
 
-		extern void printvaltype(::val val);
+		extern void printvaltype (::val val);
 
-		printvaltype(op);
+		printvaltype (op);
 
-		op.type.back().spec.basicdeclspec.basic[1] = "int",
-			op.type.back().spec.basicdeclspec.basic[0] = "";
+		op.type.back ().spec.basicdeclspec.basic[1] = "int",
+					 op.type.back ().spec.basicdeclspec.basic[0] = "";
+
+		return originstr;
 	}
 
-	virtual void mlutiplylasttwovalues() override {
-		std::array ops = getops();
+	virtual void mlutiplylasttwovalues () override {
+		std::array ops = getops ();
 
-		ops[0].value = llvmbuilder.CreateFMul(ops[0].value, ops[1].value);
+		ops[0].value = llvmbuilder.CreateFMul (ops[0].value, ops[1].value);
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void dividelasttwovalues() override {
-		std::array ops = getops();
+	virtual void dividelasttwovalues () override {
+		std::array ops = getops ();
 
-		ops[0].value = llvmbuilder.CreateFDiv(ops[0].value, ops[1].value);
+		ops[0].value = llvmbuilder.CreateFDiv (ops[0].value, ops[1].value);
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void modulolasttwovalues() override {
-		std::array ops = getops();
+	virtual void modulolasttwovalues () override {
+		std::array ops = getops ();
 
+		ops[0].value = llvmbuilder.CreateFRem (ops[0].value, ops[1].value);
 
-		ops[0].value = llvmbuilder.CreateFRem(ops[0].value, ops[1].value);
-
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void addlasttwovalues(bool bminus, bool busual) override {
+	virtual void addlasttwovalues (bool bminus, bool busual) override {
 
-		std::array ops = std::array{ *(----immidiates.end()), immidiates.back() };
+		std::array ops = std::array{*(----immidiates.end ()), immidiates.back ()};
 
-		immidiates.erase(----immidiates.end(), immidiates.end());
+		immidiates.erase (----immidiates.end (), immidiates.end ());
 
-
-		busual && (ops = usualarithmeticconversions(ops), 0),
-			ops[0].value = llvmbuilder.CreateFAdd(
+		busual && (ops = usualarithmeticconversions (ops), 0),
+			ops[0].value = llvmbuilder.CreateFAdd (
 				ops[0].value,
-				!bminus ? ops[1].value : llvmbuilder.CreateFNeg(ops[1].value));
+				!bminus ? ops[1].value : llvmbuilder.CreateFNeg (ops[1].value));
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void relatetwovalues(llvm::CmpInst::Predicate pred) override {
-		std::array ops = getops();
+	virtual void relatetwovalues (llvm::CmpInst::Predicate pred) override {
+		std::array ops = getops ();
 
 		ops[0].value =
-			llvmbuilder.CreateFCmp(pred, ops[0].value, ops[1].value);
+			llvmbuilder.CreateFCmp (pred, ops[0].value, ops[1].value);
 
 		ops[0].value =
-			CreateCastInst(ops[0].value, llvm::Type::getInt32Ty(llvmctx), false);
+			CreateCastInst (ops[0].value, llvm::Type::getInt32Ty (llvmctx), false);
 
-		ops[0].type.erase(ops[0].type.begin(), --ops[0].type.end());
+		ops[0].type.erase (ops[0].type.begin (), --ops[0].type.end ());
 
-		ops[0].type.back().spec.basicdeclspec.basic[1] = "int",
-			ops[0].type.back().spec.basicdeclspec.basic[0] = "";
+		ops[0].type.back ().spec.basicdeclspec.basic[1] = "int",
+						 ops[0].type.back ().spec.basicdeclspec.basic[0] = "";
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void logictwovalues(bool bisand)  override {
-		std::array ops = getops(false);
+	virtual llvm::Value *logictwovalues (bool bisand) override {
+		std::array ops = getops (false);
 
-		ops[0].value = llvmbuilder.CreateFCmp(
+		llvm::Value *instr;
+
+		ops[0].value = llvmbuilder.CreateFCmp (
 			llvm::CmpInst::Predicate::FCMP_ONE, ops[0].value,
-			llvm::ConstantFP::get(llvmctx, llvm::APFloat{ getfloatsembytype(ops[0]) }));
+			llvm::ConstantFP::get (llvmctx, llvm::APFloat{getfloatsembytype (ops[0])}));
 
-		ops[1].value = llvmbuilder.CreateFCmp(
+		ops[1].value = llvmbuilder.CreateFCmp (
 			llvm::CmpInst::Predicate::FCMP_ONE, ops[1].value,
-			llvm::ConstantFP::get(llvmctx, llvm::APFloat{ getfloatsembytype(ops[1]) }));
+			llvm::ConstantFP::get (llvmctx, llvm::APFloat{getfloatsembytype (ops[1])}));
 
-		ops[0].value = !bisand
-			? llvmbuilder.CreateOr(ops[0].value, ops[1].value)
-			: llvmbuilder.CreateAnd(ops[0].value, ops[1].value);
+		instr = ops[0].value = !bisand
+								   ? llvmbuilder.CreateOr (ops[0].value, ops[1].value)
+								   : llvmbuilder.CreateAnd (ops[0].value, ops[1].value);
 
-		ops[0].value = CreateCastInst(ops[0].value, llvm::Type::getInt32Ty(llvmctx), false);
+		ops[0].value = CreateCastInst (ops[0].value, llvm::Type::getInt32Ty (llvmctx), false);
 
-		ops[0].type.erase(ops[0].type.begin(), --ops[0].type.end());
+		ops[0].type.erase (ops[0].type.begin (), --ops[0].type.end ());
 
-		ops[0].type.back().spec.basicdeclspec.basic[1] = "int",
-			ops[0].type.back().spec.basicdeclspec.basic[0] = "";
+		ops[0].type.back ().spec.basicdeclspec.basic[1] = "int",
+						 ops[0].type.back ().spec.basicdeclspec.basic[0] = "";
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
+		return instr;
 	}
 };
 
@@ -1047,7 +1161,7 @@ struct handlecnstexpr : basehndl {
 
 	using val = ::val;
 
-	std::list<val>& immidiates = basehndl::immidiates;
+	std::list<val> &immidiates = basehndl::immidiates;
 
 	/*auto getops(bool busual = true) {
 		auto ops = basehndl::getops();
@@ -1055,134 +1169,140 @@ struct handlecnstexpr : basehndl {
 		return reinterpret_cast<std::array<val, 2>&&> (ops);
 	}*/
 
-	virtual void mlutiplylasttwovalues() override {
-		std::array ops = getops();
+	virtual void mlutiplylasttwovalues () override {
+		std::array ops = getops ();
 
-		ops[0].constant = llvm::ConstantExpr::getMul(ops[0].constant, ops[1].constant);
+		ops[0].constant = llvm::ConstantExpr::getMul (ops[0].constant, ops[1].constant);
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void dividelasttwovalues() override {
-		std::array ops = getops();
+	virtual void dividelasttwovalues () override {
+		std::array ops = getops ();
 
-		if (ops[0].type.back().spec.basicdeclspec.basic[0] != "unsigned")
+		if (ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
 			ops[0].constant =
-			llvm::ConstantExpr::getSDiv(ops[0].constant, ops[1].constant);
+				llvm::ConstantExpr::getSDiv (ops[0].constant, ops[1].constant);
 		else
 			ops[0].constant =
-			llvm::ConstantExpr::getUDiv(ops[0].constant, ops[1].constant);
+				llvm::ConstantExpr::getUDiv (ops[0].constant, ops[1].constant);
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void modulolasttwovalues() override {
-		std::array ops = getops();
+	virtual void modulolasttwovalues () override {
+		std::array ops = getops ();
 
-		if (ops[0].type.back().spec.basicdeclspec.basic[0] != "unsigned")
+		if (ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
 			ops[0].constant =
-			llvm::ConstantExpr::getSRem(ops[0].constant, ops[1].constant);
+				llvm::ConstantExpr::getSRem (ops[0].constant, ops[1].constant);
 		else
 			ops[0].constant =
-			llvm::ConstantExpr::getURem(ops[0].constant, ops[1].constant);
+				llvm::ConstantExpr::getURem (ops[0].constant, ops[1].constant);
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void addlasttwovalues(bool bminus, bool busual) override {
-		assert(busual);
-		std::array ops = getops();
+	virtual void addlasttwovalues (bool bminus, bool busual) override {
+		assert (busual);
+		std::array ops = getops ();
 
-		ops[0].constant = llvm::ConstantExpr::getAdd(
+		ops[0].constant = llvm::ConstantExpr::getAdd (
 			ops[0].constant,
-			!bminus ? ops[1].constant : llvm::ConstantExpr::getNeg(ops[1].constant));
+			!bminus ? ops[1].constant : llvm::ConstantExpr::getNeg (ops[1].constant));
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void shifttwovalues(bool bright) override {
-		std::array ops = getops(false);
+	virtual void shifttwovalues (bool bright) override {
+		std::array ops = getops (false);
 
-		ops[0] = integralpromotions(ops[0]);
+		ops[0] = integralpromotions (ops[0]);
 
-		ops[1] = integralpromotions(ops[1]);
+		ops[1] = integralpromotions (ops[1]);
 
-		if (ops[1].type.front().uniontype == type::BASIC &&
-			ops[0].constant->getType() != ops[1].constant->getType())
+		if (ops[1].type.front ().uniontype == type::BASIC &&
+			ops[0].constant->getType () != ops[1].constant->getType ())
 			ops[1].type = ops[0].type,
-			ops[1].constant = CreateCastInst(
-				ops[1].constant, ops[0].constant->getType(),
-				ops[0].type.back().spec.basicdeclspec.basic[0] != "unsigned");
+			ops[1].constant = CreateCastInst (
+				ops[1].constant, ops[0].constant->getType (),
+				ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned");
 
 		if (!bright)
 			ops[0].constant =
-			llvm::ConstantExpr::getShl(ops[0].constant, ops[1].constant);
-		else if (ops[0].type.back().spec.basicdeclspec.basic[0] != "unsigned")
+				llvm::ConstantExpr::getShl (ops[0].constant, ops[1].constant);
+		else if (ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
 			ops[0].constant =
-			llvm::ConstantExpr::getAShr(ops[0].constant, ops[1].constant);
+				llvm::ConstantExpr::getAShr (ops[0].constant, ops[1].constant);
 		else
 			ops[0].constant =
-			llvm::ConstantExpr::getLShr(ops[0].constant, ops[1].constant);
+				llvm::ConstantExpr::getLShr (ops[0].constant, ops[1].constant);
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void relatetwovalues(llvm::CmpInst::Predicate pred) override {
-		std::array ops = getops();
+	virtual void relatetwovalues (llvm::CmpInst::Predicate pred) override {
+		std::array ops = getops ();
 
-		if (ops[0].type.back().spec.basicdeclspec.basic[0] != "unsigned")
+		if (ops[0].type.back ().spec.basicdeclspec.basic[0] != "unsigned")
 			ops[0].constant =
-			llvm::ConstantExpr::getICmp(pred, ops[0].constant, ops[1].constant);
+				llvm::ConstantExpr::getICmp (pred, ops[0].constant, ops[1].constant);
 		else
-			ops[0].constant = llvm::ConstantExpr::getCompare(pred, ops[0].constant,
-				ops[1].constant);
+			ops[0].constant = llvm::ConstantExpr::getCompare (pred, ops[0].constant,
+															  ops[1].constant);
 
 		ops[0].constant =
-			CreateCastInst(ops[0].constant, llvm::Type::getInt32Ty(llvmctx), false);
+			CreateCastInst (ops[0].constant, llvm::Type::getInt32Ty (llvmctx), false);
 
-		ops[0].type.erase(ops[0].type.begin(), --ops[0].type.end());;
+		ops[0].type.erase (ops[0].type.begin (), --ops[0].type.end ());
+		;
 
-		ops[0].type.back().spec.basicdeclspec.basic[1] = "int",
-			ops[0].type.back().spec.basicdeclspec.basic[0] = "";
+		ops[0].type.back ().spec.basicdeclspec.basic[1] = "int",
+						 ops[0].type.back ().spec.basicdeclspec.basic[0] = "";
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void bitwisetwovalues(llvm::Instruction::BinaryOps op) override {
-		std::array ops = getops();
+	virtual void bitwisetwovalues (llvm::Instruction::BinaryOps op) override {
+		std::array ops = getops ();
 
-		ops[0].constant = llvm::ConstantExpr::get(op, ops[0].constant, ops[1].constant);
+		ops[0].constant = llvm::ConstantExpr::get (op, ops[0].constant, ops[1].constant);
 
-		immidiates.push_back(ops[0]);
+		immidiates.push_back (ops[0]);
 	}
 
-	virtual void logictwovalues(bool bisand) override {
-		std::array ops = getops(false);
+	virtual llvm::Value *logictwovalues (bool bisand) override {
+		std::array ops = getops (false);
 
-		ops[0].constant = llvm::ConstantExpr::getICmp(
-			llvm::CmpInst::Predicate::ICMP_NE, ops[0].constant, getValZero(ops[0]));
+		llvm::Value *instr;
 
-		ops[1].constant = llvm::ConstantExpr::getICmp(
-			llvm::CmpInst::Predicate::ICMP_NE, ops[1].constant, getValZero(ops[1]));
+		ops[0].constant = llvm::ConstantExpr::getICmp (
+			llvm::CmpInst::Predicate::ICMP_NE, ops[0].constant, getValZero (ops[0]));
+
+		ops[1].constant = llvm::ConstantExpr::getICmp (
+			llvm::CmpInst::Predicate::ICMP_NE, ops[1].constant, getValZero (ops[1]));
+
+		instr = ops[0].constant =
+			!bisand ? llvm::ConstantExpr::getOr (ops[0].constant, ops[1].constant)
+					: llvm::ConstantExpr::getAnd (ops[0].constant, ops[1].constant);
 
 		ops[0].constant =
-			!bisand ? llvm::ConstantExpr::getOr(ops[0].constant, ops[1].constant)
-			: llvm::ConstantExpr::getAnd(ops[0].constant, ops[1].constant);
+			CreateCastInst (ops[0].constant,
+							llvm::Type::getInt32Ty (llvmctx), false);
 
-		ops[0].constant =
-			CreateCastInst(ops[0].constant,
-				llvm::Type::getInt32Ty(llvmctx), false);
+		ops[0].type.erase (ops[0].type.begin (), --ops[0].type.end ());
+		;
 
-		ops[0].type.erase(ops[0].type.begin(), --ops[0].type.end());;
+		ops[0].type.back ().spec.basicdeclspec.basic[1] = "int",
+						 ops[0].type.back ().spec.basicdeclspec.basic[0] = "";
 
-		ops[0].type.back().spec.basicdeclspec.basic[1] = "int",
-			ops[0].type.back().spec.basicdeclspec.basic[0] = "";
+		immidiates.push_back (ops[0]);
 
-		immidiates.push_back(ops[0]);
+		return instr;
 	}
 
-	virtual llvm::Constant* CreateCastInst(llvm::Value* C, llvm::Type* Ty, bool bissigned) override {
-		return llvm::ConstantExpr::getIntegerCast(llvm::dyn_cast<llvm::Constant>(C), Ty, bissigned);
+	virtual llvm::Constant *CreateCastInst (llvm::Value *C, llvm::Type *Ty, bool bissigned) override {
+		return llvm::ConstantExpr::getIntegerCast (llvm::dyn_cast<llvm::Constant> (C), Ty, bissigned);
 	}
 };
 
@@ -1192,7 +1312,7 @@ static handlefpexpr hndlfpexpr{};
 
 static basehndl hndlbase{};
 
-static basehndl* phndl = &hndlbase;
+static basehndl *phndl = &hndlbase;
 
 //static std::remove_reference<decltype (basehndl::immidiates)>::type::iterator
 //cnstexpriterstart{};
@@ -1201,15 +1321,20 @@ size_t szcnstexprinitial;
 
 // static std::string currdeclidentifier{};
 
-enum class currdecltypeenum { TYPEDEF, CAST, PARAMS, NORMAL, UNKNOWN, NONE };
+enum class currdecltypeenum { TYPEDEF,
+							  CAST,
+							  PARAMS,
+							  NORMAL,
+							  UNKNOWN,
+							  NONE };
 
 std::string currdeclspectypedef;
 
 extern std::vector<std::string> qualifsandtypes;
 
-static std::list<std::list<var>> scopevar{ 1 };
+static std::list<std::list<var>> scopevar{1};
 
-static std::list<std::list<std::list<var>>> structorunionmembers{ 1 };
+static std::list<std::list<std::list<var>>> structorunionmembers{1};
 
 struct currtypevectorbeingbuild {
 	std::list<std::list<var>>::iterator p;
@@ -1217,40 +1342,40 @@ struct currtypevectorbeingbuild {
 };
 
 std::list<currtypevectorbeingbuild> currtypevectorbeingbuild = {
-	{scopevar.begin(), currdecltypeenum::NORMAL} };
+	{scopevar.begin (), currdecltypeenum::NORMAL}};
 
 static std::string currstring;
 
-void printvaltype(val val) {
+void printvaltype (val val) {
 	if (!val.value)
 		return;
 	std::string type_str;
-	llvm::raw_string_ostream rso(type_str);
-	val.value->getType()->print(rso);
-	std::string name = val.value->getName().str();
-	name = name.size() ? name : val.originident;
-	std::cout << name << " is " << rso.str() << std::endl;
+	llvm::raw_string_ostream rso (type_str);
+	val.value->getType ()->print (rso);
+	std::string name = val.value->getName ().str ();
+	name = name.size () ? name : val.originident;
+	std::cout << name << " is " << rso.str () << std::endl;
 }
 
-extern valandtype getrvalue(valandtype lvalue);
+extern valandtype getrvalue (valandtype lvalue);
 
-extern "C" void obtainvalbyidentifier(const char* identifier, size_t szstr) {
-	std::string ident{ identifier, szstr };
+extern "C" void obtainvalbyidentifier (const char *identifier, size_t szstr) {
+	std::string ident{identifier, szstr};
 
-	const ::var* var = nullptr;
+	const ::var *var = nullptr;
 
-	std::find_if(scopevar.rbegin(), scopevar.rend(),
-		[&](const std::list<::var>& scope) {
-			auto iter =
-				std::find_if(scope.rbegin(), scope.rend(),
-					[&](const ::var& scopevar) {
-						return scopevar.identifier == ident;
-					});
+	std::find_if (scopevar.rbegin (), scopevar.rend (),
+				  [&] (const std::list<::var> &scope) {
+					  auto iter =
+						  std::find_if (scope.rbegin (), scope.rend (),
+										[&] (const ::var &scopevar) {
+											return scopevar.identifier == ident;
+										});
 
-			if (iter != scope.rend())
-				return var = &*iter, true;
-			return false;
-		});
+					  if (iter != scope.rend ())
+						  return var = &*iter, true;
+					  return false;
+				  });
 
 	/*if (var->type.front ().uniontype == ::type::FUNCTION)
 		phndl->immidiates.push_back (
@@ -1260,16 +1385,16 @@ extern "C" void obtainvalbyidentifier(const char* identifier, size_t szstr) {
 		phndl->immidiates.push_back ({pglobal, var->type, true});*/
 
 	val immidiate;
-	auto& currfunctype =
-		currfunc->type.front().spec.func.parametertypes_list.front();
+	auto &currfunctype =
+		currfunc->type.front ().spec.func.parametertypes_list.front ();
 
-	if (auto findparam = std::find_if(
-		currfunctype.begin(), currfunctype.end(),
-		[&](const ::var& param) { return param.identifier == ident; });
-		findparam != currfunctype.end())
+	if (auto findparam = std::find_if (
+			currfunctype.begin (), currfunctype.end (),
+			[&] (const ::var &param) { return param.identifier == ident; });
+		findparam != currfunctype.end ())
 		var = &*findparam;
 
-	llvm::Value* pglobal;
+	llvm::Value *pglobal;
 
 	immidiate.type = var->type;
 
@@ -1277,66 +1402,66 @@ extern "C" void obtainvalbyidentifier(const char* identifier, size_t szstr) {
 
 	immidiate.originident = var->identifier;
 
-	immidiate.lvalues.push_back(immidiate);
+	immidiate.lvalues.push_back (immidiate);
 
-	printvaltype(immidiate);
+	printvaltype (immidiate);
 
-	if (immidiate.value && !immidiate.value->getType()->getPointerElementType()->isFunctionTy())
-		immidiate.value = llvmbuilder.CreateLoad(immidiate.value);
+	if (immidiate.value && !immidiate.value->getType ()->getPointerElementType ()->isFunctionTy ())
+		immidiate.value = llvmbuilder.CreateLoad (immidiate.value);
 
-	phndl->immidiates.push_back(immidiate);
+	phndl->immidiates.push_back (immidiate);
 
-	printvaltype(immidiate);
+	printvaltype (immidiate);
 }
 
-extern "C" void addplaintexttostring(const char* str, size_t szstr) {
-	currstring += std::string{ str, szstr };
+extern "C" void addplaintexttostring (const char *str, size_t szstr) {
+	currstring += std::string{str, szstr};
 }
 
-extern "C" void addescapesequencetostring(const char* str, size_t szstr) {
-	std::string escape{ str, szstr };
+extern "C" void addescapesequencetostring (const char *str, size_t szstr) {
+	std::string escape{str, szstr};
 
-	switch (stringhash(escape.c_str())) {
+	switch (stringhash (escape.c_str ())) {
 	case "\\n"_h:
 		currstring += '\n';
 		break;
 	}
 }
 
-extern "C" void constructstring() {
-	std::vector<::type> stirngtype{ 1, ::type::ARRAY };
+extern "C" void constructstring () {
+	std::vector<::type> stirngtype{1, ::type::ARRAY};
 
-	stirngtype.back().spec.arraysz = currstring.size() + 1;
+	stirngtype.back ().spec.arraysz = currstring.size () + 1;
 
-	stirngtype.push_back({ ::type::BASIC });
+	stirngtype.push_back ({::type::BASIC});
 
-	stirngtype.back().spec.basicdeclspec.basic[1] = "char";
+	stirngtype.back ().spec.basicdeclspec.basic[1] = "char";
 
-	auto lvalue = llvmbuilder.CreateGlobalStringPtr(
+	auto lvalue = llvmbuilder.CreateGlobalStringPtr (
 		currstring, "", 0, &nonconstructable.mainmodule);
 
-	hndlbase.immidiates.push_back(
-		{ llvmbuilder.CreateLoad(lvalue), stirngtype, {}, "[[stringliteral]]" });
-	hndlbase.immidiates.back().lvalues.push_back(hndlbase.immidiates.back());
-	hndlbase.immidiates.back().lvalues.back().value = lvalue;
+	hndlbase.immidiates.push_back (
+		{llvmbuilder.CreateLoad (lvalue), stirngtype, {}, "[[stringliteral]]"});
+	hndlbase.immidiates.back ().lvalues.push_back (hndlbase.immidiates.back ());
+	hndlbase.immidiates.back ().lvalues.back ().value = lvalue;
 	currstring = "";
 }
 
-void addvar(var& lastvar) {
+void addvar (var &lastvar) {
 
-	const char* lastvartypestoragespec =
-		lastvar.type.back().spec.basicdeclspec.basic[2].c_str();
+	const char *lastvartypestoragespec =
+		lastvar.type.back ().spec.basicdeclspec.basic[2].c_str ();
 
 	if (lastvar.bistypedef)
-		for (lastvar.type.back().spec.basicdeclspec.basic[2] = "typedef";;)
-			for(lastvar.pValue = nullptr/*(llvm::Value *)lastvar.pllvmtype*/;;)
+		for (lastvar.type.back ().spec.basicdeclspec.basic[2] = "typedef";;)
+			for (lastvar.pValue = nullptr /*(llvm::Value *)lastvar.pllvmtype*/;;)
 				return;
 
-	switch (scopevar.size()) {
+	switch (scopevar.size ()) {
 	case 1:
 		llvm::GlobalValue::LinkageTypes linkagetype;
 
-		switch (stringhash(lastvartypestoragespec)) {
+		switch (stringhash (lastvartypestoragespec)) {
 		default:
 		case "extern"_h:
 			linkagetype = llvm::GlobalValue::LinkageTypes::ExternalLinkage;
@@ -1349,16 +1474,16 @@ void addvar(var& lastvar) {
 		case type::POINTER:
 		case type::ARRAY:
 		case type::BASIC:
-			if (scopevar.size() == 1)
-				lastvar.pValue = new llvm::GlobalVariable(
+			if (scopevar.size () == 1)
+				lastvar.pValue = new llvm::GlobalVariable (
 					nonconstructable.mainmodule, lastvar.pllvmtype, false,
 					linkagetype,
-					llvm::Constant::getNullValue(lastvar.pllvmtype),
+					llvm::Constant::getNullValue (lastvar.pllvmtype),
 					lastvar.identifier);
 			// scopevar.front ().push_back (lastvar);
 			break;
 		case type::FUNCTION:
-			lastvar.pValue = llvm::Function::Create(
+			lastvar.pValue = llvm::Function::Create (
 				llvm::dyn_cast<llvm::FunctionType> (lastvar.pllvmtype),
 				linkagetype, lastvar.identifier, nonconstructable.mainmodule);
 			// scopevar.front ().push_back (lastvar);
@@ -1366,248 +1491,251 @@ void addvar(var& lastvar) {
 		}
 		break;
 	default:
-		lastvar.pValue = llvmbuilder.CreateAlloca(lastvar.pllvmtype, nullptr,
-			lastvar.identifier);
+		lastvar.pValue = llvmbuilder.CreateAlloca (lastvar.pllvmtype, nullptr,
+												   lastvar.identifier);
 		break;
 	}
 }
 
 extern std::pair<std::string, std::string> currstruct;
 
-extern "C" void startbuildingstructorunion() {
+extern "C" void startbuildingstructorunion () {
 	var tmp;
-	type typestruct{ type::BASIC };
+	type typestruct{type::BASIC};
 	typestruct.spec.basicdeclspec.basic[3] = currstruct.second;
 	typestruct.spec.basicdeclspec.basic[0] = currstruct.first;
-	tmp.type.push_back(typestruct);
+	tmp.type.push_back (typestruct);
 	tmp.identifier = currstruct.second;
-	tmp.pllvmtype = llvm::StructType::create(llvmctx);
-	structorunionmembers.back().push_back({ tmp });
-	currtypevectorbeingbuild.push_back(
-		{ --structorunionmembers.back().end(), currdecltypeenum::PARAMS });
-	currstruct.second.clear();
-	currstruct.first.clear();
+	tmp.pllvmtype = llvm::StructType::create (llvmctx);
+	structorunionmembers.back ().push_back ({tmp});
+	currtypevectorbeingbuild.push_back (
+		{--structorunionmembers.back ().end (), currdecltypeenum::PARAMS});
+	currstruct.second.clear ();
+	currstruct.first.clear ();
 }
 
-extern "C" void endbuildingstructorunion() {
-	auto& lastmembers = structorunionmembers.back().back();
-	auto& structvar = lastmembers.front();
+extern "C" void endbuildingstructorunion () {
+	auto &lastmembers = structorunionmembers.back ().back ();
+	auto &structvar = lastmembers.front ();
 
-	for (auto& a : lastmembers | ranges::views::drop(1))
-		a.pllvmtype = createllvmtype(a.type);
+	for (auto &a : lastmembers | ranges::views::drop (1))
+		a.pllvmtype = createllvmtype (a.type);
 
-	std::vector<llvm::Type*> structtypes;
+	std::vector<llvm::Type *> structtypes;
 
-	std::transform(++lastmembers.begin(), lastmembers.end(),
-		std::back_inserter(structtypes),
-		[](const var& elem) { return elem.pllvmtype; });
+	std::transform (++lastmembers.begin (), lastmembers.end (),
+					std::back_inserter (structtypes),
+					[] (const var &elem) { return elem.pllvmtype; });
 
-	assert(structvar.type.back().spec.basicdeclspec.basic[0] == "struct");
+	assert (structvar.type.back ().spec.basicdeclspec.basic[0] == "struct");
 
-	dyn_cast<llvm::StructType> (structvar.pllvmtype)->setBody(structtypes);
+	dyn_cast<llvm::StructType> (structvar.pllvmtype)->setBody (structtypes);
 
-	currtypevectorbeingbuild.pop_back();
+	currtypevectorbeingbuild.pop_back ();
 
-	currstruct.first = structvar.type.back().spec.basicdeclspec.basic[0];
-	currstruct.second = structvar.type.back().spec.basicdeclspec.basic[3];
+	currstruct.first = structvar.type.back ().spec.basicdeclspec.basic[0];
+	currstruct.second = structvar.type.back ().spec.basicdeclspec.basic[3];
 }
 
-extern "C" void startdeclaration(const char *str_typedefname, size_t szstr) {
-	std::string typedefname{ str_typedefname , szstr };
+extern "C" void startdeclaration (const char *str_typedefname, size_t szstr) {
+	std::string typedefname{str_typedefname, szstr};
 	var var;
 
-	type basic{ type::BASIC };
+	type basic{type::BASIC};
 
-	if (qualifsandtypes.empty() && currstruct.first.empty() && typedefname.empty())
-		assert(!(scopevar.size() > 1)),
-		basic.spec.basicdeclspec.basic[1] = "int";
+	if (qualifsandtypes.empty () && currstruct.first.empty () && typedefname.empty ())
+		assert (!(scopevar.size () > 1)),
+			basic.spec.basicdeclspec.basic[1] = "int";
 	else
-		basic.spec.basicdeclspec = parsebasictype(::qualifsandtypes);
+		basic.spec.basicdeclspec = parsebasictype (::qualifsandtypes);
 
-	if(!(basic.spec.basicdeclspec.basic[3] = typedefname).empty())
-		obtainvalbyidentifier(basic.spec.basicdeclspec.basic[3].data(), basic.spec.basicdeclspec.basic[3].size()),
-		var.type = immidiates.back().type,
-		immidiates.pop_back();
+	if (!(basic.spec.basicdeclspec.basic[3] = typedefname).empty ())
+		obtainvalbyidentifier (basic.spec.basicdeclspec.basic[3].data (), basic.spec.basicdeclspec.basic[3].size ()),
+			var.type = immidiates.back ().type,
+			immidiates.pop_back ();
 
 	currdeclspectypedef = "";
 
-	qualifsandtypes.clear();
+	qualifsandtypes.clear ();
 
-	if (basic.spec.basicdeclspec.basic[3].empty())
-		if (!(basic.spec.basicdeclspec.basic[3] = currstruct.second).empty())
+	if (basic.spec.basicdeclspec.basic[3].empty ())
+		if (!(basic.spec.basicdeclspec.basic[3] = currstruct.second).empty ())
 			basic.spec.basicdeclspec.basic[0] = currstruct.first;
 
-	currstruct.first.clear();
+	currstruct.first.clear ();
 
-	currstruct.second.clear();
+	currstruct.second.clear ();
 
-	if(var.type.empty())
-		var.type.push_back(basic);
+	if (var.type.empty ())
+		var.type.push_back (basic);
 
-	currtypevectorbeingbuild.back().p->push_back(var);
+	currtypevectorbeingbuild.back ().p->push_back (var);
 }
 
-bool bIsBasicFloat(const type& type);
+bool bIsBasicFloat (const type &type);
 
-bool bIsBasicInteger(const type& type) {
-	std::set integertraits{ "unsigned", "signed", "" };
-	return type.uniontype == type::BASIC && ranges::find(integertraits, type.spec.basicdeclspec.basic[0]) != integertraits.end() && !bIsBasicFloat(type);
+bool bIsBasicInteger (const type &type) {
+	std::set integertraits{"unsigned", "signed", ""};
+	return type.uniontype == type::BASIC && ranges::find (integertraits, type.spec.basicdeclspec.basic[0]) != integertraits.end () && !bIsBasicFloat (type);
 }
 
-bool bIsBasicFloat(const type& type) {
-	return type.uniontype == type::BASIC && ranges::contains(std::array{ "float", "double" }, type.spec.basicdeclspec.basic[1]);
+bool bIsBasicFloat (const type &type) {
+	return type.uniontype == type::BASIC && ranges::contains (std::array{"float", "double"}, type.spec.basicdeclspec.basic[1]);
 }
 
-val convertTo(val target, std::vector<::type> to) {
-	if (bIsBasicInteger(to.front()))
-		if (bIsBasicInteger(target.type.front()))
-			target.value = llvmbuilder.CreateIntCast(
-				target.value, createllvmtype(to),
-				target.type.front().spec.basicdeclspec.basic[0] != "unsigned");
-		else if (bIsBasicFloat(target.type.front()))
-			if (to.back().spec.basicdeclspec.basic[0] == "unsigned")
-				target.value = llvmbuilder.CreateFPToUI(target.value, createllvmtype(to));
+val convertTo (val target, std::vector<::type> to) {
+	if (bIsBasicInteger (to.front ()))
+		if (bIsBasicInteger (target.type.front ()))
+			target.value = llvmbuilder.CreateIntCast (
+				target.value, createllvmtype (to),
+				target.type.front ().spec.basicdeclspec.basic[0] != "unsigned");
+		else if (bIsBasicFloat (target.type.front ()))
+			if (to.back ().spec.basicdeclspec.basic[0] == "unsigned")
+				target.value = llvmbuilder.CreateFPToUI (target.value, createllvmtype (to));
 			else
-				target.value = llvmbuilder.CreateFPToSI(target.value, createllvmtype(to));
-		else;
-	else if (bIsBasicFloat(to.front()))
-		if (bIsBasicInteger(target.type.front()))
-			if (target.type.back().spec.basicdeclspec.basic[0] == "unsigned")
-				target.value = llvmbuilder.CreateUIToFP(target.value, createllvmtype(to));
+				target.value = llvmbuilder.CreateFPToSI (target.value, createllvmtype (to));
+		else
+			;
+	else if (bIsBasicFloat (to.front ()))
+		if (bIsBasicInteger (target.type.front ()))
+			if (target.type.back ().spec.basicdeclspec.basic[0] == "unsigned")
+				target.value = llvmbuilder.CreateUIToFP (target.value, createllvmtype (to));
 			else
-				target.value = llvmbuilder.CreateSIToFP(target.value, createllvmtype(to));
-		else if (bIsBasicFloat(target.type.front()))
-			target.value = llvmbuilder.CreateFPCast(
-				target.value, createllvmtype(to));
-		else;
-	else target.value = llvmbuilder.CreateBitCast(target.value, createllvmtype(to));
+				target.value = llvmbuilder.CreateSIToFP (target.value, createllvmtype (to));
+		else if (bIsBasicFloat (target.type.front ()))
+			target.value = llvmbuilder.CreateFPCast (
+				target.value, createllvmtype (to));
+		else
+			;
+	else
+		target.value = llvmbuilder.CreateBitCast (target.value, createllvmtype (to));
 
 	target.type = to;
 
-	target.lvalues.clear();
+	target.lvalues.clear ();
 
 	return target;
 }
 
-extern "C" void applycast() {
-	auto lasttypevar = currtypevectorbeingbuild.back().p->back();
+extern "C" void applycast () {
+	auto lasttypevar = currtypevectorbeingbuild.back ().p->back ();
 
-	currtypevectorbeingbuild.back().p->pop_back();
+	currtypevectorbeingbuild.back ().p->pop_back ();
 
-	auto& currtype = lasttypevar.type;
+	auto &currtype = lasttypevar.type;
 
-	std::rotate(currtype.begin(), currtype.begin() + 1, currtype.end());
+	std::rotate (currtype.begin (), currtype.begin () + 1, currtype.end ());
 
-	auto target = phndl->immidiates.back();
+	auto target = phndl->immidiates.back ();
 
-	phndl->immidiates.pop_back();
+	phndl->immidiates.pop_back ();
 
-	target = convertTo(target, currtype);
+	target = convertTo (target, currtype);
 
-	phndl->immidiates.push_back(target);
+	phndl->immidiates.push_back (target);
 }
 
-void endpriordecl() {
-	auto& currtype = currtypevectorbeingbuild.back().p->back().type;
+void endpriordecl () {
+	auto &currtype = currtypevectorbeingbuild.back ().p->back ().type;
 
-	std::rotate(currtype.begin(), currtype.begin() + 1, currtype.end());
+	std::rotate (currtype.begin (), currtype.begin () + 1, currtype.end ());
 
-	if (currtypevectorbeingbuild.back().currdecltype !=
+	if (currtypevectorbeingbuild.back ().currdecltype !=
 		currdecltypeenum::PARAMS)
-		currtypevectorbeingbuild.back()
-		.p->back()
-		.pllvmtype = createllvmtype(currtype),
-		addvar(currtypevectorbeingbuild.back().p->back());
+		currtypevectorbeingbuild.back ()
+			.p->back ()
+			.pllvmtype = createllvmtype (currtype),
+		  addvar (currtypevectorbeingbuild.back ().p->back ());
 }
 
-size_t getbasictypesz(type basictype) {
+size_t getbasictypesz (type basictype) {
 	if (basictype.uniontype == type::POINTER)
-		return sizeof(void*);
+		return sizeof (void *);
 
-	assert(basictype.uniontype == type::BASIC);
+	assert (basictype.uniontype == type::BASIC);
 
 	if (basictype.spec.basicdeclspec.basic[0] == "struct")
-		return pdatalayout->getTypeStoreSize(createllvmtype({ basictype }));
+		return pdatalayout->getTypeStoreSize (createllvmtype ({basictype}));
 
-	switch (stringhash(basictype.spec.basicdeclspec.basic[1].c_str())) {
+	switch (stringhash (basictype.spec.basicdeclspec.basic[1].c_str ())) {
 	case "int"_h:
-		return sizeof(int);
+		return sizeof (int);
 	case "char"_h:
-		return sizeof(char);
+		return sizeof (char);
 	case "long"_h:
-		return sizeof(long);
+		return sizeof (long);
 	case "short"_h:
-		return sizeof(short);
+		return sizeof (short);
 	}
 
 	throw "invalid type";
 }
 
-void pushsizeoftype(std::vector<type> type) {
+void pushsizeoftype (std::vector<type> type) {
 	size_t szoftype = 1;
 
-	::type sztype{ ::type::BASIC };
+	::type sztype{::type::BASIC};
 
 	sztype.spec.basicdeclspec.basic[0] = "unsigned";
 
 	sztype.spec.basicdeclspec.basic[1] = "long";
 
 	for (;;)
-		if (type.front().uniontype == type::ARRAY)
-			szoftype *= type.front().spec.arraysz, type.erase(type.begin());
+		if (type.front ().uniontype == type::ARRAY)
+			szoftype *= type.front ().spec.arraysz, type.erase (type.begin ());
 
-		else if (type.front().uniontype == type::BASIC ||
-			type.front().uniontype == type::POINTER)
-			return (void)(szoftype *= getbasictypesz(type.front()),
-				phndl->immidiates.push_back(
-					{ llvm::ConstantInt::getIntegerValue(
-						 llvm::IntegerType::get(llvmctx, 64),
-						 llvm::APInt{64, szoftype}),
-					 {sztype},
-					 {},
-					 "[[sizeoftypename]]" }));
+		else if (type.front ().uniontype == type::BASIC ||
+				 type.front ().uniontype == type::POINTER)
+			return (void)(szoftype *= getbasictypesz (type.front ()),
+						  phndl->immidiates.push_back (
+							  {llvm::ConstantInt::getIntegerValue (
+								   llvm::IntegerType::get (llvmctx, 64),
+								   llvm::APInt{64, szoftype}),
+							   {sztype},
+							   {},
+							   "[[sizeoftypename]]"}));
 }
 
-extern const std::list<::var>* getstructorunion(std::string ident);
+extern const std::list<::var> *getstructorunion (std::string ident);
 
-extern "C" void memberaccess(const char* arrowordot, size_t szstr,
-	const char* ident, size_t szstr1) {
-	if (std::string{ arrowordot, szstr } == "->")
-		phndl->applyindirection();
+extern "C" void memberaccess (const char *arrowordot, size_t szstr,
+							  const char *ident, size_t szstr1) {
+	if (std::string{arrowordot, szstr} == "->")
+		phndl->applyindirection ();
 
-	auto& lastvar = phndl->immidiates.back();
+	auto &lastvar = phndl->immidiates.back ();
 
 	auto pliststruct =
-		getstructorunion(lastvar.type.front().spec.basicdeclspec.basic[3]);
+		getstructorunion (lastvar.type.front ().spec.basicdeclspec.basic[3]);
 
 	auto imember = 0;
 
-	auto listiter = ++pliststruct->begin();
+	auto listiter = ++pliststruct->begin ();
 
-	for (; listiter != pliststruct->end() &&
-		listiter->identifier != std::string{ ident, szstr1 };
-		++imember, ++listiter)
+	for (; listiter != pliststruct->end () &&
+		   listiter->identifier != std::string{ident, szstr1};
+		 ++imember, ++listiter)
 		;
 
-	auto& lastlvalue = lastvar.lvalues.back();
+	auto &lastlvalue = lastvar.lvalues.back ();
 
-	auto& member = *listiter;
+	auto &member = *listiter;
 
-	llvm::Value* lvalue = llvmbuilder.CreateGEP(
-		lastlvalue.value->getType()->getPointerElementType(),
+	llvm::Value *lvalue = llvmbuilder.CreateGEP (
+		lastlvalue.value->getType ()->getPointerElementType (),
 		lastlvalue.value,
 
-		{ llvmbuilder.getInt32(0), llvmbuilder.getInt32(imember) });
+		{llvmbuilder.getInt32 (0), llvmbuilder.getInt32 (imember)});
 
-	printtype(member.pllvmtype->getPointerTo(), "");
+	printtype (member.pllvmtype->getPointerTo (), "");
 
 	// lvalue = llvmbuilder.CreatePointerCast(lvalue,
 	// member.pllvmtype->getPointerTo());
 
-	printtype(lvalue->getType(),
-		lastvar.originident + " " + std::to_string(imember));
+	printtype (lvalue->getType (),
+			   lastvar.originident + " " + std::to_string (imember));
 
-	llvm::Value* rvalue = llvmbuilder.CreateLoad(lvalue);
+	llvm::Value *rvalue = llvmbuilder.CreateLoad (lvalue);
 
 	lastvar.type = member.type;
 
@@ -1615,460 +1743,576 @@ extern "C" void memberaccess(const char* arrowordot, size_t szstr,
 
 	lastvar.value = rvalue;
 
-	printvaltype(lastvar);
+	printvaltype (lastvar);
 
-	lastvar.lvalues.push_back({ lvalue, lastvar.type });
+	lastvar.lvalues.push_back ({lvalue, lastvar.type});
 
 	return;
 }
 
-extern "C" void endsizeoftypename() {
+extern "C" void endsizeoftypename () {
 
-	auto currtype = currtypevectorbeingbuild.back().p->back().type;
+	auto currtype = currtypevectorbeingbuild.back ().p->back ().type;
 
-	std::rotate(currtype.begin(), currtype.begin() + 1, currtype.end());
+	std::rotate (currtype.begin (), currtype.begin () + 1, currtype.end ());
 
-	currtypevectorbeingbuild.back().p->pop_back();
+	currtypevectorbeingbuild.back ().p->pop_back ();
 
-	pushsizeoftype(currtype);
+	pushsizeoftype (currtype);
 }
 
-std::list<std::pair<std::array<llvm::BranchInst*, 2>, llvm::BasicBlock*>> ifstatements;
+std::list<std::pair<std::array<llvm::BranchInst *, 2>, llvm::BasicBlock *>> ifstatements;
 
-extern "C" llvm::BranchInst * splitbb(const char* identifier, size_t szident);
+extern "C" llvm::BranchInst *splitbb (const char *identifier, size_t szident);
 
-extern "C" void insertinttoimm(const char* str, size_t szstr, const char* suffix, size_t szstr1, int type);
+extern "C" void insertinttoimm (const char *str, size_t szstr, const char *suffix, size_t szstr1, int type);
 
-extern "C" void startifstatement() {
-	auto dummyblock = llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue));
+extern "C" void startifstatement () {
+	auto dummyblock = llvm::BasicBlock::Create (llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue));
 
-	if (!immidiates.size())
-		insertinttoimm("1", sizeof "1" - 1, "", 0, 3);
+	if (!immidiates.size ())
+		insertinttoimm ("1", sizeof "1" - 1, "", 0, 3);
 
-	phndl->getlogicalnot();
+	phndl->getlogicalnot ();
 
-	phndl->getlogicalnot();
+	phndl->getlogicalnot ();
 
-	splitbb("", 0);
+	splitbb ("", 0);
 
-	auto value = llvmbuilder.CreateIntCast(immidiates.back().value, llvm::IntegerType::get(llvmctx, 1), true);
+	auto value = llvmbuilder.CreateIntCast (immidiates.back ().value, llvm::IntegerType::get (llvmctx, 1), true);
 
-	ifstatements.push_back({ {llvmbuilder.CreateCondBr(value, dummyblock, dummyblock)}, dummyblock });
+	ifstatements.push_back ({{llvmbuilder.CreateCondBr (value, dummyblock, dummyblock)}, dummyblock});
 
-	splitbb("", 0);
+	splitbb ("", 0);
 
-	ifstatements.back().first[0]->setSuccessor(0, pcurrblock.back());
+	ifstatements.back ().first[0]->setSuccessor (0, pcurrblock.back ());
 
-	immidiates.pop_back();
+	immidiates.pop_back ();
 }
 
-extern "C" void continueifstatement() {
-	ifstatements.back().first[1] = splitbb("", 0);
-	ifstatements.back().first[0]->setSuccessor(1, pcurrblock.back());
+extern "C" void continueifstatement () {
+	ifstatements.back ().first[1] = splitbb ("", 0);
+	ifstatements.back ().first[0]->setSuccessor (1, pcurrblock.back ());
 }
 
-extern "C" void endifstatement() {
-	splitbb("", 0);
-	if (auto lastbranchif = ifstatements.back().first[1])
-		lastbranchif->setSuccessor(0, pcurrblock.back());
+extern "C" void endifstatement () {
+	splitbb ("", 0);
+	if (auto lastbranchif = ifstatements.back ().first[1])
+		lastbranchif->setSuccessor (0, pcurrblock.back ());
 
-	if (ifstatements.back().first[0]->getSuccessor(1) == ifstatements.back().second)
-		ifstatements.back().first[0]->setSuccessor(1, pcurrblock.back());
+	if (ifstatements.back ().first[0]->getSuccessor (1) == ifstatements.back ().second)
+		ifstatements.back ().first[0]->setSuccessor (1, pcurrblock.back ());
 
-	ifstatements.back().second->eraseFromParent();
-	ifstatements.pop_back();
+	ifstatements.back ().second->eraseFromParent ();
+	ifstatements.pop_back ();
 }
 
-extern "C" void endsizeofexpr() {
-	auto lastimmtype = phndl->immidiates.back().type;
-	printtype(createllvmtype(lastimmtype),
-		phndl->immidiates.back().originident);
-	phndl->immidiates.pop_back();
-	pushsizeoftype(lastimmtype);
+extern "C" void beginlogicalop (int blastorfirst) {
+
+	/*std::array<llvm::Value *, 3> instrs;
+
+		//instrs[1] = phndl->getlogicalnot ();
+		////instrs[1] = immidiates.back ().value;
+		//instrs[0] = phndl->getlogicalnot ();
+
+	instrs[0] = phndl->logictwovalues (true);
+
+	val imm = currlogicopval.back ();
+
+	imm.originident = "[[logicop]]";
+
+	imm.lvalues.push_back (imm);
+
+	immidiates.push_back (imm);
+
+	std::rotate (----immidiates.end (), --immidiates.end (), immidiates.end ());
+
+	instrs[2] = phndl->assigntwovalues ();
+
+	immidiates.pop_back ();
+
+	//immidiates.erase (--immidiates.end ());
+
+	splitbb ("", 0);
+
+	imm.value = llvmbuilder.CreateLoad (imm.value);
+	immidiates.push_back (imm);
+
+	if (blastorfirst != 1) {
+
+		opbbs.back ().first.push_back ({pcurrblock.back (), instrs});
+
+		startifstatement ();
+	} else {
+		opbbs.back ().first.push_back ({pcurrblock.back (), instrs});
+
+		//immidiates.push_back (imm);
+
+		opbbs.back ().second = imm;
+	}*/
+
+	//opbbs.push_back (ifstatements.end());
 }
 
-extern "C" void adddeclarationident(const char* str, size_t szstr,
-	bool bistypedef) {
-	std::string ident{ str, szstr };
+extern "C" void beginbinary () {
 
-	currtypevectorbeingbuild.back().p->back().identifier = ident;
+	opsscopeinfo.push_back({--immidiates.end()});
 
-	currtypevectorbeingbuild.back().p->back().bistypedef = bistypedef;
+	//std::pair<var, decltype (immidiates)::iterator> currlogicelem;
+
+	/*var result{{type::BASIC}};
+
+	result.type.back ().spec.basicdeclspec.basic[1] = "int";
+
+	result.pllvmtype = createllvmtype (result.type);
+
+	addvar (result);
+
+	val imm = result;
+
+	insertinttoimm ("1", sizeof "1", "", 0, 3);
+
+	imm.value = llvmbuilder.CreateLoad (imm.value);
+	immidiates.push_back (imm);
+
+	phndl->assigntwovalues();
+
+	currlogicopval.push_back (result);
+	opbbs.push_back ({});
+	beginlogicalop (1);*/
+	//currlogicopval.back ().second = --immidiates.end ();
 }
 
-extern "C" void finalizedeclaration() { endpriordecl(); }
+extern "C" void endbinarybeforerevlogicops () {
+	/*if (!opbbs.back ().first.empty ())
+		insertinttoimm ("1", sizeof "1", "", 0, 3),
+		beginlogicalop (1);*/
+}
 
-const std::list<::var>* getstructorunion(std::string ident) {
-	const std::list<::var>* var = nullptr;
+extern "C" void endbinary () {
+	auto opscopinf = opsscopeinfo.back();
 
-	std::find_if(structorunionmembers.rbegin(), structorunionmembers.rend(),
-		[&](const std::list<std::list<::var>>& scope) {
-			auto iter = std::find_if(
-				scope.rbegin(), scope.rend(),
-				[&](const std::list<::var>& scopevar) {
-					return scopevar.front().identifier == ident;
-				});
+	opsscopeinfo.pop_back();
 
-			if (iter != scope.rend())
-				return var = &*iter, true;
-			return false;
-		});
+	auto lastimm = immidiates.back();
+
+	immidiates.erase(++opscopinf.immidiatesbegin, immidiates.end());
+
+	immidiates.push_back(lastimm);
+
+	//if (immidiates.back ().originident == "[[logicop]]")
+	//immidiates.back ().value = llvmbuilder.CreateLoad (immidiates.back ().value);
+
+	/*if (opbbs.back ().second.value)
+		immidiates.pop_back (),
+			immidiates.push_back (opbbs.back ().second);
+
+	currlogicopval.pop_back ();
+	opbbs.pop_back ();*/
+	//if(phndl->opbbs.size())
+	//phndl->endlast(phndl->opbbs.back().first, phndl->opbbs.back().second);
+
+	//opbbs.pop_back ();
+
+	//if(currlogicopval.pValue)
+	//immidiates.push_back(currlogicopval);
+
+	//currlogicopval.pValue = nullptr;
+}
+
+extern "C" void endsizeofexpr () {
+	auto lastimmtype = phndl->immidiates.back ().type;
+	printtype (createllvmtype (lastimmtype),
+			   phndl->immidiates.back ().originident);
+	phndl->immidiates.pop_back ();
+	pushsizeoftype (lastimmtype);
+}
+
+extern "C" void adddeclarationident (const char *str, size_t szstr,
+									 bool bistypedef) {
+	std::string ident{str, szstr};
+
+	currtypevectorbeingbuild.back ().p->back ().identifier = ident;
+
+	currtypevectorbeingbuild.back ().p->back ().bistypedef = bistypedef;
+}
+
+extern "C" void finalizedeclaration () { endpriordecl (); }
+
+const std::list<::var> *getstructorunion (std::string ident) {
+	const std::list<::var> *var = nullptr;
+
+	std::find_if (structorunionmembers.rbegin (), structorunionmembers.rend (),
+				  [&] (const std::list<std::list<::var>> &scope) {
+					  auto iter = std::find_if (
+						  scope.rbegin (), scope.rend (),
+						  [&] (const std::list<::var> &scopevar) {
+							  return scopevar.front ().identifier == ident;
+						  });
+
+					  if (iter != scope.rend ())
+						  return var = &*iter, true;
+					  return false;
+				  });
 	return var;
 }
 
-llvm::Type* createllvmtype(std::vector<type> decltypevector) {
-	llvm::Type* pcurrtype;
+llvm::Type *createllvmtype (std::vector<type> decltypevector) {
+	llvm::Type *pcurrtype;
 
 	std::array lambdas = {
-		std::function{[&](const type& type) {
-			switch (stringhash(type.spec.basicdeclspec.basic[1].c_str())) {
+		std::function{[&] (const type &type) {
+			switch (stringhash (type.spec.basicdeclspec.basic[1].c_str ())) {
 			case "short"_h:
 				pcurrtype =
-					dyn_cast<llvm::Type> (llvm::Type::getInt16Ty(llvmctx));
+					dyn_cast<llvm::Type> (llvm::Type::getInt16Ty (llvmctx));
 				break;
 				break;
 			case "int"_h:
 			case "long"_h:
-				if (type.spec.basicdeclspec.longspecsn > 1) case "__int64"_h:
-					pcurrtype = dyn_cast<llvm::Type> (llvm::Type::getInt64Ty(llvmctx));
-				else pcurrtype = dyn_cast<llvm::Type> (llvm::Type::getInt32Ty(llvmctx));
+				if (type.spec.basicdeclspec.longspecsn > 1)
+				case "__int64"_h:
+					pcurrtype = dyn_cast<llvm::Type> (llvm::Type::getInt64Ty (llvmctx));
+				else
+					pcurrtype = dyn_cast<llvm::Type> (llvm::Type::getInt32Ty (llvmctx));
 				break;
 				break;
 			case "char"_h:
 				pcurrtype =
-					dyn_cast<llvm::Type> (llvm::Type::getInt8Ty(llvmctx));
+					dyn_cast<llvm::Type> (llvm::Type::getInt8Ty (llvmctx));
 				break;
 				break;
 			case "float"_h:
 				pcurrtype =
-					dyn_cast<llvm::Type> (llvm::Type::getFloatTy(llvmctx));
+					dyn_cast<llvm::Type> (llvm::Type::getFloatTy (llvmctx));
 				break;
 				break;
 			case "double"_h:
 				pcurrtype =
-					dyn_cast<llvm::Type> (llvm::Type::getDoubleTy(llvmctx));
+					dyn_cast<llvm::Type> (llvm::Type::getDoubleTy (llvmctx));
 				break;
 				break;
 			default:
 				switch (
-					stringhash(type.spec.basicdeclspec.basic[0].c_str())) {
+					stringhash (type.spec.basicdeclspec.basic[0].c_str ())) {
 				case "struct"_h:
 					pcurrtype =
-						getstructorunion(type.spec.basicdeclspec.basic[3])
-							->front()
+						getstructorunion (type.spec.basicdeclspec.basic[3])
+							->front ()
 							.pllvmtype;
 					break;
 				case "union"_h:
 					break;
 				default: { // typedef
-					obtainvalbyidentifier(type.spec.basicdeclspec.basic[3].data(), type.spec.basicdeclspec.basic[3].size());
-					pcurrtype = (llvm::Type*)immidiates.back().value;
-					immidiates.pop_back();
+					obtainvalbyidentifier (type.spec.basicdeclspec.basic[3].data (), type.spec.basicdeclspec.basic[3].size ());
+					pcurrtype = (llvm::Type *)immidiates.back ().value;
+					immidiates.pop_back ();
 					break;
 				}
 				}
 			}
 		}},
-		std::function{[&](const type& type) {
-			pcurrtype = dyn_cast<llvm::Type> (pcurrtype->getPointerTo());
+		std::function{[&] (const type &type) {
+			pcurrtype = dyn_cast<llvm::Type> (pcurrtype->getPointerTo ());
 		}},
-		std::function{[&](const type& type) {
+		std::function{[&] (const type &type) {
 			pcurrtype = dyn_cast<llvm::Type> (
-				llvm::ArrayType::get(pcurrtype, type.spec.arraysz));
+				llvm::ArrayType::get (pcurrtype, type.spec.arraysz));
 		}},
-		std::function{[&](const type& type) {
-			std::vector<llvm::Type*> paramtype;
-			for (auto& a : type.spec.func.parametertypes_list.front())
-				paramtype.push_back(a.pllvmtype);
-			pcurrtype = dyn_cast<llvm::Type> (llvm::FunctionType::get(
+		std::function{[&] (const type &type) {
+			std::vector<llvm::Type *> paramtype;
+			for (auto &a : type.spec.func.parametertypes_list.front ())
+				paramtype.push_back (a.pllvmtype);
+			pcurrtype = dyn_cast<llvm::Type> (llvm::FunctionType::get (
 				pcurrtype, paramtype, type.spec.func.bisvariadic));
-		}} };
+		}}};
 
-	std::reverse(decltypevector.begin(), decltypevector.end());
+	std::reverse (decltypevector.begin (), decltypevector.end ());
 
-	for (const auto& type : decltypevector)
+	for (const auto &type : decltypevector)
 		lambdas[type.uniontype](type);
 
 	return pcurrtype;
 }
 
-extern std::vector<llvm::BasicBlock*> pcurrblock;
+extern std::vector<llvm::BasicBlock *> pcurrblock;
 
-void finalizedecl();
+void finalizedecl ();
 
-static std::list<std::pair<llvm::SwitchInst*, llvm::BasicBlock*>> currswitch;
+static std::list<std::pair<llvm::SwitchInst *, llvm::BasicBlock *>> currswitch;
 
-extern "C" llvm::BranchInst * splitbb(const char* identifier, size_t szident);
+extern "C" llvm::BranchInst *splitbb (const char *identifier, size_t szident);
 
-extern "C" void beginscope() {
-	bool beginofafnuc = scopevar.size() == 1;
+extern "C" void beginscope () {
+	bool beginofafnuc = scopevar.size () == 1;
 	if (beginofafnuc) {
 		var current_arg;
-		currfunc = --scopevar.back().end();
-		auto iter_params = currfunc->type.front()
-			.spec.func.parametertypes_list.front()
-			.begin();
-		for (auto& arg : dyn_cast<llvm::Function> (currfunc->pValue)->args())
+		currfunc = --scopevar.back ().end ();
+		auto iter_params = currfunc->type.front ()
+							   .spec.func.parametertypes_list.front ()
+							   .begin ();
+		for (auto &arg : dyn_cast<llvm::Function> (currfunc->pValue)->args ())
 			iter_params++->pValue = &arg;
 	}
 
-	splitbb("", 0);
+	splitbb ("", 0);
 	//pcurrblock.push_back (llvm::BasicBlock::Create (
-		//llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue)));
+	//llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue)));
 	//llvmbuilder.SetInsertPoint (pcurrblock.back ());
-	scopevar.push_back({});
-	currtypevectorbeingbuild.push_back(
-		{ --scopevar.end(), currdecltypeenum::NORMAL });
+	scopevar.push_back ({});
+	currtypevectorbeingbuild.push_back (
+		{--scopevar.end (), currdecltypeenum::NORMAL});
 
 	var OrigParamValue;
 
-	if (beginofafnuc) for (auto& param
-		: currfunc->type.front().spec.func.parametertypes_list.front()) {
-		auto origparamvalue = param.pValue;
+	if (beginofafnuc)
+		for (auto &param : currfunc->type.front ().spec.func.parametertypes_list.front ()) {
+			auto origparamvalue = param.pValue;
 
-		addvar(param);
+			addvar (param);
 
-		llvmbuilder.CreateStore(origparamvalue, param.pValue);
-	}
+			llvmbuilder.CreateStore (origparamvalue, param.pValue);
+		}
 
-	structorunionmembers.push_back({});
+	structorunionmembers.push_back ({});
 
 	std::cout << "begin scope finished" << std::endl;
 }
 
-void fixuplabels();
+void fixuplabels ();
 
-extern "C" void endscope() {
+extern "C" void endscope () {
 	// nonconstructable.mainmodule.
 	// endexpression();
 	//pcurrblock.pop_back();
-	scopevar.pop_back();
-	if (scopevar.size() > 1)
-		splitbb("", 0);
-	else pcurrblock.pop_back();
-	currtypevectorbeingbuild.pop_back();
-	structorunionmembers.pop_back();
+	scopevar.pop_back ();
+	if (scopevar.size () > 1)
+		splitbb ("", 0);
+	else
+		pcurrblock.pop_back ();
+	currtypevectorbeingbuild.pop_back ();
+	structorunionmembers.pop_back ();
 
-	if (scopevar.size() == 1) //end of a function
-		fixuplabels();
+	if (scopevar.size () == 1) //end of a function
+		fixuplabels ();
 }
 
-extern "C" void endexpression() { phndl->immidiates.clear(); }
+extern "C" void endexpression () { phndl->immidiates.clear (); }
 
-std::list<llvm::BasicBlock*> dowhileloops;
+std::list<llvm::BasicBlock *> dowhileloops;
 
-std::list<std::list<llvm::BranchInst*>> breakbranches;
+std::list<std::list<llvm::BranchInst *>> breakbranches;
 
-std::list<std::list<llvm::BranchInst*>> continuebranches;
+std::list<std::list<llvm::BranchInst *>> continuebranches;
 
-void fixupcontinuebranches(), fixupbrakebranches();
+void fixupcontinuebranches (), fixupbrakebranches ();
 
-extern "C" void startdowhileloop() {
-	splitbb("", 0);
+extern "C" void startdowhileloop () {
+	splitbb ("", 0);
 
-	dowhileloops.push_back(pcurrblock.back());
-	breakbranches.push_back({});
-	continuebranches.push_back({});
+	dowhileloops.push_back (pcurrblock.back ());
+	breakbranches.push_back ({});
+	continuebranches.push_back ({});
 }
 
-extern "C" void enddowhileloop() {
-	fixupcontinuebranches();
-	startifstatement();
-	fixupbrakebranches();
-	ifstatements.back().first[0]->setSuccessor(1, pcurrblock.back());
-	ifstatements.back().first[0]->setSuccessor(0, dowhileloops.back());
-	ifstatements.back().second->eraseFromParent();
-	ifstatements.pop_back();
-	dowhileloops.pop_back();
+extern "C" void enddowhileloop () {
+	fixupcontinuebranches ();
+	startifstatement ();
+	fixupbrakebranches ();
+	ifstatements.back ().first[0]->setSuccessor (1, pcurrblock.back ());
+	ifstatements.back ().first[0]->setSuccessor (0, dowhileloops.back ());
+	ifstatements.back ().second->eraseFromParent ();
+	ifstatements.pop_back ();
+	dowhileloops.pop_back ();
 }
 
-extern "C" void addbreak() {
-	breakbranches.back().push_back(llvmbuilder.CreateBr(pcurrblock.back()));
+extern "C" void addbreak () {
+	breakbranches.back ().push_back (llvmbuilder.CreateBr (pcurrblock.back ()));
 }
 
-extern "C" void addcontinue() {
-	continuebranches.back().push_back(llvmbuilder.CreateBr(pcurrblock.back()));
+extern "C" void addcontinue () {
+	continuebranches.back ().push_back (llvmbuilder.CreateBr (pcurrblock.back ()));
 }
 
-void fixupbrakebranches() {
-	for (auto branch : breakbranches.back())
-		branch->setSuccessor(0, pcurrblock.back());
+void fixupbrakebranches () {
+	for (auto branch : breakbranches.back ())
+		branch->setSuccessor (0, pcurrblock.back ());
 
-	breakbranches.pop_back();
+	breakbranches.pop_back ();
 }
 
-void fixupcontinuebranches() {
-	for (auto branch : continuebranches.back())
-		branch->setSuccessor(0, pcurrblock.back());
+void fixupcontinuebranches () {
+	for (auto branch : continuebranches.back ())
+		branch->setSuccessor (0, pcurrblock.back ());
 
-	continuebranches.pop_back();
+	continuebranches.pop_back ();
 }
 
-std::list<std::array<llvm::BasicBlock*, 2>> forloops;
+std::list<std::array<llvm::BasicBlock *, 2>> forloops;
 
-extern "C" void startforloopcond() {
-	std::array<llvm::BasicBlock*, 2> bb;
-	splitbb("", 0);
-	bb[0] = pcurrblock.back();
+extern "C" void startforloopcond () {
+	std::array<llvm::BasicBlock *, 2> bb;
+	splitbb ("", 0);
+	bb[0] = pcurrblock.back ();
 
-	forloops.push_back(bb);
-	breakbranches.push_back({});
-	continuebranches.push_back({});
+	forloops.push_back (bb);
+	breakbranches.push_back ({});
+	continuebranches.push_back ({});
 }
 
-extern "C" void endforloopcond() {
-	startifstatement();
-	endexpression();
+extern "C" void endforloopcond () {
+	startifstatement ();
+	endexpression ();
 	//insertinttoimm("0", sizeof "0" - 1, "", 0, 3);
 	//startifstatement();
-	auto lastblcok = pcurrblock.back();
+	auto lastblcok = pcurrblock.back ();
 
-	forloops.back()[1] = lastblcok;
+	forloops.back ()[1] = lastblcok;
 }
 
-extern "C" void addforloopiter() {
-	llvmbuilder.CreateBr(forloops.back()[0]);
-	splitbb("", 0);
+extern "C" void addforloopiter () {
+	llvmbuilder.CreateBr (forloops.back ()[0]);
+	splitbb ("", 0);
 
 	//endifstatement();
-	ifstatements.back().first[0]->setSuccessor(0, pcurrblock.back());
+	ifstatements.back ().first[0]->setSuccessor (0, pcurrblock.back ());
 }
 
-extern "C" void endforloop() {
-	fixupcontinuebranches();
-	llvmbuilder.CreateBr(forloops.back()[1]);
-	forloops.pop_back();
+extern "C" void endforloop () {
+	fixupcontinuebranches ();
+	llvmbuilder.CreateBr (forloops.back ()[1]);
+	forloops.pop_back ();
 	//endifstatement();
-	splitbb("", 0);
-	fixupbrakebranches();
-	ifstatements.back().first[0]->setSuccessor(1, pcurrblock.back());
-	ifstatements.back().second->eraseFromParent();
-	ifstatements.pop_back();
+	splitbb ("", 0);
+	fixupbrakebranches ();
+	ifstatements.back ().first[0]->setSuccessor (1, pcurrblock.back ());
+	ifstatements.back ().second->eraseFromParent ();
+	ifstatements.pop_back ();
 }
 
-val decay(val lvalue) {
-	auto& currtype = lvalue.type;
-	if (currtype.front().uniontype == type::ARRAY) {
-		::type ptrtype{ ::type::POINTER };
+val decay (val lvalue) {
+	auto &currtype = lvalue.type;
+	if (currtype.front ().uniontype == type::ARRAY) {
+		::type ptrtype{::type::POINTER};
 
-		currtype.erase(currtype.begin());
-		currtype.push_back(ptrtype);
-		std::rotate(currtype.rbegin(), currtype.rbegin() + 1,
-			currtype.rend());
+		currtype.erase (currtype.begin ());
+		currtype.push_back (ptrtype);
+		std::rotate (currtype.rbegin (), currtype.rbegin () + 1,
+					 currtype.rend ());
 
-		assert(currtype.front().uniontype == ::type::POINTER);
+		assert (currtype.front ().uniontype == ::type::POINTER);
 
-		printvaltype(lvalue);
+		printvaltype (lvalue);
 
-		lvalue.value = lvalue.lvalues.back().value;
+		lvalue.value = lvalue.lvalues.back ().value;
 
-		lvalue.lvalues.pop_back();
+		lvalue.lvalues.pop_back ();
 
-		if (lvalue.value->getType()->getPointerElementType()->isArrayTy())
-			lvalue.value = llvmbuilder.CreateGEP(
+		if (lvalue.value->getType ()->getPointerElementType ()->isArrayTy ())
+			lvalue.value = llvmbuilder.CreateGEP (
 				lvalue.value,
-				{ llvmbuilder.getInt64(0), llvmbuilder.getInt64(0) });
+				{llvmbuilder.getInt64 (0), llvmbuilder.getInt64 (0)});
 	}
 	return lvalue;
 }
 
-valandtype getrvalue(valandtype lvalue) {
-	auto& currtype = lvalue.type;
-	if (currtype.front().uniontype != type::FUNCTION) {
-		if (lvalue.value->getType()->getPointerElementType()->isFunctionTy())
+valandtype getrvalue (valandtype lvalue) {
+	auto &currtype = lvalue.type;
+	if (currtype.front ().uniontype != type::FUNCTION) {
+		if (lvalue.value->getType ()->getPointerElementType ()->isFunctionTy ())
 			return lvalue;
 		std::cout << "rvalue" << std::endl;
 		basehndl::val ret = {
-			llvmbuilder.CreateLoad(
+			llvmbuilder.CreateLoad (
 				/*gen_pointer_to_elem_if_ptr_to_array*/ (lvalue.value)),
-			currtype };
-		printvaltype(ret);
+			currtype};
+		printvaltype (ret);
 		return ret;
 	}
 	return lvalue;
 }
 
-extern "C" void startfunctioncall() {
-	callees.push_back(--hndlbase.immidiates.end());
+extern "C" void startfunctioncall () {
+	callees.push_back (--hndlbase.immidiates.end ());
 }
 
-std::list<std::pair<llvm::BranchInst*, std::string>> branches;
+std::list<std::pair<llvm::BranchInst *, std::string>> branches;
 
-extern "C" llvm::BranchInst * splitbb(const char* identifier, size_t szident) {
-	bool bareweabrupt = bareweinabrupt();
-	if (pcurrblock.size())
-		pcurrblock.pop_back();
-	else bareweabrupt = true;
-	pcurrblock.push_back(llvm::BasicBlock::Create(
-		llvmctx, std::string{ identifier, szident }, dyn_cast<llvm::Function> (currfunc->pValue)));
-	llvm::BranchInst* preturn;
+extern "C" llvm::BranchInst *splitbb (const char *identifier, size_t szident) {
+	bool bareweabrupt = bareweinabrupt ();
+	if (pcurrblock.size ())
+		pcurrblock.pop_back ();
+	else
+		bareweabrupt = true;
+	pcurrblock.push_back (llvm::BasicBlock::Create (
+		llvmctx, std::string{identifier, szident}, dyn_cast<llvm::Function> (currfunc->pValue)));
+	llvm::BranchInst *preturn;
 	if (!bareweabrupt)
-		preturn = llvmbuilder.CreateBr(pcurrblock.back());
-	llvmbuilder.SetInsertPoint(pcurrblock.back());
+		preturn = llvmbuilder.CreateBr (pcurrblock.back ());
+	llvmbuilder.SetInsertPoint (pcurrblock.back ());
 	return preturn;
 }
 
-extern "C" void gotolabel(const char* identifier, size_t szident) {
-	branches.push_back({ llvmbuilder.CreateBr(pcurrblock.back()), std::string{identifier, szident} });
+extern "C" void gotolabel (const char *identifier, size_t szident) {
+	branches.push_back ({llvmbuilder.CreateBr (pcurrblock.back ()), std::string{identifier, szident}});
 }
 
-void fixuplabels() {
-	for (auto& [branchinst, ident] : branches)
-		for (auto& bb : dyn_cast<llvm::Function> (currfunc->pValue)->getBasicBlockList())
-			if (bb.getName() == ident)
-				branchinst->setSuccessor(0, &bb);
-	branches.clear();
+void fixuplabels () {
+	for (auto &[branchinst, ident] : branches)
+		for (auto &bb : dyn_cast<llvm::Function> (currfunc->pValue)->getBasicBlockList ())
+			if (bb.getName () == ident)
+				branchinst->setSuccessor (0, &bb);
+	branches.clear ();
 }
 
-extern "C" void startswitch() {
+extern "C" void startswitch () {
 	//pcurrblock.pop_back();
 	//pcurrblock.push_back(llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue)));
-	auto dummyblock = llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue));
-	currswitch.push_back({ llvmbuilder.CreateSwitch(phndl->immidiates.back().value, dummyblock), dummyblock });
-	breakbranches.push_back({});
+	auto dummyblock = llvm::BasicBlock::Create (llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue));
+	currswitch.push_back ({llvmbuilder.CreateSwitch (phndl->immidiates.back ().value, dummyblock), dummyblock});
+	breakbranches.push_back ({});
 
 	//llvmbuilder.SetInsertPoint(pcurrblock.back());
-	phndl->immidiates.pop_back();
+	phndl->immidiates.pop_back ();
 }
 
-bool bareweinabrupt(bool barewe) {
+bool bareweinabrupt (bool barewe) {
 	/*static bool bareweinabrupt;
 	bool bareweinabruptlast = bareweinabrupt;
 	bareweinabrupt = barewe;*/
-	if (pcurrblock.size())
-		if (pcurrblock.back()->getInstList().size())
-		{
-			auto lastinstropcode = pcurrblock.back()->back().getOpcode();
-			return ranges::contains(std::array{ llvm::Instruction::Br, llvm::Instruction::Switch }, lastinstropcode);
-		}
-		else return false;
+	if (pcurrblock.size ())
+		if (pcurrblock.back ()->getInstList ().size ()) {
+			auto lastinstropcode = pcurrblock.back ()->back ().getOpcode ();
+			return ranges::contains (std::array{llvm::Instruction::Br, llvm::Instruction::Switch}, lastinstropcode);
+		} else
+			return false;
 	return true;
 }
 
-extern "C" void endswitch() {
-	splitbb("", 0);
-	fixupbrakebranches();
-	if (currswitch.back().first->getDefaultDest() == currswitch.back().second)
-		currswitch.back().first->setDefaultDest(pcurrblock.back());
-	currswitch.back().second->eraseFromParent();
-	currswitch.pop_back();
+extern "C" void endswitch () {
+	splitbb ("", 0);
+	fixupbrakebranches ();
+	if (currswitch.back ().first->getDefaultDest () == currswitch.back ().second)
+		currswitch.back ().first->setDefaultDest (pcurrblock.back ());
+	currswitch.back ().second->eraseFromParent ();
+	currswitch.pop_back ();
 }
 
-extern "C" void addCase() {
-	splitbb("", 0);
-	currswitch.back().first->addCase(llvm::dyn_cast<llvm::ConstantInt>(phndl->immidiates.back().value), pcurrblock.back());
-	phndl->immidiates.pop_back();
+extern "C" void addCase () {
+	splitbb ("", 0);
+	currswitch.back ().first->addCase (llvm::dyn_cast<llvm::ConstantInt> (phndl->immidiates.back ().value), pcurrblock.back ());
+	phndl->immidiates.pop_back ();
 }
 
-extern "C" void addDefaultCase() {
-	splitbb("", 0);
-	currswitch.back().first->setDefaultDest(pcurrblock.back());
+extern "C" void addDefaultCase () {
+	splitbb ("", 0);
+	currswitch.back ().first->setDefaultDest (pcurrblock.back ());
 }
 
-std::vector<::type> getreturntype(std::vector<::type> type) {
-	for (auto iter = type.begin(); iter < type.end(); ++iter)
+std::vector<::type> getreturntype (std::vector<::type> type) {
+	for (auto iter = type.begin (); iter < type.end (); ++iter)
 		if (iter->uniontype == type::FUNCTION) {
-			type.erase(type.begin(), iter + 1);
+			type.erase (type.begin (), iter + 1);
 			return type;
 		}
 	return type;
@@ -2081,14 +2325,14 @@ std::vector<::type> getreturntype(std::vector<::type> type) {
 (value, type->getPointerTo ())
 }*/
 
-extern "C" void endfunctioncall() {
-	auto lastblock = pcurrblock.back();
+extern "C" void endfunctioncall () {
+	auto lastblock = pcurrblock.back ();
 
-	auto argsiter = callees.back();
+	auto argsiter = callees.back ();
 
 	auto calleevalntype = *argsiter;
 
-	assert(calleevalntype.value->getType()->isPointerTy());
+	assert (calleevalntype.value->getType ()->isPointerTy ());
 
 	/*std::string type_str;
 	llvm::raw_string_ostream rso (type_str);
@@ -2096,174 +2340,166 @@ extern "C" void endfunctioncall() {
 	std::cout << calleevalntype.value->getName ().str () << " is " << rso.str ()
 			  << std::endl;*/
 
-	llvm::Value* callee = calleevalntype.value;
+	llvm::Value *callee = calleevalntype.value;
 
-	auto functype = createllvmtype(calleevalntype.type);
+	auto functype = createllvmtype (calleevalntype.type);
 
-	llvm::Value* pval;
+	llvm::Value *pval;
 
-	callees.pop_back();
+	callees.pop_back ();
 
-	llvmbuilder.SetInsertPoint(lastblock);
+	llvmbuilder.SetInsertPoint (lastblock);
 
-	std::vector<llvm::Value*> immidiates;
+	std::vector<llvm::Value *> immidiates;
 
-	std::transform(
-		++argsiter, hndlbase.immidiates.end(), std::back_inserter(immidiates),
-		[](const basehndl::val& elem) { return decay(elem).value; });
+	std::transform (
+		++argsiter, hndlbase.immidiates.end (), std::back_inserter (immidiates),
+		[] (const basehndl::val &elem) { return decay (elem).value; });
 
-	hndlbase.immidiates.erase(--argsiter, hndlbase.immidiates.end());
+	hndlbase.immidiates.erase (--argsiter, hndlbase.immidiates.end ());
 
-	printvaltype(calleevalntype);
+	printvaltype (calleevalntype);
 
 	// if (functype->isPtrOrPtrVectorTy ())
-	pval = llvmbuilder.CreateCall(
+	pval = llvmbuilder.CreateCall (
 		llvm::dyn_cast<llvm::FunctionType> (
-			callee->getType()->getPointerElementType()),
+			callee->getType ()->getPointerElementType ()),
 		callee, immidiates);
 	// else
 	// pval = llvmbuilder.CreateCall (
 	// llvm::dyn_cast<llvm::Function> (callee)->getFunctionType (),
 	// llvm::dyn_cast<llvm::Value> (callee), immidiates);
 
-	phndl->immidiates.push_back(
-		val{ pval, getreturntype(calleevalntype.type) });
+	phndl->immidiates.push_back (
+		val{pval, getreturntype (calleevalntype.type)});
 }
 
-extern "C" void endreturn() {
+extern "C" void endreturn () {
 	//llvmbuilder.SetInsertPoint (pcurrblock.back ());
-	llvmbuilder.CreateRet(hndlbase.immidiates.back().value);
+	llvmbuilder.CreateRet (hndlbase.immidiates.back ().value);
 }
 
-extern "C" void endfunctionparamdecl(bool bisrest) {
+extern "C" void endfunctionparamdecl (bool bisrest) {
 
-	for (auto& a : *currtypevectorbeingbuild.back().p)
-		a.pllvmtype = createllvmtype(a.type);
+	for (auto &a : *currtypevectorbeingbuild.back ().p)
+		a.pllvmtype = createllvmtype (a.type);
 
-	currtypevectorbeingbuild.pop_back();
+	currtypevectorbeingbuild.pop_back ();
 
-	auto& functype = currtypevectorbeingbuild.back().p->back().type.back();
+	auto &functype = currtypevectorbeingbuild.back ().p->back ().type.back ();
 
-	assert(functype.uniontype == type::FUNCTION);
+	assert (functype.uniontype == type::FUNCTION);
 
 	functype.spec.func.bisvariadic = bisrest;
 }
 
-extern "C" void continuedeclaration() {
+extern "C" void continuedeclaration () {
 
-	auto lastvar = currtypevectorbeingbuild.back().p->back();
+	auto lastvar = currtypevectorbeingbuild.back ().p->back ();
 
-	auto lastbasetype = lastvar.type.back();
+	auto lastbasetype = lastvar.type.back ();
 
-	assert(lastbasetype.uniontype == type::BASIC);
+	assert (lastbasetype.uniontype == type::BASIC);
 
-	lastvar.type.clear();
+	lastvar.type.clear ();
 
-	lastvar.type.push_back(lastbasetype);
+	lastvar.type.push_back (lastbasetype);
 
-	currtypevectorbeingbuild.back().p->push_back(lastvar);
+	currtypevectorbeingbuild.back ().p->push_back (lastvar);
 }
 
-extern "C" void addptrtotype(const char* quailifers, size_t szstr);
+extern "C" void addptrtotype (const char *quailifers, size_t szstr);
 
-extern "C" void startfunctionparamdecl() {
+extern "C" void startfunctionparamdecl () {
 
-	if (currtypevectorbeingbuild.back().currdecltype ==
+	if (currtypevectorbeingbuild.back ().currdecltype ==
 		currdecltypeenum::PARAMS) // if declaring a function inside another
 								  // declaration
-		addptrtotype("", 0);
+		addptrtotype ("", 0);
 
-	currtypevectorbeingbuild.back().p->back().type.push_back(
-		{ type::FUNCTION });
+	currtypevectorbeingbuild.back ().p->back ().type.push_back (
+		{type::FUNCTION});
 
-	currtypevectorbeingbuild.push_back(
-		{ currtypevectorbeingbuild.back()
-			 .p->back()
-			 .type.back()
-			 .spec.func.parametertypes_list.begin(),
-		 currdecltypeenum::PARAMS });
+	currtypevectorbeingbuild.push_back (
+		{currtypevectorbeingbuild.back ()
+			 .p->back ()
+			 .type.back ()
+			 .spec.func.parametertypes_list.begin (),
+		 currdecltypeenum::PARAMS});
 }
 
-extern "C" void addsubtotype() {
+extern "C" void addsubtotype () {
 
-	type arraytype{ type::ARRAY };
+	type arraytype{type::ARRAY};
 
 	auto res = llvm::dyn_cast<llvm::ConstantInt> (
-		hndlcnstexpr.immidiates.back().value);
+		hndlcnstexpr.immidiates.back ().value);
 
-	arraytype.spec.arraysz = *res->getValue().getRawData();
-	currtypevectorbeingbuild.back().p->back().type.push_back(arraytype);
+	arraytype.spec.arraysz = *res->getValue ().getRawData ();
+	currtypevectorbeingbuild.back ().p->back ().type.push_back (arraytype);
 
-	hndlcnstexpr.immidiates.pop_back();
+	hndlcnstexpr.immidiates.pop_back ();
 }
 
-extern "C" void addptrtotype(const char* quailifers, size_t szstr) {
+extern "C" void addptrtotype (const char *quailifers, size_t szstr) {
 
-	type ptrtype{ type::POINTER };
+	type ptrtype{type::POINTER};
 
 	ptrtype.spec.ptrqualifiers =
-		parsequalifiers(std::string{ quailifers, szstr });
+		parsequalifiers (std::string{quailifers, szstr});
 
-	currtypevectorbeingbuild.back().p->back().type.push_back(ptrtype);
+	currtypevectorbeingbuild.back ().p->back ().type.push_back (ptrtype);
 }
 
-extern "C" void insertinttoimm(const char* str, size_t szstr, const char* suffix, size_t szstr1, int type) {
-	phndl->insertinttoimm(str, szstr, suffix, szstr1, type);
+extern "C" void insertinttoimm (const char *str, size_t szstr, const char *suffix, size_t szstr1, int type) {
+	phndl->insertinttoimm (str, szstr, suffix, szstr1, type);
 }
 
-extern "C" void insertfloattoimm(const char* postfix_arg, size_t szstr,
-	const char* wholepart_arg, size_t szstr1,
-	const char* fractionpart_arg, size_t szstr2,
-	const char* exponent_arg, size_t szstr3,
-	const char* exponentsign_arg, size_t szstr4) {
-	std::string postfix{ postfix_arg, szstr }, wholepart{ wholepart_arg, szstr1 }, fractionpart{ fractionpart_arg, szstr2 },
-		exponent{ exponent_arg, szstr3 }, exponent_sign{ exponentsign_arg, szstr4 };
+extern "C" void insertfloattoimm (const char *postfix_arg, size_t szstr,
+								  const char *wholepart_arg, size_t szstr1,
+								  const char *fractionpart_arg, size_t szstr2,
+								  const char *exponent_arg, size_t szstr3,
+								  const char *exponentsign_arg, size_t szstr4) {
+	std::string postfix{postfix_arg, szstr}, wholepart{wholepart_arg, szstr1}, fractionpart{fractionpart_arg, szstr2},
+		exponent{exponent_arg, szstr3}, exponent_sign{exponentsign_arg, szstr4};
 
 	/*unsigned long long whole_number = std::stoull(wholepart, nullptr, 10),
 		fractionpart_number = std::stoull(fractionpart, nullptr, 10),
 		exponent_number = std::stoull(exponent, nullptr, 10);*/
 
-	std::vector<::type> currtype = { 1, ::type::BASIC };
+	std::vector<::type> currtype = {1, ::type::BASIC};
 
-	llvm::Type* pllvmtype;
+	llvm::Type *pllvmtype;
 
-	const llvm::fltSemantics& floatsem = postfix.empty() ? currtype.back().spec.basicdeclspec.basic[1] = "double",
-		pllvmtype = llvm::Type::getDoubleTy(llvmctx),
-		llvm::APFloatBase::IEEEdouble() :
-		ranges::contains(std::array{ "f", "F" }, postfix)
-		? currtype.back().spec.basicdeclspec.basic[1] = "float",
-		pllvmtype = llvm::Type::getFloatTy(llvmctx),
-		llvm::APFloatBase::IEEEsingle() :
-		(assert(ranges::contains(std::array{ "l", "L" }, postfix)),
-			currtype.back().spec.basicdeclspec.basic[1] = "double",
-			currtype.back().spec.basicdeclspec.longspecsn = 1,
-			pllvmtype = llvm::Type::getFP128Ty(llvmctx),
-			llvm::APFloatBase::IEEEquad());
+	const llvm::fltSemantics &floatsem = postfix.empty () ? currtype.back ().spec.basicdeclspec.basic[1] = "double",
+							 pllvmtype = llvm::Type::getDoubleTy (llvmctx),
+							 llvm::APFloatBase::IEEEdouble () : ranges::contains (std::array{"f", "F"}, postfix) ? currtype.back ().spec.basicdeclspec.basic[1] = "float",
+							 pllvmtype = llvm::Type::getFloatTy (llvmctx),
+							 llvm::APFloatBase::IEEEsingle () : (assert (ranges::contains (std::array{"l", "L"}, postfix)), currtype.back ().spec.basicdeclspec.basic[1] = "double", currtype.back ().spec.basicdeclspec.longspecsn = 1, pllvmtype = llvm::Type::getFP128Ty (llvmctx), llvm::APFloatBase::IEEEquad ());
 
-	llvm::APFloat floatlit{ floatsem };
+	llvm::APFloat floatlit{floatsem};
 
 	std::string finalnumber = wholepart + "." + fractionpart;
 
-	if (!exponent.empty())
+	if (!exponent.empty ())
 		finalnumber += "E" + exponent_sign + exponent;
 
-	auto status = floatlit.convertFromString(finalnumber, llvm::APFloatBase::rmNearestTiesToEven);
+	auto status = floatlit.convertFromString (finalnumber, llvm::APFloatBase::rmNearestTiesToEven);
 
-
-	phndl->immidiates.push_back({ llvm::ConstantFP::get(pllvmtype, floatlit), currtype });
+	phndl->immidiates.push_back ({llvm::ConstantFP::get (pllvmtype, floatlit), currtype});
 }
 
-extern "C" void subscript() { phndl->subscripttwovalues(); }
+extern "C" void subscript () { phndl->subscripttwovalues (); }
 
-extern "C" void beginconstantexpr() {
+extern "C" void beginconstantexpr () {
 	//cnstexpriterstart = phndl->immidiates.end();
-	szcnstexprinitial = phndl->immidiates.size();
+	szcnstexprinitial = phndl->immidiates.size ();
 
 	phndl = &hndlcnstexpr;
 }
 
-extern "C" void endconstantexpr() {
-	assert(szcnstexprinitial == phndl->immidiates.size());
+extern "C" void endconstantexpr () {
+	assert (szcnstexprinitial == phndl->immidiates.size ());
 
 	// auto res = dyn_cast<llvm::ConstantInt>(immidiates.back());
 
@@ -2275,114 +2511,117 @@ extern "C" void endconstantexpr() {
 	phndl = &hndlbase;
 }
 
-extern "C" void startmodule(const char* modulename, size_t szmodulename) {
+extern "C" void startmodule (const char *modulename, size_t szmodulename) {
 	new (&nonconstructable.mainmodule)
-		llvm::Module{ std::string{modulename, szmodulename}, llvmctx };
+		llvm::Module{std::string{modulename, szmodulename}, llvmctx};
 
-	pdatalayout = new llvm::DataLayout{ &nonconstructable.mainmodule };
+	pdatalayout = new llvm::DataLayout{&nonconstructable.mainmodule};
 }
 
-extern "C" void endmodule() {
+extern "C" void endmodule () {
 	std::error_code code{};
 	llvm::raw_fd_ostream output{
-		std::string{nonconstructable.mainmodule.getName()} + ".bc", code },
-		outputll{ std::string{nonconstructable.mainmodule.getName()} + ".ll",
-				 code };
-	nonconstructable.mainmodule.print(outputll, nullptr);
-	llvm::WriteBitcodeToFile(nonconstructable.mainmodule, output);
-	nonconstructable.mainmodule.~Module();
+		std::string{nonconstructable.mainmodule.getName ()} + ".bc", code},
+		outputll{std::string{nonconstructable.mainmodule.getName ()} + ".ll",
+				 code};
+	nonconstructable.mainmodule.print (outputll, nullptr);
+	llvm::WriteBitcodeToFile (nonconstructable.mainmodule, output);
+	nonconstructable.mainmodule.~Module ();
 	delete pdatalayout;
 }
 
-extern "C" void unary(const char* str, size_t szstr) {
+extern "C" void unary (const char *str, size_t szstr) {
 	std::string imm;
 
-	imm.assign(str, szstr);
+	imm.assign (str, szstr);
 
-	basehndl* phpriorhndl = phndl;
+	basehndl *phpriorhndl = phndl;
 
-	switch (stringhash(imm.c_str())) {
+	switch (stringhash (imm.c_str ())) {
 	case "-"_h:
 	case "+"_h:
 	case "!"_h:
-		if (bIsBasicFloat(phndl->immidiates.back().type.front()))
+		if (bIsBasicFloat (phndl->immidiates.back ().type.front ()))
 			phndl = &hndlfpexpr;
 	}
 
-	switch (stringhash(imm.c_str())) {
+	switch (stringhash (imm.c_str ())) {
 	case "&"_h: {
-		phndl->getaddress();
+		phndl->getaddress ();
 		break;
 	}
 	case "*"_h:
-		phndl->applyindirection();
+		phndl->applyindirection ();
 		break;
 	case "~"_h:
-		phndl->getbitwisenot();
+		phndl->getbitwisenot ();
 		break;
 	case "-"_h:
-		phndl->getnegative();
+		phndl->getnegative ();
 		break;
 	case "+"_h:
-		phndl->getpositive();
+		phndl->getpositive ();
 		break;
 	case "!"_h:
-		phndl->getlogicalnot();
+		phndl->getlogicalnot ();
 		break;
 	}
 
 	phndl = phpriorhndl;
 }
 
-extern "C" void unaryincdec(const char* str, size_t szstr, bool postfix) {
+extern "C" void unaryincdec (const char *str, size_t szstr, bool postfix) {
 	std::string imm;
 
-	imm.assign(str, szstr);
+	imm.assign (str, szstr);
 
-	basehndl* phpriorhndl = phndl;
+	basehndl *phpriorhndl = phndl;
 
-	if (bIsBasicFloat(phndl->immidiates.back().type.front()))
+	if (bIsBasicFloat (phndl->immidiates.back ().type.front ()))
 		phndl = &hndlfpexpr;
 
-	unsigned int type = 3;// << 2 | 2;
+	unsigned int type = 3; // << 2 | 2;
 
-	auto immlvalue = immidiates.back();
+	auto immlvalue = immidiates.back ();
 
-	immlvalue.originident.append("[[modified]]");
+	immlvalue.originident.append ("[[modified]]");
 
-	insertinttoimm("1", sizeof "1" - 1, "", 0, type);
+	insertinttoimm ("1", sizeof "1" - 1, "", 0, type);
 
-	if (immlvalue.type.front().uniontype != type::POINTER)
+	if (immlvalue.type.front ().uniontype != type::POINTER)
 
-		immidiates.back() = convertTo(immidiates.back(), immlvalue.type);
+		immidiates.back () = convertTo (immidiates.back (), immlvalue.type);
 
-	phndl->addlasttwovalues(imm == "--", false);
+	phndl->addlasttwovalues (imm == "--", false);
 
-	immidiates.push_back(immlvalue);
+	immidiates.push_back (immlvalue);
 
-	std::rotate(----immidiates.end(), --immidiates.end(), immidiates.end());
+	std::rotate (----immidiates.end (), --immidiates.end (), immidiates.end ());
 
-	phndl->assigntwovalues();
+	phndl->assigntwovalues ();
 
 	if (postfix)
-		immidiates.back() = immlvalue;
+		immidiates.back () = immlvalue;
 
 	phndl = phpriorhndl;
 }
 
-extern "C" void binary(const char* str, size_t szstr) {
+extern "C" void binary (const char *str, size_t szstr) {
 	std::string imm;
 
-	imm.assign(str, szstr);
+	imm.assign (str, szstr);
 
-	basehndl* phpriorhndl = phndl;
+	basehndl *phpriorhndl = phndl;
 
-	auto ops = std::array{ *----phndl->immidiates.end(), phndl->immidiates.back() };
+	auto ops = std::array{*----phndl->immidiates.end (), phndl->immidiates.back ()};
 
 	//phndl->usualarithmeticconversions(ops);
 
-	if (bIsBasicFloat(ops[0].type.front()) || bIsBasicFloat(ops[1].type.front()))
+	if (bIsBasicFloat (ops[0].type.front ()) || bIsBasicFloat (ops[1].type.front ()))
 		phndl = &hndlfpexpr;
+
+	//if(phndl->opbbs.back().second.pValue)
+	//phndl->endlast(phndl->opbbs.back().first, phndl->opbbs.back().second);
 
 	/*switch (stringhash(imm.c_str())) {
 	case "*"_h:
@@ -2436,71 +2675,73 @@ extern "C" void binary(const char* str, size_t szstr) {
 		break;
 	}*/
 
-	switch (stringhash(imm.c_str())) {
+	switch (stringhash (imm.c_str ())) {
 	case "*"_h:
-		phndl->mlutiplylasttwovalues();
+		phndl->mlutiplylasttwovalues ();
 		break;
 	case "/"_h:
-		phndl->dividelasttwovalues();
+		phndl->dividelasttwovalues ();
 		break;
 	case "%"_h:
-		phndl->modulolasttwovalues();
+		phndl->modulolasttwovalues ();
 		break;
 	case "+"_h:
-		phndl->addlasttwovalues(false);
+		phndl->addlasttwovalues (false);
 		break;
 	case "-"_h:
-		phndl->addlasttwovalues(true);
+		phndl->addlasttwovalues (true);
 		break;
 	case "<<"_h:
-		phndl->shifttwovalues(false);
+		phndl->shifttwovalues (false);
 		break;
 	case ">>"_h:
-		phndl->shifttwovalues(true);
+		phndl->shifttwovalues (true);
 		break;
 	case ">"_h:
-		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_SGT);
+		phndl->relatetwovalues (llvm::CmpInst::Predicate::ICMP_SGT);
 		break;
 	case "<"_h:
-		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_SLT);
+		phndl->relatetwovalues (llvm::CmpInst::Predicate::ICMP_SLT);
 		break;
 	case "<="_h:
-		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_SLE);
+		phndl->relatetwovalues (llvm::CmpInst::Predicate::ICMP_SLE);
 		break;
 	case ">="_h:
-		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_SGE);
+		phndl->relatetwovalues (llvm::CmpInst::Predicate::ICMP_SGE);
 		break;
 	case "=="_h:
-		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_EQ);
+		phndl->relatetwovalues (llvm::CmpInst::Predicate::ICMP_EQ);
 		break;
 	case "!="_h:
-		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_NE);
+		phndl->relatetwovalues (llvm::CmpInst::Predicate::ICMP_NE);
 		break;
 	case "&"_h:
-		phndl->bitwisetwovalues(llvm::Instruction::And);
+		phndl->bitwisetwovalues (llvm::Instruction::And);
 		break;
 	case "^"_h:
-		phndl->bitwisetwovalues(llvm::Instruction::Xor);
+		phndl->bitwisetwovalues (llvm::Instruction::Xor);
 		break;
 	case "|"_h:
-		phndl->bitwisetwovalues(llvm::Instruction::Or);
+		phndl->bitwisetwovalues (llvm::Instruction::Or);
 		break;
 	case "&&"_h:
-		phndl->logictwovalues(true);
+		phndl->logictwovalues_seq (true);
 		break;
 	case "||"_h:
-		phndl->logictwovalues(false);
+		phndl->logictwovalues_seq (false);
 		break;
 	case "="_h:
-		phndl->assigntwovalues();
+		phndl->assigntwovalues ();
 		break;
 	}
+
+	//opbbs.pop_back ();
 
 	phndl = phpriorhndl;
 }
 
-void printtype(llvm::Type* ptype) { // debug purpose only
-	printtype(ptype, "");
+void printtype (llvm::Type *ptype) { // debug purpose only
+	printtype (ptype, "");
 }
 
 // llvm::BinaryOperator::CreateMul(*immidiates.begin(), *immidiates.end());

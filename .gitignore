@@ -353,6 +353,8 @@ cparser
 
 cparser2
 
+cparser*
+
 a.out
 
 ./build/

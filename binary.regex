@@ -1,29 +1,29 @@
 
-(?<orlogicplusrest>(?<orlogicop>(?<orlogicopraw>\|\|)(?&orlogiorsomething)(?!(?&andlogicplusrestfacet))
-    (?C29))|(?&andlogicplusrest)(?&orlogicop)?)
+(?<orlogicplusrest>(?<orlogicop>(?<orlogicopraw>\|\|)(?C84)(?&orlogiorsomething)(?!(?&andlogicplusrestfacet))
+    (?C29))|(?&andlogicplusrest)(?&orlogicop)?+)
 
-(?<andlogicplusrest>(?<andlogicop>(?<andlogicopraw>&&)(?&orlogiorsomething)(?!(?&orplusrestfacet))
-    (?C28))|(?&orplusrest)(?&andlogicop)?)
+(?<andlogicplusrest>(?<andlogicop>(?<andlogicopraw>&&)(?C84)(?&orlogiorsomething)(?!(?&orplusrestfacet))
+    (?C28))|(?C86)(?&orplusrest)(?&andlogicop)?+)
 
-(?<orplusrest>(?<orop>(?!\|\|)(?<oropraw>\|)(?&orlogiorsomething)(?!(?&xorplusrestfacet))
-    (?C27))|(?&xorplusrest)(?&orop)?)
+(?<orplusrest>(?<orop>(?!\|\|)(?<oropraw>\|)(?C82)(?&ororsomething)(?!(?&xorplusrestfacet))
+    (?C27))|(?&xorplusrest)(?&orop)?+)
 
-(?<xorplusrest>(?<xorop>(?<xoropraw>\^)(?&orlogiorsomething)(?!(?&andplusrestfacet))
-    (?C26))|(?&andplusrest)(?&xorop)?)
+(?<xorplusrest>(?<xorop>(?<xoropraw>\^)(?C82)(?&ororsomething)(?!(?&andplusrestfacet))
+    (?C26))|(?&andplusrest)(?&xorop)?+)
 
-(?<andplusrest>(?<andop>(?!&&)(?<andopraw>&)(?&orlogiorsomething)(?!(?&eqplusrestfacet))
-    (?C25))|(?&eqplusrest)(?&andop)?)
+(?<andplusrest>(?<andop>(?!&&)(?<andopraw>&)(?C82)(?&ororsomething)(?!(?&eqplusrestfacet))
+    (?C25))|(?&eqplusrest)(?&andop)?+)
 
-(?<eqplusrest>(?<eqop>(?<eqopraw>==|!=)(?&orlogiorsomething)(?!(?&relplusrestfacet))
-    (?C24))|(?&relplusrest)(?&eqop)?)
+(?<eqplusrest>(?<eqop>(?<eqopraw>==|!=)(?C82)(?&ororsomething)(?!(?&relplusrestfacet))
+    (?C24))|(?&relplusrest)(?&eqop)?+)
 
-(?<relplusrest>(?<relop>(?<relopraw>(?!<<)<|(?!>>)>|<=|>=)(?&orlogiorsomething)(?!(?&shiftplusrestfacet))
-    (?C23))|(?&shiftplusrest)(?&relop)?)
+(?<relplusrest>(?<relop>(?<relopraw>(?!<<)<|(?!>>)>|<=|>=)(?C82)(?&ororsomething)(?!(?&shiftplusrestfacet))
+    (?C23))|(?&shiftplusrest)(?&relop)?+)
 
-(?<shiftplusrest>(?<shiftop>(?<shiftopraw><<|>>)(?&orlogiorsomething)(?!(?&addmulplusrestfacet))
-    (?C22))|(?&addmulplusrest)(?&shiftop)?)
+(?<shiftplusrest>(?<shiftop>(?<shiftopraw><<|>>)(?C82)(?&ororsomething)(?!(?&addmulplusrestfacet))
+    (?C22))|(?&addmulplusrest)(?&shiftop)?+)
 
-(?<addmulplusrest>(?<addop>(?<addopraw>[\+\-])((?&orlogiorsomething)(?!(?&mulopfacet))
-    (?C20)))|(?&mulop)(?&addop)?)
+(?<addmulplusrest>(?<addop>(?<addopraw>[\+\-])(?C82)((?&ororsomething)(?!(?&mulopfacet))
+    (?C20)))|(?&mulop)(?&addop)?+)
 
-(?<mulop>(?<mulopraw>[\*\/\%])(?&orlogiorsomething)(?C21))
+(?<mulop>(?<mulopraw>[\*\/\%])(?C82)(?&ororsomething)(?C21))

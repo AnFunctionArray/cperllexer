@@ -81,6 +81,8 @@ extern void debug()
 static size_t wholepart[2] = { -1, -1 }, fractionpart[2] = { -1, -1 },
 exponent[2] = { -1, -1 }, exponent_sign[2] = { -1, -1 };
 
+static char prefix[260];
+
 int callout_test(pcre2_callout_block* a, void* b)
 {
 	struct calloutinfo* ptable = b;
@@ -152,6 +154,15 @@ int callout_test(pcre2_callout_block* a, void* b)
 		printf("\n");
 		n = 0;
 		break;*/
+	case 86:
+		message = "end binary before\n";
+		endbinarybeforerevlogicops();
+		break;
+	case 85:
+		beginbinary();
+		message = "begin binary\n";
+		strcat(prefix, "\t");
+		break;
 	case 80:
 		addbreak();
 		break;
@@ -210,10 +221,12 @@ int callout_test(pcre2_callout_block* a, void* b)
 			a->subject + a->offset_vector[2 * n]), a->offset_vector[2 * n] = a->offset_vector[2 * n + 1] = -1;
 		break;
 	case 44:
+		strcat(prefix, "\t");
 		addtypedefsscope();
 		beginscope();
 		break;
 	case 45:
+		prefix[strlen(prefix) - 1] = '\0';
 		removetypedefsscope();
 		endscope();
 		break;
@@ -271,12 +284,12 @@ int callout_test(pcre2_callout_block* a, void* b)
 
 		break;
 	case 63:
-		printf("goto\n");
+		puts("goto\n");
 		n = getnameloc(namedcapture = "identifierminegoto", *ptable);
 		gotolabel(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 62:
-		printf("label\n");
+		puts("label\n");
 		n = getnameloc(namedcapture = "identifierminelabel", *ptable);
 		splitbb(GROUP_PTR_AND_SZ(n + 1));
 		break;
@@ -297,7 +310,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 		ntoprint[1] = getnameloc(namedcapture = "structorunion", *ptable) + 1;
 		setcurrstructorunion(GROUP_PTR_AND_SZ(ntoprint[1]), GROUP_PTR_AND_SZ(n + 1));
 		szntoprint++;
-		printf("begin struct\n");
+		puts("begin struct\n");
 		break;
 	case 57:
 		message = "end sizeof typename\n";
@@ -563,6 +576,19 @@ rest:
 			n = 0;
 		else --n;
 		break;
+	//case 82:
+		//beginop(false);
+		//break;
+	case 83:
+		message = "end binary\n";
+		endbinary();
+		prefix[strlen(prefix) - 1] = '\0';
+		break;
+	case 84:
+		//beginop(true);
+		beginlogicalop(false);
+		message = "begin branch\n";
+		break;
 #else
 	case 12:
 		n = getnameloc(namedcapture = "abstrsubs", *ptable); //cond = 0; break;
@@ -622,7 +648,7 @@ return 0;
 //else return 0;
 
 if (message)
-printf(message, 0);
+printf("%s%s", prefix, message);
 if (!message || PATTERN_FLAGS & PCRE2_AUTO_CALLOUT)
 for (n = 0; n < a->capture_top; ++n)
 {
@@ -643,7 +669,8 @@ print:
 #else
 	{
 		printf(
-			" %d - %.*s\n",
+			"%s %d - %.*s\n",
+			prefix,
 			n,
 			(unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]),
 			a->subject + a->offset_vector[2 * n]);
@@ -652,7 +679,8 @@ print:
 #endif
 
 	printf(
-		"%s %d - %.*s\n",
+		"%s %s %d - %.*s\n",
+		prefix,
 		getnameloc(-n, *ptable),
 		n,
 		(unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]),

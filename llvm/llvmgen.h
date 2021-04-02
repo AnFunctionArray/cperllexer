@@ -1,7 +1,8 @@
-#pragma once
+#pragma onc
 #ifdef __cplusplus
 #include <cstdint>
 #include <cstddef>
+#include "llvm/IR/Instructions.h"
 extern "C" {
 #else
 
@@ -44,8 +45,16 @@ extern "C" {
     LLVM_FUNCS_MODIFIERS void endbuildingstructorunion() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void memberaccess(const char*arrowordot, size_t szstr, const char*ident, size_t szstr1) LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void applycast() LLVM_FUNCS_DEF
+#ifndef __cplusplus
     LLVM_FUNCS_MODIFIERS void *splitbb(const char *identifier, size_t szident) LLVM_FUNCS_DEF
-    LLVM_FUNCS_MODIFIERS void startforloopcond() LLVM_FUNCS_DEF
+#else
+    LLVM_FUNCS_MODIFIERS llvm::BranchInst *splitbb (const char *identifier, size_t szident) LLVM_FUNCS_DEF
+#endif
+    //LLVM_FUNCS_MODIFIERS void beginop(bool islogical) LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void beginbinary() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void beginlogicalop(int blastorfirst) LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void endbinarybeforerevlogicops() LLVM_FUNCS_DEF
+    LLVM_FUNCS_MODIFIERS void endbinary() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void endforloopcond() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void addforloopiter() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void endforloop() LLVM_FUNCS_DEF
