@@ -1,4 +1,4 @@
-#pragma onc
+#pragma once
 #ifdef __cplusplus
 #include <cstdint>
 #include <cstddef>

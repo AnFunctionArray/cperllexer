@@ -24,6 +24,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Type.h>
 #include <llvm/Support/Error.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
 #include <locale>
 #include <range/v3/algorithm/contains.hpp>
 #include <range/v3/algorithm/find.hpp>
@@ -311,10 +312,14 @@ static std::list<val> immidiates{1};
 
 bool bIsBasicInteger (const type &type);
 
-//using ifstatiter = std::list<std::pair<std::array<llvm::BranchInst *, 2>, llvm::BasicBlock *>>::iterator;
+using ifstatiter = std::list<std::pair<std::array<llvm::BranchInst *, 2>, llvm::BasicBlock *>>::iterator;
 
 struct opscopeinfo {
 	std::list<val>::iterator immidiatesbegin;
+	var currlogicopvar;
+
+	ifstatiter lastifs;
+	std::list<std::array<llvm::Value *, 2>> logicopswitches;
 };
 
 static std::list<opscopeinfo> opsscopeinfo;
@@ -810,11 +815,11 @@ struct basehndl {
 		ifstatements.pop_back ();
 	}*/
   private:
-	virtual llvm::Value *logictwovalues (bool bisand) {
+	virtual std::array<llvm::Value *, 2> logictwovalues (int bisand) {
 
 		std::array ops = getops (false);
 
-		llvm::Value *instr;
+		std::array<llvm::Value *, 2> instr;
 
 		ops[0].value = llvmbuilder.CreateICmp (
 			llvm::CmpInst::Predicate::ICMP_NE, ops[0].value, getValZero (ops[0]));
@@ -822,9 +827,14 @@ struct basehndl {
 		ops[1].value = llvmbuilder.CreateICmp (
 			llvm::CmpInst::Predicate::ICMP_NE, ops[1].value, getValZero (ops[1]));
 
-		instr = ops[0].value = !bisand
-								   ? llvmbuilder.CreateOr (ops[0].value, ops[1].value)
-								   : llvmbuilder.CreateAnd (ops[0].value, ops[1].value);
+		if (bisand != 2)
+
+			instr[0] = ops[0].value = !bisand
+										  ? llvmbuilder.CreateOr (ops[0].value, ops[1].value)
+										  : llvmbuilder.CreateAnd (ops[0].value, ops[1].value);
+		else
+			instr[0] = ops[0].value = llvmbuilder.CreateOr (ops[0].value, ops[1].value),
+			instr[1] = ops[0].value = llvmbuilder.CreateAnd (ops[0].value, ops[1].value);
 
 		ops[0].value = llvm::CastInst::Create (
 			llvm::Instruction::CastOps::ZExt, ops[0].value,
@@ -844,24 +854,31 @@ struct basehndl {
 
 		/*auto plastopbb = opbbs.back ().first.back ();
 
-		opbbs.back ().first.pop_back ();
+		opbbs.back ().first.pop_back ();*/
+
+		auto lastlogicswitchinstr = opsscopeinfo.back ().logicopswitches.back ();
+
+		opsscopeinfo.back ().logicopswitches.pop_back ();
 
 		extern std::list<std::pair<std::array<llvm::BranchInst *, 2>, llvm::BasicBlock *>> ifstatements;
 
 		auto lastif = ifstatements.back ();
 
-		lastif.first[0]->setSuccessor (1, plastopbb.first);
+		//lastif.first[0]->setSuccessor (1, plastopbb.first);
 
 		lastif.second->eraseFromParent ();
 		ifstatements.pop_back ();
 
-		if (!bisand)
+		if (bisand)
 			lastif.first[0]->swapSuccessors ();
-		//dyn_cast<llvm::Instruction>(plastopbb.second[0])->eraseFromParent(),
 		else
-			dyn_cast<llvm::StoreInst> (plastopbb.second[2])->setOperand (0, plastopbb.second[1]);
+			llvm::ReplaceInstWithInst (dyn_cast<llvm::Instruction> (lastlogicswitchinstr[1]), dyn_cast<llvm::Instruction> (lastlogicswitchinstr[0])),
+				dyn_cast<llvm::Instruction> (lastlogicswitchinstr[0])->eraseFromParent ();
+		//dyn_cast<llvm::Instruction>(plastopbb.second[0])->eraseFromParent(),
+		//else
+		//dyn_cast<llvm::StoreInst> (plastopbb.second[2])->setOperand (0, plastopbb.second[1]);
 
-		immidiates.erase (--immidiates.end ());
+		//immidiates.erase (--immidiates.end ());
 
 		/*extern std::list<std::pair<std::array<llvm::BranchInst *, 2>, llvm::BasicBlock *>> ifstatements;
 		auto &lastif = ifstatements.back ();
@@ -1128,10 +1145,10 @@ struct handlefpexpr : basehndl {
 		immidiates.push_back (ops[0]);
 	}
 
-	virtual llvm::Value *logictwovalues (bool bisand) override {
+	virtual std::array<llvm::Value *, 2> logictwovalues (int bisand) override {
 		std::array ops = getops (false);
 
-		llvm::Value *instr;
+		std::array<llvm::Value *, 2> instr;
 
 		ops[0].value = llvmbuilder.CreateFCmp (
 			llvm::CmpInst::Predicate::FCMP_ONE, ops[0].value,
@@ -1141,9 +1158,14 @@ struct handlefpexpr : basehndl {
 			llvm::CmpInst::Predicate::FCMP_ONE, ops[1].value,
 			llvm::ConstantFP::get (llvmctx, llvm::APFloat{getfloatsembytype (ops[1])}));
 
-		instr = ops[0].value = !bisand
-								   ? llvmbuilder.CreateOr (ops[0].value, ops[1].value)
-								   : llvmbuilder.CreateAnd (ops[0].value, ops[1].value);
+		if (bisand != 2)
+
+			instr[0] = ops[0].value = !bisand
+										  ? llvmbuilder.CreateOr (ops[0].value, ops[1].value)
+										  : llvmbuilder.CreateAnd (ops[0].value, ops[1].value);
+		else
+			instr[0] = ops[0].value = llvmbuilder.CreateOr (ops[0].value, ops[1].value),
+			instr[1] = ops[0].value = llvmbuilder.CreateAnd (ops[0].value, ops[1].value);
 
 		ops[0].value = CreateCastInst (ops[0].value, llvm::Type::getInt32Ty (llvmctx), false);
 
@@ -1271,7 +1293,7 @@ struct handlecnstexpr : basehndl {
 		immidiates.push_back (ops[0]);
 	}
 
-	virtual llvm::Value *logictwovalues (bool bisand) override {
+	virtual std::array<llvm::Value *, 2> logictwovalues (int bisand) override {
 		std::array ops = getops (false);
 
 		llvm::Value *instr;
@@ -1298,7 +1320,7 @@ struct handlecnstexpr : basehndl {
 
 		immidiates.push_back (ops[0]);
 
-		return instr;
+		return {};
 	}
 
 	virtual llvm::Constant *CreateCastInst (llvm::Value *C, llvm::Type *Ty, bool bissigned) override {
@@ -1761,7 +1783,7 @@ extern "C" void endsizeoftypename () {
 	pushsizeoftype (currtype);
 }
 
-std::list<std::pair<std::array<llvm::BranchInst *, 2>, llvm::BasicBlock *>> ifstatements;
+std::list<std::pair<std::array<llvm::BranchInst *, 2>, llvm::BasicBlock *>> ifstatements{1};
 
 extern "C" llvm::BranchInst *splitbb (const char *identifier, size_t szident);
 
@@ -1808,6 +1830,69 @@ extern "C" void endifstatement () {
 }
 
 extern "C" void beginlogicalop (int blastorfirst) {
+
+	/*if (!opsscopeinfo.back ().logicopswitches.empty ()) {
+
+		val imm = opsscopeinfo.back ().currlogicopvar;
+
+		imm.value = llvmbuilder.CreateLoad (imm.value);
+
+		imm.lvalues.push_back (imm);
+
+		imm.originident = "[[logicop]]";
+
+		immidiates.push_back (imm);
+
+
+
+	} else {*/
+
+	val imm = opsscopeinfo.back ().currlogicopvar;
+
+	/*val imm = opsscopeinfo.back ().currlogicopvar;
+
+	imm.lvalues.push_back (imm);
+
+	imm.originident = "[[logicop]]";
+
+	immidiates.push_back (imm);*/
+
+	if (opsscopeinfo.back ().lastifs != --ifstatements.end ()) {
+
+		imm.value = llvmbuilder.CreateLoad (imm.value);
+
+		imm.lvalues.clear ();
+
+		//immidiates.pop_back ();
+
+		immidiates.push_back (imm);
+
+		opsscopeinfo.back ().logicopswitches.push_back (phndl->logictwovalues (2));
+	}
+
+	std::rotate (----immidiates.end (), --immidiates.end (), immidiates.end ());
+
+	phndl->assigntwovalues ();
+
+	//immidiates.erase (++opsscopeinfo.back().immidiatesbegin, immidiates.end ());
+
+	//}
+	if (blastorfirst != 2) {
+		if (opsscopeinfo.back ().lastifs != --ifstatements.end ())
+			continueifstatement ();
+
+		startifstatement ();
+	} else {
+		continueifstatement ();
+
+		imm.value = llvmbuilder.CreateLoad (imm.value);
+
+		imm.lvalues.clear ();
+
+		immidiates.push_back (imm);
+	}
+
+	//opsscopeinfo.back ().logicopswitches
 
 	/*std::array<llvm::Value *, 3> instrs;
 
@@ -1856,9 +1941,15 @@ extern "C" void beginlogicalop (int blastorfirst) {
 
 extern "C" void beginbinary () {
 
-	opsscopeinfo.push_back({--immidiates.end()});
+	opsscopeinfo.push_back ({--immidiates.end (), {{type::BASIC}}, --ifstatements.end ()});
 
 	//std::pair<var, decltype (immidiates)::iterator> currlogicelem;
+
+	opsscopeinfo.back ().currlogicopvar.type.back ().spec.basicdeclspec.basic[1] = "int";
+
+	opsscopeinfo.back ().currlogicopvar.pllvmtype = createllvmtype (opsscopeinfo.back ().currlogicopvar.type);
+
+	addvar (opsscopeinfo.back ().currlogicopvar);
 
 	/*var result{{type::BASIC}};
 
@@ -1884,21 +1975,24 @@ extern "C" void beginbinary () {
 }
 
 extern "C" void endbinarybeforerevlogicops () {
+	if (opsscopeinfo.back ().lastifs != --ifstatements.end ())
+		beginlogicalop (2);
 	/*if (!opbbs.back ().first.empty ())
 		insertinttoimm ("1", sizeof "1", "", 0, 3),
 		beginlogicalop (1);*/
 }
 
 extern "C" void endbinary () {
-	auto opscopinf = opsscopeinfo.back();
 
-	opsscopeinfo.pop_back();
+	auto opscopinf = opsscopeinfo.back ();
 
-	auto lastimm = immidiates.back();
+	opsscopeinfo.pop_back ();
 
-	immidiates.erase(++opscopinf.immidiatesbegin, immidiates.end());
+	auto lastimm = immidiates.back ();
 
-	immidiates.push_back(lastimm);
+	immidiates.erase (++opscopinf.immidiatesbegin, immidiates.end ());
+
+	immidiates.push_back (lastimm);
 
 	//if (immidiates.back ().originident == "[[logicop]]")
 	//immidiates.back ().value = llvmbuilder.CreateLoad (immidiates.back ().value);
