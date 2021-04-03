@@ -1,29 +1,32 @@
+(?<binoprest, binoprestfacet, binopraw>)
+(?<binopplusrest>(?<binop>((?&binopraw))(?&castexpr)(?>(?&binoprest))*(?C29))|(?>(?&binoprest)))
 
-(?<orlogicplusrest>(?<orlogicop>(?<orlogicopraw>\|\|)(?C84)(?&orlogiorsomething)(?!(?&andlogicplusrestfacet))
-    (?C29))|(?&andlogicplusrest)(?&orlogicop)?+)
+(?&binopplusrest<andlogicplusrest, andlogicplusrestfacet, orlogicopraw>=orlogicplusrest)
 
-(?<andlogicplusrest>(?<andlogicop>(?<andlogicopraw>&&)(?C84)(?&orlogiorsomething)(?!(?&orplusrestfacet))
-    (?C28))|(?C86)(?&orplusrest)(?&andlogicop)?+)
+(?&binopplusrest<orplusrest, orplusrestfacet, andlogicopraw>=andlogicplusrest)
 
-(?<orplusrest>(?<orop>(?!\|\|)(?<oropraw>\|)(?C82)(?&ororsomething)(?!(?&xorplusrestfacet))
-    (?C27))|(?&xorplusrest)(?&orop)?+)
+(?&binopplusrest<xorplusrest, xorplusrestfacet, oropraw>=orplusrest)
 
-(?<xorplusrest>(?<xorop>(?<xoropraw>\^)(?C82)(?&ororsomething)(?!(?&andplusrestfacet))
-    (?C26))|(?&andplusrest)(?&xorop)?+)
+(?&binopplusrest<andplusrest, andplusrestfacet, xoropraw>=xorplusrest)
 
-(?<andplusrest>(?<andop>(?!&&)(?<andopraw>&)(?C82)(?&ororsomething)(?!(?&eqplusrestfacet))
-    (?C25))|(?&eqplusrest)(?&andop)?+)
+(?&binopplusrest<eqplusrest, eqplusrestfacet, andopraw>=andplusrest)
 
-(?<eqplusrest>(?<eqop>(?<eqopraw>==|!=)(?C82)(?&ororsomething)(?!(?&relplusrestfacet))
-    (?C24))|(?&relplusrest)(?&eqop)?+)
+(?&binopplusrest<relplusrest, relplusrestfacet, eqopraw>=eqplusrest)
 
-(?<relplusrest>(?<relop>(?<relopraw>(?!<<)<|(?!>>)>|<=|>=)(?C82)(?&ororsomething)(?!(?&shiftplusrestfacet))
-    (?C23))|(?&shiftplusrest)(?&relop)?+)
+(?&binopplusrest<shiftplusrest, shiftplusrestfacet, relopraw>=relplusrest)
 
-(?<shiftplusrest>(?<shiftop>(?<shiftopraw><<|>>)(?C82)(?&ororsomething)(?!(?&addmulplusrestfacet))
-    (?C22))|(?&addmulplusrest)(?&shiftop)?+)
+(?&binopplusrest<addmulplusrest, addmulplusrestfacet, shiftopraw>=shiftplusrest)
 
-(?<addmulplusrest>(?<addop>(?<addopraw>[\+\-])(?C82)((?&ororsomething)(?!(?&mulopfacet))
-    (?C20)))|(?&mulop)(?&addop)?+)
+(?&binopplusrest<mulop, mulopfacet, addopraw>=addmulplusrest)
 
-(?<mulop>(?<mulopraw>[\*\/\%])(?C82)(?&ororsomething)(?C21))
+(?<mulop>(?<mulopraw>[\*\/\%])(?C82)(?&castexpr)(?C21))
+
+(?<orlogicopraw>\|\|)
+(?<andlogicopraw>&&) 
+(?<oropraw>\|) 
+(?<xoropraw>\^) 
+(?<andopraw>&) 
+(?<eqopraw>==|!=)
+(?<relopraw>(?!<<)<|(?!>>)>|<=|>=) 
+(?<shiftopraw><<|>>) 
+(?<addopraw>[\+\-])

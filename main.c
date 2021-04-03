@@ -15,42 +15,75 @@
 
 #include "main.h"
 
-FILE *foutput;
+FILE* foutput;
 
-int callout_test(pcre2_callout_block *a, void *b);
+int callout_test(pcre2_callout_block* a, void* b);
 
-char *getnameloc2(long long int ntocompare, struct calloutinfo nametable, pcre2_callout_block* pcurrblock, int displ)
+char* getnameloc3(long long int ntocompare, struct calloutinfo nametable, pcre2_callout_block* pcurrblock, int displ, struct namelocopts opts)
 {
 	PCRE2_SPTR tabptr = nametable.name_table;
 
-	char *str = (char *)ntocompare;
+	char* str = (char*)ntocompare;
 
-	int namecount = nametable.namecount, n, lastvalidn;
+	int namecount = nametable.namecount, n, lastvalidn = -1, lastndist = INT_MAX;
 
-	for (; namecount--; tabptr += nametable.name_entry_size)
+	if (opts.rev)
+		tabptr += (namecount - 1) * nametable.name_entry_size;
+
+	for (; namecount--; !opts.rev ? tabptr += nametable.name_entry_size : (tabptr -= nametable.name_entry_size))
 	{
 		n = (tabptr[0] << 8) | tabptr[1];
 
-		if (ntocompare > 0 && !strcmp(tabptr + 2, str) && (!pcurrblock || (lastvalidn = n, pcurrblock->offset_vector[2 *(n + displ)] != -1)))
-			return n;
+		if (ntocompare > 0 && !strcmp(tabptr + 2, str))
+		{
+			if (!pcurrblock)
+				return n;
+
+			if (opts.dontsearchforclosest)
+			{
+				int isok = pcurrblock->offset_vector[2 * (n + displ)] != -1;
+
+				if (opts.last)
+					if (isok)
+						lastvalidn = n;
+					else;
+				else
+					lastvalidn = n;
+				// && (!pcurrblock || (lastvalidn = n, pcurrblock->offset_vector[2 * (n + displ)] != -1))
+				if (!opts.last && isok)
+					return n;
+			}
+			else {
+				int dist = (int)pcurrblock->capture_last - n;
+				if (dist >= 0 && dist < lastndist)
+					lastndist = dist,
+					lastvalidn = n;
+			}
+		}
 		else if (n == -ntocompare)
 			return tabptr + 2;
 	}
 
+
 	if (!(ntocompare > 0)) return "";
 	else return lastvalidn;
+}
+
+char* getnameloc2(long long int ntocompare, struct calloutinfo nametable, pcre2_callout_block* pcurrblock, int displ)
+{
+	return getnameloc3(ntocompare, nametable, pcurrblock, displ, (struct namelocopts) { 0 });
 }
 
 char* getnameloc(long long int ntocompare, struct calloutinfo nametable) {
 	return getnameloc2(ntocompare, nametable, 0, -1);
 }
 
-int compile_pattern_and_execute(const char *pattern, const char *subject, int (*callback)(pcre2_callout_enumerate_block *, void *), size_t szpattern, size_t szsubject, int msgs, size_t *plen, int flags)
+int compile_pattern_and_execute(const char* pattern, const char* subject, int (*callback)(pcre2_callout_enumerate_block*, void*), size_t szpattern, size_t szsubject, int msgs, size_t* plen, int flags)
 {
 	int error, ncaptures, namecount, name_entry_size, n, rc;
-	PCRE2_SIZE erroroffset, *povector;
+	PCRE2_SIZE erroroffset, * povector;
 
-	char *pstr;
+	char* pstr;
 
 	uint32_t ovectorcount;
 
@@ -60,13 +93,13 @@ int compile_pattern_and_execute(const char *pattern, const char *subject, int (*
 
 	PCRE2_SPTR name_table, tabptr;
 
-	pcre2_match_data *pmatch_data = pcre2_match_data_create(0xFFFF, 0);
+	pcre2_match_data* pmatch_data = pcre2_match_data_create(0xFFFF, 0);
 
-	pcre2_match_context *match_context = pcre2_match_context_create(0);
+	pcre2_match_context* match_context = pcre2_match_context_create(0);
 
-	pcre2_code *pcode;
+	pcre2_code* pcode;
 
-	PCRE2_UCHAR *pnewsubstr = pattern; //malloc(szpattern);
+	PCRE2_UCHAR* pnewsubstr = pattern; //malloc(szpattern);
 
 	PCRE2_SIZE newsubstrlen = szpattern;
 
@@ -97,7 +130,7 @@ int compile_pattern_and_execute(const char *pattern, const char *subject, int (*
 
 	if (error != 100)
 		pcre2_get_error_message(error, errormsg, 0xFF),
-			printf("pattern error %d at %s : %.*s\n", error, errormsg, (unsigned int)(newsubstrlen - erroroffset), pnewsubstr + erroroffset);
+		printf("pattern error %d at %s : %.*s\n", error, errormsg, (unsigned int)(newsubstrlen - erroroffset), pnewsubstr + erroroffset);
 
 	pcre2_pattern_info(pcode, PCRE2_INFO_NAMETABLE, &nametable.name_table);
 
@@ -126,7 +159,7 @@ int compile_pattern_and_execute(const char *pattern, const char *subject, int (*
 	povector = pcre2_get_ovector_pointer(pmatch_data);
 
 	printf("full match is: %d - %d, %.*s\n", povector[0], povector[1], (unsigned int)(povector[1] - povector[0]),
-		   subject + povector[0]);
+		subject + povector[0]);
 
 	if (plen)
 		*plen = povector[1] - povector[0];
@@ -137,11 +170,11 @@ int compile_pattern_and_execute(const char *pattern, const char *subject, int (*
 
 	return rc;
 }
-char *openfile(char *chname, size_t *szfileout)
+char* openfile(char* chname, size_t* szfileout)
 {
-	FILE *fregex = fopen(chname, "rt");
+	FILE* fregex = fopen(chname, "rt");
 	size_t szfile;
-	char *filecontent;
+	char* filecontent;
 
 	fseek(fregex, 0, SEEK_END);
 	fgetpos(fregex, &szfile);
@@ -183,20 +216,20 @@ secondmain(char* subject, size_t szsubject, char* pattern, size_t szpattern, cha
 XS__startmatching();
 
 static void
-	xs_init(pTHX)
+xs_init(pTHX)
 {
 	newXS("startmatching", XS__startmatching, __FILE__);
 }
 
-static PerlInterpreter *my_perl; /***    The Perl interpreter    ***/
+static PerlInterpreter* my_perl; /***    The Perl interpreter    ***/
 
-int main(int argc, const char **argv, char **env)
+int main(int argc, const char** argv, char** env)
 {
 	PERL_SYS_INIT3(&argc, &argv, &env);
 	my_perl = perl_alloc();
 	perl_construct(my_perl);
 	PL_exit_flags |= PERL_EXIT_DESTRUCT_END;
-	perl_parse(my_perl, xs_init, argc, argv, (char **)NULL);
+	perl_parse(my_perl, xs_init, argc, argv, (char**)NULL);
 	perl_run(my_perl);
 	perl_destruct(my_perl);
 	perl_free(my_perl);
@@ -213,7 +246,7 @@ main()
 
 	char* pfilepattern = openfile(TEST_REGEX_FILE, &szfilepattern), * pfilesubject = openfile(TEST_FILE, &szsubject);
 #ifndef TEST
-	char *res = glueregexfile(TEST_REGEX_FILE);
+	char* res = glueregexfile(TEST_REGEX_FILE);
 
 	int stat = compile_pattern_and_execute(res, pfilesubject, callout_test, strlen(res), szsubject, 1, 0, PATTERN_FLAGS);
 #else

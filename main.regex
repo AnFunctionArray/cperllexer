@@ -19,11 +19,11 @@
 		(?&assignorsomething)(?!(?&orplusrestfacet))(?C30)|(?&ternaryorsomething))
 
 	(?<ternaryorsomething>(?=(?&ternornothingfacet))(?<ternornothing>(?&orlogiorsomething)(?&ternaryrest))(?&ternaryorsomething)(?!(?&orplusrestfacet))(?C34)
-		|(?=(?&orlogiorsomethingfacet))(?C85)(?&orlogiorsomething)(?C83))
+		|(?=(?&orlogiorsomethingfacet))(?&orlogiorsomething))
 
 	(?<ternaryrest>\?(?C33)(?&primexpr):(?C32))
 
-	(?<orlogiorsomething>(?&ororsomething)(?>(?&orlogicplusrest))?)
+	(?<orlogiorsomething>(?&castexpr)(?>(?&orlogicplusrest))*)
 
 	(?<ororsomething>(?&castexpr)(?>(?&orplusrest))?)
 

@@ -99,7 +99,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 
 	int ntoprint[0xFF] = {
 		-1,
-	};
+	}, ntoclearauto[0xFF] = { 0 };
 
 	static bool stop_printing_declarations;
 
@@ -116,7 +116,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 	//printf("callout id %d\n", a->callout_number);
 	static int istypedefdecl, isinsidedecl, islocal;
 	static size_t typedefname[2] = { -1, -1 };
-	int res;
+	int res = 0;
 #define GROUP_PTR_AND_SZ(n) a->subject + a->offset_vector[2 * (n)], (unsigned int)(a->offset_vector[2 * (n) + 1] - a->offset_vector[2 * (n)])
 #define GROUP_SZ_AND_PTR(n) (unsigned int)(a->offset_vector[2 * (n) + 1] - a->offset_vector[2 * (n)]), a->subject + a->offset_vector[2 * (n)]
 #define CHECKED_PTR_AND_SZ_START_END(start, end) (start) != -1 ? a->subject + start : "", \
@@ -130,6 +130,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 		printf("%.*s\n", a->subject_length - a->current_position, a->subject + a->current_position);
 
 		if (a->callout_number == 255) return 0;
+		else printf("#region capture %d\n", a->callout_number);
 	}
 	switch (a->callout_number)
 	{
@@ -335,11 +336,11 @@ int callout_test(pcre2_callout_block* a, void* b)
 		n = getnameloc(namedcapture = "identifierminetypedef", *ptable) + 1;
 		if (a->offset_vector[2 * n] != -1)
 		{
-			if (res = istypedefinvecotr(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n])))
-				return res;
-			typedefname[0] = a->offset_vector[2 * n];
-			typedefname[1] = a->offset_vector[2 * n + 1];
-			return res;
+			if (!(res = istypedefinvecotr(a->subject + a->offset_vector[2 * n], (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]))))
+			{
+				typedefname[0] = a->offset_vector[2 * n];
+				typedefname[1] = a->offset_vector[2 * n + 1];
+			}
 		}
 		n = 0;
 		break;
@@ -365,8 +366,13 @@ int callout_test(pcre2_callout_block* a, void* b)
 		binary(GROUP_PTR_AND_SZ(n + 1));
 		break;
 	case 29:
-		BINARY_OP("orlogicop");
-		binary(GROUP_PTR_AND_SZ(n + 1));
+		//BINARY_OP("orlogicop");
+		//BINARY_OP("binop");
+		n = getnameloc3(namedcapture = "binop", *ptable, a, 1, (struct namelocopts) { .last = 0, .rev = 1 });
+		if (n != -1 && a->offset_vector[2 *(n + 1)] != -1)
+			binary(GROUP_PTR_AND_SZ(n + 1)),
+			ntoclearauto[0] = n + 1;
+		else n = 0;
 		break;
 	case 28:
 		BINARY_OP("andlogicop");
@@ -660,7 +666,7 @@ print:
 	//if (cond)
 	if (szntoprint == y)
 		if (!(PATTERN_FLAGS & PCRE2_AUTO_CALLOUT) && cond)
-			continue;
+			goto continueloop;
 		else
 			;
 	else
@@ -674,7 +680,7 @@ print:
 			n,
 			(unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]),
 			a->subject + a->offset_vector[2 * n]);
-		continue;
+		goto continueloop;
 	}
 #endif
 
@@ -687,7 +693,11 @@ print:
 		a->subject + a->offset_vector[2 * n]);
 
 	//if(n && n == ntoclear)
-	//	a->offset_vector[2 * n] = a->offset_vector[2 * n + 1] = -1;
+		//a->offset_vector[2 * n] = a->offset_vector[2 * n + 1] = -1;
+continueloop:
+	for (int* ntoclear = ntoclearauto; *ntoclear; ++ntoclear)
+		if (*ntoclear == n)
+			a->offset_vector[2 * n] = a->offset_vector[2 * n + 1] = -1;
 #ifdef DEBUG
 	debug_insert_match(n, (unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n]), a->subject + a->offset_vector[2 * n], namedcapture);
 #endif
@@ -709,7 +719,10 @@ system("cls");
 if (a->callout_number == 254)
 exit(-1);
 
-return 0;
+if (PATTERN_FLAGS & PCRE2_AUTO_CALLOUT)
+	printf("#endregion\n", 0);
+
+return res;
 	}
 
 	void setypedefspec(size_t* typedefname, const char* subject)

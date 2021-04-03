@@ -42,6 +42,14 @@ char* getnameloc(long long int ntocompare, struct calloutinfo nametable);
 
 char* getnameloc2(long long int ntocompare, struct calloutinfo nametable, pcre2_callout_block* pcurrblock, int displ);
 
+struct namelocopts {
+	unsigned rev : 1;
+	unsigned last : 1;
+	unsigned dontsearchforclosest : 1;
+};
+
+char* getnameloc3(long long int ntocompare, struct calloutinfo nametable, pcre2_callout_block* pcurrblock, int displ, struct namelocopts);
+
 int compile_pattern_and_execute(const char* pattern, const char* subject, int (*callback)(pcre2_callout_enumerate_block*, void*), size_t szpattern, size_t szsubject, int msgs, size_t* plen, int flags);
 
 char* openfile(char* chname, size_t* szfileout);

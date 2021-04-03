@@ -13,7 +13,7 @@
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
-output.txt
+*.txt
 
 # Build results
 [Dd]ebug/
