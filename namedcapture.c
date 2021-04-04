@@ -101,6 +101,8 @@ int callout_test(pcre2_callout_block* a, void* b)
 		-1,
 	}, ntoclearauto[0xFF] = { 0 };
 
+	int szscopeleveltoadd = 0;
+
 	static bool stop_printing_declarations;
 
 #ifdef DEBUG
@@ -155,6 +157,14 @@ int callout_test(pcre2_callout_block* a, void* b)
 		printf("\n");
 		n = 0;
 		break;*/
+	case 88:
+		message = "end nested expr\n";
+		prefix[strlen(prefix) - 1] = '\0';
+		break;
+	case 87:
+		message = "begin nested expr\n";
+		szscopeleveltoadd++;
+		break;
 	case 86:
 		message = "end binary before\n";
 		endbinarybeforerevlogicops();
@@ -162,7 +172,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 	case 85:
 		beginbinary();
 		message = "begin binary\n";
-		strcat(prefix, "\t");
+		szscopeleveltoadd++;
 		break;
 	case 80:
 		addbreak();
@@ -222,7 +232,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 			a->subject + a->offset_vector[2 * n]), a->offset_vector[2 * n] = a->offset_vector[2 * n + 1] = -1;
 		break;
 	case 44:
-		strcat(prefix, "\t");
+		szscopeleveltoadd++;
 		addtypedefsscope();
 		beginscope();
 		break;
@@ -369,7 +379,7 @@ int callout_test(pcre2_callout_block* a, void* b)
 		//BINARY_OP("orlogicop");
 		//BINARY_OP("binop");
 		n = getnameloc3(namedcapture = "binop", *ptable, a, 1, (struct namelocopts) { .last = 0, .rev = 1 });
-		if (n != -1 && a->offset_vector[2 *(n + 1)] != -1)
+		if (n != -1 && a->offset_vector[2 * (n + 1)] != -1)
 			binary(GROUP_PTR_AND_SZ(n + 1)),
 			ntoclearauto[0] = n + 1;
 		else n = 0;
@@ -447,10 +457,10 @@ int callout_test(pcre2_callout_block* a, void* b)
 				if (a->offset_vector[2 * (ntoclear = getnameloc("wholenodot", *ptable))] == -1)
 					goto rest;
 
-		switch (wholepart[0]) case -1: switch (wholepart[1]) case -1:
-			wholepart[0] = a->offset_vector[2 * ntoclear],
-				wholepart[1] = a->offset_vector[2 * ntoclear + 1];
-rest:
+	switch (wholepart[0]) case -1: switch (wholepart[1]) case -1:
+		wholepart[0] = a->offset_vector[2 * ntoclear],
+			wholepart[1] = a->offset_vector[2 * ntoclear + 1];
+	rest:
 		ntoclear = getnameloc("fraction", *ptable);
 
 	switch (fractionpart[0]) case -1: switch (fractionpart[1]) case -1:
@@ -582,9 +592,9 @@ rest:
 			n = 0;
 		else --n;
 		break;
-	//case 82:
-		//beginop(false);
-		//break;
+		//case 82:
+			//beginop(false);
+			//break;
 	case 83:
 		message = "end binary\n";
 		endbinary();
@@ -720,24 +730,27 @@ if (a->callout_number == 254)
 exit(-1);
 
 if (PATTERN_FLAGS & PCRE2_AUTO_CALLOUT)
-	printf("#endregion\n", 0);
+printf("#endregion\n", 0);
+
+while (szscopeleveltoadd--)
+	strcat(prefix, "\t");
 
 return res;
-	}
+}
 
-	void setypedefspec(size_t* typedefname, const char* subject)
-	{
-		if (typedefname[0] != -1) settypedefname(subject + typedefname[0], typedefname[1] - typedefname[0]);
-	}
+void setypedefspec(size_t* typedefname, const char* subject)
+{
+	if (typedefname[0] != -1) settypedefname(subject + typedefname[0], typedefname[1] - typedefname[0]);
+}
 
-	void printqualifntype(size_t* typedefname, const char* subject)
-	{
-		bool flushqualifortype(), isanythingprinted = flushqualifortype();
+void printqualifntype(size_t* typedefname, const char* subject)
+{
+	bool flushqualifortype(), isanythingprinted = flushqualifortype();
 
-		if (typedefname[0] != -1)
-			printf("and typedef name: %.*s", typedefname[1] - typedefname[0], subject + typedefname[0]);
+	if (typedefname[0] != -1)
+		printf("and typedef name: %.*s", typedefname[1] - typedefname[0], subject + typedefname[0]);
 
-		if (isanythingprinted) printf("\n", 0);
+	if (isanythingprinted) printf("\n", 0);
 
-		typedefname[0] = typedefname[1] = -1;
-	}
+	typedefname[0] = typedefname[1] = -1;
+}

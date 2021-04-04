@@ -21,8 +21,8 @@
 
 (?<mulop>(?<mulopraw>[\*\/\%])(?C82)(?&castexpr)(?C21))
 
-(?<orlogicopraw>\|\|)
-(?<andlogicopraw>&&) 
+(?<orlogicopraw>\|\|(?C84))
+(?<andlogicopraw>&&(?C84)) 
 (?<oropraw>\|) 
 (?<xoropraw>\^) 
 (?<andopraw>&) 
