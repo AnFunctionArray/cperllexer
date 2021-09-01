@@ -14,6 +14,7 @@
 #include <range/v3/view.hpp>
 #include <range/v3/algorithm/find_if.hpp>
 #include <range/v3/algorithm/contains.hpp>
+#include <thread>
 #define USE_STANDARD_FILE_FUNCTIONS
 #include <hexrays.hpp>
 #include <Windows.h>
@@ -28,6 +29,16 @@
 
  // Hex-Rays API pointer
 hexdsp_t* hexdsp = nullptr;
+
+extern "C" EXCEPTION_DISPOSITION
+__GSHandlerCheck_EH4(
+	IN PEXCEPTION_RECORD ExceptionRecord,
+	IN PVOID EstablisherFrame,
+	IN OUT PCONTEXT ContextRecord,
+	IN OUT PDISPATCHER_CONTEXT DispatcherContext
+) {
+	return ExceptionContinueSearch;
+}
 
 //--------------------------------------------------------------------------
 struct plugin_ctx_t : public plugmod_t
@@ -111,7 +122,7 @@ bool idaapi plugin_ctx_t::run(size_t) {
 
 	2[pargv] = ctarget.c_str();
 
-	main(argc, pargv, nullptr);
+	std::thread{ main, argc, pargv, nullptr };
 
 	return true;
 
@@ -289,9 +300,9 @@ realend:
 //--------------------------------------------------------------------------
 static plugmod_t* idaapi init()
 {
-	FreeConsole();
-	AllocConsole();
-	freopen("CONOUT$", "w", stdout);
+	//FreeConsole();
+	//AllocConsole();
+	//freopen("CONOUT$", "w", stdout);
 	if (!init_hexrays_plugin())
 		return nullptr; // no decompiler
 	const char* hxver = get_hexrays_version();

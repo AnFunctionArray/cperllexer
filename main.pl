@@ -135,6 +135,8 @@ sub substitutetemplateinstances {
 
     my $name = $+{name};
 
+    my $doubleref = $+{doubleref};
+
     $regexcontent =~ m {\(\?<(?<params>.*?)>\)\s*+(?=\(\?<$template\b)(?<inpar>(?<!\\)\((
                     ([^][()]|(?<=\\).)++|(?&inpar)|(?<insquare>(?<!\\)\[\^?+(.|\\.)(
                     ([^]]|(?<=\\).)++|(?&insquare))*(?<!\\)\]))*(?<!\\)\))}gxx;
@@ -148,9 +150,11 @@ sub substitutetemplateinstances {
     while(1) {
         my $arg = getnext($args);
 
-        $arg =~ m{(?<ident>[_a-zA-Z][_a-zA-Z0-9]*+)(?<qualifs>\S*+)};
+        $arg =~ m{((?<ident>[_a-zA-Z][_a-zA-Z0-9]*+)|(?<callout>\d++))(?<qualifs>\S*+)};
 
         my $argident = $+{ident};
+
+        my $argcallout = $+{callout};
 
         my $argqualifs = $+{qualifs};
 
@@ -158,15 +162,22 @@ sub substitutetemplateinstances {
 
         last if(!$arg || !$param);
 
-        $body =~ s{\(\?&$param\)}{"(?&" . $argident . ")" . $argqualifs}eg;
-        
+        my $prefix;
+
+        $prefix = "(?&" if($argident);
+        if($argcallout) {
+            $prefix = "(?" . $argqualifs . "C" ; # so we can have facet persistant callouts
+            $argident = $argcallout;
+        }
+
+        $body =~ s{\(\?&$param\)}{$prefix . $argident . ")" . $argqualifs}eg if($argident);
     }
 
     if($name) {
         $body =~ s{(?<=\(\?<)$template\b}{$name}e;
-    } else {
+    } elsif(not $doubleref) {
         $body =~ s{\(\?<$template\b.*?>}{(};
-    } 
+    }
 
     return $body;
 
@@ -200,7 +211,7 @@ sub parseregexfile {
 
     @arrayoftemplates = ();
 
-    $regexfilecontent =~s {\(\?&(?<template>((?![)])\S)+)<(?<args>.*?)>(=(?<name>((?![)])\S)+))?\)}{substitutetemplateinstances($regexfilecontent)}gxxe;
+    $regexfilecontent =~s {\(\?&(?<doubleref>&)?+(?<template>((?![)])\S)+)<(?<args>.*?)>(=(?<name>((?![)])\S)+))?\)}{substitutetemplateinstances($regexfilecontent)}gxxe;
 
     foreach my $template (@arrayoftemplates) {
         $regexfilecontent =~s {\Q$template\E}{}g ;

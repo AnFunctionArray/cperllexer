@@ -6,7 +6,7 @@
 extern "C" {
 #else
 
-#define JUST_PARSE
+//#define JUST_PARSE
 
 #include <stdint.h>
 #include <stddef.h>
@@ -83,7 +83,7 @@ extern "C" {
     LLVM_FUNCS_MODIFIERS void startfunctioncall() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void endfunctioncall() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void endexpression() LLVM_FUNCS_DEF
-    LLVM_FUNCS_MODIFIERS void obtainvalbyidentifier(const char*identifier, size_t szstr) LLVM_FUNCS_DEF
+    //LLVM_FUNCS_MODIFIERS bool obtainvalbyidentifier(const char*identifier, size_t szstr) LLVM_FUNCS_DEF
 #ifdef __cplusplus
 }
 #endif

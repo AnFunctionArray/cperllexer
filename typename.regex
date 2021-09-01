@@ -1,13 +1,13 @@
-(?<typename>\s*+[(](?<allqualifs>(?<typesandqualifiers>\s*+(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|\b__int64\b)|
+(?<typename>\s*+[(](?<allqualifs>(?<typesandqualifiers>\s*+(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|\b__int64\b|\b_Bool\b)|
 						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
-						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b))(?C49)\s*+)
-						|(?&typedefname)|(?&structorunion)|\s*+(?>(?<typedefkeyword>\btypedef\b))\s*+)++((?&callingconv))?+(?C55)
+						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b|\btypedef\b))(?C49)\s*+)
+						|(?&structorunion)|(?&typedefname))+?(?C55)
 						(?&abstdecloptoutter)?+[)](?C46)\s*+)
 
 (?<Tabstrrest, Tabstrrestalt, Tinside>)(?<abstdecl>(?<abstrptrrev#restrictoutsidefacet>(?<abstrptr>\s*+[*]\s*+((?&qualifiers))*+)
 						(?!(?&abstrptrrev)(?C11))
 						(?<abstrrest>(?&Tinside)(?<abstrsubs>\s*+(\[(?C40)(?&primexpr)\](?C41)
-						|[(](?C47)((?&typenameinsideparams)(?C42))?+(,(?&typenameinsideparams)(?C42))*(?<rest>,\s*+\.\.\.\s*+)?+[)](?C48))\s*+)*+(?C11))|
+						|[(](?C47)(\s*+\bvoid\b\s*+|((?&typenameinsideparams)(?C42))?+(,(?&typenameinsideparams)(?C42))*(?<rest>,\s*+\.\.\.\s*+)?+)[)](?C48))\s*+)*+(?C11))|
 						(?&abstrptr))(?&abstrptr)*+(?&Tabstrrest)|(?&Tabstrrestalt))
 
 
@@ -39,13 +39,16 @@
 
 (?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
 
-(?<typenameinside>(\s*+(?>(?<typedefkeywordmine>\btypedef\b))\s*+|(?&allqualifs))++((?&callingconv))?+(?C55)(?&abstdecloptoutter))
+(?<Tabstdecl, Tasbtdecloutterfacet, Tasbtdecloutter>)
+(?<abstdeclorallqualifs>(?&Tabstdecl)(?&callingconv)?+(?=(?&Tasbtdecloutterfacet))(?C55)(?&Tasbtdecloutter))
 
-(?<typenameinsideopt>(\s*+(?>(?<typedefkeywordmine>\btypedef\b))\s*+|(?&allqualifs))*+((?&callingconv))?+(?C55)(?&abstdecloutter))
+(?&abstdeclorallqualifs<allqualifs++, abstdecloptoutterfacet, abstdecloptoutter>=typenameinside)
 
-(?<typenameinsidedecl>(\s*+(?>(?<typedefkeyword>\btypedef\b))\s*+|(?&allqualifs))++((?&callingconv))?+(?C55)(?&abstdecloutter))
+(?&abstdeclorallqualifs<allqualifs*+, abstdecloutterfacet, abstdecloutter>=typenameinsideopt)
 
-(?<typenameinsideparams>(\s*+(?>(?<typedefkeyword>\btypedef\b))\s*+|(?&allqualifs))++((?&callingconv))?+(?C55)(?&abstdecloutterparams))
+(?&abstdeclorallqualifs<allqualifs++, abstdecloutterfacet, abstdecloutter>=typenameinsidedecl)
+
+(?&abstdeclorallqualifs<allqualifs++,abstdecloutterparamsfacet, abstdecloutterparams>=typenameinsideparams)
 
 (?<typedefname>(?&identifierminetypedef))
 
@@ -53,7 +56,7 @@
 (?<identifierminetypedef#restrictpcre2only>\s*+(?!(?&keywordlist))((?&identifierraw#nofacet))(??C38)\s*+)
 (?<identifierminetypedef#restrictperlonly>\s*+(??C38)\s*+)
 
-(?<keywordlist>(?&typesandqualifiersmask)|\b(struct|enum|__[_a-zA-Z0-9]*+|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)\b)
+(?<keywordlist>(?&typesandqualifiersmask)|\b(struct|enum|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)\b)
 
 (?<typenamerev>(?<#restrictoutsidefacet>(?&typenamefacet)(?!(?&castexpr)))|(?&typename)(?&castexprfacet))
 
@@ -63,8 +66,12 @@
 (?<initializer>(?&assignorsomething)|\s*+[{]((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*+[}]\s*+)
 (?<abstrinitialization>=(?&initializer))
 
+(?<calloutid>)
+(?<identifiermine>\s*+(?!(?&keywordlist))((?&identifierraw))(?&calloutid)\s*+)
+
 (?<structorunion>\s*+(struct|union)((?&identifierminestruct)?+\s*+[{](?C59)\s*+((?&typenameinsidedecl)(?&abstrbitfield)?+(?C42)(,(?C43)(?&abstdecloutter)(?&abstrbitfield)?+(?C42))*+\s*+;\s*+)*+[}](?C60)\s*+|(?&identifierminestruct))|(?&enum))
-(?<enum>\s*+enum((?&identifier)?+\s*+[{](?<enumerator>(?&identifier)(=(?&assignorsomething))?+)?+(,(?&enumerator))*+,?+\s*+[}]\s*+|(?&identifier)))
+(?<enum>\s*+enum(((?&&identifiermine<90>)|(?C94))\s*+[{](?<enumerator>(?&&identifiermine<89>)((=(?C40)(?&assignorsomething)(?C92))|(?C93)))?+(,(?&enumerator))*+,?+\s*+[}]\s*+
+				|(?&&identifiermine<91>)))
 
 (?<identifierminestruct>\s*+(?!(?&keywordlist))((?&identifierraw))(?C58)\s*+)
 

@@ -15,7 +15,7 @@
 
 #include "main.h"
 
-FILE* foutput;
+FILE* foutput, *foutput2;
 
 int callout_test(pcre2_callout_block* a, void* b);
 
@@ -24,6 +24,9 @@ char* getnameloc3(long long int ntocompare, struct calloutinfo nametable, pcre2_
 	PCRE2_SPTR tabptr = nametable.name_table;
 
 	char* str = (char*)ntocompare;
+
+	if (ntocompare > 0)
+		printf2("%s: ", str);
 
 	int namecount = nametable.namecount, n, lastvalidn = -1, lastndist = INT_MAX;
 
@@ -37,7 +40,7 @@ char* getnameloc3(long long int ntocompare, struct calloutinfo nametable, pcre2_
 		if (ntocompare > 0 && !strcmp(tabptr + 2, str))
 		{
 			if (!pcurrblock)
-				return n;
+				return printf2("\n"), n;
 
 			if (opts.dontsearchforclosest)
 			{
@@ -50,8 +53,9 @@ char* getnameloc3(long long int ntocompare, struct calloutinfo nametable, pcre2_
 				else
 					lastvalidn = n;
 				// && (!pcurrblock || (lastvalidn = n, pcurrblock->offset_vector[2 * (n + displ)] != -1))
+				pcre2_callout_block* a = pcurrblock;
 				if (!opts.last && isok)
-					return n;
+					return printf2("%.*s \n", GROUP_SZ_AND_PTR(n + displ)), n;
 			}
 			else {
 				int dist = (int)pcurrblock->capture_last - n;
@@ -64,18 +68,18 @@ char* getnameloc3(long long int ntocompare, struct calloutinfo nametable, pcre2_
 			return tabptr + 2;
 	}
 
-
+	pcre2_callout_block* a = pcurrblock;
 	if (!(ntocompare > 0)) return "";
-	else return lastvalidn;
+	else return printf2("%.*s \n", GROUP_SZ_AND_PTR(lastvalidn + displ)), lastvalidn;
 }
 
 char* getnameloc2(long long int ntocompare, struct calloutinfo nametable, pcre2_callout_block* pcurrblock, int displ)
 {
-	return getnameloc3(ntocompare, nametable, pcurrblock, displ, (struct namelocopts) { 0 });
+	return getnameloc3(ntocompare, nametable, pcurrblock, displ, (struct namelocopts) { .dontsearchforclosest = 1 });
 }
 
 char* getnameloc(long long int ntocompare, struct calloutinfo nametable) {
-	return getnameloc2(ntocompare, nametable, 0, -1);
+	return getnameloc2(ntocompare, nametable, 0, 0);
 }
 
 int compile_pattern_and_execute(const char* pattern, const char* subject, int (*callback)(pcre2_callout_enumerate_block*, void*), size_t szpattern, size_t szsubject, int msgs, size_t* plen, int flags)
@@ -109,7 +113,7 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 
 	//"\"(((\\\\((x)|(b)|(0))(\\d+)|([0-9a-fA-F]+)|(\\\")|(n)|(t))*(?C2))|((.*)(?C3)))*\"(?C1)"
 
-	if (msgs)
+	if (msgs, 0)
 		printf("%.*s\n", szsubject, subject);
 	//pcode = pcre2_compile("\\s|\\n", PCRE2_ZERO_TERMINATED, 0, &error, &erroroffset, 0);
 
@@ -127,6 +131,8 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 	//free(pattern);
 
 	pcode = pcre2_compile(pnewsubstr, newsubstrlen, flags, &error, &erroroffset, 0);
+
+	int resjit = pcre2_jit_compile(pcode, PCRE2_JIT_COMPLETE);
 
 	if (error != 100)
 		pcre2_get_error_message(error, errormsg, 0xFF),
@@ -203,10 +209,12 @@ char* openfile(char* chname, size_t* szfileout)
 secondmain(char* subject, size_t szsubject, char* pattern, size_t szpattern, char* modulename, size_t szmodulename)
 {
 	foutput = fopen("output.txt", "wt");
+	foutput2 = fopen("output2.txt", "wt");
 	startmodule(modulename, szmodulename);
 	int stat = compile_pattern_and_execute(pattern, subject, callout_test, szpattern, szsubject, 1, 0, PATTERN_FLAGS);
 	endmodule();
 	fflush(foutput);
+	fflush(foutput2);
 }
 
 #include <EXTERN.h> /* from the Perl distribution     */
