@@ -528,16 +528,33 @@ struct val : valandtype {
 	std::string originident = "[[immidiate]]";
 };
 
+llvm::Type* createllvmtype(std::vector<type> decltypevector);
+
+void addvar(var& lastvar, llvm::Constant* pInitializer = nullptr);
+
 struct var {
 	std::vector<::type> type;
 	//bool bistypedef;
 	std::string identifier;
-	llvm::Type* pllvmtype;
+	llvm::Type* pllvmtype{};
+	
+	llvm::Type* requestType() {
+		if (pllvmtype == nullptr)
+			pllvmtype = createllvmtype(type);
+		return pllvmtype;
+	}
 	union {
 		llvm::Value* pValue{};
 		llvm::Constant* constant;
 	};
+	llvm::Value* requestValue() {
+		if (pValue == nullptr)
+			addvar(*this);
+		return pValue;
+	}
 	std::string linkage;
+
+	size_t firstintroduced;
 
 	operator val () { return { pValue, type, {}, identifier }; }
 };
@@ -1321,7 +1338,7 @@ public:
 
 		auto valval = llvm::ConstantInt::get(createllvmtype(currtype), val, !isunsigned);
 
-		immidiates.push_back({ valval, currtype });
+		immidiates.push_back({ valval, currtype});
 	}
 };
 
@@ -1698,7 +1715,7 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 
 	immidiate.type = var->type;
 
-	pglobal = immidiate.value = var->pValue;
+	pglobal = immidiate.value = var->requestValue();
 
 	immidiate.originident = var->identifier;
 
@@ -1749,7 +1766,7 @@ extern "C" void constructstring() {
 	currstring = "";
 }
 
-void addvar(var& lastvar, llvm::Constant* pInitializer = nullptr) {
+void addvar(var& lastvar, llvm::Constant* pInitializer) {
 
 	const char* lastvartypestoragespec =
 		lastvar.type.back().spec.basicdeclspec.basic[2].c_str();
@@ -1758,7 +1775,7 @@ void addvar(var& lastvar, llvm::Constant* pInitializer = nullptr) {
 		for (lastvar.pValue = nullptr /*(llvm::Value *)lastvar.pllvmtype*/;;)
 			return;
 
-	switch (scopevar.size()) {
+	switch (lastvar.firstintroduced) {
 	case 1:
 		llvm::GlobalValue::LinkageTypes linkagetype;
 
@@ -1777,24 +1794,24 @@ void addvar(var& lastvar, llvm::Constant* pInitializer = nullptr) {
 		case type::BASIC:
 			if (scopevar.size() == 1)
 				lastvar.pValue = new llvm::GlobalVariable(
-					nonconstructable.mainmodule, lastvar.pllvmtype, false,
+					nonconstructable.mainmodule, lastvar.requestType(), false,
 					linkagetype,
-					pInitializer ? pInitializer : llvm::Constant::getNullValue(lastvar.pllvmtype),
+					pInitializer ? pInitializer : llvm::Constant::getNullValue(lastvar.requestType()),
 					lastvar.identifier);
 			// scopevar.front ().push_back (lastvar);
 			break;
 		case type::FUNCTION:
-			printtype(lastvar.pllvmtype, lastvar.identifier);
+			printtype(lastvar.requestType(), lastvar.identifier);
 			lastvar.pValue = llvm::Function::Create(
-				llvm::dyn_cast<llvm::FunctionType> (lastvar.pllvmtype),
+				llvm::dyn_cast<llvm::FunctionType> (lastvar.requestType()),
 				linkagetype, lastvar.identifier, nonconstructable.mainmodule);
 			// scopevar.front ().push_back (lastvar);
 			break;
 		}
 		break;
 	default:
-		printtype(lastvar.pllvmtype, lastvar.identifier);
-		lastvar.pValue = llvmbuilder.CreateAlloca(lastvar.pllvmtype, nullptr,
+		printtype(lastvar.requestType(), lastvar.identifier);
+		lastvar.pValue = llvmbuilder.CreateAlloca(lastvar.requestType(), nullptr,
 			lastvar.identifier);
 		break;
 	}
@@ -1821,18 +1838,18 @@ extern "C" void endbuildingstructorunion() {
 	auto& lastmembers = structorunionmembers.back().back();
 	auto& structvar = lastmembers.front();
 
-	for (auto& a : lastmembers | ranges::views::drop(1))
-		a.pllvmtype = createllvmtype(a.type);
+	//for (auto& a : lastmembers | ranges::views::drop(1))
+		//a.pllvmtype = createllvmtype(a.type);
 
-	std::vector<llvm::Type*> structtypes;
+	/*std::vector<llvm::Type*> structtypes;
 
 	std::transform(++lastmembers.begin(), lastmembers.end(),
 		std::back_inserter(structtypes),
-		[](const var& elem) { return elem.pllvmtype; });
+		[](const var& elem) { return elem.pllvmtype; });*/
 
 	assert(structvar.type.back().spec.basicdeclspec.basic[0] == "struct");
 
-	dyn_cast<llvm::StructType> (structvar.pllvmtype)->setBody(structtypes);
+	//dyn_cast<llvm::StructType> (structvar.pllvmtype)->setBody(structtypes);
 
 	currtypevectorbeingbuild.pop_back();
 
@@ -1923,6 +1940,8 @@ val convertTo(val target, std::vector<::type> to) {
 				target.value, createllvmtype(to));
 		else
 			;
+	else if (to.front().uniontype == type::POINTER && bIsBasicInteger(target.type.front()))
+		target.value = llvmbuilder.CreateIntToPtr(target.value, createllvmtype(to));
 	else
 		target.value = llvmbuilder.CreateBitCast(target.value, createllvmtype(to));
 
@@ -1956,8 +1975,12 @@ void endpriordecl() {
 
 	std::rotate(currtype.begin(), currtype.begin() + 1, currtype.end());
 
+	currtypevectorbeingbuild.back().p->back().firstintroduced = scopevar.size();
+
 	if (currtypevectorbeingbuild.back().currdecltype !=
-		currdecltypeenum::PARAMS) 
+		currdecltypeenum::PARAMS 
+		&& currtypevectorbeingbuild.back().p->back().linkage.empty() 
+		&& scopevar.size() == 1)
 		currtypevectorbeingbuild.back()
 			.p->back()
 			.pllvmtype = createllvmtype(currtype),
@@ -2084,7 +2107,7 @@ extern "C" llvm::BranchInst * splitbb(const char* identifier, size_t szident);
 extern "C" void insertinttoimm(const char* str, size_t szstr, const char* suffix, size_t szstr1, int type);
 
 extern "C" void startifstatement() {
-	auto dummyblock = llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue));
+	auto dummyblock = llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->requestValue()));
 
 	if (!immidiates.size())
 		insertinttoimm("1", sizeof "1" - 1, "", 0, 3);
@@ -2329,10 +2352,10 @@ extern "C" void endsizeofexpr() {
 extern "C" void finalizedeclaration() { endpriordecl(); }
 
 const std::list<::var>* getstructorunion(std::string ident) {
-	const std::list<::var>* var = nullptr;
+	std::list<::var>* var = nullptr;
 
 	std::find_if(structorunionmembers.rbegin(), structorunionmembers.rend(),
-		[&](const std::list<std::list<::var>>& scope) {
+		[&](std::list<std::list<::var>>& scope) {
 			auto iter = std::find_if(
 				scope.rbegin(), scope.rend(),
 				[&](const std::list<::var>& scopevar) {
@@ -2343,6 +2366,22 @@ const std::list<::var>* getstructorunion(std::string ident) {
 				return var = &*iter, true;
 			return false;
 		});
+
+	if (var) if (!var->front().pllvmtype) {
+		for (auto& a : *var | ranges::views::drop(1))
+			a.pllvmtype = createllvmtype(a.type);
+
+		auto& structvar = var->front();
+
+		std::vector<llvm::Type*> structtypes;
+
+		std::transform(++var->begin(), var->end(),
+			std::back_inserter(structtypes),
+			[](const ::var& elem) { return elem.pllvmtype; });
+
+		dyn_cast<llvm::StructType> (structvar.pllvmtype)->setBody(structtypes);
+	}
+
 	return var;
 }
 
@@ -2350,7 +2389,7 @@ llvm::Type* createllvmtype(std::vector<type> decltypevector) {
 	llvm::Type* pcurrtype;
 
 	std::array lambdas = {
-		std::function{[&](const type& type) {
+		std::function{[&](type& type) {
 			switch (stringhash(type.spec.basicdeclspec.basic[1].c_str())) {
 			case "short"_h:
 				pcurrtype =
@@ -2373,6 +2412,7 @@ llvm::Type* createllvmtype(std::vector<type> decltypevector) {
 						dyn_cast<llvm::Type> (llvm::Type::getVoidTy(llvmctx));
 					break;
 					break;
+			addchar:
 			case "_Bool"_h:
 			case "char"_h:
 				pcurrtype =
@@ -2394,7 +2434,7 @@ llvm::Type* createllvmtype(std::vector<type> decltypevector) {
 					stringhash(type.spec.basicdeclspec.basic[0].c_str())) {
 				case "struct"_h: {
 					auto currstruct = getstructorunion(type.spec.basicdeclspec.basic[3]);
-					if (!currstruct) throw nullptr;
+					if (!currstruct) goto addchar;
 					pcurrtype =
 						currstruct
 						->front()
@@ -2414,17 +2454,17 @@ llvm::Type* createllvmtype(std::vector<type> decltypevector) {
 				}
 			}
 		}},
-		std::function{[&](const type& type) {
+		std::function{[&](type& type) {
 			pcurrtype = dyn_cast<llvm::Type> (pcurrtype->getPointerTo());
 		}},
-		std::function{[&](const type& type) {
+		std::function{[&](type& type) {
 			pcurrtype = dyn_cast<llvm::Type> (
 				llvm::ArrayType::get(pcurrtype, type.spec.arraysz));
 		}},
-		std::function{[&](const type& type) {
+		std::function{[&](type& type) {
 			std::vector<llvm::Type*> paramtype;
 			for (auto& a : type.spec.func.parametertypes_list.front())
-				paramtype.push_back(a.pllvmtype);
+				paramtype.push_back(a.requestType());
 			pcurrtype = dyn_cast<llvm::Type> (llvm::FunctionType::get(
 				pcurrtype, paramtype, type.spec.func.bisvariadic));
 		}} };
@@ -2432,7 +2472,7 @@ llvm::Type* createllvmtype(std::vector<type> decltypevector) {
 	std::reverse(decltypevector.begin(), decltypevector.end());
 
 	try {
-		for (const auto& type : decltypevector)
+		for (auto& type : decltypevector)
 			lambdas[type.uniontype](type);
 	}
 	catch(std::nullptr_t exc) {
@@ -2458,7 +2498,7 @@ extern "C" void beginscope() {
 		auto iter_params = currfunc->type.front()
 			.spec.func.parametertypes_list.front()
 			.begin();
-		for (auto& arg : dyn_cast<llvm::Function> (currfunc->pValue)->args())
+		for (auto& arg : dyn_cast<llvm::Function> (currfunc->requestValue())->args())
 			iter_params++->pValue = &arg;
 	}
 
@@ -2655,7 +2695,7 @@ extern "C" llvm::BranchInst * splitbb(const char* identifier, size_t szident) {
 	else
 		bareweabrupt = true;
 	pcurrblock.push_back(llvm::BasicBlock::Create(
-		llvmctx, std::string{ identifier, szident }, dyn_cast<llvm::Function> (currfunc->pValue)));
+		llvmctx, std::string{ identifier, szident }, dyn_cast<llvm::Function> (currfunc->requestValue())));
 	llvm::BranchInst* preturn;
 	if (!bareweabrupt)
 		preturn = llvmbuilder.CreateBr(pcurrblock.back());
@@ -2669,7 +2709,7 @@ extern "C" void gotolabel(const char* identifier, size_t szident) {
 
 void fixuplabels() {
 	for (auto& [branchinst, ident] : branches)
-		for (auto& bb : dyn_cast<llvm::Function> (currfunc->pValue)->getBasicBlockList())
+		for (auto& bb : dyn_cast<llvm::Function> (currfunc->requestValue())->getBasicBlockList())
 			if (bb.getName() == ident)
 				branchinst->setSuccessor(0, &bb);
 	branches.clear();
@@ -2678,7 +2718,7 @@ void fixuplabels() {
 extern "C" void startswitch() {
 	//pcurrblock.pop_back();
 	//pcurrblock.push_back(llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue)));
-	auto dummyblock = llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue));
+	auto dummyblock = llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->requestValue()));
 	currswitch.push_back({ llvmbuilder.CreateSwitch(phndl->immidiates.back().value, dummyblock), dummyblock });
 	breakbranches.push_back({});
 
@@ -2763,9 +2803,11 @@ extern "C" void endfunctioncall() {
 
 	std::vector<llvm::Value*> immidiates;
 
+	auto iterparams = calleevalntype.type.front().spec.func.parametertypes_list.front().begin();
+
 	std::transform(
 		++argsiter, hndlbase.immidiates.end(), std::back_inserter(immidiates),
-		[](const basehndl::val& elem) { return decay(elem).value; });
+		[&](const basehndl::val& elem) { return convertTo(decay(elem), iterparams++->type).value; });
 
 	hndlbase.immidiates.erase(--argsiter, hndlbase.immidiates.end());
 
@@ -2902,9 +2944,13 @@ extern "C" void insertfloattoimm(const char* postfix_arg, size_t szstr,
 
 extern "C" void subscript() { phndl->subscripttwovalues(); }
 
+static size_t hndlstack;
+
 extern "C" void beginconstantexpr() {
 	//cnstexpriterstart = phndl->immidiates.end();
 	szcnstexprinitial = phndl->immidiates.size();
+
+	++hndlstack;
 
 	phndl = &hndlcnstexpr;
 }
@@ -2919,7 +2965,8 @@ extern "C" void endconstantexpr() {
 	// std::cout << "computed value: " << *res->getValue().getRawData() <<
 	// std::endl;
 
-	phndl = &hndlbase;
+	if (!--hndlstack)
+		phndl = &hndlbase;
 }
 
 extern "C" void startmodule(const char* modulename, size_t szmodulename) {
