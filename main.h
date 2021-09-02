@@ -64,7 +64,7 @@ extern FILE* foutput, *foutput2;
 #define printf3(format, ...) (fprintf(foutput2, format, __VA_ARGS__))
 #define printf1p3(format, ...) (printf3(format, __VA_ARGS__), printf(format, __VA_ARGS__))
 #else
-#define printf(format, ...) (fprintf(foutput, format, ##__VA_ARGS__), printf(format, ##__VA_ARGS__))
+#define printf(format, ...) (fprintf(foutput, format, ##__VA_ARGS__))//, printf(format, ##__VA_ARGS__))
 #endif
 
 #define printf2(format, ...) ((printf)(format, __VA_ARGS__))

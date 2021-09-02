@@ -1,7 +1,7 @@
 (?<typename>\s*+[(](?<allqualifs>(?<typesandqualifiers>\s*+(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|\b__int64\b|\b_Bool\b)|
 						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
 						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b|\btypedef\b))(?C49)\s*+)
-						|(?&structorunion)|(?&typedefname))+?(?C55)
+						|(?&structorunion)|(?&typedefname)|__inline)+?(?C55)
 						(?&abstdecloptoutter)?+[)](?C46)\s*+)
 
 (?<Tabstrrest, Tabstrrestalt, Tinside>)(?<abstdecl>(?<abstrptrrev#restrictoutsidefacet>(?<abstrptr>\s*+[*]\s*+((?&qualifiers))*+)
@@ -33,7 +33,7 @@
 
 (?<abstrmostoutteropt>\s*+(?&abstrcommonoutter<abstdecloptoutter>)\s*+)
 
-(?<abstrmostoutter>\s*+((?&abstrcommonoutter<abstdecloutter>)|(?&identifierminedecl))\s*+)
+(?<abstrmostoutter>\s*+(?&callingconv)?+((?&abstrcommonoutter<abstdecloutter>)|(?&identifierminedecl))\s*+)
 
 (?<abstrmostoutterparams>\s*+((?&abstrcommonoutter<abstdecloutterparams>)|(?&identifierminedecl))\s*+)
 

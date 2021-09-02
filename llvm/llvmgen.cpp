@@ -70,6 +70,8 @@ struct enumdef {
 
 std::list<std::list<enumdef>>  enums{ 1 };
 
+extern std::list<std::pair<std::list<std::string>, bool>> qualifsandtypes;
+
 int getnameloc(const char* ntocompare, calloutinfo nametable) {
 	return (int)getnameloc((long long)ntocompare, nametable);
 }
@@ -92,8 +94,6 @@ struct bindings_payload {
 	struct calloutinfo* ptable;
 	pcre2_callout_block* a;
 };
-
-extern std::vector<std::string> qualifsandtypes;
 
 struct bindings_parsing : bindings_payload {
 	std::vector<std::vector<std::string>> typedefs{ 1 };
@@ -142,13 +142,12 @@ struct bindings_parsing : bindings_payload {
 			ret = ret && std::find(typedefscope.begin(), typedefscope.end(), ident) == typedefscope.end();
 		return ret;
 	}
-	bool bareweaddingatypedef = false;
 	virtual int identifier_decl_39() {
-		if (bareweaddingatypedef)
+		if (qualifsandtypes.back().second)
 		{
 			int n = getnameloc("identifierminedecl", *ptable) + 1;
 			typedefs.back().push_back({ (char*)GROUP_PTR_AND_SZ(n) });
-			bareweaddingatypedef = false;
+			qualifsandtypes.back().second = false;
 		}
 		return 0;
 	}
@@ -169,7 +168,7 @@ struct bindings_parsing : bindings_payload {
 	virtual int end_param_list_48() { return 0; }
 	virtual int add_type_or_qualifier_49() {
 		int n = getnameloc("typesandqualifiers", *ptable);
-		qualifsandtypes.push_back(std::string{ (char*)GROUP_PTR_AND_SZ(n + 1) });
+		qualifsandtypes.back().first.push_back(std::string{ (char*)GROUP_PTR_AND_SZ(n + 1) });
 
 		return 0;
 	}
@@ -179,14 +178,14 @@ struct bindings_parsing : bindings_payload {
 	virtual int finish_statement_53() { return 0; }
 	virtual int subscript_op_54() { return 0; }
 	virtual int decl_begin_55() {
-		bareweaddingatypedef = std::find(qualifsandtypes.begin(), qualifsandtypes.end(), "typedef") != qualifsandtypes.end();
+		qualifsandtypes.back().second = std::find(qualifsandtypes.back().first.begin(), qualifsandtypes.back().first.end(), "typedef") != qualifsandtypes.back().first.end();
 		return 0;
 	}
 	virtual int end_of_sizeof_56() { return 0; }
 	virtual int end_of_sizeof_tp_nm_57() { return 0; }
 	virtual int ident_struc_58() { return 0; }
-	virtual int struc_or_union_body_59() { return 0; }
-	virtual int struc_or_union_body_end_60() { return 0; }
+	virtual int struc_or_union_body_59() { qualifsandtypes.push_back({}); return 0; }
+	virtual int struc_or_union_body_end_60() { qualifsandtypes.pop_back();  return 0; }
 	virtual int perform_explicit_conversion_61() { return 0; }
 	virtual int create_label_62() { return 0; }
 	virtual int goto_stmt_63() { return 0; }
@@ -405,7 +404,7 @@ pointrtypequalifiers parsequalifiers(const std::string& qualifs) {
 	return ret;
 }
 
-bascitypespec parsebasictype(const std::vector<std::string>& qualifs) {
+bascitypespec parsebasictype(const std::list<std::string>& qualifs) {
 	bascitypespec ret;
 
 	for (const auto& a : qualifs)
@@ -1647,7 +1646,7 @@ enum class currdecltypeenum {
 
 std::string currdeclspectypedef;
 
-std::vector<std::string> qualifsandtypes;
+std::list<std::pair<std::list<std::string>, bool>> qualifsandtypes{ 1 };
 
 static std::list<std::list<var>> scopevar{ 1 };
 
@@ -1867,12 +1866,12 @@ void startdeclaration() {
 
 	type basic{ type::BASIC };
 
-	if (qualifsandtypes.empty() && currstruct.first.empty() && typedefname.empty())
+	if (qualifsandtypes.back().first.empty() && currstruct.first.empty() && typedefname.empty())
 		assert(!(scopevar.size() > 1) || !currenum.empty()),
 		basic.spec.basicdeclspec.basic[1] = "int";
 	else {
-		auto&& basictypefull = parsebasictype(::qualifsandtypes); //since ass will lose the storage spec
-		basic.spec.basicdeclspec = parsebasictype(::qualifsandtypes);
+		auto&& basictypefull = parsebasictype(::qualifsandtypes.back().first); //since ass will lose the storage spec
+		basic.spec.basicdeclspec = basictypefull;
 		var.linkage = basictypefull.basic[2];
 	}
 
@@ -1885,9 +1884,9 @@ void startdeclaration() {
 	}
 	//immidiates.pop_back();
 
-	currdeclspectypedef = "";
+	currenum = currdeclspectypedef = "";
 
-	qualifsandtypes.clear();
+	qualifsandtypes.back().first.clear();
 
 	if (basic.spec.basicdeclspec.basic[3].empty())
 		if (!(basic.spec.basicdeclspec.basic[3] = currstruct.second).empty())
@@ -1980,6 +1979,7 @@ void endpriordecl() {
 	if (currtypevectorbeingbuild.back().currdecltype !=
 		currdecltypeenum::PARAMS 
 		&& currtypevectorbeingbuild.back().p->back().linkage.empty() 
+		&& currtypevectorbeingbuild.back().p->back().type.front().uniontype != type::FUNCTION
 		&& scopevar.size() == 1)
 		currtypevectorbeingbuild.back()
 			.p->back()
@@ -2516,7 +2516,13 @@ extern "C" void beginscope() {
 		for (auto& param : currfunc->type.front().spec.func.parametertypes_list.front()) {
 			auto origparamvalue = param.pValue;
 
+			param.firstintroduced = 2;
+
+			printvaltype(param);
+
 			addvar(param);
+
+			printvaltype(param);
 
 			llvmbuilder.CreateStore(origparamvalue, param.pValue);
 		}
