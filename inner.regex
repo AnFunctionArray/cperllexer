@@ -1,7 +1,7 @@
 (?<inner>\s*+((("|(?<begincharliteral>'))
-						(?C4)((?<escape>(?<escaperaw>\\(?:(x)[0-9a-fA-F]++|(?:(b)[01]++|(?:(0)[0-7]++|(\d++|(?(<begincharliteral>)'|")|t|n))))))
+						(?C4)((?<escape>(?<escaperaw>\\(?:(x)[0-9a-fA-F]++|(?:(b)[01]++|(?:(0)[0-7]++|(\d++|(?&quote)|t|n))))))
 						(?C1)|
-						(?<text>(?<textraw>((?!(?&escape)|(?(<begincharliteral>)'|")).)++)(?C2)))*+(?(<begincharliteral>)'|")(?C51)
+						(?<text>(?<textraw>((?!(?&escape)|(?&quote)).)++)(?C2)))*+(?&quote)(?C51)
 						|(?!(?&floatingfacet))(?<numberliteral>(?<numberliteralraw>(?:(0x)(?<hex>[0-9a-fA-F]++)|(?:(0b)(?<bin>[01]++)
 						|(?:(0)(?<oct>[0-7]++)|(?<dec>\d++))))(?<lng>[Uu](ll|LL|[lL])?+|(ll|LL|[lL])[Uu]?+)?+)(?C5))
 						|(?&floating)
@@ -12,3 +12,5 @@
 (?<floating>((?&fractional)(?&exponent)?+|(?<wholenodot>\d++)(?&exponent))(?<flt>[flFL])?+(?C68)(?C69))
 (?<fractional>((?<wholeopt>\d*+)\.(?<fraction>\d++)|(?<whole>\d++)\.)(?C68))
 (?<exponent>[eE](?<sign>[+-])?+(\d++)(?C68))
+
+(?<quote>(?(<begincharliteral>)'|"))

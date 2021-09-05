@@ -1,8 +1,22 @@
-(?<typename>\s*+[(](?<allqualifs>(?<typesandqualifiers>\s*+(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|\b__int64\b|\b_Bool\b)|
+(?<typename>\s*+[(]((?<allqualifs>(?<typesandqualifiers>\s*+(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|\b__int64\b|\b_Bool\b)|
 						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
 						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b|\btypedef\b))(?C49)\s*+)
-						|(?&structorunion)|(?&typedefname)|__inline)+?(?C55)
+						|(?&structorunion)|(\s*+(\b__inline\b|\b__forceinline\b)\s*+))|(?&typedefcast))++(?C55)
 						(?&abstdecloptoutter)?+[)](?C46)\s*+)
+
+(?<typedefcast>(?&identifierminetypedef#nofacet)
+			((?!(?&allqualifsfacet)*+(?&identifierraw))
+			|(?=(?&allqualifsfacet)*+(?&abstdecloptoutterfacet))))
+
+(?<typedefdecl>(?&identifierminetypedef#nofacet)(?=(?&allqualifsfacet)*+(?&abstdecloutterfacet)))
+
+(?<allqualifsdecl>(?&allqualifs)|(?&typedefdecl))
+
+(?# The committee has decided against (if actually even possible) having the same name as a typedef for a parameter)
+
+(?<typedefparam>(?&identifierminetypedef#nofacet))
+
+(?<allqualifsparam>(?&allqualifs)|(?&typedefparam))
 
 (?<Tabstrrest, Tabstrrestalt, Tinside>)(?<abstdecl>(?<abstrptrrev#restrictoutsidefacet>(?<abstrptr>\s*+[*]\s*+((?&qualifiers))*+)
 						(?!(?&abstrptrrev)(?C11))
@@ -42,15 +56,11 @@
 (?<Tabstdecl, Tasbtdecloutterfacet, Tasbtdecloutter>)
 (?<abstdeclorallqualifs>(?&Tabstdecl)(?&callingconv)?+(?=(?&Tasbtdecloutterfacet))(?C55)(?&Tasbtdecloutter))
 
-(?&abstdeclorallqualifs<allqualifs++, abstdecloptoutterfacet, abstdecloptoutter>=typenameinside)
+(?&abstdeclorallqualifs<allqualifsdecl*+, abstdecloutterfacet, abstdecloutter>=typenameinsideopt)
 
-(?&abstdeclorallqualifs<allqualifs*+, abstdecloutterfacet, abstdecloutter>=typenameinsideopt)
+(?&abstdeclorallqualifs<allqualifsdecl++, abstdecloutterfacet, abstdecloutter>=typenameinsidedecl)
 
-(?&abstdeclorallqualifs<allqualifs++, abstdecloutterfacet, abstdecloutter>=typenameinsidedecl)
-
-(?&abstdeclorallqualifs<allqualifs++,abstdecloutterparamsfacet, abstdecloutterparams>=typenameinsideparams)
-
-(?<typedefname>(?&identifierminetypedef))
+(?&abstdeclorallqualifs<allqualifsparam++,abstdecloutterparamsfacet, abstdecloutterparams>=typenameinsideparams)
 
 (?<identifierminedecl>\s*+(?!(?&keywordlist))((?&identifierraw))(?C39)\s*+)
 (?<identifierminetypedef#restrictpcre2only>\s*+(?!(?&keywordlist))((?&identifierraw#nofacet))(??C38)\s*+)

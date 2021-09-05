@@ -199,6 +199,10 @@ sub parseregexfile {
         $regexfilecontent = $_[0];
     }
 
+    $regexfilecontent =~ s {(?=\(\?\#)(?<inpar>(?<!\\)\((([^][()]|(?<=\\).)++|(?&inpar)
+                        |(?<insquare>(?<!\\)\[\^?+(.|\\.)(([^]]|(?<=\\).)++
+                        |(?&insquare))*(?<!\\)\]))*(?<!\\)\))}{}gsxx;
+
     $regexfilecontent =~s/\(\?\?C(\d++)\)/(??{return defaultcallback($1)})/g if($matchinperl);
 
     $regexfilecontent =~s/#restrictperlonly//g if($matchinperl);
@@ -225,6 +229,8 @@ sub parseregexfile {
 
     $regexfile =~s/[(]\?&(\w+?)#nofacet[)]/(?&$1)/g;
 
+    $regexfile =~s/[(]\?[(]<(\w+?)#nofacet>[)]/(?(<$1>)/g;
+
     $regexfile =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
     $regexfile =~s/\(\?C(\d++)\)/(?{defaultcallback($1)})/g if($matchinperl);
@@ -243,7 +249,13 @@ sub parseregexfile {
 
     $regexfilecontent =~s/[(]\?&(\w+?)(facet)?[)]/(?&$1facet)/g;
 
+    $regexfilecontent =~s/[(]\?[(]<(\w+?)(facet)?>[)]/(?(<$1facet>)/g;
+
     $regexfilecontent =~s/[(]\?&(\w+?)#nofacet[)]/(?&$1)/g;
+
+    $regexfilecontent =~s/[(]\?[(]<(\w+?)#nofacet>[)]/(?(<$1>)/g;
+
+    $regexfilecontent =~s/[(]\?[(]<(\w+?)(facet)?>[)]/(?(<$1facet>)/g;
 
     $regexfilecontent =~s/(\(\?<\w+)>/$1facet>/g;
 

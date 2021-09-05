@@ -63,6 +63,8 @@ extern "C" {
 #include "../main.h"
 }
 
+static bool bischarlit = false;
+
 std::pair<std::string, std::string> currstruct;
 
 std::string currenum;
@@ -70,9 +72,10 @@ std::string currenum;
 typedef std::list<std::pair<std::array<llvm::BranchInst*, 2>, llvm::BasicBlock*>>::iterator arrtwovals;
 
 struct branch {
-	std::list<arrtwovals> first;//, second;
+	std::list<arrtwovals> first;
 	std::list<struct var>::iterator iterval;
 	std::list<arrtwovals>::iterator itersecond;
+	std::list<std::array<llvm::BranchInst*, 2>> second;
 };
 
 std::list<branch> nbranches;
@@ -104,13 +107,15 @@ extern "C" void startforloopcond();
 
 struct bindings_payload {
 	int getnameloc(const char* ntocompare, calloutinfo nametable) {
-		return getnameloc3(ntocompare, nametable, a, 1, { .dontsearchforclosest = 1,.printdispl = +1 });
+		return getnameloc3(ntocompare, nametable, a, 1, { .dontsearchforclosest = 0,.printdispl = +1 });
 	}
 	struct calloutinfo* ptable;
 	pcre2_callout_block* a;
 };
 
 static std::vector<std::vector<std::string>> typedefs{ 1 };
+
+bool bwastypedefmatched = false;
 
 struct bindings_parsing : bindings_payload {
 	virtual void cleanup() {}
@@ -157,6 +162,8 @@ struct bindings_parsing : bindings_payload {
 		auto ident = std::string{ (char*)GROUP_PTR_AND_SZ(n) };
 		for (auto& typedefscope : typedefs)
 			ret = ret && std::find(typedefscope.begin(), typedefscope.end(), ident) == typedefscope.end();
+		//ret = ret || bwastypedefmatched;
+		//bwastypedefmatched = bwastypedefmatched || !ret;
 		return ret;
 	}
 	virtual int identifier_decl_39() {
@@ -234,11 +241,13 @@ struct bindings_parsing : bindings_payload {
 	virtual int end_ass_to_enum_def_92() { return 0; }
 	virtual int end_without_ass_to_enum_def_93() { return 0; }
 	virtual int begin_unnamed_enum_def_94() { return 0; }
+	virtual int end_qualifiers_95() { bwastypedefmatched = false; return 0; }
 };
 
 struct destr_clear_qualifsandtypes : bindings_parsing {
 	virtual int decl_begin_55() {
 		qualifsandtypes.back().second = std::find(qualifsandtypes.back().first.begin(), qualifsandtypes.back().first.end(), "typedef") != qualifsandtypes.back().first.end();
+		bwastypedefmatched = false;
 		return 0;
 	}
 	void cleanup() override {
@@ -2441,10 +2450,10 @@ llvm::Type* createllvmtype(std::vector<type> decltypevector) {
 				break;
 			addvoid:
 			case "void"_h:
-					pcurrtype =
+					/*pcurrtype =
 						dyn_cast<llvm::Type> (llvm::Type::getVoidTy(llvmctx));
 					break;
-					break;
+					break;*/
 			addchar:
 			case "_Bool"_h:
 			case "char"_h:
@@ -3238,7 +3247,7 @@ extern "C" void binary(const char* str, size_t szstr) {
 		inttoins = "1";
 	mainbranch: {
 		auto& currbranch = nbranches.back();
-		auto& refarr = *nbranches.back().itersecond;
+		auto refarr = *nbranches.back().itersecond;
 		//refarr[1]->replaceAllUsesWith(refarr[0]);
 		//refarr->first[0]->swapSuccessors();
 
@@ -3282,9 +3291,7 @@ extern "C" void binary(const char* str, size_t szstr) {
 
 			//std::advance(iter, nbranches.back().second.size());
 
-		(*nbranches.back().itersecond)->first[0] = splitbb("", 0);
-
-		(*nbranches.back().itersecond)->first[1] = lastsplit;
+		nbranches.back().second.push_back({ splitbb("", 0), lastsplit });
 
 		lastsplit->setSuccessor(0, pcurrblock.back());
 
@@ -3295,6 +3302,7 @@ extern "C" void binary(const char* str, size_t szstr) {
 			currbranch.itersecond = currbranch.first.begin();
 			//exhausted current logical ops
 		//nbranches.back().second.pop_back();
+		ifstatements.erase(refarr);
 		}
 	break;
 	case "="_h:
@@ -3329,7 +3337,9 @@ struct bindings_compiling : bindings_payload {
 	}
 	virtual void unused_3() { };
 	virtual void start_str_4() {
-
+		int n = getnameloc("begincharliteral", *ptable);
+		bischarlit = n != -1 && a->offset_vector[n * 2] != -1;
+		//a->offset_vector[n * 2] = a->offset_vector[n * 2 + 1] = -1;
 	}
 	virtual void num_lit_5() {
 		unsigned int type;
@@ -3450,7 +3460,7 @@ struct bindings_compiling : bindings_payload {
 
 	}
 	virtual void or_logic_op_29() {
-		int n = getnameloc3("binop", *ptable, a, 1, { .rev = 0, .last = 0, .dontsearchforclosest = 0, });
+		int n = getnameloc3("binop", *ptable, a, 1, { .rev = 0, .last = 0, .dontsearchforclosest = 1, });
 		if (n != -1 && a->offset_vector[2 * (n + 1)] != -1)
 			binary((char*)GROUP_PTR_AND_SZ(n + 1));
 		//ntoclearauto[0] = n + 1;
@@ -3539,8 +3549,13 @@ struct bindings_compiling : bindings_payload {
 	}
 	virtual void unused_50() { };
 	virtual void add_literal_51() {
-		constructstring();
-
+		if(!bischarlit) constructstring();
+		else {
+			std::stringstream ssstream;
+			ssstream << (int)currstring[0];
+			insertinttoimm(ssstream.str().c_str(), ssstream.str().size(), "", 0, 3);
+			currstring = "";
+		}
 	}
 	virtual void finish_return_statement_52() {
 		endreturn();
@@ -3702,8 +3717,8 @@ struct bindings_compiling : bindings_payload {
 
 		llvm::BranchInst* lastsplit;
 
-		if (nbranches.back().first.size() > 1) {
-			lastsplit = nbranches.back().first.back()->first[1];
+		if (!nbranches.back().second.empty()) {
+			lastsplit = nbranches.back().second.back()[1];
 			lastsplit->setSuccessor(0, pcurrblock.back());
 			auto imm = immidiates.back();
 			ordinary_imm.lvalues.push_back({ ordinary_imm.value, currbranch.iterval->type });
@@ -3714,14 +3729,12 @@ struct bindings_compiling : bindings_payload {
 			splitbb("", 0);
 		}
 
-		for (auto branch : nbranches.back().first | ranges::views::drop(1)) {
-			branch->first[0]->setSuccessor(0, pcurrblock.back());
-			ifstatements.erase(branch);
-		}
+		for (auto branch : nbranches.back().second)
+			branch[0]->setSuccessor(0, pcurrblock.back());
 
 		/*if (normalflow) {
 			normalflow->setSuccessor(0, pcurrblock.back());*/
-		if (nbranches.back().first.size() > 1) {
+		if (!nbranches.back().second.empty()) {
 			ordinary_imm.value = llvmbuilder.CreateLoad(ordinary.requestValue());
 
 			immidiates.pop_back();
@@ -3812,6 +3825,7 @@ struct bindings_compiling : bindings_payload {
 	virtual void begin_unnamed_enum_def_94() {
 		enums.back().push_back({ {}, {} });
 	}
+	virtual void end_qualifiers_95() { }
 };
 
 //bindings_parsing parsing;

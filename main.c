@@ -58,7 +58,7 @@ char* getnameloc3(long long int ntocompare, struct calloutinfo nametable, pcre2_
 					return printf2("%.*s \n", GROUP_SZ_AND_PTR(n + displ)), n;
 			}
 			else {
-				int dist = (int)pcurrblock->capture_last - n;
+				int dist = (int)pcurrblock->capture_top - 1 - n;
 				if (dist >= 0 && dist < lastndist)
 					lastndist = dist,
 					lastvalidn = n;

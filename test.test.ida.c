@@ -1,11 +1,17 @@
-extern int printf(const char*,...);
 
-int main() {
-    int a, b, c;
+    extern int printf(const char*,...);
+    typedef int a;
+    int f(a b) {
+        return printf("test\n"); 
+    }
+    int main() {
+        a a;
 
-    c = 7;
-    b = 2;
-    (a = 4 && 0) || b++ && c++;
+        a = 'C';
 
-    return printf("a %d, b %d c %d\n", a || b && 0, b, c);
-}
+        typedef int f;
+
+        (f)(a);
+
+        return printf("%c f\n", (a)a);
+    }
