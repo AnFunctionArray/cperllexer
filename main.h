@@ -71,6 +71,19 @@ extern FILE* foutput, *foutput2;
 
 #define GROUP_PTR_AND_SZ(n) a->subject + a->offset_vector[2 * (n)], (unsigned int)(a->offset_vector[2 * (n) + 1] - a->offset_vector[2 * (n)])
 #define GROUP_SZ_AND_PTR(n) (unsigned int)(a->offset_vector[2 * (n) + 1] - a->offset_vector[2 * (n)]), a->subject + a->offset_vector[2 * (n)]
+#define GROUP_SZ_AND_PTR_TRUNC(n) (unsigned int)(a->offset_vector[2 * (n) + 1] - a->offset_vector[2 * (n)]) & 0xFF, a->subject + a->offset_vector[2 * (n)]
 #define CHECKED_PTR_AND_SZ_START_END(start, end) ((start) != -1 ? a->subject + start : (PCRE2_SPTR)""), \
 							(end) != -1 ? (unsigned int)((end) - (start)) : 0
 #define CHECKED_PTR_AND_SZ(n) CHECKED_PTR_AND_SZ_START_END(a->offset_vector[2 * (n)], a->offset_vector[2 * (n) + 1])
+
+struct compiling_plain {
+	struct {
+		void (*vtbl[])(void*);
+	}*lpVtbl;
+};
+
+struct parsing_plain {
+	struct {
+		int (*vtbl[])(void*);
+	}*lpVtbl;
+};

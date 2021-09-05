@@ -1,6 +1,7 @@
 #include "llvmgen.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Value.h"
+#include <iterator>
 #include <array>
 #include <bitset>
 #include <cstddef>
@@ -45,6 +46,10 @@
 #include <vector>
 #include <variant>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #define PCRE2_CODE_UNIT_WIDTH 8
 #define PCRE2_STATIC
 
@@ -61,6 +66,16 @@ extern "C" {
 std::pair<std::string, std::string> currstruct;
 
 std::string currenum;
+
+typedef std::list<std::pair<std::array<llvm::BranchInst*, 2>, llvm::BasicBlock*>>::iterator arrtwovals;
+
+struct branch {
+	std::list<arrtwovals> first;//, second;
+	std::list<struct var>::iterator iterval;
+	std::list<arrtwovals>::iterator itersecond;
+};
+
+std::list<branch> nbranches;
 
 struct enumdef {
 	std::string ident;
@@ -95,8 +110,10 @@ struct bindings_payload {
 	pcre2_callout_block* a;
 };
 
+static std::vector<std::vector<std::string>> typedefs{ 1 };
+
 struct bindings_parsing : bindings_payload {
-	std::vector<std::vector<std::string>> typedefs{ 1 };
+	virtual void cleanup() {}
 	virtual int escape_1() { return 0; }
 	virtual int text_2() { return 0; }
 	virtual int unused_3() { return 0; };
@@ -176,11 +193,8 @@ struct bindings_parsing : bindings_payload {
 	virtual int add_literal_51() { return 0; }
 	virtual int finish_return_statement_52() { return 0; }
 	virtual int finish_statement_53() { return 0; }
-	virtual int subscript_op_54() { return 0; }
-	virtual int decl_begin_55() {
-		qualifsandtypes.back().second = std::find(qualifsandtypes.back().first.begin(), qualifsandtypes.back().first.end(), "typedef") != qualifsandtypes.back().first.end();
-		return 0;
-	}
+	virtual int subscript_op_54() { return 0; };
+	virtual int decl_begin_55();
 	virtual int end_of_sizeof_56() { return 0; }
 	virtual int end_of_sizeof_tp_nm_57() { return 0; }
 	virtual int ident_struc_58() { return 0; }
@@ -208,7 +222,7 @@ struct bindings_parsing : bindings_payload {
 	virtual int finish_break_stm_80() { return 0; }
 	virtual int register_calling_conv_81() { return 0; }
 	virtual int unexplored_82() { return 0; }
-	virtual int end_binary_83() { return 0; }
+	virtual int end_binary_83() { printf2("%s\n", __func__);  return 0; }
 	virtual int begin_branch_84() { return 0; }
 	virtual int begin_binary_85() { return 0; }
 	virtual int unused_86() { return 0; }
@@ -221,6 +235,22 @@ struct bindings_parsing : bindings_payload {
 	virtual int end_without_ass_to_enum_def_93() { return 0; }
 	virtual int begin_unnamed_enum_def_94() { return 0; }
 };
+
+struct destr_clear_qualifsandtypes : bindings_parsing {
+	virtual int decl_begin_55() {
+		qualifsandtypes.back().second = std::find(qualifsandtypes.back().first.begin(), qualifsandtypes.back().first.end(), "typedef") != qualifsandtypes.back().first.end();
+		return 0;
+	}
+	void cleanup() override {
+		qualifsandtypes.back().first.clear();
+	}
+};
+
+int bindings_parsing::decl_begin_55() {
+	this->~bindings_parsing();
+	new (this)destr_clear_qualifsandtypes();
+	return decl_begin_55();
+}
 
 unsigned constexpr stringhash(char const* input) {
 	return *input ? static_cast<unsigned int> (*input) +
@@ -536,7 +566,7 @@ struct var {
 	//bool bistypedef;
 	std::string identifier;
 	llvm::Type* pllvmtype{};
-	
+
 	llvm::Type* requestType() {
 		if (pllvmtype == nullptr)
 			pllvmtype = createllvmtype(type);
@@ -555,7 +585,7 @@ struct var {
 
 	size_t firstintroduced;
 
-	operator val () { return { pValue, type, {}, identifier }; }
+	operator val () { return { requestValue(), type, {}, identifier }; }
 };
 
 static std::list<var>::iterator currfunc;
@@ -1106,8 +1136,8 @@ struct basehndl {
 		lastif.second->eraseFromParent ();
 		ifstatements.pop_back ();
 	}*/
-private:
-	virtual std::array<llvm::Value*, 2> logictwovalues(int bisand) {
+	//private:
+	virtual std::array<llvm::Value*, 2> logictwovalues(bool bisand) {
 
 		std::array ops = getops(false);
 
@@ -1119,14 +1149,14 @@ private:
 		ops[1].value = llvmbuilder.CreateICmp(
 			llvm::CmpInst::Predicate::ICMP_NE, ops[1].value, getValZero(ops[1]));
 
-		if (bisand != 2)
+		//if (bisand != 2)
 
-			instr[0] = ops[0].value = !bisand
+		instr[0] = ops[0].value = !bisand
 			? llvmbuilder.CreateOr(ops[0].value, ops[1].value)
 			: llvmbuilder.CreateAnd(ops[0].value, ops[1].value);
-		else
-			instr[0] = ops[0].value = llvmbuilder.CreateOr(ops[0].value, ops[1].value),
-			instr[1] = ops[0].value = llvmbuilder.CreateAnd(ops[0].value, ops[1].value);
+		//else
+		//	instr[0] = ops[0].value = llvmbuilder.CreateOr(ops[0].value, ops[1].value),
+		//	instr[1] = ops[0].value = llvmbuilder.CreateAnd(ops[0].value, ops[1].value);
 
 		ops[0].value = llvm::CastInst::Create(
 			llvm::Instruction::CastOps::ZExt, ops[0].value,
@@ -1141,52 +1171,52 @@ private:
 		return instr;
 	}
 
-public:
-	virtual void logictwovalues_seq(bool bisand) {
+	/*public:*
+		virtual void logictwovalues_seq(bool bisand) {
 
-		/*auto plastopbb = opbbs.back ().first.back ();
+			/*auto plastopbb = opbbs.back ().first.back ();
 
-		opbbs.back ().first.pop_back ();*/
+			opbbs.back ().first.pop_back ();*/
 
-		auto lastlogicswitchinstr = opsscopeinfo.back().logicopswitches.back();
+			/*	auto lastlogicswitchinstr = opsscopeinfo.back().logicopswitches.back();
 
-		opsscopeinfo.back().logicopswitches.pop_back();
+				opsscopeinfo.back().logicopswitches.pop_back();
 
-		extern std::list<std::pair<std::array<llvm::BranchInst*, 2>, llvm::BasicBlock*>> ifstatements;
+				extern std::list<std::pair<std::array<llvm::BranchInst*, 2>, llvm::BasicBlock*>> ifstatements;
 
-		auto lastif = ifstatements.back();
+				auto lastif = ifstatements.back();
 
-		//lastif.first[0]->setSuccessor (1, plastopbb.first);
+				//lastif.first[0]->setSuccessor (1, plastopbb.first);
 
-		lastif.second->eraseFromParent();
-		ifstatements.pop_back();
+				lastif.second->eraseFromParent();
+				ifstatements.pop_back();
 
-		if (bisand)
-			lastif.first[0]->swapSuccessors();
-		else
-			llvm::ReplaceInstWithInst(dyn_cast<llvm::Instruction> (lastlogicswitchinstr[1]), dyn_cast<llvm::Instruction> (lastlogicswitchinstr[0])),
-			dyn_cast<llvm::Instruction> (lastlogicswitchinstr[0])->eraseFromParent();
-		//dyn_cast<llvm::Instruction>(plastopbb.second[0])->eraseFromParent(),
-		//else
-		//dyn_cast<llvm::StoreInst> (plastopbb.second[2])->setOperand (0, plastopbb.second[1]);
+				if (bisand)
+					lastif.first[0]->swapSuccessors();
+				else
+					llvm::ReplaceInstWithInst(dyn_cast<llvm::Instruction> (lastlogicswitchinstr[1]), dyn_cast<llvm::Instruction> (lastlogicswitchinstr[0])),
+					dyn_cast<llvm::Instruction> (lastlogicswitchinstr[0])->eraseFromParent();
+				//dyn_cast<llvm::Instruction>(plastopbb.second[0])->eraseFromParent(),
+				//else
+				//dyn_cast<llvm::StoreInst> (plastopbb.second[2])->setOperand (0, plastopbb.second[1]);
 
-		//immidiates.erase (--immidiates.end ());
+				//immidiates.erase (--immidiates.end ());
 
-		/*extern std::list<std::pair<std::array<llvm::BranchInst *, 2>, llvm::BasicBlock *>> ifstatements;
-		auto &lastif = ifstatements.back ();
+				/*extern std::list<std::pair<std::array<llvm::BranchInst *, 2>, llvm::BasicBlock *>> ifstatements;
+				auto &lastif = ifstatements.back ();
 
-		if (opbbs.size () == 1)
-			opbbs.push_back ({});
+				if (opbbs.size () == 1)
+					opbbs.push_back ({});
 
-		//splitbb("", 0);
+				//splitbb("", 0);
 
-		startifstatement ();
+				startifstatement ();
 
-		//lastif.first[0]->setSuccessor(0, pcurrblock.back());
+				//lastif.first[0]->setSuccessor(0, pcurrblock.back());
 
-		//if (bisand)
-		//lastif.first[0]->swapSuccessors();*/
-	}
+				//if (bisand)
+				//lastif.first[0]->swapSuccessors();*/
+				//}
 
 	virtual llvm::Value* assigntwovalues() {
 		std::array ops = getops(false, true);
@@ -1337,7 +1367,7 @@ public:
 
 		auto valval = llvm::ConstantInt::get(createllvmtype(currtype), val, !isunsigned);
 
-		immidiates.push_back({ valval, currtype});
+		immidiates.push_back({ valval, currtype });
 	}
 };
 
@@ -1437,7 +1467,7 @@ struct handlefpexpr : basehndl {
 		immidiates.push_back(ops[0]);
 	}
 
-	virtual std::array<llvm::Value*, 2> logictwovalues(int bisand) override {
+	virtual std::array<llvm::Value*, 2> logictwovalues(bool bisand) override {
 		std::array ops = getops(false);
 
 		std::array<llvm::Value*, 2> instr;
@@ -1450,14 +1480,14 @@ struct handlefpexpr : basehndl {
 			llvm::CmpInst::Predicate::FCMP_ONE, ops[1].value,
 			llvm::ConstantFP::get(llvmctx, llvm::APFloat{ getfloatsembytype(ops[1]) }));
 
-		if (bisand != 2)
+		//if (bisand != 2)
 
-			instr[0] = ops[0].value = !bisand
+		instr[0] = ops[0].value = !bisand
 			? llvmbuilder.CreateOr(ops[0].value, ops[1].value)
 			: llvmbuilder.CreateAnd(ops[0].value, ops[1].value);
-		else
-			instr[0] = ops[0].value = llvmbuilder.CreateOr(ops[0].value, ops[1].value),
-			instr[1] = ops[0].value = llvmbuilder.CreateAnd(ops[0].value, ops[1].value);
+		//else
+		//	instr[0] = ops[0].value = llvmbuilder.CreateOr(ops[0].value, ops[1].value),
+		//	instr[1] = ops[0].value = llvmbuilder.CreateAnd(ops[0].value, ops[1].value);
 
 		ops[0].value = CreateCastInst(ops[0].value, llvm::Type::getInt32Ty(llvmctx), false);
 
@@ -1585,7 +1615,7 @@ struct handlecnstexpr : basehndl {
 		immidiates.push_back(ops[0]);
 	}
 
-	virtual std::array<llvm::Value*, 2> logictwovalues(int bisand) override {
+	virtual std::array<llvm::Value*, 2> logictwovalues(bool bisand) override {
 		std::array ops = getops(false);
 
 		llvm::Value* instr;
@@ -1886,7 +1916,7 @@ void startdeclaration() {
 
 	currenum = currdeclspectypedef = "";
 
-	qualifsandtypes.back().first.clear();
+	//qualifsandtypes.back().first.clear();
 
 	if (basic.spec.basicdeclspec.basic[3].empty())
 		if (!(basic.spec.basicdeclspec.basic[3] = currstruct.second).empty())
@@ -1977,13 +2007,13 @@ void endpriordecl() {
 	currtypevectorbeingbuild.back().p->back().firstintroduced = scopevar.size();
 
 	if (currtypevectorbeingbuild.back().currdecltype !=
-		currdecltypeenum::PARAMS 
-		&& currtypevectorbeingbuild.back().p->back().linkage.empty() 
+		currdecltypeenum::PARAMS
+		&& currtypevectorbeingbuild.back().p->back().linkage.empty()
 		&& currtypevectorbeingbuild.back().p->back().type.front().uniontype != type::FUNCTION
 		&& scopevar.size() == 1)
 		currtypevectorbeingbuild.back()
-			.p->back()
-			.pllvmtype = createllvmtype(currtype),
+		.p->back()
+		.pllvmtype = createllvmtype(currtype),
 		addvar(currtypevectorbeingbuild.back().p->back());
 }
 
@@ -2106,15 +2136,15 @@ extern "C" llvm::BranchInst * splitbb(const char* identifier, size_t szident);
 
 extern "C" void insertinttoimm(const char* str, size_t szstr, const char* suffix, size_t szstr1, int type);
 
-extern "C" void startifstatement() {
+std::list<std::pair<std::array<llvm::BranchInst*, 2>, llvm::BasicBlock*>>::iterator startifstatement(bool pop = true) {
 	auto dummyblock = llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->requestValue()));
 
 	if (!immidiates.size())
 		insertinttoimm("1", sizeof "1" - 1, "", 0, 3);
 
-	phndl->getlogicalnot();
+	auto firstnot = phndl->getlogicalnot();
 
-	phndl->getlogicalnot();
+	auto lastnot = phndl->getlogicalnot();
 
 	splitbb("", 0);
 
@@ -2126,7 +2156,10 @@ extern "C" void startifstatement() {
 
 	ifstatements.back().first[0]->setSuccessor(0, pcurrblock.back());
 
-	immidiates.pop_back();
+	if (pop)
+		immidiates.pop_back();
+
+	return --ifstatements.end();
 }
 
 extern "C" void continueifstatement() {
@@ -2475,7 +2508,7 @@ llvm::Type* createllvmtype(std::vector<type> decltypevector) {
 		for (auto& type : decltypevector)
 			lambdas[type.uniontype](type);
 	}
-	catch(std::nullptr_t exc) {
+	catch (std::nullptr_t exc) {
 		return exc;
 	}
 
@@ -2739,7 +2772,7 @@ bool bareweinabrupt(bool barewe) {
 	if (pcurrblock.size())
 		if (pcurrblock.back()->getInstList().size()) {
 			auto lastinstropcode = pcurrblock.back()->back().getOpcode();
-			return ranges::contains(std::array{ llvm::Instruction::Br, llvm::Instruction::Switch }, lastinstropcode);
+			return ranges::contains(std::array{ llvm::Instruction::Br, llvm::Instruction::Switch,llvm::Instruction::Ret }, lastinstropcode);
 		}
 		else
 			return false;
@@ -2809,11 +2842,13 @@ extern "C" void endfunctioncall() {
 
 	std::vector<llvm::Value*> immidiates;
 
-	auto iterparams = calleevalntype.type.front().spec.func.parametertypes_list.front().begin();
+	auto& verylongthingy = calleevalntype.type.front().spec.func.parametertypes_list.front();
+
+	auto iterparams = verylongthingy.begin();
 
 	std::transform(
 		++argsiter, hndlbase.immidiates.end(), std::back_inserter(immidiates),
-		[&](const basehndl::val& elem) { return convertTo(decay(elem), iterparams++->type).value; });
+		[&](const basehndl::val& elem) { return iterparams != verylongthingy.end() ? convertTo(decay(elem), iterparams++->type).value : decay(elem).value; });
 
 	hndlbase.immidiates.erase(--argsiter, hndlbase.immidiates.end());
 
@@ -3139,6 +3174,9 @@ extern "C" void binary(const char* str, size_t szstr) {
 		break;
 	}*/
 
+	const char* inttoins = "";
+	bool bislogicaland;
+
 	switch (stringhash(imm.c_str())) {
 	case "*"_h:
 		phndl->mlutiplylasttwovalues();
@@ -3189,11 +3227,76 @@ extern "C" void binary(const char* str, size_t szstr) {
 		phndl->bitwisetwovalues(llvm::Instruction::Or);
 		break;
 	case "&&"_h:
-		phndl->logictwovalues_seq(true);
-		break;
+		++nbranches.back().itersecond;
+		inttoins = "0";
+		bislogicaland = true;
+		goto mainbranch;
 	case "||"_h:
-		phndl->logictwovalues_seq(false);
-		break;
+		++nbranches.back().itersecond;
+		(*nbranches.back().itersecond)->first[0]->swapSuccessors();
+		bislogicaland = false;
+		inttoins = "1";
+	mainbranch: {
+		auto& currbranch = nbranches.back();
+		auto& refarr = *nbranches.back().itersecond;
+		//refarr[1]->replaceAllUsesWith(refarr[0]);
+		//refarr->first[0]->swapSuccessors();
+
+		/*auto iter = nbranches.back().first.begin();
+
+		std::advance(iter, nbranches.back().second.size());
+
+		(*iter)->first[1] = (llvm::BranchInst*)"0";*/
+
+		var& ordinary = *currbranch.iterval;
+
+		//std::rotate(nbranches.back().second.begin(), --nbranches.back().second.end(), nbranches.back().second.end());
+		//++nbranches.back().second;
+		phndl->logictwovalues(bislogicaland);
+
+		immidiates.back().lvalues.clear();
+
+		immidiates.back().originident = "[[logicop]]";
+
+		auto lastsplit = splitbb("", 0);
+
+		int fullindex = refarr->first[0]->getSuccessor(1) != refarr->second;
+		refarr->first[0]->setSuccessor(!fullindex, pcurrblock.back());
+		refarr->second->eraseFromParent();
+		//ifstatements.erase(branch);
+
+		val ordinary_imm = ordinary;
+		ordinary_imm.lvalues.push_back({ ordinary_imm.value, ordinary.type });
+
+		immidiates.push_back(ordinary_imm);
+
+		insertinttoimm(inttoins, 1, "", 0, 3);
+
+		phndl->assigntwovalues();
+
+		immidiates.pop_back();
+
+		//auto iter = nbranches.back().first.begin();
+
+		//if (nbranches.back().first.size() > 1)
+
+			//std::advance(iter, nbranches.back().second.size());
+
+		(*nbranches.back().itersecond)->first[0] = splitbb("", 0);
+
+		(*nbranches.back().itersecond)->first[1] = lastsplit;
+
+		lastsplit->setSuccessor(0, pcurrblock.back());
+
+		auto itersecond = nbranches.back().itersecond;
+
+		if (++itersecond == currbranch.first.end())
+			currbranch.first.erase(++currbranch.first.begin(), currbranch.first.end()),
+			currbranch.itersecond = currbranch.first.begin();
+			//exhausted current logical ops
+		//nbranches.back().second.pop_back();
+		}
+	break;
 	case "="_h:
 		phndl->assigntwovalues();
 		break;
@@ -3347,7 +3450,7 @@ struct bindings_compiling : bindings_payload {
 
 	}
 	virtual void or_logic_op_29() {
-		int n = getnameloc3("binop", *ptable, a, 1, { .rev = 1, .last = 0, .dontsearchforclosest = 1, });
+		int n = getnameloc3("binop", *ptable, a, 1, { .rev = 0, .last = 0, .dontsearchforclosest = 0, });
 		if (n != -1 && a->offset_vector[2 * (n + 1)] != -1)
 			binary((char*)GROUP_PTR_AND_SZ(n + 1));
 		//ntoclearauto[0] = n + 1;
@@ -3427,7 +3530,7 @@ struct bindings_compiling : bindings_payload {
 
 	}
 	virtual void end_param_list_48() {
-		int n = getnameloc3("rest", *ptable, a, 0, {.dontsearchforclosest = 1});
+		int n = getnameloc3("rest", *ptable, a, 0, { .dontsearchforclosest = 1 });
 		endfunctionparamdecl(n != -1 && a->offset_vector[2 * n] != -1);
 
 	}
@@ -3562,9 +3665,113 @@ struct bindings_compiling : bindings_payload {
 	virtual void finish_break_stm_80() { addbreak(); }
 	virtual void register_calling_conv_81() { }
 	virtual void unexplored_82() { }
-	virtual void end_binary_83() { }
-	virtual void begin_branch_84() { }
-	virtual void begin_binary_85() { }
+	virtual void end_binary_83() {
+		auto& currbranch = nbranches.back();
+
+		var& ordinary = *currbranch.iterval;
+
+		/*llvm::BranchInst* normalflow = nullptr;
+
+		if (nbranches.back().first.size() > 1)
+			normalflow = splitbb("", 0);*/
+
+		val ordinary_imm = ordinary;
+
+		//auto iternbranch = nbranches.begin();
+
+		/*for (auto branch : nbranches.back().first | ranges::views::drop(1)) {
+			//iternbranch = ++iternbranch;
+			int fullindex = branch->first[0]->getSuccessor(1) != branch->second;
+			branch->first[0]->setSuccessor(!fullindex, pcurrblock.back());
+			branch->second->eraseFromParent();
+			//ifstatements.erase(branch);
+
+			ordinary_imm = ordinary;
+			ordinary_imm.lvalues.push_back({ ordinary_imm.value, ordinary.type });
+
+			immidiates.push_back(ordinary_imm);
+
+			insertinttoimm((char*)branch->first[1], 1, "", 0, 3);
+
+			phndl->assigntwovalues();
+
+			immidiates.pop_back();
+
+			branch->first[0] = splitbb("", 0);
+		}*/
+
+		llvm::BranchInst* lastsplit;
+
+		if (nbranches.back().first.size() > 1) {
+			lastsplit = nbranches.back().first.back()->first[1];
+			lastsplit->setSuccessor(0, pcurrblock.back());
+			auto imm = immidiates.back();
+			ordinary_imm.lvalues.push_back({ ordinary_imm.value, currbranch.iterval->type });
+			immidiates.pop_back();
+			immidiates.push_back(ordinary_imm);
+			immidiates.push_back(imm);
+			phndl->assigntwovalues();
+			splitbb("", 0);
+		}
+
+		for (auto branch : nbranches.back().first | ranges::views::drop(1)) {
+			branch->first[0]->setSuccessor(0, pcurrblock.back());
+			ifstatements.erase(branch);
+		}
+
+		/*if (normalflow) {
+			normalflow->setSuccessor(0, pcurrblock.back());*/
+		if (nbranches.back().first.size() > 1) {
+			ordinary_imm.value = llvmbuilder.CreateLoad(ordinary.requestValue());
+
+			immidiates.pop_back();
+
+			immidiates.push_back(ordinary_imm);
+
+		}
+		//else //((llvm::AllocaInst*)ordinary.pValue)->replaceAllUsesWith(llvm::UndefValue::get(ordinary.pValue->getType())),
+			//((llvm::AllocaInst*)ordinary.pValue)->eraseFromParent();
+		//}
+
+		scopevar.back().erase(currbranch.iterval);
+
+		/**/
+
+		nbranches.pop_back();
+	}
+	virtual void begin_branch_84() {
+		auto& currbranch = nbranches.back();
+		/*val ordinary_imm = *currbranch.iterval;
+		auto imm = immidiates.back();
+		ordinary_imm.lvalues.push_back({ ordinary_imm.value, currbranch.iterval->type });
+		immidiates.pop_back();
+		immidiates.push_back(ordinary_imm);
+		immidiates.push_back(imm);
+		phndl->assigntwovalues();*/
+		currbranch.first.insert(++currbranch.first.begin(), startifstatement(false));
+		//currbranch.second.push_back(currbranch.first.back());
+		//ordinary_imm.value = llvmbuilder.CreateLoad(ordinary_imm.value);
+		//immidiates.push_back(ordinary_imm);
+	}
+	virtual void begin_binary_85() {
+		var ordinary; type basicint{ type::BASIC };
+		basicint.spec.basicdeclspec.basic[1] = "int";
+		ordinary.type = { basicint };
+		scopevar.back().push_back(ordinary);
+		nbranches.push_back({ std::list<arrtwovals>{1}, --scopevar.back().end() });
+		nbranches.back().itersecond = nbranches.back().first.begin();
+
+		val ordinary_imm = scopevar.back().back();
+		ordinary_imm.lvalues.push_back({ ordinary_imm.value, ordinary.type });
+
+		immidiates.push_back(ordinary_imm);
+
+		insertinttoimm("1", sizeof "1" - 1, "", 0, 3);
+
+		phndl->assigntwovalues();
+
+		immidiates.pop_back();
+	}
 	virtual void unused_86() { }
 	virtual void begin_nested_expr_87() { }
 	virtual void end_nested_expr_88() { }
@@ -3607,21 +3814,9 @@ struct bindings_compiling : bindings_payload {
 	}
 };
 
-bindings_parsing parsing;
+//bindings_parsing parsing;
 
 bindings_compiling compiling;
-
-struct compiling_plain {
-	struct {
-		void (*vtbl[79])(void*);
-	}*lpVtbl;
-};
-
-struct parsing_plain {
-	struct {
-		int (*vtbl[79])(void*);
-	}*lpVtbl;
-};
 
 std::list<std::pair<std::string, void*>> recursion_list;
 
@@ -3643,18 +3838,41 @@ extern "C" int callout_test(pcre2_callout_block * a, void* b) {
 	bindings_payload paylod = { (calloutinfo*)b, a };
 	struct calloutinfo* ptable = (calloutinfo*)b;
 
-	(bindings_payload&)parsing = paylod;
+	std::aligned_storage_t<sizeof(destr_clear_qualifsandtypes), alignof(destr_clear_qualifsandtypes)> uninparsingobj;
+
+	auto pbindings = new (&uninparsingobj) bindings_parsing{};
+
+	(bindings_payload&)*pbindings = paylod;
 	(bindings_payload&)compiling = paylod;
 
 	int res = 0;
 
-	if (a->callout_number != 255)
-		(res = ((parsing_plain&)parsing).lpVtbl->vtbl[a->callout_number - 1](&parsing)) ||
-		(((compiling_plain&)compiling).lpVtbl->vtbl[a->callout_number - 1](&compiling), 0);
+#ifdef _WIN32
+	__try {
+#else
+	try {
+#endif
+		if (a->callout_number != 255)
+			(res = ((parsing_plain&)*pbindings).lpVtbl->vtbl[a->callout_number](pbindings)) ||
+			(((compiling_plain&)compiling).lpVtbl->vtbl[a->callout_number - 1](&compiling), 0);
+	}
+#ifdef _WIN32
+	__except (EXCEPTION_EXECUTE_HANDLER) {
+
+	}
+#else
+	catch (...) {
+
+	}
+#endif
+	pbindings->cleanup();
+
+	//if(a->capture_top > 1)
+	//	printf2("%.*s\n", GROUP_SZ_AND_PTR_TRUNC(a->capture_top - 1));
 
 #if PATTERN_FLAGS & PCRE2_AUTO_CALLOUT
 	//do_print_layour();
-	printf("%.*s\n", a->next_item_length, ptable->pattern + a->pattern_position);
+	printf("%.*s @ %zu\n", a->next_item_length, ptable->pattern + a->pattern_position, a->pattern_position);
 
 	std::string next_item{ (char*)ptable->pattern + a->pattern_position, a->next_item_length };
 

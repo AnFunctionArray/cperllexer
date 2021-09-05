@@ -107,6 +107,10 @@ struct encapsulatelvars : user_lvar_modifier_t {
 
 extern "C" int main(int argc, const char** argv, char** env);
 
+int YourReportHook(int reportType, char* message, int* returnValue) {
+	throw std::tuple{ reportType, message, returnValue };
+}
+
 //--------------------------------------------------------------------------
 bool idaapi plugin_ctx_t::run(size_t) {
 	//__try
@@ -122,7 +126,9 @@ bool idaapi plugin_ctx_t::run(size_t) {
 
 	2[pargv] = ctarget.c_str();
 
-	std::thread{ main, argc, pargv, nullptr };
+	_CrtSetReportHook(YourReportHook);
+
+	std::thread{ main, argc, pargv, nullptr }.join();
 
 	return true;
 

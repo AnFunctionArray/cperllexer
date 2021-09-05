@@ -23,11 +23,11 @@
 
 	(?<ternaryrest>\?(?C33)(?&primexpr):(?C32))
 
-	(?<orlogiorsomething>(?=(?&castexprfacet))(?C85)(?&castexpr)(?>(?&orlogicplusrest))*(?C83))
+	(?<orlogiorsomething>(?=(?&castexprfacet))(?C85)(?&castexpr)(?>(?&orlogicplusrest))*+(?C83))
 	
 
 
-(?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?C79);|break\s*+(?C80);|return(?&primexpr)?+(?C52);)\s*+)
+(?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?C79);|break\s*+(?C80);|return\b(?&primexpr)?+(?C52);)\s*+)
 (?<identifierminegoto>\s*+(?!(?&keywordlist))((?&identifierraw))(?C63)\s*+)
 
 (?<iterationstatement>\s*+(while\s*+[(](?C73)(?&primexpr)[)](?C76)(?C74)(?&statement)(?C75)|do\b(?C77)(?&statement)while\s*+[(](?&primexpr)[)](?C78)\s*+;
@@ -42,4 +42,4 @@
 (?<label>(?&identifierminelabel)|\s*+(case\b(?C40)(?&primexpr):(?C65)|default\s*+:(?C67))\s*+)
 (?<identifierminelabel>\s*+(?!(?&keywordlist))((?&identifierraw))\s*+:(?C62)\s*+)
 
-(?<cprogram>(((?&structorunion)|(?&typenameinsideopt)(?C42)((?&compoundstatement)|(?&abstrinitialization)?(,(?C43)(?&abstdecloutter)(?C42)(?&abstrinitialization)?+)*+))\s*+;\s*+)*)
+(?<cprogram>((?&structorunion)\s*+;\s*+|(?&typenameinsideopt)(?C42)((?&compoundstatement)|(?&abstrinitialization)?(,(?C43)(?&abstdecloutter)(?C42)(?&abstrinitialization)?+)*+\s*+;\s*+))*)

@@ -1,7 +1,11 @@
-typedef struct __crt_locale_pointers
-{
-    struct __crt_locale_data*    locinfo;
-    struct __crt_multibyte_data* mbcinfo;
-} __crt_locale_pointers;
+extern int printf(const char*,...);
 
-typedef __crt_locale_pointers* _locale_t;
+int main() {
+    int a, b, c;
+
+    c = 7;
+    b = 2;
+    (a = 4 && 0) || b++ && c++;
+
+    return printf("a %d, b %d c %d\n", a || b && 0, b, c);
+}

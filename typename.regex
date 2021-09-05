@@ -7,7 +7,7 @@
 (?<Tabstrrest, Tabstrrestalt, Tinside>)(?<abstdecl>(?<abstrptrrev#restrictoutsidefacet>(?<abstrptr>\s*+[*]\s*+((?&qualifiers))*+)
 						(?!(?&abstrptrrev)(?C11))
 						(?<abstrrest>(?&Tinside)(?<abstrsubs>\s*+(\[(?C40)(?&primexpr)\](?C41)
-						|[(](?C47)(\s*+\bvoid\b\s*+|((?&typenameinsideparams)(?C42))?+(,(?&typenameinsideparams)(?C42))*(?<rest>,\s*+\.\.\.\s*+)?+)[)](?C48))\s*+)*+(?C11))|
+						|[(](?C47)(\s*+\bvoid\b\s*+|(((?&typenameinsideparams)(?C42))?+(,(?&typenameinsideparams)(?C42))*(?<rest>,\s*+\.\.\.\s*+)?+))[)](?C48))\s*+)*+(?C11))|
 						(?&abstrptr))(?&abstrptr)*+(?&Tabstrrest)|(?&Tabstrrestalt))
 
 

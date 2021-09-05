@@ -29,7 +29,7 @@ extern "C" {
         const char* fractionpart, size_t szstr2,
         const char* exponent, size_t szstr3,
         const char* exponentsign, size_t szstr4) LLVM_FUNCS_DEF
-    LLVM_FUNCS_MODIFIERS void startifstatement() LLVM_FUNCS_DEF
+    //LLVM_FUNCS_MODIFIERS void startifstatement() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void endifstatement() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void continueifstatement() LLVM_FUNCS_DEF
     LLVM_FUNCS_MODIFIERS void binary(const char *str, size_t szstr) LLVM_FUNCS_DEF
