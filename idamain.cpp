@@ -108,6 +108,8 @@ struct encapsulatelvars : user_lvar_modifier_t {
 extern "C" int main(int argc, const char** argv, char** env);
 
 int YourReportHook(int reportType, char* message, int* returnValue) {
+	printf("%s\n", message);
+	__debugbreak();
 	throw std::tuple{ reportType, message, returnValue };
 }
 

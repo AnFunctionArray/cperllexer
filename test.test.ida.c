@@ -1,17 +1,25 @@
 
-    extern int printf(const char*,...);
-    typedef int a;
-    int f(a b) {
-        return printf("test\n"); 
-    }
-    int main() {
-        a a;
+typedef struct __crt_locale_pointers
+{
+    void*    locinfo;
+    void* mbcinfo;
+} __crt_locale_pointers;
 
-        a = 'C';
+typedef __crt_locale_pointers* _locale_t;
 
-        typedef int f;
+__inline char* __cdecl __acrt_get_locale_data_prefix(void const volatile* const _LocalePointers)
+{
+    _locale_t const _TypedLocalePointers = (_locale_t)_LocalePointers;
+    return (char*)_TypedLocalePointers->locinfo;
+}
+int main() {
+    a a;
 
-        (f)(a);
+    a = 'C';
 
-        return printf("%c f\n", (a)a);
-    }
+    typedef int f;
+
+    (f)(a);
+
+    return printf("%c f\n", (a)a);
+}

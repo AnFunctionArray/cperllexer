@@ -115,7 +115,7 @@ struct bindings_payload {
 
 static std::vector<std::vector<std::string>> typedefs{ 1 };
 
-bool bwastypedefmatched = false;
+//bool bwastypedefmatched = false;
 
 struct bindings_parsing : bindings_payload {
 	virtual void cleanup() {}
@@ -157,7 +157,7 @@ struct bindings_parsing : bindings_payload {
 	virtual int unused_36() { return 0; };
 	virtual int unused_37() { return 0; };
 	virtual int identifier_typedef_38() {
-		int n = getnameloc("identifierminetypedef", *ptable) + 1;
+		int n = getnameloc3("identifierminetypedeffacet", *ptable, a, 1, { .rev = 1, .last = 0, .dontsearchforclosest = 1, }) + 1;
 		int ret = 1;
 		auto ident = std::string{ (char*)GROUP_PTR_AND_SZ(n) };
 		for (auto& typedefscope : typedefs)
@@ -241,13 +241,13 @@ struct bindings_parsing : bindings_payload {
 	virtual int end_ass_to_enum_def_92() { return 0; }
 	virtual int end_without_ass_to_enum_def_93() { return 0; }
 	virtual int begin_unnamed_enum_def_94() { return 0; }
-	virtual int end_qualifiers_95() { bwastypedefmatched = false; return 0; }
+	virtual int end_expr_init_95() { return 0; }
 };
 
 struct destr_clear_qualifsandtypes : bindings_parsing {
 	virtual int decl_begin_55() {
 		qualifsandtypes.back().second = std::find(qualifsandtypes.back().first.begin(), qualifsandtypes.back().first.end(), "typedef") != qualifsandtypes.back().first.end();
-		bwastypedefmatched = false;
+		//bwastypedefmatched = false;
 		return 0;
 	}
 	void cleanup() override {
@@ -586,7 +586,7 @@ struct var {
 		llvm::Constant* constant;
 	};
 	llvm::Value* requestValue() {
-		if (pValue == nullptr)
+		if (pValue == nullptr && linkage != "typedef")
 			addvar(*this);
 		return pValue;
 	}
@@ -1683,7 +1683,7 @@ enum class currdecltypeenum {
 	NONE
 };
 
-std::string currdeclspectypedef;
+//std::string currdeclspectypedef;
 
 std::list<std::pair<std::list<std::string>, bool>> qualifsandtypes{ 1 };
 
@@ -1899,8 +1899,8 @@ extern "C" void endbuildingstructorunion() {
 	//structvar.type.back().spec.basicdeclspec.iterunorstr = structorunionmembers.back().end();
 }
 
-void startdeclaration() {
-	std::string typedefname = currdeclspectypedef;
+void startdeclaration(std::string typedefname) {
+	//std::string typedefname = currdeclspectypedef;
 	var var;
 
 	type basic{ type::BASIC };
@@ -1923,7 +1923,7 @@ void startdeclaration() {
 	}
 	//immidiates.pop_back();
 
-	currenum = currdeclspectypedef = "";
+	currenum /*= currdeclspectypedef*/ = "";
 
 	//qualifsandtypes.back().first.clear();
 
@@ -2409,7 +2409,7 @@ const std::list<::var>* getstructorunion(std::string ident) {
 			return false;
 		});
 
-	if (var) if (!var->front().pllvmtype) {
+	if (var) if (!var->back().pllvmtype) {
 		for (auto& a : *var | ranges::views::drop(1))
 			a.pllvmtype = createllvmtype(a.type);
 
@@ -2488,9 +2488,7 @@ llvm::Type* createllvmtype(std::vector<type> decltypevector) {
 				case "union"_h:
 					break;
 				default: { // typedef
-					obtainvalbyidentifier(type.spec.basicdeclspec.basic[3]);
-					pcurrtype = (llvm::Type*)immidiates.back().value;
-					immidiates.pop_back();
+					pcurrtype = obtainvalbyidentifier(type.spec.basicdeclspec.basic[3], false, true)->requestType();
 					break;
 				}
 				}
@@ -3460,7 +3458,7 @@ struct bindings_compiling : bindings_payload {
 
 	}
 	virtual void or_logic_op_29() {
-		int n = getnameloc3("binop", *ptable, a, 1, { .rev = 0, .last = 0, .dontsearchforclosest = 1, });
+		int n = getnameloc3("binop", *ptable, a, 1, { .rev = 1, .last = 0, .dontsearchforclosest = 1, });
 		if (n != -1 && a->offset_vector[2 * (n + 1)] != -1)
 			binary((char*)GROUP_PTR_AND_SZ(n + 1));
 		//ntoclearauto[0] = n + 1;
@@ -3491,9 +3489,9 @@ struct bindings_compiling : bindings_payload {
 		else adddecl: adddeclarationident(contentstr.c_str(), contentstr.size(), false);//a->offset_vector[2 * n] != -1);
 	}*/
 	virtual void identifier_typedef_38() {
-		int n = getnameloc("identifierminetypedef", *ptable) + 1;
+		//int n = getnameloc("identifierminetypedef", *ptable) + 1;
 
-		currdeclspectypedef = { (char*)GROUP_PTR_AND_SZ(n) };
+		//currdeclspectypedef = { (char*)GROUP_PTR_AND_SZ(n) };
 
 		//handledeclident({ (char*)GROUP_PTR_AND_SZ(n) });
 	}
@@ -3570,7 +3568,10 @@ struct bindings_compiling : bindings_payload {
 
 	}
 	virtual void decl_begin_55() {
-		startdeclaration();
+		int n = getnameloc3("identifierminetypedeffacet", *ptable, a, 1, { .rev = 1, .last = 0, .dontsearchforclosest = 1, });
+
+		std::string identtypedef{ (char*)GROUP_PTR_AND_SZ(n + 1) };
+		startdeclaration(identtypedef);
 
 	}
 	virtual void end_of_sizeof_56() {
@@ -3825,7 +3826,14 @@ struct bindings_compiling : bindings_payload {
 	virtual void begin_unnamed_enum_def_94() {
 		enums.back().push_back({ {}, {} });
 	}
-	virtual void end_qualifiers_95() { }
+	virtual void end_expr_init_95() {
+		auto val = immidiates.back();
+		immidiates.pop_back();
+		obtainvalbyidentifier(scopevar.back().back().identifier);
+		immidiates.push_back(val);
+		phndl->assigntwovalues();
+		immidiates.pop_back();
+	}
 };
 
 //bindings_parsing parsing;
@@ -3872,11 +3880,11 @@ extern "C" int callout_test(pcre2_callout_block * a, void* b) {
 	}
 #ifdef _WIN32
 	__except (EXCEPTION_EXECUTE_HANDLER) {
-
+		goto dump;
 	}
 #else
 	catch (...) {
-
+		goto dump;
 	}
 #endif
 	pbindings->cleanup();
@@ -3884,47 +3892,52 @@ extern "C" int callout_test(pcre2_callout_block * a, void* b) {
 	//if(a->capture_top > 1)
 	//	printf2("%.*s\n", GROUP_SZ_AND_PTR_TRUNC(a->capture_top - 1));
 
+	if (PATTERN_FLAGS & PCRE2_AUTO_CALLOUT) dump: {
+		//do_print_layour();
+		printf("%.*s @ %zu\n", a->next_item_length, ptable->pattern + a->pattern_position, a->pattern_position);
+
+		std::string next_item{ (char*)ptable->pattern + a->pattern_position, a->next_item_length };
+
+		/*if (lastoffsetvector != a->offset_vector)
+			if (!recursion_list.empty() && recursion_list.back().second == a->offset_vector)
+				recursion_list.pop_back();
+			else
+				recursion_list.push_back({ next_item, a->offset_vector });
+		//else if (next_item == (")"))
+			//recursion_list.pop_back();
+			/*for (auto pattiter = recursion_list.begin(); pattiter != recursion_list.end(); ++pattiter)
+			if (pattiter->second == a->capture_top) {
+				recursion_list.erase(pattiter, recursion_list.end());
+				break;
+			}*/
+
+			//lasttop = a->capture_top;
+
+		lastoffsetvector = a->offset_vector;
+
+		std::string subjtoprint{ (char*)a->subject + a->current_position, (a->subject_length - a->current_position) & 0xFF };
+
+		std::replace_if(subjtoprint.begin(), subjtoprint.end(), isspace, ' ');
+
+		printf("%.*s\n", (unsigned int)subjtoprint.length(), subjtoprint.c_str());
+
 #if PATTERN_FLAGS & PCRE2_AUTO_CALLOUT
-	//do_print_layour();
-	printf("%.*s @ %zu\n", a->next_item_length, ptable->pattern + a->pattern_position, a->pattern_position);
-
-	std::string next_item{ (char*)ptable->pattern + a->pattern_position, a->next_item_length };
-
-	/*if (lastoffsetvector != a->offset_vector)
-		if (!recursion_list.empty() && recursion_list.back().second == a->offset_vector)
-			recursion_list.pop_back();
-		else
-			recursion_list.push_back({ next_item, a->offset_vector });
-	//else if (next_item == (")"))
-		//recursion_list.pop_back();
-		/*for (auto pattiter = recursion_list.begin(); pattiter != recursion_list.end(); ++pattiter)
-		if (pattiter->second == a->capture_top) {
-			recursion_list.erase(pattiter, recursion_list.end());
-			break;
-		}*/
-
-		//lasttop = a->capture_top;
-
-	lastoffsetvector = a->offset_vector;
-
-	std::string subjtoprint{ (char*)a->subject + a->current_position, (a->subject_length - a->current_position) & 0xFF };
-
-	std::replace_if(subjtoprint.begin(), subjtoprint.end(), isspace, ' ');
-
-	printf("%.*s\n", (unsigned int)subjtoprint.length(), subjtoprint.c_str());
-	static unsigned long long currregion;
-	printf1p3("#region %llu capture %d\n", currregion, a->callout_number);
-	currregion++;
-	for (int n = 0; n < a->capture_top; ++n)
-		subjtoprint.assign((char*)a->subject + a->offset_vector[2 * n],
-			(unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n])),
-		std::replace_if(subjtoprint.begin(), subjtoprint.end(), isspace, ' '),
-		printf3(
-			"%s %d - %s\n",
-			getnameloc(-n, *ptable),
-			n,
-			subjtoprint.c_str());
-	printf1p3("#endregion\n", 0);
+		static unsigned long long currregion;
+		printf1p3("#region %llu capture %d\n", currregion, a->callout_number);
+		currregion++;
+		for (int n = 0; n < a->capture_top; ++n)
+			subjtoprint.assign((char*)a->subject + a->offset_vector[2 * n],
+				(unsigned int)(a->offset_vector[2 * n + 1] - a->offset_vector[2 * n])),
+			std::replace_if(subjtoprint.begin(), subjtoprint.end(), isspace, ' '),
+			printf3(
+				"%s %d - %s\n",
+				getnameloc(-n, *ptable),
+				n,
+				subjtoprint.c_str());
+		printf1p3("#endregion\n", 0);
+#else
+		__debugbreak();
 #endif
+	}
 	return res;
 }

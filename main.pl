@@ -48,6 +48,8 @@ my $typedefidentifiers = "";
 
 $mainregexfinal =~s/\s|\n//g if(not $matchinperl);
 
+#print $mainregexfinal;
+
 startmatching($subject, $mainregexfinal, basename($ARGV[0], @suffixlist)) if(not $matchinperl);
 
 exit if(not $matchinperl);
@@ -131,21 +133,27 @@ sub substitutetemplateinstances {
 
     my $template = $+{template};
 
+    my $templatetoreplace = $template;
+
+    $templatetoreplace =~ s {\#\S+$}{};
+
     my $args = $+{args};
 
     my $name = $+{name};
 
     my $doubleref = $+{doubleref};
 
-    $regexcontent =~ m {\(\?<(?<params>.*?)>\)\s*+(?=\(\?<$template\b)(?<inpar>(?<!\\)\((
+    $regexcontent =~ m {\(\?<(?<params>.*?)>\)\s*+(?=\(\?<$templatetoreplace\b)(?<inpar>(?<!\\)\((
                     ([^][()]|(?<=\\).)++|(?&inpar)|(?<insquare>(?<!\\)\[\^?+(.|\\.)(
                     ([^]]|(?<=\\).)++|(?&insquare))*(?<!\\)\]))*(?<!\\)\))}gxx;
 
-    push @arrayoftemplates, $&;
+    #push @arrayoftemplates, $& unless ($& ~~ @arrayoftemplates);
 
     my $params = $+{params};
 
     my $body = $+{inpar};
+
+    push @arrayoftemplates, $templatetoreplace unless ($& ~~ @arrayoftemplates);
 
     while(1) {
         my $arg = getnext($args);
@@ -162,21 +170,17 @@ sub substitutetemplateinstances {
 
         last if(!$arg || !$param);
 
-        my $prefix;
-
-        $prefix = "(?&" if($argident);
-        if($argcallout) {
-            $prefix = "(?" . $argqualifs . "C" ; # so we can have facet persistant callouts
-            $argident = $argcallout;
-        }
-
-        $body =~ s{\(\?&$param\)}{$prefix . $argident . ")" . $argqualifs}eg if($argident);
+        $body =~ s{(\?&{1,2})$param(<.*?>)?+\)}{
+            if(not $argcallout) { $1 . $argident .  $2 . ")" . $argqualifs; }
+            else {
+                "(" . $argqualifs . "?" + $argcallout . ")" ;
+            }}eg
     }
 
     if($name) {
-        $body =~ s{(?<=\(\?<)$template\b}{$name}e;
+        $body =~ s{(?<=\(\?<)\Q$template\E\b}{$name}e;
     } elsif(not $doubleref) {
-        $body =~ s{\(\?<$template\b.*?>}{(};
+        $body =~ s{\(\?<\Q$template\E\b.*?>}{(};
     }
 
     return $body;
@@ -215,11 +219,26 @@ sub parseregexfile {
 
     @arrayoftemplates = ();
 
-    $regexfilecontent =~s {\(\?&(?<doubleref>&)?+(?<template>((?![)])\S)+)<(?<args>.*?)>(=(?<name>((?![)])\S)+))?\)}{substitutetemplateinstances($regexfilecontent)}gxxe;
+    sub substitutetemplateinstancesdoregex {
+        return $_[0] =~s {\(\?&(?<doubleref>&)?+(?<template>((?![)])\S)+)<(?<args>.*?)>
+                            (=(?<name>((?![)])\S)+))?\)}
+                            {substitutetemplateinstances($_[0])}gxxe;
+    }
+
+    while(substitutetemplateinstancesdoregex($regexfilecontent)) {}
+
+    #print @arrayoftemplates;
 
     foreach my $template (@arrayoftemplates) {
-        $regexfilecontent =~s {\Q$template\E}{}g ;
+        #print "\n\n$template\n\n";
+        $regexfilecontent =~s {\(\?<(?<params>.*?)>\)\s*+(?=\(\?<\Q$template\E\b)(?<inpar>(?<!\\)\((
+                    ([^][()]|(?<=\\).)++|(?&inpar)|(?<insquare>(?<!\\)\[\^?+(.|\\.)(
+                    ([^]]|(?<=\\).)++|(?&insquare))*(?<!\\)\]))*(?<!\\)\))}{}gxx ;
     }
+
+    #print $regexfilecontent;
+
+    #exit;
 
     my $regexfile = $regexfilecontent; 
     
@@ -235,6 +254,8 @@ sub parseregexfile {
 
     $regexfile =~s/\(\?C(\d++)\)/(?{defaultcallback($1)})/g if($matchinperl);
 
+    $regexfile =~s/\(\?<(\w+)#nofacet>/(?<$1>/g;
+
     my $regexfilecontentcopy = $regexfilecontent;
 
     sub replacefacetgroups {
@@ -242,6 +263,17 @@ sub parseregexfile {
     }
 
     replacefacetgroups($1, $_[1]) while($regexfilecontentcopy =~/(\(\?<\w+)facet>/g);
+
+    sub replacenofacetgroups {
+        my $name = $_[0];
+        $_[1] =~s/[(]\?&\Q$name\E[)]/(?&$name#nofacet)/g;
+        $_[1] =~s/\(\?<\Q$name\E\#nofacet>((?<inpar>(?<!\\)\((?<content>(([^][()]|(?<=\\).)++|(?&inpar)
+                        |(?<insquare>(?<!\\)\[\^?+(.|\\.)(([^]]|(?<=\\).)++
+                        |(?&insquare))*(?<!\\)\]))*)(?<!\\)\))|(?&content))\)/(?&$name#nofacet)/gsx;
+    }
+
+    replacenofacetgroups($1, $regexfilecontent) while($regexfilecontentcopy =~/\(\?<(\w+)#nofacet>/g); # remove references to nofacet groups
+
 
     $regexfilecontent =~s/\(\?C(\d++)\)//g;
 

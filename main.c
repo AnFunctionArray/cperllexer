@@ -75,7 +75,7 @@ char* getnameloc3(long long int ntocompare, struct calloutinfo nametable, pcre2_
 
 char* getnameloc2(long long int ntocompare, struct calloutinfo nametable, pcre2_callout_block* pcurrblock, int displ)
 {
-	return getnameloc3(ntocompare, nametable, pcurrblock, displ, (struct namelocopts) { .dontsearchforclosest = 1 });
+	return getnameloc3(ntocompare, nametable, pcurrblock, displ, (struct namelocopts) { .rev = 1, .last = 0, .dontsearchforclosest = 1, });
 }
 
 char* getnameloc(long long int ntocompare, struct calloutinfo nametable) {

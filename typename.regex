@@ -1,22 +1,23 @@
 (?<typename>\s*+[(]((?<allqualifs>(?<typesandqualifiers>\s*+(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|\b__int64\b|\b_Bool\b)|
 						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
 						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b|\btypedef\b))(?C49)\s*+)
-						|(?&structorunion)|(\s*+(\b__inline\b|\b__forceinline\b)\s*+))|(?&typedefcast))++(?C55)
+						|(?&structorunion)|(\s*+(\b__inline\b|\b__forceinline\b)\s*+))|(?&&typedefcastfacet<>))++(?C55)
 						(?&abstdecloptoutter)?+[)](?C46)\s*+)
-
-(?<typedefcast>(?&identifierminetypedef#nofacet)
+(?<>)
+(?<typedefcastfacet>(?&&identifierminetypedeffacet<>)
 			((?!(?&allqualifsfacet)*+(?&identifierraw))
 			|(?=(?&allqualifsfacet)*+(?&abstdecloptoutterfacet))))
+(?<>)
+(?<typedefdeclfacet>(?&&identifierminetypedeffacet<>)(?=(?&allqualifsfacet)*+(?&abstdecloutterfacet)))
 
-(?<typedefdecl>(?&identifierminetypedef#nofacet)(?=(?&allqualifsfacet)*+(?&abstdecloutterfacet)))
-
-(?<allqualifsdecl>(?&allqualifs)|(?&typedefdecl))
+(?<>)
+(?<allqualifsdeclfacet>(?&allqualifs)|(?&&typedefdeclfacet<>))
 
 (?# The committee has decided against (if actually even possible) having the same name as a typedef for a parameter)
-
-(?<typedefparam>(?&identifierminetypedef#nofacet))
-
-(?<allqualifsparam>(?&allqualifs)|(?&typedefparam))
+(?<>)
+(?<typedefparamfacet>(?&&identifierminetypedeffacet<>))
+(?<>)
+(?<allqualifsparamfacet>(?&allqualifs)|(?&&typedefparamfacet<>))
 
 (?<Tabstrrest, Tabstrrestalt, Tinside>)(?<abstdecl>(?<abstrptrrev#restrictoutsidefacet>(?<abstrptr>\s*+[*]\s*+((?&qualifiers))*+)
 						(?!(?&abstrptrrev)(?C11))
@@ -54,16 +55,17 @@
 (?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
 
 (?<Tabstdecl, Tasbtdecloutterfacet, Tasbtdecloutter>)
-(?<abstdeclorallqualifs>(?&Tabstdecl)(?&callingconv)?+(?=(?&Tasbtdecloutterfacet))(?C55)(?&Tasbtdecloutter))
+(?<abstdeclorallqualifs>(?&&Tabstdecl<>)(?&callingconv)?+(?=(?&Tasbtdecloutterfacet))(?C55)(?&Tasbtdecloutter))
 
-(?&abstdeclorallqualifs<allqualifsdecl*+, abstdecloutterfacet, abstdecloutter>=typenameinsideopt)
+(?&abstdeclorallqualifs<allqualifsdeclfacet*+, abstdecloutterfacet, abstdecloutter>=typenameinsideopt)
 
-(?&abstdeclorallqualifs<allqualifsdecl++, abstdecloutterfacet, abstdecloutter>=typenameinsidedecl)
+(?&abstdeclorallqualifs<allqualifsdeclfacet++, abstdecloutterfacet, abstdecloutter>=typenameinsidedecl)
 
-(?&abstdeclorallqualifs<allqualifsparam++,abstdecloutterparamsfacet, abstdecloutterparams>=typenameinsideparams)
+(?&abstdeclorallqualifs<allqualifsparamfacet++,abstdecloutterparamsfacet, abstdecloutterparams>=typenameinsideparams)
 
 (?<identifierminedecl>\s*+(?!(?&keywordlist))((?&identifierraw))(?C39)\s*+)
-(?<identifierminetypedef#restrictpcre2only>\s*+(?!(?&keywordlist))((?&identifierraw#nofacet))(??C38)\s*+)
+(?<>)
+(?<identifierminetypedeffacet#restrictpcre2only>\s*+(?!(?&keywordlist))((?&identifierraw#nofacet))(??C38)\s*+)
 (?<identifierminetypedef#restrictperlonly>\s*+(??C38)\s*+)
 
 (?<keywordlist>(?&typesandqualifiersmask)|\b(struct|enum|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)\b)
@@ -73,7 +75,7 @@
 
 (?<abstrbitfield>\s*+:\s*+(?&assignorsomething))
 (?<designator>\s*+(\[(?&primexpr)\]|\.\s*+(?&identifier))\s*+)
-(?<initializer>(?&assignorsomething)|\s*+[{]((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*+[}]\s*+)
+(?<initializer>(?&assignorsomething)(?C95)|\s*+[{]((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*+[}]\s*+)
 (?<abstrinitialization>=(?&initializer))
 
 (?<calloutid>)
