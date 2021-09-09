@@ -170,10 +170,10 @@ sub substitutetemplateinstances {
 
         last if(!$arg || !$param);
 
-        $body =~ s{(\?&{1,2})$param(<.*?>)?+\)}{
+        $body =~ s{(\(\?&{1,2})$param(<.*?>|facet)?+\)}{
             if(not $argcallout) { $1 . $argident .  $2 . ")" . $argqualifs; }
             else {
-                "(" . $argqualifs . "?" + $argcallout . ")" ;
+                "(" . $argqualifs . "?C" . $argcallout . ")" ;
             }}eg
     }
 
@@ -246,18 +246,18 @@ sub parseregexfile {
 
     $regexfile =~s/\(\?<#restrictoutsidefacet>/(/g;
 
-    $regexfile =~s/[(]\?&(\w+?)#nofacet[)]/(?&$1)/g;
+    #$regexfile =~s/[(]\?&(?>\w+?)\#nofacet[)]/(?&$1)/g;
 
-    $regexfile =~s/[(]\?[(]<(\w+?)#nofacet>[)]/(?(<$1>)/g;
+    #$regexfile =~s/[(]\?[(]<(\w+?)#nofacet>[)]/(?(<$1>)/g;
 
     $regexfile =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
     $regexfile =~s/\(\?C(\d++)\)/(?{defaultcallback($1)})/g if($matchinperl);
 
-    $regexfile =~s/\(\?<(\w+)#nofacet>/(?<$1>/g;
+    #$regexfile =~s/\(\?<(\w+)#nofacet>/(?<$1>/g;
 
     my $regexfilecontentcopy = $regexfilecontent;
-
+=begin comment
     sub replacefacetgroups {
         $regexfilecontent =~s/\Q$_[0]\E(facet)?>/(/g;
     }
@@ -273,23 +273,23 @@ sub parseregexfile {
     }
 
     replacenofacetgroups($1, $regexfilecontent) while($regexfilecontentcopy =~/\(\?<(\w+)#nofacet>/g); # remove references to nofacet groups
-
+=cut
 
     $regexfilecontent =~s/\(\?C(\d++)\)//g;
 
     $regexfilecontent =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
-    $regexfilecontent =~s/[(]\?&(\w+?)(facet)?[)]/(?&$1facet)/g;
+    $regexfilecontent =~s/[(]\?&(\w+?)(facet)?+[)]/(?&$1facet)/g;
 
-    $regexfilecontent =~s/[(]\?[(]<(\w+?)(facet)?>[)]/(?(<$1facet>)/g;
+    #$regexfilecontent =~s/([(]\?)?+[(]<(?>\w+?)(facet)?+>[)]/$1(<$2facet>)/g;
 
-    $regexfilecontent =~s/[(]\?&(\w+?)#nofacet[)]/(?&$1)/g;
+    #$regexfilecontent =~s/[(]\?&(?>\w+?)\#nofacet[)]/(?&$1)/g;
 
-    $regexfilecontent =~s/[(]\?[(]<(\w+?)#nofacet>[)]/(?(<$1>)/g;
+    #$regexfilecontent =~s/[(]\?[(]<(\w+?)#nofacet>[)]/(?(<$1>)/g;
 
-    $regexfilecontent =~s/[(]\?[(]<(\w+?)(facet)?>[)]/(?(<$1facet>)/g;
+    $regexfilecontent =~s{([(]\?[(]?+)<(\w+?)(facet)?+>}{$1<$2facet>}g;
 
-    $regexfilecontent =~s/(\(\?<\w+)>/$1facet>/g;
+    #$regexfilecontent =~s/(\(\?<\w+)>/$1facet>/g;
 
     $regexfilecontent =~s/(\(\?<\w+)#restrictoutsidefacet>/$1facet>(*F)/g;
 

@@ -56,12 +56,45 @@
 #if !defined(_WIN32) & !defined(_WIN64)
 #include <pcre2.h>
 #else
-#include <pcre/pcre2.h>
+#include <pcre2/pcre2.h>
 #endif
 
 extern "C" {
 #include "../main.h"
 }
+
+const std::list<struct var>::reverse_iterator obtainvalbyidentifier(std::string ident, bool push = true, bool bfindtypedef = false);
+
+enum class currdecltypeenum {
+	TYPEDEF,
+	CAST,
+	PARAMS,
+	NORMAL,
+	UNKNOWN,
+	NONE
+};
+
+//std::string currdeclspectypedef;
+
+std::list<std::pair<std::list<std::string>, bool>> qualifsandtypes{ 1 };
+
+static std::list<std::list<var>> scopevar{ 1 };
+
+static std::list<std::list<std::list<var>>> structorunionmembers{ 1 };
+
+void startdeclaration(std::string typedefname);
+
+struct currtypevectorbeingbuild_t {
+	std::list<std::list<var>>::iterator p;
+	currdecltypeenum currdecltype;
+};
+
+std::list<currtypevectorbeingbuild_t> currtypevectorbeingbuild = {
+	{scopevar.begin(), currdecltypeenum::NORMAL} };
+
+std::list<std::pair<std::array<llvm::BranchInst*, 2>, llvm::BasicBlock*>>::iterator startifstatement(bool pop = true);
+
+static std::string currstring;
 
 static bool bischarlit = false;
 
@@ -107,7 +140,7 @@ extern "C" void startforloopcond();
 
 struct bindings_payload {
 	int getnameloc(const char* ntocompare, calloutinfo nametable) {
-		return getnameloc3(ntocompare, nametable, a, 1, { .dontsearchforclosest = 0,.printdispl = +1 });
+		return getnameloc3(ntocompare, nametable, a, 1, { .rev = 1, .dontsearchforclosest = 0,.printdispl = +1 });
 	}
 	struct calloutinfo* ptable;
 	pcre2_callout_block* a;
@@ -157,7 +190,7 @@ struct bindings_parsing : bindings_payload {
 	virtual int unused_36() { return 0; };
 	virtual int unused_37() { return 0; };
 	virtual int identifier_typedef_38() {
-		int n = getnameloc3("identifierminetypedeffacet", *ptable, a, 1, { .rev = 1, .last = 0, .dontsearchforclosest = 1, }) + 1;
+		int n = getnameloc3("typedefnmfacet", *ptable, a, 0, { .rev = 0, .last = 0, .dontsearchforclosest = 0, });
 		int ret = 1;
 		auto ident = std::string{ (char*)GROUP_PTR_AND_SZ(n) };
 		for (auto& typedefscope : typedefs)
@@ -658,7 +691,535 @@ static std::list<opscopeinfo> opsscopeinfo;
 
 //static std::list<var> currlogicopval{};
 
-struct basehndl {
+struct bindings_compiling : bindings_payload {
+	virtual void escape_1() {
+		int n = getnameloc("escape", *ptable);
+		addescapesequencetostring((char*)GROUP_PTR_AND_SZ(n + 1));
+
+	}
+	virtual void text_2() {
+		int n = getnameloc("text", *ptable);
+		addplaintexttostring((char*)GROUP_PTR_AND_SZ(n + 1));
+
+	}
+	virtual void unused_3() { };
+	virtual void start_str_4() {
+		int n = getnameloc("begincharliteral", *ptable);
+		bischarlit = n != -1 && a->offset_vector[n * 2] != -1;
+		//a->offset_vector[n * 2] = a->offset_vector[n * 2 + 1] = -1;
+	}
+	virtual void num_lit_5() {
+		unsigned int type;
+		int n = getnameloc("numberliteral", *ptable);
+
+		//ntoprint[0] = getnameloc("uns", *ptable);
+
+		int ntoprint[2], ntoclear;
+
+		ntoprint[1] = getnameloc("lng", *ptable);
+
+		const char* groups[] = { "hex", "bin", "oct", "dec" };
+
+		for (const char** pgroup = groups; pgroup != 1[&groups]; ++pgroup)
+		{
+			ntoclear = getnameloc3(*pgroup, *ptable, a, 0, { .dontsearchforclosest = 1 });
+			if (ntoclear != -1 && a->offset_vector[2 * ntoclear] != -1)
+			{
+				type = pgroup - groups; //<< 2;//| (a->offset_vector[2 * ntoprint[0]] != -1) | (a->offset_vector[2 * ntoprint[1]] != -1) << 1;
+
+				insertinttoimm((char*)GROUP_PTR_AND_SZ(ntoclear), (char*)CHECKED_PTR_AND_SZ(ntoprint[1]), type);
+
+				//a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
+
+				break;
+			}
+		}
+
+	}
+	virtual void ident_6() {
+		int n = getnameloc("identifier", *ptable);
+		obtainvalbyidentifier({ (char*)GROUP_PTR_AND_SZ(n + 1) });
+
+	}
+	virtual void start_fn_call_7() { startfunctioncall(); }
+	virtual void member_access_op_8() {
+		int n = getnameloc("identifierminemember", *ptable), ntoprint[2];
+		ntoprint[1] = getnameloc("arrowordot", *ptable) + 1;
+		memberaccess((char*)GROUP_PTR_AND_SZ(ntoprint[1]), (char*)GROUP_PTR_AND_SZ(n + 1));
+
+	}
+	virtual void postfix_arith_9() {
+		int n = getnameloc("postfixarith", *ptable);
+		unaryincdec((char*)GROUP_PTR_AND_SZ(n + 1), true);
+
+	}
+	virtual void prefix_arith_10() {
+		int n = getnameloc("prefixarith", *ptable);
+		unaryincdec((char*)GROUP_PTR_AND_SZ(n + 1), false);
+
+	}
+	virtual void decl_ptr_11() {
+		int n = (getnameloc2("abstrptr", *ptable, a, 1));
+
+		//n { };
+
+		addptrtotype((char*)GROUP_PTR_AND_SZ(n + 1));
+
+	}
+	virtual void decl_subs_12() {  }
+	virtual void end_fn_call_13() { endfunctioncall(); }
+	virtual void unexplored_end_sizeof_14() {  }
+	virtual void begin_sizeof_15() {  }
+	virtual void unused_16() { };
+	virtual void unused_17() { };
+	virtual void unused_18() { };
+	virtual void unary_op_19() {
+		int n = getnameloc("unaryop", *ptable);
+		unary((char*)GROUP_PTR_AND_SZ(n + 1));
+
+	}
+#define BINARY_OP(name) \
+	int n = getnameloc3(name, *ptable, a, 1, { .rev = 1, .dontsearchforclosest = 0,.printdispl = +1 })
+
+	virtual void add_op_20() {
+		BINARY_OP("addop");
+		binary((char*)GROUP_PTR_AND_SZ(n + 1));
+
+	}
+	virtual void mul_op_21() {
+		BINARY_OP("mulop");
+		binary((char*)GROUP_PTR_AND_SZ(n + 1));
+
+	}
+	virtual void shift_op_22() {
+		BINARY_OP("shiftop");
+		binary((char*)GROUP_PTR_AND_SZ(n + 1));
+
+	}
+	virtual void rel_op_23() {
+		BINARY_OP("relop");
+		binary((char*)GROUP_PTR_AND_SZ(n + 1));
+
+	}
+	virtual void eq_op_24() {
+		BINARY_OP("eqop");
+		binary((char*)GROUP_PTR_AND_SZ(n + 1));
+
+	}
+	virtual void and_op_25() {
+		BINARY_OP("andop");
+		binary((char*)GROUP_PTR_AND_SZ(n + 1));
+
+	}
+	virtual void xor_op_26() {
+		BINARY_OP("xorop");
+		binary((char*)GROUP_PTR_AND_SZ(n + 1));
+
+	}
+	virtual void or_op_27() {
+		BINARY_OP("orop");
+		binary((char*)GROUP_PTR_AND_SZ(n + 1));
+
+	}
+	virtual void and_logic_op_28() {
+		BINARY_OP("andlogicop");
+		binary((char*)GROUP_PTR_AND_SZ(n + 1));
+
+	}
+	virtual void or_logic_op_29() {
+		int n = getnameloc3("binop", *ptable, a, 1, { .rev = 1, .last = 0, .dontsearchforclosest = 1, });
+		if (n != -1 && a->offset_vector[2 * (n + 1)] != -1)
+			binary((char*)GROUP_PTR_AND_SZ(n + 1));
+		//ntoclearauto[0] = n + 1;
+
+	}
+	virtual void assign_op_30() {
+		BINARY_OP("assignop");
+		binary((char*)GROUP_PTR_AND_SZ(n + 1));
+
+	}
+	virtual void unused_31() { };
+	virtual void ternary_true_32() {  }
+	virtual void ternary_33() {  }
+	virtual void ternary_false_34() {  }
+	virtual void comma_op_35() {  }
+	virtual void unused_36() { };
+	virtual void unused_37() { };
+	/*void handledeclident(const std::string contentstr) {
+		if (contentstr.empty()) return;
+		//int n = getnameloc2("typedefkeyword", *ptable, a, 0);
+
+		auto c_strcontentstr = contentstr.c_str();
+
+		if (auto pvar = obtainvalbyidentifier(contentstr, false))
+			if (pvar->type.back().spec.basicdeclspec.basic[2] == "typedef")
+				if (currdeclspectypedef.empty()) currdeclspectypedef = contentstr; else goto adddecl;
+			else;
+		else adddecl: adddeclarationident(contentstr.c_str(), contentstr.size(), false);//a->offset_vector[2 * n] != -1);
+	}*/
+	virtual void identifier_typedef_38() {
+		//int n = getnameloc("identifierminetypedef", *ptable) + 1;
+
+		//currdeclspectypedef = { (char*)GROUP_PTR_AND_SZ(n) };
+
+		//handledeclident({ (char*)GROUP_PTR_AND_SZ(n) });
+	}
+	virtual void identifier_decl_39() {
+		int n = getnameloc("identifierminedecl", *ptable) + 1;
+
+		//handledeclident({ (char*)GROUP_PTR_AND_SZ(n) });
+		//adddeclarationident((char*)GROUP_PTR_AND_SZ(n), false);
+
+		currtypevectorbeingbuild.back().p->back().identifier = { (char*)GROUP_PTR_AND_SZ(n) };
+	}
+	virtual void start_constant_expr_40() {
+		beginconstantexpr();
+
+	}
+	virtual void end_decl_sub_41() {
+		addsubtotype();
+		endconstantexpr();
+
+	}
+	virtual void end_full_decl_42() {
+		//isinsidedecl = false;
+		//typedefname[0] = typedefname[1] = -1;
+		finalizedeclaration();
+
+	}
+	virtual void extend_decl_43() {
+		continuedeclaration();
+
+	}
+	virtual void start_new_scope_44() {
+		//szscopeleveltoadd++;
+		//addtypedefsscope();
+		beginscope();
+
+	}
+	virtual void end_of_scope_45() {
+		endscope();
+
+	}
+	virtual void unexplored_46() {  }
+	virtual void begin_param_list_47() {
+		startfunctionparamdecl();
+
+	}
+	virtual void end_param_list_48() {
+		int n = getnameloc3("rest", *ptable, a, 0, { .dontsearchforclosest = 1 });
+		endfunctionparamdecl(n != -1 && a->offset_vector[2 * n] != -1);
+
+	}
+	virtual void add_type_or_qualifier_49() {
+
+	}
+	virtual void unused_50() { };
+	virtual void add_literal_51() {
+		if (!bischarlit) constructstring();
+		else {
+			std::stringstream ssstream;
+			ssstream << (int)currstring[0];
+			insertinttoimm(ssstream.str().c_str(), ssstream.str().size(), "", 0, 3);
+			currstring = "";
+		}
+	}
+	virtual void finish_return_statement_52() {
+		endreturn();
+
+	}
+	virtual void finish_statement_53() {
+		endexpression();
+
+	}
+	virtual void subscript_op_54() {
+		subscript();
+
+	}
+	virtual void decl_begin_55() {
+		int n = getnameloc3("typedefnmfacet", *ptable, a, 0, { .rev = 1, .last = 0, .dontsearchforclosest = 1, });
+
+		std::string identtypedef{ (char*)GROUP_PTR_AND_SZ(n) };
+		startdeclaration(identtypedef);
+
+	}
+	virtual void end_of_sizeof_56() {
+		endsizeofexpr();
+
+	}
+	virtual void end_of_sizeof_tp_nm_57() {
+		endsizeoftypename();
+
+	}
+	virtual void ident_struc_58() {
+		const char* namedcapture;
+		int ntoprint[2];
+		int n = getnameloc(namedcapture = "identifierminestruct", *ptable);
+		ntoprint[1] = getnameloc(namedcapture = "structorunion", *ptable) + 1;
+		currstruct.first = { (char*)GROUP_PTR_AND_SZ(ntoprint[1]) };
+		currstruct.second = { (char*)GROUP_PTR_AND_SZ(n + 1) };
+
+
+	}
+	virtual void struc_or_union_body_59() {
+		startbuildingstructorunion();
+
+	}
+	virtual void struc_or_union_body_end_60() {
+		endbuildingstructorunion();
+
+	}
+	virtual void perform_explicit_conversion_61() {
+		applycast();
+
+	}
+	virtual void create_label_62() {
+		const char* namedcapture;
+		int n = getnameloc(namedcapture = "identifierminelabel", *ptable);
+		splitbb((char*)GROUP_PTR_AND_SZ(n + 1));
+
+	}
+	virtual void goto_stmt_63() {
+		const char* namedcapture;
+		int n = getnameloc(namedcapture = "identifierminegoto", *ptable);
+		gotolabel((char*)GROUP_PTR_AND_SZ(n + 1));
+
+	}
+	virtual void switch_stmt_64() { startswitch(); }
+	virtual void create_case_65() {
+		addCase();
+		endconstantexpr();
+	}
+	virtual void switch_stmt_end_66() { endswitch(); }
+	virtual void create_default_case_67() { addDefaultCase(); }
+	size_t wholepart[2] = { SIZE_MAX, SIZE_MAX }, fractionpart[2] = { SIZE_MAX, SIZE_MAX },
+		exponent[2] = { SIZE_MAX, SIZE_MAX }, exponent_sign[2] = { SIZE_MAX, SIZE_MAX };
+	virtual void collect_float_literal_68() {
+		int ntoclear;
+		if (a->offset_vector[2 * (ntoclear = getnameloc("wholeopt", *ptable))] == -1)
+			if (a->offset_vector[2 * (ntoclear = getnameloc("whole", *ptable))] == -1)
+				if (a->offset_vector[2 * (ntoclear = getnameloc("wholenodot", *ptable))] == -1)
+					goto rest;
+
+	switch (wholepart[0]) case ~0U: switch (wholepart[1]) case ~0U:
+		wholepart[0] = a->offset_vector[2 * ntoclear],
+			wholepart[1] = a->offset_vector[2 * ntoclear + 1];
+	rest:
+		ntoclear = getnameloc("fraction", *ptable);
+
+	switch (fractionpart[0]) case ~0U: switch (fractionpart[1]) case ~0U:
+		fractionpart[0] = a->offset_vector[2 * ntoclear],
+			fractionpart[1] = a->offset_vector[2 * ntoclear + 1];
+
+		ntoclear = getnameloc("sign", *ptable);
+
+	switch (exponent_sign[0]) case ~0U: switch (exponent_sign[1]) case ~0U:
+		exponent_sign[0] = a->offset_vector[2 * ntoclear],
+			exponent_sign[1] = a->offset_vector[2 * ntoclear + 1];
+
+		ntoclear = getnameloc("exponent", *ptable) + 2;
+
+	switch (exponent[0]) case ~0U: switch (exponent[1]) case ~0U:
+		exponent[0] = a->offset_vector[2 * ntoclear],
+			exponent[1] = a->offset_vector[2 * ntoclear + 1];
+
+	}
+	virtual void finish_float_literal_69() {
+		int ntoclear = getnameloc("flt", *ptable);
+
+		insertfloattoimm((char*)CHECKED_PTR_AND_SZ(ntoclear), (char*)CHECKED_PTR_AND_SZ_START_END(wholepart[0], wholepart[1]),
+			(char*)CHECKED_PTR_AND_SZ_START_END(fractionpart[0], fractionpart[1]),
+			(char*)CHECKED_PTR_AND_SZ_START_END(exponent[0], exponent[1]),
+			(char*)CHECKED_PTR_AND_SZ_START_END(exponent_sign[0], exponent_sign[1]));
+
+		exponent[0] = exponent[1] = exponent_sign[0] = exponent_sign[1] =
+			fractionpart[0] = fractionpart[1] = wholepart[0] =
+			wholepart[1] = -1;
+
+	}
+	virtual void begin_if_stm_70() { startifstatement(); }
+	virtual void cnt_if_stm_71() { continueifstatement(); }
+	virtual void finish_if_stm_72() { endifstatement(); }
+	virtual void begin_loop_73() { startforloopcond(); }
+	virtual void loop_iter_74() { addforloopiter(); }
+	virtual void finish_loop_75() { endforloop(); }
+	virtual void cond_loop_76() { endforloopcond(); }
+	virtual void begin_do_while_77() { startdowhileloop(); }
+	virtual void finish_do_while_78() { enddowhileloop(); }
+	virtual void finish_continue_stm_79() { addcontinue(); }
+	virtual void finish_break_stm_80() { addbreak(); }
+	virtual void register_calling_conv_81() { }
+	virtual void unexplored_82() { }
+	virtual void end_binary_83() {
+		auto& currbranch = nbranches.back();
+
+		var& ordinary = *currbranch.iterval;
+
+		/*llvm::BranchInst* normalflow = nullptr;
+
+		if (nbranches.back().first.size() > 1)
+			normalflow = splitbb("", 0);*/
+
+		val ordinary_imm = ordinary;
+
+		//auto iternbranch = nbranches.begin();
+
+		/*for (auto branch : nbranches.back().first | ranges::views::drop(1)) {
+			//iternbranch = ++iternbranch;
+			int fullindex = branch->first[0]->getSuccessor(1) != branch->second;
+			branch->first[0]->setSuccessor(!fullindex, pcurrblock.back());
+			branch->second->eraseFromParent();
+			//ifstatements.erase(branch);
+
+			ordinary_imm = ordinary;
+			ordinary_imm.lvalues.push_back({ ordinary_imm.value, ordinary.type });
+
+			immidiates.push_back(ordinary_imm);
+
+			insertinttoimm((char*)branch->first[1], 1, "", 0, 3);
+
+			phndl->assigntwovalues();
+
+			immidiates.pop_back();
+
+			branch->first[0] = splitbb("", 0);
+		}*/
+
+		llvm::BranchInst* lastsplit;
+
+		if (!nbranches.back().second.empty()) {
+			lastsplit = nbranches.back().second.back()[1];
+			lastsplit->setSuccessor(0, pcurrblock.back());
+			auto imm = immidiates.back();
+			ordinary_imm.lvalues.push_back({ ordinary_imm.value, currbranch.iterval->type });
+			immidiates.pop_back();
+			immidiates.push_back(ordinary_imm);
+			immidiates.push_back(imm);
+			assigntwovalues();
+			splitbb("", 0);
+		}
+
+		for (auto branch : nbranches.back().second)
+			branch[0]->setSuccessor(0, pcurrblock.back());
+
+		/*if (normalflow) {
+			normalflow->setSuccessor(0, pcurrblock.back());*/
+		if (!nbranches.back().second.empty()) {
+			ordinary_imm.value = llvmbuilder.CreateLoad(ordinary.requestValue());
+
+			immidiates.pop_back();
+
+			immidiates.push_back(ordinary_imm);
+
+		}
+		//else //((llvm::AllocaInst*)ordinary.pValue)->replaceAllUsesWith(llvm::UndefValue::get(ordinary.pValue->getType())),
+			//((llvm::AllocaInst*)ordinary.pValue)->eraseFromParent();
+		//}
+
+		scopevar.back().erase(currbranch.iterval);
+
+		/**/
+
+		nbranches.pop_back();
+	}
+	virtual void begin_branch_84() {
+		auto& currbranch = nbranches.back();
+		/*val ordinary_imm = *currbranch.iterval;
+		auto imm = immidiates.back();
+		ordinary_imm.lvalues.push_back({ ordinary_imm.value, currbranch.iterval->type });
+		immidiates.pop_back();
+		immidiates.push_back(ordinary_imm);
+		immidiates.push_back(imm);
+		phndl->assigntwovalues();*/
+		currbranch.first.insert(++currbranch.first.begin(), startifstatement(false));
+		//currbranch.second.push_back(currbranch.first.back());
+		//ordinary_imm.value = llvmbuilder.CreateLoad(ordinary_imm.value);
+		//immidiates.push_back(ordinary_imm);
+	}
+	virtual void begin_binary_85() {
+		var ordinary; type basicint{ type::BASIC };
+		basicint.spec.basicdeclspec.basic[1] = "int";
+		ordinary.type = { basicint };
+		scopevar.back().push_back(ordinary);
+		nbranches.push_back({ std::list<arrtwovals>{1}, --scopevar.back().end() });
+		nbranches.back().itersecond = nbranches.back().first.begin();
+
+		/*val ordinary_imm = scopevar.back().back();
+		ordinary_imm.lvalues.push_back({ ordinary_imm.value, ordinary.type });
+
+		immidiates.push_back(ordinary_imm);
+
+		insertinttoimm("1", sizeof "1" - 1, "", 0, 3);
+
+		assigntwovalues();
+
+		immidiates.pop_back();*/
+	}
+	virtual void unused_86() { }
+	virtual void begin_nested_expr_87() { }
+	virtual void end_nested_expr_88() { }
+	virtual void add_ident_to_enum_def_89() {
+		var tmp;
+		type enumtype{ type::BASIC };
+		enumtype.spec.basicdeclspec.basic = { "enum", "int", "", enums.back().back().ident };
+
+		tmp.type.push_back(enumtype);
+
+		tmp.pllvmtype = createllvmtype(tmp.type);
+
+		int n = getnameloc3("identifiermine", *ptable, a, 1, { .dontsearchforclosest = 0 }) + 1;
+
+		tmp.identifier = { (char*)GROUP_PTR_AND_SZ(n) };
+
+		scopevar.back().push_back(tmp);
+
+		enums.back().back().memberconstants.push_back(--scopevar.back().end());
+	}
+	virtual void begin_enumerator_def_90() {
+		begin_enumerator_decl_91();
+		enums.back().push_back({ currenum, {} });
+	}
+	virtual void begin_enumerator_decl_91() {
+		int n = getnameloc3("identifiermine", *ptable, a, 1, { .dontsearchforclosest = 0 }) + 1;
+		currenum = { (char*)GROUP_PTR_AND_SZ(n) };
+	}
+	virtual void end_ass_to_enum_def_92() {
+		enums.back().back().memberconstants.back()->constant = immidiates.back().constant;
+		enums.back().back().maxcount = dyn_cast<llvm::ConstantInt>(enums.back().back().memberconstants.back()->constant)->getSExtValue() + 1;
+		immidiates.pop_back();
+		endconstantexpr();
+	}
+	virtual void end_without_ass_to_enum_def_93() {
+		enums.back().back().memberconstants.back()->constant = llvm::ConstantInt::get(llvmctx, llvm::APInt(32, enums.back().back().maxcount++));
+	}
+	virtual void begin_unnamed_enum_def_94() {
+		enums.back().push_back({ {}, {} });
+	}
+	virtual void end_expr_init_95() {
+		auto val = immidiates.back();
+		immidiates.pop_back();
+		obtainvalbyidentifier(scopevar.back().back().identifier);
+		immidiates.push_back(val);
+		assigntwovalues();
+		immidiates.pop_back();
+	}
+
+
+
+
+	virtual llvm::Value* assigntwovalues() = 0;
+
+	static std::list<val>& immidiates;
+};
+
+std::list<val>& bindings_compiling::immidiates = ::immidiates;
+
+struct basehndl : bindings_compiling {
+	virtual basehndl *(*getrestorefn())(basehndl*) {
+		return [](basehndl *pnhdl) -> basehndl* {
+			return new (pnhdl) basehndl{};
+		};
+	}
 	friend void beginlogicalop(int blastorfirst);
 	virtual llvm::Value* CreateCastInst(llvm::Value* C, llvm::Type* Ty, bool bissigned) {
 		return llvmbuilder.CreateIntCast(C, Ty, bissigned);
@@ -674,8 +1235,6 @@ struct basehndl {
 	}
 
 	using val = ::val;
-
-	std::list<val>& immidiates = ::immidiates;
 
 	virtual void getpositive() {
 		immidiates.back() = integralpromotions(immidiates.back());
@@ -1392,6 +1951,12 @@ const llvm::fltSemantics& getfloatsembytype(val val) {
 
 struct handlefpexpr : basehndl {
 
+	virtual basehndl* (*getrestorefn())(basehndl*) {
+		return [](basehndl* pnhdl) -> basehndl* {
+			return new (pnhdl) handlefpexpr{};
+		};
+	}
+
 	virtual void getnegative() override {
 		//immidiates.back() = integralpromotions(immidiates.back());
 
@@ -1510,11 +2075,21 @@ struct handlefpexpr : basehndl {
 	}
 };
 
-struct handlecnstexpr : basehndl {
+struct handlecnstexpr : handlefpexpr {
+	/*No branching needed for cnst expr*/
+	virtual void begin_binary_85() { }
+	virtual void begin_branch_84() { }
+	virtual void end_binary_83() { }
+
+	virtual basehndl* (*getrestorefn())(basehndl*) {
+		return [](basehndl* pnhdl) -> basehndl* {
+			return new (pnhdl) handlecnstexpr{};
+		};
+	}
 
 	using val = ::val;
 
-	std::list<val>& immidiates = basehndl::immidiates;
+	//std::list<val>& immidiates = basehndl::immidiates;
 
 	/*auto getops(bool busual = true) {
 		auto ops = basehndl::getops();
@@ -1663,9 +2238,9 @@ static handlecnstexpr hndlcnstexpr{};
 
 static handlefpexpr hndlfpexpr{};
 
-static basehndl hndlbase{};
+std::aligned_storage_t<sizeof(handlecnstexpr), alignof(handlecnstexpr)> unincompilingobj;
 
-static basehndl* phndl = &hndlbase;
+static basehndl* phndl = new (&unincompilingobj) basehndl{};
 
 //static std::remove_reference<decltype (basehndl::immidiates)>::type::iterator
 //cnstexpriterstart{};
@@ -1674,32 +2249,7 @@ size_t szcnstexprinitial;
 
 // static std::string currdeclidentifier{};
 
-enum class currdecltypeenum {
-	TYPEDEF,
-	CAST,
-	PARAMS,
-	NORMAL,
-	UNKNOWN,
-	NONE
-};
-
-//std::string currdeclspectypedef;
-
-std::list<std::pair<std::list<std::string>, bool>> qualifsandtypes{ 1 };
-
-static std::list<std::list<var>> scopevar{ 1 };
-
-static std::list<std::list<std::list<var>>> structorunionmembers{ 1 };
-
-struct currtypevectorbeingbuild_t {
-	std::list<std::list<var>>::iterator p;
-	currdecltypeenum currdecltype;
-};
-
-std::list<currtypevectorbeingbuild_t> currtypevectorbeingbuild = {
-	{scopevar.begin(), currdecltypeenum::NORMAL} };
-
-static std::string currstring;
+extern std::string currstring;
 
 void printvaltype(val val) {
 	if (!val.value)
@@ -1714,7 +2264,7 @@ void printvaltype(val val) {
 
 extern valandtype getrvalue(valandtype lvalue);
 
-const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident, bool push = true, bool bfindtypedef = false) {
+const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident, bool push, bool bfindtypedef) {
 
 	std::list<::var>::reverse_iterator var{};
 
@@ -1797,10 +2347,10 @@ extern "C" void constructstring() {
 	auto lvalue = llvmbuilder.CreateGlobalStringPtr(
 		currstring, "", 0, &nonconstructable.mainmodule);
 
-	hndlbase.immidiates.push_back(
+	immidiates.push_back(
 		{ llvmbuilder.CreateLoad(lvalue), stirngtype, {}, "[[stringliteral]]" });
-	hndlbase.immidiates.back().lvalues.push_back(hndlbase.immidiates.back());
-	hndlbase.immidiates.back().lvalues.back().value = lvalue;
+	immidiates.back().lvalues.push_back(immidiates.back());
+	immidiates.back().lvalues.back().value = lvalue;
 	currstring = "";
 }
 
@@ -2145,7 +2695,7 @@ extern "C" llvm::BranchInst * splitbb(const char* identifier, size_t szident);
 
 extern "C" void insertinttoimm(const char* str, size_t szstr, const char* suffix, size_t szstr1, int type);
 
-std::list<std::pair<std::array<llvm::BranchInst*, 2>, llvm::BasicBlock*>>::iterator startifstatement(bool pop = true) {
+std::list<std::pair<std::array<llvm::BranchInst*, 2>, llvm::BasicBlock*>>::iterator startifstatement(bool pop) {
 	auto dummyblock = llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->requestValue()));
 
 	if (!immidiates.size())
@@ -2729,7 +3279,7 @@ valandtype getrvalue(valandtype lvalue) {
 }
 
 extern "C" void startfunctioncall() {
-	callees.push_back(--hndlbase.immidiates.end());
+	callees.push_back(--immidiates.end());
 }
 
 std::list<std::pair<llvm::BranchInst*, std::string>> branches;
@@ -2853,11 +3403,13 @@ extern "C" void endfunctioncall() {
 
 	auto iterparams = verylongthingy.begin();
 
-	std::transform(
-		++argsiter, hndlbase.immidiates.end(), std::back_inserter(immidiates),
-		[&](const basehndl::val& elem) { return iterparams != verylongthingy.end() ? convertTo(decay(elem), iterparams++->type).value : decay(elem).value; });
+	bool breached = false;
 
-	hndlbase.immidiates.erase(--argsiter, hndlbase.immidiates.end());
+	std::transform(
+		++argsiter, ::immidiates.end(), std::back_inserter(immidiates),
+		[&](const basehndl::val& elem) { return !(breached = breached || iterparams == verylongthingy.end()) ? convertTo(decay(elem), iterparams++->type).value : decay(elem).value; });
+
+	::immidiates.erase(--argsiter, ::immidiates.end());
 
 	printvaltype(calleevalntype);
 
@@ -2877,7 +3429,7 @@ extern "C" void endfunctioncall() {
 
 extern "C" void endreturn() {
 	//llvmbuilder.SetInsertPoint (pcurrblock.back ());
-	llvmbuilder.CreateRet(hndlbase.immidiates.back().value);
+	llvmbuilder.CreateRet(immidiates.back().value);
 }
 
 extern "C" void endfunctionparamdecl(bool bisrest) {
@@ -3000,7 +3552,11 @@ extern "C" void beginconstantexpr() {
 
 	++hndlstack;
 
-	phndl = &hndlcnstexpr;
+	//phndl = &hndlcnstexpr;
+
+	phndl->~basehndl();
+
+	phndl = new (phndl) handlecnstexpr{};
 }
 
 extern "C" void endconstantexpr() {
@@ -3014,7 +3570,8 @@ extern "C" void endconstantexpr() {
 	// std::endl;
 
 	if (!--hndlstack)
-		phndl = &hndlbase;
+		phndl->~basehndl(),
+		phndl = new (phndl) handlecnstexpr{};
 }
 
 extern "C" void startmodule(const char* modulename, size_t szmodulename) {
@@ -3041,14 +3598,15 @@ extern "C" void unary(const char* str, size_t szstr) {
 
 	imm.assign(str, szstr);
 
-	basehndl* phpriorhndl = phndl;
+	auto phpriorhndlfn = phndl->getrestorefn();
 
 	switch (stringhash(imm.c_str())) {
 	case "-"_h:
 	case "+"_h:
 	case "!"_h:
 		if (bIsBasicFloat(phndl->immidiates.back().type.front()))
-			phndl = &hndlfpexpr;
+			phndl->~basehndl(),
+			phndl = dynamic_cast<basehndl*>(new (phndl) handlefpexpr{});
 	}
 
 	switch (stringhash(imm.c_str())) {
@@ -3073,7 +3631,9 @@ extern "C" void unary(const char* str, size_t szstr) {
 		break;
 	}
 
-	phndl = phpriorhndl;
+	phndl->~basehndl();
+
+	phndl = phpriorhndlfn(phndl);
 }
 
 extern "C" void unaryincdec(const char* str, size_t szstr, bool postfix) {
@@ -3081,10 +3641,11 @@ extern "C" void unaryincdec(const char* str, size_t szstr, bool postfix) {
 
 	imm.assign(str, szstr);
 
-	basehndl* phpriorhndl = phndl;
+	auto phpriorhndl = phndl->getrestorefn();
 
 	if (bIsBasicFloat(phndl->immidiates.back().type.front()))
-		phndl = &hndlfpexpr;
+		phndl->~basehndl(),
+		phndl = new (phndl) handlecnstexpr{};
 
 	unsigned int type = 3; // << 2 | 2;
 
@@ -3109,7 +3670,9 @@ extern "C" void unaryincdec(const char* str, size_t szstr, bool postfix) {
 	if (postfix)
 		immidiates.back() = immlvalue;
 
-	phndl = phpriorhndl;
+	phndl->~basehndl();
+
+	phndl = phpriorhndl(phndl);
 }
 
 extern "C" void binary(const char* str, size_t szstr) {
@@ -3117,14 +3680,15 @@ extern "C" void binary(const char* str, size_t szstr) {
 
 	imm.assign(str, szstr);
 
-	basehndl* phpriorhndl = phndl;
+	auto phpriorhndl = phndl->getrestorefn();
 
 	auto ops = std::array{ *----phndl->immidiates.end(), phndl->immidiates.back() };
 
 	//phndl->usualarithmeticconversions(ops);
 
 	if (bIsBasicFloat(ops[0].type.front()) || bIsBasicFloat(ops[1].type.front()))
-		phndl = &hndlfpexpr;
+		phndl->~basehndl(),
+		phndl = dynamic_cast<basehndl*>(new (phndl) handlefpexpr{});
 
 	//if(phndl->opbbs.back().second.pValue)
 	//phndl->endlast(phndl->opbbs.back().first, phndl->opbbs.back().second);
@@ -3309,8 +3873,8 @@ extern "C" void binary(const char* str, size_t szstr) {
 	}
 
 	//opbbs.pop_back ();
-
-	phndl = phpriorhndl;
+	phndl->~basehndl();
+	phndl = phpriorhndl(phndl);
 }
 
 void printtype(llvm::Type* ptype) { // debug purpose only
@@ -3322,523 +3886,9 @@ void printtype(llvm::Type* ptype) { // debug purpose only
 // !bwhich << " :" << spec << ", is declaring a typedef :" << bistypedef <<
 // std::endl;
 
-struct bindings_compiling : bindings_payload {
-	virtual void escape_1() {
-		int n = getnameloc("escape", *ptable);
-		addescapesequencetostring((char*)GROUP_PTR_AND_SZ(n + 1));
-
-	}
-	virtual void text_2() {
-		int n = getnameloc("text", *ptable);
-		addplaintexttostring((char*)GROUP_PTR_AND_SZ(n + 1));
-
-	}
-	virtual void unused_3() { };
-	virtual void start_str_4() {
-		int n = getnameloc("begincharliteral", *ptable);
-		bischarlit = n != -1 && a->offset_vector[n * 2] != -1;
-		//a->offset_vector[n * 2] = a->offset_vector[n * 2 + 1] = -1;
-	}
-	virtual void num_lit_5() {
-		unsigned int type;
-		int n = getnameloc("numberliteral", *ptable);
-
-		//ntoprint[0] = getnameloc("uns", *ptable);
-
-		int ntoprint[2], ntoclear;
-
-		ntoprint[1] = getnameloc("lng", *ptable);
-
-		const char* groups[] = { "hex", "bin", "oct", "dec" };
-
-		for (const char** pgroup = groups; pgroup != 1[&groups]; ++pgroup)
-		{
-			ntoclear = getnameloc3(*pgroup, *ptable, a, 0, { .dontsearchforclosest = 1 });
-			if (ntoclear != -1 && a->offset_vector[2 * ntoclear] != -1)
-			{
-				type = pgroup - groups; //<< 2;//| (a->offset_vector[2 * ntoprint[0]] != -1) | (a->offset_vector[2 * ntoprint[1]] != -1) << 1;
-
-				insertinttoimm((char*)GROUP_PTR_AND_SZ(ntoclear), (char*)CHECKED_PTR_AND_SZ(ntoprint[1]), type);
-
-				//a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
-
-				break;
-			}
-		}
-
-	}
-	virtual void ident_6() {
-		int n = getnameloc("identifier", *ptable);
-		obtainvalbyidentifier({ (char*)GROUP_PTR_AND_SZ(n + 1) });
-
-	}
-	virtual void start_fn_call_7() { startfunctioncall(); }
-	virtual void member_access_op_8() {
-		int n = getnameloc("identifierminemember", *ptable), ntoprint[2];
-		ntoprint[1] = getnameloc("arrowordot", *ptable) + 1;
-		memberaccess((char*)GROUP_PTR_AND_SZ(ntoprint[1]), (char*)GROUP_PTR_AND_SZ(n + 1));
-
-	}
-	virtual void postfix_arith_9() {
-		int n = getnameloc("postfixarith", *ptable);
-		unaryincdec((char*)GROUP_PTR_AND_SZ(n + 1), true);
-
-	}
-	virtual void prefix_arith_10() {
-		int n = getnameloc("prefixarith", *ptable);
-		unaryincdec((char*)GROUP_PTR_AND_SZ(n + 1), false);
-
-	}
-	virtual void decl_ptr_11() {
-		int n = (getnameloc2("abstrptr", *ptable, a, 1));
-
-		//n { };
-
-		addptrtotype((char*)GROUP_PTR_AND_SZ(n + 1));
-
-	}
-	virtual void decl_subs_12() {  }
-	virtual void end_fn_call_13() { endfunctioncall(); }
-	virtual void unexplored_end_sizeof_14() {  }
-	virtual void begin_sizeof_15() {  }
-	virtual void unused_16() { };
-	virtual void unused_17() { };
-	virtual void unused_18() { };
-	virtual void unary_op_19() {
-		int n = getnameloc("unaryop", *ptable);
-		unary((char*)GROUP_PTR_AND_SZ(n + 1));
-
-	}
-#define BINARY_OP(name) \
-	int n = getnameloc(name, *ptable)
-
-	virtual void add_op_20() {
-		BINARY_OP("addop");
-		binary((char*)GROUP_PTR_AND_SZ(n + 1));
-
-	}
-	virtual void mul_op_21() {
-		BINARY_OP("mulop");
-		binary((char*)GROUP_PTR_AND_SZ(n + 1));
-
-	}
-	virtual void shift_op_22() {
-		BINARY_OP("shiftop");
-		binary((char*)GROUP_PTR_AND_SZ(n + 1));
-
-	}
-	virtual void rel_op_23() {
-		BINARY_OP("relop");
-		binary((char*)GROUP_PTR_AND_SZ(n + 1));
-
-	}
-	virtual void eq_op_24() {
-		BINARY_OP("eqop");
-		binary((char*)GROUP_PTR_AND_SZ(n + 1));
-
-	}
-	virtual void and_op_25() {
-		BINARY_OP("andop");
-		binary((char*)GROUP_PTR_AND_SZ(n + 1));
-
-	}
-	virtual void xor_op_26() {
-		BINARY_OP("xorop");
-		binary((char*)GROUP_PTR_AND_SZ(n + 1));
-
-	}
-	virtual void or_op_27() {
-		BINARY_OP("orop");
-		binary((char*)GROUP_PTR_AND_SZ(n + 1));
-
-	}
-	virtual void and_logic_op_28() {
-		BINARY_OP("andlogicop");
-		binary((char*)GROUP_PTR_AND_SZ(n + 1));
-
-	}
-	virtual void or_logic_op_29() {
-		int n = getnameloc3("binop", *ptable, a, 1, { .rev = 1, .last = 0, .dontsearchforclosest = 1, });
-		if (n != -1 && a->offset_vector[2 * (n + 1)] != -1)
-			binary((char*)GROUP_PTR_AND_SZ(n + 1));
-		//ntoclearauto[0] = n + 1;
-
-	}
-	virtual void assign_op_30() {
-		BINARY_OP("assignop");
-		binary((char*)GROUP_PTR_AND_SZ(n + 1));
-
-	}
-	virtual void unused_31() { };
-	virtual void ternary_true_32() {  }
-	virtual void ternary_33() {  }
-	virtual void ternary_false_34() {  }
-	virtual void comma_op_35() {  }
-	virtual void unused_36() { };
-	virtual void unused_37() { };
-	/*void handledeclident(const std::string contentstr) {
-		if (contentstr.empty()) return;
-		//int n = getnameloc2("typedefkeyword", *ptable, a, 0);
-
-		auto c_strcontentstr = contentstr.c_str();
-
-		if (auto pvar = obtainvalbyidentifier(contentstr, false))
-			if (pvar->type.back().spec.basicdeclspec.basic[2] == "typedef")
-				if (currdeclspectypedef.empty()) currdeclspectypedef = contentstr; else goto adddecl;
-			else;
-		else adddecl: adddeclarationident(contentstr.c_str(), contentstr.size(), false);//a->offset_vector[2 * n] != -1);
-	}*/
-	virtual void identifier_typedef_38() {
-		//int n = getnameloc("identifierminetypedef", *ptable) + 1;
-
-		//currdeclspectypedef = { (char*)GROUP_PTR_AND_SZ(n) };
-
-		//handledeclident({ (char*)GROUP_PTR_AND_SZ(n) });
-	}
-	virtual void identifier_decl_39() {
-		int n = getnameloc("identifierminedecl", *ptable) + 1;
-
-		//handledeclident({ (char*)GROUP_PTR_AND_SZ(n) });
-		//adddeclarationident((char*)GROUP_PTR_AND_SZ(n), false);
-
-		currtypevectorbeingbuild.back().p->back().identifier = { (char*)GROUP_PTR_AND_SZ(n) };
-	}
-	virtual void start_constant_expr_40() {
-		beginconstantexpr();
-
-	}
-	virtual void end_decl_sub_41() {
-		addsubtotype();
-		endconstantexpr();
-
-	}
-	virtual void end_full_decl_42() {
-		//isinsidedecl = false;
-		//typedefname[0] = typedefname[1] = -1;
-		finalizedeclaration();
-
-	}
-	virtual void extend_decl_43() {
-		continuedeclaration();
-
-	}
-	virtual void start_new_scope_44() {
-		//szscopeleveltoadd++;
-		//addtypedefsscope();
-		beginscope();
-
-	}
-	virtual void end_of_scope_45() {
-		endscope();
-
-	}
-	virtual void unexplored_46() {  }
-	virtual void begin_param_list_47() {
-		startfunctionparamdecl();
-
-	}
-	virtual void end_param_list_48() {
-		int n = getnameloc3("rest", *ptable, a, 0, { .dontsearchforclosest = 1 });
-		endfunctionparamdecl(n != -1 && a->offset_vector[2 * n] != -1);
-
-	}
-	virtual void add_type_or_qualifier_49() {
-
-	}
-	virtual void unused_50() { };
-	virtual void add_literal_51() {
-		if(!bischarlit) constructstring();
-		else {
-			std::stringstream ssstream;
-			ssstream << (int)currstring[0];
-			insertinttoimm(ssstream.str().c_str(), ssstream.str().size(), "", 0, 3);
-			currstring = "";
-		}
-	}
-	virtual void finish_return_statement_52() {
-		endreturn();
-
-	}
-	virtual void finish_statement_53() {
-		endexpression();
-
-	}
-	virtual void subscript_op_54() {
-		subscript();
-
-	}
-	virtual void decl_begin_55() {
-		int n = getnameloc3("identifierminetypedeffacet", *ptable, a, 1, { .rev = 1, .last = 0, .dontsearchforclosest = 1, });
-
-		std::string identtypedef{ (char*)GROUP_PTR_AND_SZ(n + 1) };
-		startdeclaration(identtypedef);
-
-	}
-	virtual void end_of_sizeof_56() {
-		endsizeofexpr();
-
-	}
-	virtual void end_of_sizeof_tp_nm_57() {
-		endsizeoftypename();
-
-	}
-	virtual void ident_struc_58() {
-		const char* namedcapture;
-		int ntoprint[2];
-		int n = getnameloc(namedcapture = "identifierminestruct", *ptable);
-		ntoprint[1] = getnameloc(namedcapture = "structorunion", *ptable) + 1;
-		currstruct.first = { (char*)GROUP_PTR_AND_SZ(ntoprint[1]) };
-		currstruct.second = { (char*)GROUP_PTR_AND_SZ(n + 1) };
-
-
-	}
-	virtual void struc_or_union_body_59() {
-		startbuildingstructorunion();
-
-	}
-	virtual void struc_or_union_body_end_60() {
-		endbuildingstructorunion();
-
-	}
-	virtual void perform_explicit_conversion_61() {
-		applycast();
-
-	}
-	virtual void create_label_62() {
-		const char* namedcapture;
-		int n = getnameloc(namedcapture = "identifierminelabel", *ptable);
-		splitbb((char*)GROUP_PTR_AND_SZ(n + 1));
-
-	}
-	virtual void goto_stmt_63() {
-		const char* namedcapture;
-		int n = getnameloc(namedcapture = "identifierminegoto", *ptable);
-		gotolabel((char*)GROUP_PTR_AND_SZ(n + 1));
-
-	}
-	virtual void switch_stmt_64() { startswitch(); }
-	virtual void create_case_65() {
-		addCase();
-		endconstantexpr();
-	}
-	virtual void switch_stmt_end_66() { endswitch(); }
-	virtual void create_default_case_67() { addDefaultCase(); }
-	size_t wholepart[2] = { SIZE_MAX, SIZE_MAX }, fractionpart[2] = { SIZE_MAX, SIZE_MAX },
-		exponent[2] = { SIZE_MAX, SIZE_MAX }, exponent_sign[2] = { SIZE_MAX, SIZE_MAX };
-	virtual void collect_float_literal_68() {
-		int ntoclear;
-		if (a->offset_vector[2 * (ntoclear = getnameloc("wholeopt", *ptable))] == -1)
-			if (a->offset_vector[2 * (ntoclear = getnameloc("whole", *ptable))] == -1)
-				if (a->offset_vector[2 * (ntoclear = getnameloc("wholenodot", *ptable))] == -1)
-					goto rest;
-
-	switch (wholepart[0]) case ~0U: switch (wholepart[1]) case ~0U:
-		wholepart[0] = a->offset_vector[2 * ntoclear],
-			wholepart[1] = a->offset_vector[2 * ntoclear + 1];
-	rest:
-		ntoclear = getnameloc("fraction", *ptable);
-
-	switch (fractionpart[0]) case ~0U: switch (fractionpart[1]) case ~0U:
-		fractionpart[0] = a->offset_vector[2 * ntoclear],
-			fractionpart[1] = a->offset_vector[2 * ntoclear + 1];
-
-		ntoclear = getnameloc("sign", *ptable);
-
-	switch (exponent_sign[0]) case ~0U: switch (exponent_sign[1]) case ~0U:
-		exponent_sign[0] = a->offset_vector[2 * ntoclear],
-			exponent_sign[1] = a->offset_vector[2 * ntoclear + 1];
-
-		ntoclear = getnameloc("exponent", *ptable) + 2;
-
-	switch (exponent[0]) case ~0U: switch (exponent[1]) case ~0U:
-		exponent[0] = a->offset_vector[2 * ntoclear],
-			exponent[1] = a->offset_vector[2 * ntoclear + 1];
-
-	}
-	virtual void finish_float_literal_69() {
-		int ntoclear = getnameloc("flt", *ptable);
-
-		insertfloattoimm((char*)CHECKED_PTR_AND_SZ(ntoclear), (char*)CHECKED_PTR_AND_SZ_START_END(wholepart[0], wholepart[1]),
-			(char*)CHECKED_PTR_AND_SZ_START_END(fractionpart[0], fractionpart[1]),
-			(char*)CHECKED_PTR_AND_SZ_START_END(exponent[0], exponent[1]),
-			(char*)CHECKED_PTR_AND_SZ_START_END(exponent_sign[0], exponent_sign[1]));
-
-		exponent[0] = exponent[1] = exponent_sign[0] = exponent_sign[1] =
-			fractionpart[0] = fractionpart[1] = wholepart[0] =
-			wholepart[1] = -1;
-
-	}
-	virtual void begin_if_stm_70() { startifstatement(); }
-	virtual void cnt_if_stm_71() { continueifstatement(); }
-	virtual void finish_if_stm_72() { endifstatement(); }
-	virtual void begin_loop_73() { startforloopcond(); }
-	virtual void loop_iter_74() { addforloopiter(); }
-	virtual void finish_loop_75() { endforloop(); }
-	virtual void cond_loop_76() { endforloopcond(); }
-	virtual void begin_do_while_77() { startdowhileloop(); }
-	virtual void finish_do_while_78() { enddowhileloop(); }
-	virtual void finish_continue_stm_79() { addcontinue(); }
-	virtual void finish_break_stm_80() { addbreak(); }
-	virtual void register_calling_conv_81() { }
-	virtual void unexplored_82() { }
-	virtual void end_binary_83() {
-		auto& currbranch = nbranches.back();
-
-		var& ordinary = *currbranch.iterval;
-
-		/*llvm::BranchInst* normalflow = nullptr;
-
-		if (nbranches.back().first.size() > 1)
-			normalflow = splitbb("", 0);*/
-
-		val ordinary_imm = ordinary;
-
-		//auto iternbranch = nbranches.begin();
-
-		/*for (auto branch : nbranches.back().first | ranges::views::drop(1)) {
-			//iternbranch = ++iternbranch;
-			int fullindex = branch->first[0]->getSuccessor(1) != branch->second;
-			branch->first[0]->setSuccessor(!fullindex, pcurrblock.back());
-			branch->second->eraseFromParent();
-			//ifstatements.erase(branch);
-
-			ordinary_imm = ordinary;
-			ordinary_imm.lvalues.push_back({ ordinary_imm.value, ordinary.type });
-
-			immidiates.push_back(ordinary_imm);
-
-			insertinttoimm((char*)branch->first[1], 1, "", 0, 3);
-
-			phndl->assigntwovalues();
-
-			immidiates.pop_back();
-
-			branch->first[0] = splitbb("", 0);
-		}*/
-
-		llvm::BranchInst* lastsplit;
-
-		if (!nbranches.back().second.empty()) {
-			lastsplit = nbranches.back().second.back()[1];
-			lastsplit->setSuccessor(0, pcurrblock.back());
-			auto imm = immidiates.back();
-			ordinary_imm.lvalues.push_back({ ordinary_imm.value, currbranch.iterval->type });
-			immidiates.pop_back();
-			immidiates.push_back(ordinary_imm);
-			immidiates.push_back(imm);
-			phndl->assigntwovalues();
-			splitbb("", 0);
-		}
-
-		for (auto branch : nbranches.back().second)
-			branch[0]->setSuccessor(0, pcurrblock.back());
-
-		/*if (normalflow) {
-			normalflow->setSuccessor(0, pcurrblock.back());*/
-		if (!nbranches.back().second.empty()) {
-			ordinary_imm.value = llvmbuilder.CreateLoad(ordinary.requestValue());
-
-			immidiates.pop_back();
-
-			immidiates.push_back(ordinary_imm);
-
-		}
-		//else //((llvm::AllocaInst*)ordinary.pValue)->replaceAllUsesWith(llvm::UndefValue::get(ordinary.pValue->getType())),
-			//((llvm::AllocaInst*)ordinary.pValue)->eraseFromParent();
-		//}
-
-		scopevar.back().erase(currbranch.iterval);
-
-		/**/
-
-		nbranches.pop_back();
-	}
-	virtual void begin_branch_84() {
-		auto& currbranch = nbranches.back();
-		/*val ordinary_imm = *currbranch.iterval;
-		auto imm = immidiates.back();
-		ordinary_imm.lvalues.push_back({ ordinary_imm.value, currbranch.iterval->type });
-		immidiates.pop_back();
-		immidiates.push_back(ordinary_imm);
-		immidiates.push_back(imm);
-		phndl->assigntwovalues();*/
-		currbranch.first.insert(++currbranch.first.begin(), startifstatement(false));
-		//currbranch.second.push_back(currbranch.first.back());
-		//ordinary_imm.value = llvmbuilder.CreateLoad(ordinary_imm.value);
-		//immidiates.push_back(ordinary_imm);
-	}
-	virtual void begin_binary_85() {
-		var ordinary; type basicint{ type::BASIC };
-		basicint.spec.basicdeclspec.basic[1] = "int";
-		ordinary.type = { basicint };
-		scopevar.back().push_back(ordinary);
-		nbranches.push_back({ std::list<arrtwovals>{1}, --scopevar.back().end() });
-		nbranches.back().itersecond = nbranches.back().first.begin();
-
-		val ordinary_imm = scopevar.back().back();
-		ordinary_imm.lvalues.push_back({ ordinary_imm.value, ordinary.type });
-
-		immidiates.push_back(ordinary_imm);
-
-		insertinttoimm("1", sizeof "1" - 1, "", 0, 3);
-
-		phndl->assigntwovalues();
-
-		immidiates.pop_back();
-	}
-	virtual void unused_86() { }
-	virtual void begin_nested_expr_87() { }
-	virtual void end_nested_expr_88() { }
-	virtual void add_ident_to_enum_def_89() {
-		var tmp;
-		type enumtype{ type::BASIC };
-		enumtype.spec.basicdeclspec.basic = { "enum", "int", "", enums.back().back().ident };
-
-		tmp.type.push_back(enumtype);
-
-		tmp.pllvmtype = createllvmtype(tmp.type);
-
-		int n = getnameloc3("identifiermine", *ptable, a, 1, { .dontsearchforclosest = 0 }) + 1;
-
-		tmp.identifier = { (char*)GROUP_PTR_AND_SZ(n) };
-
-		scopevar.back().push_back(tmp);
-
-		enums.back().back().memberconstants.push_back(--scopevar.back().end());
-	}
-	virtual void begin_enumerator_def_90() {
-		begin_enumerator_decl_91();
-		enums.back().push_back({ currenum, {} });
-	}
-	virtual void begin_enumerator_decl_91() {
-		int n = getnameloc3("identifiermine", *ptable, a, 1, { .dontsearchforclosest = 0 }) + 1;
-		currenum = { (char*)GROUP_PTR_AND_SZ(n) };
-	}
-	virtual void end_ass_to_enum_def_92() {
-		enums.back().back().memberconstants.back()->constant = phndl->immidiates.back().constant;
-		enums.back().back().maxcount = dyn_cast<llvm::ConstantInt>(enums.back().back().memberconstants.back()->constant)->getSExtValue() + 1;
-		phndl->immidiates.pop_back();
-		endconstantexpr();
-	}
-	virtual void end_without_ass_to_enum_def_93() {
-		enums.back().back().memberconstants.back()->constant = llvm::ConstantInt::get(llvmctx, llvm::APInt(32, enums.back().back().maxcount++));
-	}
-	virtual void begin_unnamed_enum_def_94() {
-		enums.back().push_back({ {}, {} });
-	}
-	virtual void end_expr_init_95() {
-		auto val = immidiates.back();
-		immidiates.pop_back();
-		obtainvalbyidentifier(scopevar.back().back().identifier);
-		immidiates.push_back(val);
-		phndl->assigntwovalues();
-		immidiates.pop_back();
-	}
-};
-
 //bindings_parsing parsing;
 
-bindings_compiling compiling;
+//bindings_compiling compiling;
 
 std::list<std::pair<std::string, void*>> recursion_list;
 
@@ -3856,6 +3906,10 @@ void do_print_layour() {
 		print_tabs(n++), printf(" %s\n", patt.first.c_str());
 }
 
+//std::aligned_storage_t<sizeof(destr_clear_qualifsandtypes), alignof(destr_clear_qualifsandtypes)> unincompilingobj;
+
+//auto pcompiling = new (&unincompilingobj) bindings_compiling{};
+
 extern "C" int callout_test(pcre2_callout_block * a, void* b) {
 	bindings_payload paylod = { (calloutinfo*)b, a };
 	struct calloutinfo* ptable = (calloutinfo*)b;
@@ -3865,7 +3919,7 @@ extern "C" int callout_test(pcre2_callout_block * a, void* b) {
 	auto pbindings = new (&uninparsingobj) bindings_parsing{};
 
 	(bindings_payload&)*pbindings = paylod;
-	(bindings_payload&)compiling = paylod;
+	(bindings_payload&)*phndl = paylod;
 
 	int res = 0;
 
@@ -3876,7 +3930,7 @@ extern "C" int callout_test(pcre2_callout_block * a, void* b) {
 #endif
 		if (a->callout_number != 255)
 			(res = ((parsing_plain&)*pbindings).lpVtbl->vtbl[a->callout_number](pbindings)) ||
-			(((compiling_plain&)compiling).lpVtbl->vtbl[a->callout_number - 1](&compiling), 0);
+			(((compiling_plain&)*phndl).lpVtbl->vtbl[a->callout_number - 1](phndl), 0);
 	}
 #ifdef _WIN32
 	__except (EXCEPTION_EXECUTE_HANDLER) {

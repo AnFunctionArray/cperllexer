@@ -4,12 +4,12 @@
 (?<primexpr>(?&assignorsomething)(,(?C35)\s*+(?&assignorsomething))*)
 
 
-(?<castexpr>(?&typenamerev)(?C61)|(?<unaryexpr>((?&inner)|(?<inparenths>\s*+[(](?C87)(?&primexpr)[)](?C88)\s*+))(((\[(?&primexpr)\](?C54)|[(](?C7)(?&primexpr)?[)](?C13))\s*+
+(?<castexpr>(?&typenamerev)|(?<unaryexpr>((?&inner)|(?<inparenths>\s*+[(](?C87)(?&primexpr)[)](?C88)\s*+))(((\[(?&primexpr)\](?C54)|[(](?C7)(?&primexpr)?[)](?C13))\s*+
 						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?&identifierminemember)
 						|(?<postfixarith>(?<postfixarithraw>[+][+]|--)\s*+)(?C9)))*+
 						|(?&unary)))
 
-(?<identifierminemember>\s*+(?!(?&keywordlist))((?&identifierraw))(?C8)\s*+)
+(?<identifierminemember>\s*+(?!(?&keywordlist))((?&identifierrawfacet))(?C8)\s*+)
 
 (?<testentry>(?<innertest>(?&orlogiorsomething));)
 
@@ -28,7 +28,7 @@
 
 
 (?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?C79);|break\s*+(?C80);|return\b(?&primexpr)?+(?C52);)\s*+)
-(?<identifierminegoto>\s*+(?!(?&keywordlist))((?&identifierraw))(?C63)\s*+)
+(?<identifierminegoto>\s*+(?!(?&keywordlist))((?&identifierrawfacet))(?C63)\s*+)
 
 (?<iterationstatement>\s*+(while\s*+[(](?C73)(?&primexpr)[)](?C76)(?C74)(?&statement)(?C75)|do\b(?C77)(?&statement)while\s*+[(](?&primexpr)[)](?C78)\s*+;
 	|for\s*+[(]((?&declaration)|(?&exprstatement))?+(?C73)(?&primexpr)?;(?C76)\s*+(?&primexpr)?+(?C74)[)](?&statement)(?C75))\s*+)
@@ -40,6 +40,6 @@
 (?<statementinner>(?&exprstatement)|(?&compoundstatement)|(?&selectionstatement)|(?&iterationstatement)|(?&jumpstatement))
 
 (?<label>(?&identifierminelabel)|\s*+(case\b(?C40)(?&primexpr):(?C65)|default\s*+:(?C67))\s*+)
-(?<identifierminelabel>\s*+(?!(?&keywordlist))((?&identifierraw))\s*+:(?C62)\s*+)
+(?<identifierminelabel>\s*+(?!(?&keywordlist))((?&identifierrawfacet))\s*+:(?C62)\s*+)
 
 (?<cprogram>((?&structorunion)\s*+;\s*+|(?&typenameinsideopt)(?C42)((?&compoundstatement)|(?&abstrinitialization)?(,(?C43)(?&abstdecloutter)(?C42)(?&abstrinitialization)?+)*+\s*+;\s*+))*)

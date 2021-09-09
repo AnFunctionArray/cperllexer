@@ -78,8 +78,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\llvm-project\llvm\build3\include;D:\llvm-project\llvm\include;$(USERPROFILE);$(USERPROFILE)\perl5;$(USERPROFILE)\perl5\win32;$(USERPROFILE)\perl5\win32\include;D:\IDA Pro 7.5\plugins\hexrays_sdk\include;D:\idasdk75\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\llvm-project\llvm\build3\Debug\lib;$(USERPROFILE)\perl5;$(USERPROFILE)\pcre;D:\idasdk75\lib\x64_win_vc_32;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\llvm-project\llvm\build3\include;D:\llvm-project\llvm\include;D:\;$(USERPROFILE)\perl5;$(USERPROFILE)\perl5\win32;$(USERPROFILE)\perl5\win32\include;D:\IDA Pro 7.5\plugins\hexrays_sdk\include;D:\idasdk75\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\llvm-project\llvm\build3\Debug\lib;$(USERPROFILE)\perl5;D:\pcre2\Debug;D:\idasdk75\lib\x64_win_vc_32;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>

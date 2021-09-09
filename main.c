@@ -5,7 +5,7 @@
 #if !defined(_WIN32) & !defined(_WIN64)
 #include <pcre2.h>
 #else
-#include <pcre/pcre2.h>
+#include <pcre2/pcre2.h>
 #endif
 #include <stdio.h>
 //#include <boost/preprocessor/stringize.hpp>
@@ -19,6 +19,8 @@ FILE* foutput, *foutput2;
 
 int callout_test(pcre2_callout_block* a, void* b);
 
+static int bwasdebugprinted;
+
 char* getnameloc3(long long int ntocompare, struct calloutinfo nametable, pcre2_callout_block* pcurrblock, int displ, struct namelocopts opts)
 {
 	PCRE2_SPTR tabptr = nametable.name_table;
@@ -28,7 +30,10 @@ char* getnameloc3(long long int ntocompare, struct calloutinfo nametable, pcre2_
 	if (ntocompare > 0)
 		printf2("%s: ", str);
 
-	int namecount = nametable.namecount, n, lastvalidn = -1, lastndist = INT_MAX;
+	if (!bwasdebugprinted)
+		printf("\n\n");
+
+	uint32_t namecount = nametable.namecount, n, lastvalidn = -1, lastndist = UINT32_MAX;
 
 	if (opts.rev)
 		tabptr += (namecount - 1) * nametable.name_entry_size;
@@ -36,6 +41,8 @@ char* getnameloc3(long long int ntocompare, struct calloutinfo nametable, pcre2_
 	for (; namecount--; !opts.rev ? tabptr += nametable.name_entry_size : (tabptr -= nametable.name_entry_size))
 	{
 		n = (tabptr[0] << 8) | tabptr[1];
+
+		if (!bwasdebugprinted) printf2("%s - %d\n", tabptr + 2, n);
 
 		if (ntocompare > 0 && !strcmp(tabptr + 2, str))
 		{
@@ -58,8 +65,8 @@ char* getnameloc3(long long int ntocompare, struct calloutinfo nametable, pcre2_
 					return printf2("%.*s \n", GROUP_SZ_AND_PTR(n + displ)), n;
 			}
 			else {
-				int dist = (int)pcurrblock->capture_top - 1 - n;
-				if (dist >= 0 && dist < lastndist)
+				long long dist = pcurrblock->capture_last - n;
+				if (pcurrblock->capture_last >= n && dist < lastndist)
 					lastndist = dist,
 					lastvalidn = n;
 			}
@@ -68,14 +75,19 @@ char* getnameloc3(long long int ntocompare, struct calloutinfo nametable, pcre2_
 			return tabptr + 2;
 	}
 
+	if (!bwasdebugprinted)
+		printf("\n\n");
+
+	bwasdebugprinted = 1;
+
 	pcre2_callout_block* a = pcurrblock;
 	if (!(ntocompare > 0)) return "";
-	else return printf2("%.*s \n", GROUP_SZ_AND_PTR(lastvalidn + displ)), lastvalidn;
+	else return printf2("%d %d %d %.*s \n", pcurrblock->capture_last, lastndist, lastvalidn, GROUP_SZ_AND_PTR(lastvalidn + displ)), lastvalidn;
 }
 
 char* getnameloc2(long long int ntocompare, struct calloutinfo nametable, pcre2_callout_block* pcurrblock, int displ)
 {
-	return getnameloc3(ntocompare, nametable, pcurrblock, displ, (struct namelocopts) { .rev = 1, .last = 0, .dontsearchforclosest = 1, });
+	return getnameloc3(ntocompare, nametable, pcurrblock, displ, (struct namelocopts) { .rev = 1, .last = 0, .dontsearchforclosest = 0, });
 }
 
 char* getnameloc(long long int ntocompare, struct calloutinfo nametable) {
@@ -146,6 +158,7 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 
 	nametable.pattern = pnewsubstr;
 	nametable.szpattern = newsubstrlen;
+	nametable.pmatchdata = pmatch_data;
 
 	//static int dequeadd(val, pqueue, ptail, phead, empty, full, size)
 
@@ -156,7 +169,7 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 	if (msgs)
 		printf("\n\n", 0);
 
-	rc = pcre2_match(pcode, subject, szsubject, 0, PCRE2_PARTIAL_HARD, pmatch_data, match_context);
+	rc = pcre2_match(pcode, subject, szsubject, 0, 0, pmatch_data, match_context);
 
 	printf("%d\n", rc);
 

@@ -1,6 +1,6 @@
 #pragma once
 //#include <boost/preprocessor/facilities/expand.hpp>
-	
+
 #define TEST_REGEX_FILE "main.regex"
 #define TEST_FILE "maintest.c"
 #define PATTERN_FLAGS_BASE 0 | PCRE2_DUPNAMES  //| PCRE2_AUTO_CALLOUT
@@ -34,9 +34,12 @@
 #define TEST_REGEX_FILE "test.regex"
 #define TEST_FILE "test.c"
 #endif
-	
 
-struct calloutinfo { PCRE2_SPTR name_table, pattern; int namecount, name_entry_size; size_t szpattern; };
+
+struct calloutinfo {
+	PCRE2_SPTR name_table, pattern; uint32_t namecount, name_entry_size; size_t szpattern;
+	pcre2_match_data* pmatchdata;
+};
 
 char* getnameloc(long long int ntocompare, struct calloutinfo nametable);
 
@@ -57,7 +60,7 @@ char* openfile(char* chname, size_t* szfileout);
 
 char* glueregexfile(char* filename);
 
-extern FILE* foutput, *foutput2;
+extern FILE* foutput, * foutput2;
 
 #if !!(PATTERN_FLAGS & PCRE2_AUTO_CALLOUT) & !defined(DEBUG)
 #define printf(format, ...) (fprintf(foutput, format, __VA_ARGS__))//, printf(format, __VA_ARGS__))

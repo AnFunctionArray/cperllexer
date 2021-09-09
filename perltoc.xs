@@ -9,7 +9,7 @@
 #if !defined(_WIN32) & !defined(_WIN64)
 #include <pcre2.h>
 #else
-#include <pcre/pcre2.h>
+#include <pcre2/pcre2.h>
 #endif
 #include "main.h"
 
