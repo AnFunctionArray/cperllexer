@@ -43,7 +43,7 @@
 
 (?<Tabstrdeclinside>)(?<abstrcommonoutter>[(](?<cc>((?&callingconv))?+)(?&Tabstrdeclinside)(?C81)[)])
 
-(?<abstrmostoutteropt>\s*+(?&abstrcommonoutter<abstdecloptoutter>)\s*+)
+(?<abstrmostoutteropt>\s*+(?&callingconv)?+(?&abstrcommonoutter<abstdecloptoutter>)\s*+)
 
 (?<abstrmostoutter>\s*+(?&callingconv)?+((?&abstrcommonoutter<abstdecloutter>)|(?&identifierminedecl))\s*+)
 
@@ -52,7 +52,7 @@
 (?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
 
 (?<Tabstdecl, Tasbtdecloutter>)
-(?<abstdeclorallqualifs>(?&&Tabstdecl<>)(?&callingconv)?+(?=(?&Tasbtdecloutterfacet))(?C55)(?&Tasbtdecloutter))
+(?<abstdeclorallqualifs>(?&&Tabstdecl<>)(?=(?&Tasbtdecloutterfacet))(?C55)(?&Tasbtdecloutter))
 
 (?&abstdeclorallqualifs<allqualifsdecl*+, abstdecloutter>=typenameinsideopt)
 
@@ -60,9 +60,9 @@
 
 (?&abstdeclorallqualifs<allqualifsparam++, abstdecloutterparams>=typenameinsideparams)
 
-(?<identifierminedecl>\s*+(?!(?&keywordlist))((?&identifierrawfacet))(?C39)\s*+)
+(?<identifierminedecl>\s*+(?!(?&keywordlist))(?<raw>(?&identifierrawfacet))(?C39)\s*+)
 (?<>)
-(?<identifierminetypedeffacet#restrictpcre2only>\s*+(?!(?&keywordlist))(?<typedefnmfacet>(?&identifierrawfacet))(??C38)\s*+)
+(?<identifierminetypedeffacet#restrictpcre2only>\s*+(?!(?&keywordlist))(?<typedefnmmatched>(?<typedefnmfacet>(?&identifierrawfacet))(??C38))\s*+)
 (?<identifierminetypedef#restrictperlonly>\s*+(??C38)\s*+)
 
 (?<keywordlist>(?&typesandqualifiersmask)|\b(struct|enum|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)\b)

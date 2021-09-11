@@ -49,7 +49,7 @@ char* getnameloc3(long long int ntocompare, struct calloutinfo nametable, pcre2_
 			if (!pcurrblock)
 				return printf2("\n"), n;
 
-			if (opts.dontsearchforclosest)
+			if (opts.dontsearchforclosest, 1)
 			{
 				int isok = pcurrblock->offset_vector[2 * (n + displ)] != -1;
 
@@ -65,8 +65,8 @@ char* getnameloc3(long long int ntocompare, struct calloutinfo nametable, pcre2_
 					return printf2("%.*s \n", GROUP_SZ_AND_PTR(n + displ)), n;
 			}
 			else {
-				long long dist = pcurrblock->capture_last - n;
-				if (pcurrblock->capture_last >= n && dist < lastndist)
+				long long dist = (long long)pcurrblock->capture_last - n;
+				if (llabs(dist) <= llabs(lastndist))
 					lastndist = dist,
 					lastvalidn = n;
 			}
@@ -82,12 +82,12 @@ char* getnameloc3(long long int ntocompare, struct calloutinfo nametable, pcre2_
 
 	pcre2_callout_block* a = pcurrblock;
 	if (!(ntocompare > 0)) return "";
-	else return printf2("%d %d %d %.*s \n", pcurrblock->capture_last, lastndist, lastvalidn, GROUP_SZ_AND_PTR(lastvalidn + displ)), lastvalidn;
+	else return lastvalidn != -1 ? printf2("%d %d %d %.*s \n", pcurrblock->capture_last, lastndist, lastvalidn, GROUP_SZ_AND_PTR(lastvalidn + displ)) : printf2("\n"), lastvalidn;
 }
 
 char* getnameloc2(long long int ntocompare, struct calloutinfo nametable, pcre2_callout_block* pcurrblock, int displ)
 {
-	return getnameloc3(ntocompare, nametable, pcurrblock, displ, (struct namelocopts) { .rev = 1, .last = 0, .dontsearchforclosest = 0, });
+	return getnameloc3(ntocompare, nametable, pcurrblock, displ, (struct namelocopts) { .rev = 0, .last = 0, .dontsearchforclosest = 0, });
 }
 
 char* getnameloc(long long int ntocompare, struct calloutinfo nametable) {
@@ -169,7 +169,7 @@ int compile_pattern_and_execute(const char* pattern, const char* subject, int (*
 	if (msgs)
 		printf("\n\n", 0);
 
-	rc = pcre2_match(pcode, subject, szsubject, 0, 0, pmatch_data, match_context);
+	rc = pcre2_match(pcode, subject, szsubject, 0, MATCH_FLAGS, pmatch_data, match_context);
 
 	printf("%d\n", rc);
 

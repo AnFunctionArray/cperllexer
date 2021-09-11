@@ -3,7 +3,8 @@
 
 #define TEST_REGEX_FILE "main.regex"
 #define TEST_FILE "maintest.c"
-#define PATTERN_FLAGS_BASE 0 | PCRE2_DUPNAMES  //| PCRE2_AUTO_CALLOUT
+#define PATTERN_FLAGS_BASE 0 | PCRE2_DUPNAMES | PCRE2_NO_AUTO_CAPTURE  //| PCRE2_AUTO_CALLOUT
+#define MATCH_FLAGS 0 //| PCRE2_PARTIAL_HARD
 #define PATTERN_FLAGS PATTERN_FLAGS_BASE
 //#define DONT_EXPAND
 
@@ -39,6 +40,7 @@
 struct calloutinfo {
 	PCRE2_SPTR name_table, pattern; uint32_t namecount, name_entry_size; size_t szpattern;
 	pcre2_match_data* pmatchdata;
+	pcre2_code* pcode;
 };
 
 char* getnameloc(long long int ntocompare, struct calloutinfo nametable);

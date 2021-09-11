@@ -217,6 +217,8 @@ sub parseregexfile {
 
     $regexfilecontent =~s/(\(\?<\w+)#restrictperlonly>/((*F)/g if(not $matchinperl);
 
+    $regexfilecontent =~s/(\(\?<\w+)#restrictperlonly>/((*F)/g if(not $matchinperl);
+
     @arrayoftemplates = ();
 
     sub substitutetemplateinstancesdoregex {
@@ -288,7 +290,7 @@ sub parseregexfile {
     #$regexfilecontent =~s/[(]\?[(]<(\w+?)#nofacet>[)]/(?(<$1>)/g;
 
     $regexfilecontent =~s{([(]\?[(]?+)<(\w+?)(facet)?+>}{$1<$2facet>}g;
-
+    
     #$regexfilecontent =~s/(\(\?<\w+)>/$1facet>/g;
 
     $regexfilecontent =~s/(\(\?<\w+)#restrictoutsidefacet>/$1facet>(*F)/g;

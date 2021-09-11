@@ -140,7 +140,7 @@ extern "C" void startforloopcond();
 
 struct bindings_payload {
 	int getnameloc(const char* ntocompare, calloutinfo nametable) {
-		return getnameloc3(ntocompare, nametable, a, 1, { .rev = 1, .dontsearchforclosest = 0,.printdispl = +1 });
+		return getnameloc3(ntocompare, nametable, a, 1, { .rev = 0, .dontsearchforclosest = 0,.printdispl = +1 });
 	}
 	struct calloutinfo* ptable;
 	pcre2_callout_block* a;
@@ -193,6 +193,7 @@ struct bindings_parsing : bindings_payload {
 		int n = getnameloc3("typedefnmfacet", *ptable, a, 0, { .rev = 0, .last = 0, .dontsearchforclosest = 0, });
 		int ret = 1;
 		auto ident = std::string{ (char*)GROUP_PTR_AND_SZ(n) };
+		if (ident.empty()) throw ident;
 		for (auto& typedefscope : typedefs)
 			ret = ret && std::find(typedefscope.begin(), typedefscope.end(), ident) == typedefscope.end();
 		//ret = ret || bwastypedefmatched;
@@ -704,7 +705,7 @@ struct bindings_compiling : bindings_payload {
 	}
 	virtual void unused_3() { };
 	virtual void start_str_4() {
-		int n = getnameloc("begincharliteral", *ptable);
+		int n = getnameloc2("begincharliteral", *ptable, a, 0);
 		bischarlit = n != -1 && a->offset_vector[n * 2] != -1;
 		//a->offset_vector[n * 2] = a->offset_vector[n * 2 + 1] = -1;
 	}
@@ -716,13 +717,13 @@ struct bindings_compiling : bindings_payload {
 
 		int ntoprint[2], ntoclear;
 
-		ntoprint[1] = getnameloc("lng", *ptable);
+		ntoprint[1] = getnameloc2("lng", *ptable,a,0);
 
 		const char* groups[] = { "hex", "bin", "oct", "dec" };
 
 		for (const char** pgroup = groups; pgroup != 1[&groups]; ++pgroup)
 		{
-			ntoclear = getnameloc3(*pgroup, *ptable, a, 0, { .dontsearchforclosest = 1 });
+			ntoclear = getnameloc3(*pgroup, *ptable, a, 0, { .dontsearchforclosest = 0 });
 			if (ntoclear != -1 && a->offset_vector[2 * ntoclear] != -1)
 			{
 				type = pgroup - groups; //<< 2;//| (a->offset_vector[2 * ntoprint[0]] != -1) | (a->offset_vector[2 * ntoprint[1]] != -1) << 1;
@@ -779,7 +780,7 @@ struct bindings_compiling : bindings_payload {
 
 	}
 #define BINARY_OP(name) \
-	int n = getnameloc3(name, *ptable, a, 1, { .rev = 1, .dontsearchforclosest = 0,.printdispl = +1 })
+	int n = getnameloc3(name, *ptable, a, 1, { .rev = 0, .dontsearchforclosest = 0,.printdispl = +1 })
 
 	virtual void add_op_20() {
 		BINARY_OP("addop");
@@ -827,7 +828,7 @@ struct bindings_compiling : bindings_payload {
 
 	}
 	virtual void or_logic_op_29() {
-		int n = getnameloc3("binop", *ptable, a, 1, { .rev = 1, .last = 0, .dontsearchforclosest = 1, });
+		int n = getnameloc3("binop", *ptable, a, 1, { .rev = 0, .last = 0, .dontsearchforclosest = 0, });
 		if (n != -1 && a->offset_vector[2 * (n + 1)] != -1)
 			binary((char*)GROUP_PTR_AND_SZ(n + 1));
 		//ntoclearauto[0] = n + 1;
@@ -907,7 +908,7 @@ struct bindings_compiling : bindings_payload {
 
 	}
 	virtual void end_param_list_48() {
-		int n = getnameloc3("rest", *ptable, a, 0, { .dontsearchforclosest = 1 });
+		int n = getnameloc3("rest", *ptable, a, 0, { .dontsearchforclosest = 0 });
 		endfunctionparamdecl(n != -1 && a->offset_vector[2 * n] != -1);
 
 	}
@@ -937,7 +938,7 @@ struct bindings_compiling : bindings_payload {
 
 	}
 	virtual void decl_begin_55() {
-		int n = getnameloc3("typedefnmfacet", *ptable, a, 0, { .rev = 1, .last = 0, .dontsearchforclosest = 1, });
+		int n = getnameloc3("typedefnmmatched", *ptable, a, 0, { .rev = 0, .last = 0, .dontsearchforclosest = 0, });
 
 		std::string identtypedef{ (char*)GROUP_PTR_AND_SZ(n) };
 		startdeclaration(identtypedef);
@@ -996,28 +997,28 @@ struct bindings_compiling : bindings_payload {
 		exponent[2] = { SIZE_MAX, SIZE_MAX }, exponent_sign[2] = { SIZE_MAX, SIZE_MAX };
 	virtual void collect_float_literal_68() {
 		int ntoclear;
-		if (a->offset_vector[2 * (ntoclear = getnameloc("wholeopt", *ptable))] == -1)
-			if (a->offset_vector[2 * (ntoclear = getnameloc("whole", *ptable))] == -1)
-				if (a->offset_vector[2 * (ntoclear = getnameloc("wholenodot", *ptable))] == -1)
+		if (a->offset_vector[2 * (ntoclear = getnameloc2("wholeopt", *ptable, a, 0))] == -1)
+			if (a->offset_vector[2 * (ntoclear = getnameloc2("whole", *ptable, a, 0))] == -1)
+				if (a->offset_vector[2 * (ntoclear = getnameloc2("wholenodot", *ptable, a, 0))] == -1)
 					goto rest;
 
 	switch (wholepart[0]) case ~0U: switch (wholepart[1]) case ~0U:
 		wholepart[0] = a->offset_vector[2 * ntoclear],
 			wholepart[1] = a->offset_vector[2 * ntoclear + 1];
 	rest:
-		ntoclear = getnameloc("fraction", *ptable);
+		ntoclear = getnameloc2("fraction", *ptable, a, 0);
 
 	switch (fractionpart[0]) case ~0U: switch (fractionpart[1]) case ~0U:
 		fractionpart[0] = a->offset_vector[2 * ntoclear],
 			fractionpart[1] = a->offset_vector[2 * ntoclear + 1];
 
-		ntoclear = getnameloc("sign", *ptable);
+		ntoclear = getnameloc2("sign", *ptable, a, 0);
 
 	switch (exponent_sign[0]) case ~0U: switch (exponent_sign[1]) case ~0U:
 		exponent_sign[0] = a->offset_vector[2 * ntoclear],
 			exponent_sign[1] = a->offset_vector[2 * ntoclear + 1];
 
-		ntoclear = getnameloc("exponent", *ptable) + 2;
+		ntoclear = getnameloc2("exponent", *ptable,a, 2) + 2;
 
 	switch (exponent[0]) case ~0U: switch (exponent[1]) case ~0U:
 		exponent[0] = a->offset_vector[2 * ntoclear],
@@ -1025,7 +1026,7 @@ struct bindings_compiling : bindings_payload {
 
 	}
 	virtual void finish_float_literal_69() {
-		int ntoclear = getnameloc("flt", *ptable);
+		int ntoclear = getnameloc2("flt", *ptable,a,0);
 
 		insertfloattoimm((char*)CHECKED_PTR_AND_SZ(ntoclear), (char*)CHECKED_PTR_AND_SZ_START_END(wholepart[0], wholepart[1]),
 			(char*)CHECKED_PTR_AND_SZ_START_END(fractionpart[0], fractionpart[1]),
@@ -3922,6 +3923,8 @@ extern "C" int callout_test(pcre2_callout_block * a, void* b) {
 	(bindings_payload&)*phndl = paylod;
 
 	int res = 0;
+
+	printf2("callout %d\n", a->callout_number);
 
 #ifdef _WIN32
 	__try {
