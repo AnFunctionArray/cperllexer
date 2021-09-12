@@ -1,5 +1,5 @@
 (?<binoprest, binopraw>)
-(?<binopplusrest>(?<binop>((?&binopraw))(?&castexpr)(?>(?&binoprest))*(?C29))|(?>(?&binoprest)))
+(?<binopplusrest>(?<binop>(?<binoplast>(?&binopraw))(?&castexpr)(?>(?&binoprest))*(?C29<binop>))|(?>(?&binoprest)))
 
 (?&binopplusrest<andlogicplusrest, orlogicopraw>=orlogicplusrest)
 

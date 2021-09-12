@@ -118,7 +118,7 @@ bool idaapi plugin_ctx_t::run(size_t) {
 	//__try
 	//{
 
-	const char* pargv[4] = { "cparser2.exe", "main.pl" };
+	const char* pargv[] = { "cparser2.exe", "main.pl", nullptr, nullptr };
 
 	int argc = _countof(pargv) - 1;
 

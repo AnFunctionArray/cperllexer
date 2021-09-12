@@ -87,8 +87,16 @@ struct compiling_plain {
 	}*lpVtbl;
 };
 
+#ifdef __cplusplus
 struct parsing_plain {
 	struct {
-		int (*vtbl[])(void*);
+		void (*vtbl[])(void*, std::string &);
 	}*lpVtbl;
 };
+#endif
+
+struct retgetnamevalue {
+	const char* ptr;
+	size_t sz;
+};
+struct retgetnamevalue getnamevalue(const char* nametoget);

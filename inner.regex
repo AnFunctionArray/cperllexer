@@ -1,17 +1,26 @@
 (?<inner>\s*+((("|(?<begincharliteral>'))
-						(?C4)((?<escape>(?<escaperaw>\\(?:(x)[0-9a-fA-F]++|(?:(b)[01]++|(?:(0)[0-7]++|(\d++|(?&quote<>)|t|n))))))
-						(?C1)|
-						(?<text>(?<textraw>((?!(?&escape)|(?&quote<>)).)++)(?C2)))*+(?&quote<>)(?C51)
+						(?C4<begincharliteral>)((?<escape>(?<escaperaw>\\(?:(x)[0-9a-fA-F]++|(?:(b)[01]++|(?:(0)[0-7]++|(\d++|(?&quote<>)|t|n))))))
+						(?C1<escaperaw>)|
+						(?<text>(?<textraw>((?!(?&escape)|(?&quote<>)).)++)(?C2<textraw>)))*+(?&quote<>)(?C51)
 						|(?!(?&floatingfacet))(?<numberliteral>(?<numberliteralraw>(?:(0x)(?<hex>[0-9a-fA-F]++)|(?:(0b)(?<bin>[01]++)
-						|(?:(0)(?<oct>[0-7]++)|(?<dec>\d++))))(?<lng>[Uu](ll|LL|[lL])?+|(ll|LL|[lL])[Uu]?+)?+)(?C5))
+						|(?:(0)(?<oct>[0-7]++)|(?<dec>\d++))))(?<lng>[Uu](ll|LL|[lL])?+|(ll|LL|[lL])[Uu]?+)?+)
+						(?C5<lng, hex, bin, oct, dec>))
 						|(?&floating)
-						|(?<identifier>\s*+(?!(?&keywordlist))((?&identifierrawfacet))(?C6)\s*+)))\s*+)
+						|(?<identifier>\s*+(?!(?&keywordlist))(?<ident>(?&identifierrawfacet))(?C6<ident>)\s*+)))\s*+)
 
 (?<identifierrawfacet>[_a-zA-Z][_a-zA-Z0-9]*+)
 
-(?<floating>((?&fractional)(?&exponent)?+|(?<wholenodot>\d++)(?&exponent))(?<flt>[flFL])?+(?C68)(?C69))
-(?<fractional>((?<wholeopt>\d*+)\.(?<fraction>\d++)|(?<whole>\d++)\.)(?C68))
-(?<exponent>[eE](?<sign>[+-])?+(\d++)(?C68))
+(?<>)
+(?<fltcl>(?C68<wholeopt,
+			whole,
+			wholenodot,
+			fraction,
+			sign,
+			exp>))
+
+(?<floating>((?&fractional)(?&exponent)?+|(?<wholenodot>\d++)(?&exponent))(?<flt>[flFL])?+(?&fltcl<>)(?C69<flt>))
+(?<fractional>((?<wholeopt>\d*+)\.(?<fraction>\d++)|(?<whole>\d++)\.)(?&fltcl<>))
+(?<exponent>[eE](?<sign>[+-])?+(?<exp>\d++)(?&fltcl<>))
 
 (?<>)
 (?<quote>(?(<begincharliteral>)'|"))

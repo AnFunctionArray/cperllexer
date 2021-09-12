@@ -221,41 +221,70 @@ char* openfile(char* chname, size_t* szfileout)
 
 secondmain(char* subject, size_t szsubject, char* pattern, size_t szpattern, char* modulename, size_t szmodulename)
 {
-	foutput = fopen("output.txt", "wt");
-	foutput2 = fopen("output2.txt", "wt");
 	startmodule(modulename, szmodulename);
 	int stat = compile_pattern_and_execute(pattern, subject, callout_test, szpattern, szsubject, 1, 0, PATTERN_FLAGS);
-	endmodule();
-	fflush(foutput);
-	fflush(foutput2);
 }
 
 #include <EXTERN.h> /* from the Perl distribution     */
 #include <perl.h>	/* from the Perl distribution     */
 #include <XSUB.h>
 
-XS__startmatching();
+struct retgetnamevalue getnamevalue(const char* nametoget) {
+	struct retgetnamevalue retgetnamevalue;
+	SV* var = get_sv(nametoget, GV_ADD);   /* need "Foo::" now */
+	retgetnamevalue.ptr = SvPVutf8(var, retgetnamevalue.sz);
+	return retgetnamevalue;
+}
+
+XS__startmatching(), XS__callout(), XS__startmodule(), boot_DynaLoader();
 
 static void
 xs_init(pTHX)
 {
+	/* DynaLoader is a special case */
+	newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, __FILE__);
 	newXS("startmatching", XS__startmatching, __FILE__);
+	newXS("callout", XS__callout, __FILE__);
+	newXS("startmodule", XS__startmodule, __FILE__);
 }
 
 static PerlInterpreter* my_perl; /***    The Perl interpreter    ***/
+#if 0
+#include <userenv.h>
+#include <wtsapi32.h>
+#endif
 
 int main(int argc, const char** argv, char** env)
 {
+#if 0
+	//argv[0] = "D:\\perl5\\perl.exe";
+	//env = (char* []){ "PATH=D:\\perl5", 0 };
+	LPVOID lpenv;
+	HANDLE htoken;
+	//WTSQueryUserToken(0, &htoken);
+	OpenProcessToken(GetCurrentProcess(), TOKEN_READ, &htoken);
+	CreateEnvironmentBlock(&lpenv, htoken, false);
+	const char* env[0xFF] = { GetEnvironmentStrings() }, ** pcurr = env;
+	const char* tmp;
+	for (const wchar_t* curr = lpenv; *curr; curr += wcslen(curr) + 1)
+		wcstombs(tmp = malloc(0xFFF), curr, 0xFFF), *pcurr++ = tmp;
+#endif
 	PERL_SYS_INIT3(&argc, &argv, &env);
 	my_perl = perl_alloc();
 	perl_construct(my_perl);
 	PL_exit_flags |= PERL_EXIT_DESTRUCT_END;
-	perl_parse(my_perl, xs_init, argc, argv, (char**)NULL);
+	perl_parse(my_perl, xs_init, argc, argv, NULL);
+	//foutput = fopen("output.txt", "wt");
+	//foutput2 = fopen("output2.txt", "wt");
 	perl_run(my_perl);
+	//fflush(foutput);
+	//fflush(foutput2);
+
+	endmodule();
+	exit(EXIT_SUCCESS);
 	perl_destruct(my_perl);
 	perl_free(my_perl);
 	PERL_SYS_TERM();
-	exit(EXIT_SUCCESS);
 }
 
 #if 0

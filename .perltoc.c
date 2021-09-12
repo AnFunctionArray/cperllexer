@@ -202,6 +202,63 @@ XS_EUPXS(XS__startmatching)
     XSRETURN_EMPTY;
 }
 
+
+XS_EUPXS(XS__callout); /* prototype to pass -Wmissing-prototypes */
+XS_EUPXS(XS__callout)
+{
+    dVAR; dXSARGS;
+    if (items < 1)
+       croak_xs_usage(cv,  "in, ...");
+    {
+#line 40 "D:\\\\6a4h8\\\\cparser2\\\\perltoc.xs"
+    const char *argsarr[0xFF];
+    size_t argsarrlen[0xFF];
+#line 217 "D:\\6a4h8\\cparser2\\perltoc.c"
+	SV *	RETVAL;
+	SV *	in = ST(0)
+;
+#line 43 "D:\\\\6a4h8\\\\cparser2\\\\perltoc.xs"
+    {
+        extern const char * callout_test(const char **, size_t *);
+        memset(argsarr, 0, sizeof argsarr);
+        memset(argsarrlen, 0, sizeof argsarrlen);
+        for(int i = 0; i < items; ++i)
+            argsarr[i] = SvPVutf8(ST(i), argsarrlen[i]);
+        RETVAL = newSVpv(callout_test(argsarr, argsarrlen), 0);
+    }
+#line 230 "D:\\6a4h8\\cparser2\\perltoc.c"
+	RETVAL = sv_2mortal(RETVAL);
+	ST(0) = RETVAL;
+    }
+    XSRETURN(1);
+}
+
+
+XS_EUPXS(XS__startmodule); /* prototype to pass -Wmissing-prototypes */
+XS_EUPXS(XS__startmodule)
+{
+    dVAR; dXSARGS;
+    if (items != 1)
+       croak_xs_usage(cv,  "in");
+    {
+#line 57 "D:\\\\6a4h8\\\\cparser2\\\\perltoc.xs"
+    STRLEN len;
+    char* s;
+#line 248 "D:\\6a4h8\\cparser2\\perltoc.c"
+	SV *	in = ST(0)
+;
+#line 60 "D:\\\\6a4h8\\\\cparser2\\\\perltoc.xs"
+    {
+        void startmodule(const char* modulename, size_t szmodulename);
+        s = SvPVutf8(in, len);
+
+        startmodule(s, len);
+    }
+#line 258 "D:\\6a4h8\\cparser2\\perltoc.c"
+    }
+    XSRETURN_EMPTY;
+}
+
 #ifdef __cplusplus
 extern "C"
 #endif
@@ -231,6 +288,8 @@ XS_EXTERNAL(boot__6a4h8)
 #endif
 
         (void)newXSproto_portable("startmatching", XS__startmatching, file, "$$$");
+        (void)newXSproto_portable("callout", XS__callout, file, "$;@");
+        (void)newXSproto_portable("startmodule", XS__startmodule, file, "$");
 #if PERL_VERSION_LE(5, 21, 5)
 #  if PERL_VERSION_GE(5, 9, 0)
     if (PL_unitcheckav)

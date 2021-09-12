@@ -27,11 +27,16 @@ my $subject = do { local $/; <$fh> };
 
 close $fh;
 
+#$filename = "output.txt";
+#open fhoutput, '>', $filename or die "error opening $filename: $!";
+
+#select fhoutput;
+
 my $mainregexfinal = "((*F)";
 
 my $entryregex;
 
-my $matchinperl = 0;
+my $matchinperl = 1;
 
 $mainregexfilecontent =~/$metaregexfilecontent/;
 
@@ -54,11 +59,19 @@ startmatching($subject, $mainregexfinal, basename($ARGV[0], @suffixlist)) if(not
 
 exit if(not $matchinperl);
 
-#print $mainregexfinal;
+print $mainregexfinal;
 
-$subject =~/$mainregexfinal/xx;
+startmodule(basename($ARGV[0], @suffixlist));
 
-print $&;
+{
+    #$oldfh = select(STDERR);
+
+    #use re 'debug';
+
+    $subject =~m{$mainregexfinal}sxx;
+}
+
+#print $&;
 
 sub addtypdefidentifier {
     $typedefidentifiers = $typedefidentifiers . $+{identifierraw} . "|" if(not $mute_callbacks and $+{typedefkeyword});
@@ -71,6 +84,24 @@ sub getypedefidentifiers {
 sub printifdefined{
     print $_[0] if($_[1]);
 }
+
+sub debugcallout {
+    #require re;
+    #re->import('debug') if($_[1] eq "Ptr64ToPtr");
+    #select($oldfh) if($_[1] eq "Ptr64ToPtr");
+    my @arr = @_;
+    my $subslice = substr $subject, pos(), 10;
+
+    $subslice =~ s{\R}{ }g;
+    
+    print  "rest: " . $subslice . "\n";
+    foreach my $i (@arr) {
+        print $i . "\n";
+    }
+    callout(@arr);
+}
+
+=for comment
 
 sub defaultcallback {
     print "in";
@@ -117,6 +148,8 @@ sub defaultcallback {
         #default {print "bad call $_[0]\n"; exit}
     }
 }
+
+=cut
 
 sub entryregexmain {
     $entryregex = $_[1] . "(?&" . $_[0] . ")";
@@ -173,7 +206,7 @@ sub substitutetemplateinstances {
         $body =~ s{(\(\?&{1,2})$param(<.*?>|facet)?+\)}{
             if(not $argcallout) { $1 . $argident .  $2 . ")" . $argqualifs; }
             else {
-                "(" . $argqualifs . "?C" . $argcallout . ")" ;
+                "(" . $argqualifs . "?C" . $argcallout .  $2 . ")" ;
             }}eg
     }
 
@@ -207,17 +240,17 @@ sub parseregexfile {
                         |(?<insquare>(?<!\\)\[\^?+(.|\\.)(([^]]|(?<=\\).)++
                         |(?&insquare))*(?<!\\)\]))*(?<!\\)\))}{}gsxx;
 
-    $regexfilecontent =~s/\(\?\?C(\d++)\)/(??{return defaultcallback($1)})/g if($matchinperl);
-
     $regexfilecontent =~s/#restrictperlonly//g if($matchinperl);
 
     $regexfilecontent =~s/#restrictpcre2only//g if(not $matchinperl);
 
-    $regexfilecontent =~s/(\(\?<\w+)#restrictpcre2only>/((*F)/g if($matchinperl);
+    $regexfilecontent =~ s {(?=(\(\?<\w+)\#restrictpcre2only>)(?<inpar>(?<!\\)\((([^][()]|(?<=\\).)++|(?&inpar)
+                        |(?<insquare>(?<!\\)\[\^?+(.|\\.)(([^]]|(?<=\\).)++
+                        |(?&insquare))*(?<!\\)\]))*(?<!\\)\))}{}gsxx if($matchinperl);
 
-    $regexfilecontent =~s/(\(\?<\w+)#restrictperlonly>/((*F)/g if(not $matchinperl);
-
-    $regexfilecontent =~s/(\(\?<\w+)#restrictperlonly>/((*F)/g if(not $matchinperl);
+    $regexfilecontent =~ s {(?=(\(\?<\w+)\#restrictperlonly>)(?<inpar>(?<!\\)\((([^][()]|(?<=\\).)++|(?&inpar)
+                        |(?<insquare>(?<!\\)\[\^?+(.|\\.)(([^]]|(?<=\\).)++
+                        |(?&insquare))*(?<!\\)\]))*(?<!\\)\))}{}gsxx if(not $matchinperl);
 
     @arrayoftemplates = ();
 
@@ -252,9 +285,9 @@ sub parseregexfile {
 
     #$regexfile =~s/[(]\?[(]<(\w+?)#nofacet>[)]/(?(<$1>)/g;
 
-    $regexfile =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
+    #$regexfile =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
-    $regexfile =~s/\(\?C(\d++)\)/(?{defaultcallback($1)})/g if($matchinperl);
+    #$regexfile =~s/\(\?C(\d++)(<(?<args>.*?)>)?+\)/(?{callout($1 . ($+{args} ? "," . $+{args} : ""))})/g if($matchinperl);
 
     #$regexfile =~s/\(\?<(\w+)#nofacet>/(?<$1>/g;
 
@@ -277,9 +310,9 @@ sub parseregexfile {
     replacenofacetgroups($1, $regexfilecontent) while($regexfilecontentcopy =~/\(\?<(\w+)#nofacet>/g); # remove references to nofacet groups
 =cut
 
-    $regexfilecontent =~s/\(\?C(\d++)\)//g;
+    $regexfilecontent =~s/\(\?C(\d++)(<(?<args>.*?)>)?+\)//g;
 
-    $regexfilecontent =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
+    #$regexfilecontent =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
     $regexfilecontent =~s/[(]\?&(\w+?)(facet)?+[)]/(?&$1facet)/g;
 
@@ -298,4 +331,11 @@ sub parseregexfile {
     $regexfilecontent =~s/\(\?<#restrictoutsidefacet>/((*F)/g;
 
     $mainregexfinal = $mainregexfinal . $regexfile . $regexfilecontent;
+
+    $mainregexfinal =~s/\((\?\??+)C(\d++)(<(?<args>.*?)>)?+\)/
+            my $prefix = "(" . $1 . "{debugcallout(" . $2;
+            $prefix . ($+{args} ? "," . ($+{args} =~ s {\b\S+\b}{\$\+\{$&\}}gr) : "") . ")})"
+            /ges if($matchinperl);
+
+    $mainregexfinal =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 }
