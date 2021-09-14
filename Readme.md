@@ -1,4 +1,4 @@
-﻿# C Parser with PCRE2
+﻿# C Parser/Compiler with LLVM
 
 Since no one ever has written a C parser the easy way (AKA with RegEx) I decided to do it - no hard algorithmic recursions - just plain Regex with measly one callout function that only fetch and displays named groups/diagnostics.
 
@@ -8,7 +8,7 @@ Currently the last challenge I was faced with was capturing/triggering the callb
 
 # Usage
 
-You would need to install pcre2, perl with dynamic modules and finally llvm. Of-course you would need a g++ and gcc compiler (or msvc).
+You would need to install perl with dynamic modules and finally llvm. Of-course you would need a g++ and gcc compiler (or msvc).
 
 Preprocessor (any of it - including #line) and attributes are not supported.
 
