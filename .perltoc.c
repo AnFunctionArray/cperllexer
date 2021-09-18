@@ -6,7 +6,7 @@
  *
  */
 
-#line 1 "D:\\\\6a4h8\\\\cparser2\\\\perltoc.xs"
+#line 1 "D:\\\\cparser2\\\\perltoc.xs"
 #define PERL_NO_GET_CONTEXT
 #define PERL_EUPXS_ALWAYS_EXPORT
 #include "EXTERN.h"
@@ -22,7 +22,7 @@
 #endif
 #include "main.h"
 
-#line 26 "D:\\6a4h8\\cparser2\\perltoc.c"
+#line 26 "D:\\cparser2\\perltoc.c"
 #ifndef PERL_UNUSED_VAR
 #  define PERL_UNUSED_VAR(var) if (0) var = var
 #endif
@@ -166,7 +166,7 @@ S_croak_xs_usage(const CV *const cv, const char *const params)
 #  define newXS_deffile(a,b) Perl_newXS_deffile(aTHX_ a,b)
 #endif
 
-#line 170 "D:\\6a4h8\\cparser2\\perltoc.c"
+#line 170 "D:\\cparser2\\perltoc.c"
 
 XS_EUPXS(XS__startmatching); /* prototype to pass -Wmissing-prototypes */
 XS_EUPXS(XS__startmatching)
@@ -175,21 +175,21 @@ XS_EUPXS(XS__startmatching)
     if (items != 3)
        croak_xs_usage(cv,  "in, in1, in2");
     {
-#line 22 "D:\\\\6a4h8\\\\cparser2\\\\perltoc.xs"
+#line 22 "D:\\\\cparser2\\\\perltoc.xs"
     STRLEN len;
     STRLEN secondlen;
     STRLEN thirdlen;
     char* s;
     char* s1;
     char* s2;
-#line 186 "D:\\6a4h8\\cparser2\\perltoc.c"
+#line 186 "D:\\cparser2\\perltoc.c"
 	SV *	in = ST(0)
 ;
 	SV *	in1 = ST(1)
 ;
 	SV *	in2 = ST(2)
 ;
-#line 29 "D:\\\\6a4h8\\\\cparser2\\\\perltoc.xs"
+#line 29 "D:\\\\cparser2\\\\perltoc.xs"
     {
         int secondmain(char *subject, size_t szsubject, char *pattern, size_t szpattern, char *modulename, size_t szmodulename);
         s = SvPVutf8(in, len);
@@ -197,7 +197,7 @@ XS_EUPXS(XS__startmatching)
         s2 = SvPVutf8(in2, thirdlen);
         secondmain(s, len, s1, secondlen, s2, thirdlen);
     }
-#line 201 "D:\\6a4h8\\cparser2\\perltoc.c"
+#line 201 "D:\\cparser2\\perltoc.c"
     }
     XSRETURN_EMPTY;
 }
@@ -210,14 +210,14 @@ XS_EUPXS(XS__callout)
     if (items < 1)
        croak_xs_usage(cv,  "in, ...");
     {
-#line 40 "D:\\\\6a4h8\\\\cparser2\\\\perltoc.xs"
+#line 40 "D:\\\\cparser2\\\\perltoc.xs"
     const char *argsarr[0xFF];
     size_t argsarrlen[0xFF];
-#line 217 "D:\\6a4h8\\cparser2\\perltoc.c"
+#line 217 "D:\\cparser2\\perltoc.c"
 	SV *	RETVAL;
 	SV *	in = ST(0)
 ;
-#line 43 "D:\\\\6a4h8\\\\cparser2\\\\perltoc.xs"
+#line 43 "D:\\\\cparser2\\\\perltoc.xs"
     {
         extern const char * callout_test(const char **, size_t *);
         memset(argsarr, 0, sizeof argsarr);
@@ -226,7 +226,7 @@ XS_EUPXS(XS__callout)
             argsarr[i] = SvPVutf8(ST(i), argsarrlen[i]);
         RETVAL = newSVpv(callout_test(argsarr, argsarrlen), 0);
     }
-#line 230 "D:\\6a4h8\\cparser2\\perltoc.c"
+#line 230 "D:\\cparser2\\perltoc.c"
 	RETVAL = sv_2mortal(RETVAL);
 	ST(0) = RETVAL;
     }
@@ -241,20 +241,20 @@ XS_EUPXS(XS__startmodule)
     if (items != 1)
        croak_xs_usage(cv,  "in");
     {
-#line 57 "D:\\\\6a4h8\\\\cparser2\\\\perltoc.xs"
+#line 57 "D:\\\\cparser2\\\\perltoc.xs"
     STRLEN len;
     char* s;
-#line 248 "D:\\6a4h8\\cparser2\\perltoc.c"
+#line 248 "D:\\cparser2\\perltoc.c"
 	SV *	in = ST(0)
 ;
-#line 60 "D:\\\\6a4h8\\\\cparser2\\\\perltoc.xs"
+#line 60 "D:\\\\cparser2\\\\perltoc.xs"
     {
         void startmodule(const char* modulename, size_t szmodulename);
         s = SvPVutf8(in, len);
 
         startmodule(s, len);
     }
-#line 258 "D:\\6a4h8\\cparser2\\perltoc.c"
+#line 258 "D:\\cparser2\\perltoc.c"
     }
     XSRETURN_EMPTY;
 }

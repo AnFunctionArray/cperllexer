@@ -45,4 +45,4 @@
 (?<label>(?&identifierminelabel)|\s*+(case\b(?C40)(?&primexpr):(?C65)|default\s*+:(?C67))\s*+)
 (?<identifierminelabel>\s*+(?!(?&keywordlist))(?<lbl>(?&identifierrawfacet))\s*+:(?C62<lbl>)\s*+)
 
-(?<cprogram>((?&structorunion)\s*+;\s*+|(?&typenameinsideopt)(?C42)((?&compoundstatement)|(?&abstrinitialization)?(,(?C43)(?&abstdecloutter)(?C42)(?&abstrinitialization)?+)*+\s*+;\s*+))*)
+(?<cprogram>((?&structorunion)\s*+;\s*+|(?&decloptorfndef))*)

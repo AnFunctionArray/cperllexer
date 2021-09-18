@@ -148,7 +148,7 @@ struct bindings_payload {
 	size_t* szargs;
 };
 
-static std::vector<std::vector<std::string>> typedefs{ 1 };
+static std::vector<std::vector<std::string>> typedefs{ { "test" }};
 
 //bool bwastypedefmatched = false;
 

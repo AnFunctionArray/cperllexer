@@ -94,7 +94,7 @@ sub debugcallout {
 
     $subslice =~ s{\R}{ }g;
     
-    print  "rest: " . $subslice . "\n";
+    print  "capture: " . $subslice . "\n";
     foreach my $i (@arr) {
         print $i . "\n";
     }
@@ -176,9 +176,15 @@ sub substitutetemplateinstances {
 
     my $doubleref = $+{doubleref};
 
-    $regexcontent =~ m {\(\?<(?<params>.*?)>\)\s*+(?=\(\?<$templatetoreplace\b)(?<inpar>(?<!\\)\((
+    my $isfacet = $+{isfacet};
+
+    #$isfacet = "(*F)" if(not $isfacet);
+
+    $regexcontent =~ m {\(\?<(?<params>.*?)>\)\s*+(?=\(\?<$templatetoreplace(?<isfacet>$isfacet)?+\b)(?<inpar>(?<!\\)\((
                     ([^][()]|(?<=\\).)++|(?&inpar)|(?<insquare>(?<!\\)\[\^?+(.|\\.)(
                     ([^]]|(?<=\\).)++|(?&insquare))*(?<!\\)\]))*(?<!\\)\))}gxx;
+
+    #$isfacet = not $+{isfacet};
 
     #push @arrayoftemplates, $& unless ($& ~~ @arrayoftemplates);
 
@@ -191,7 +197,7 @@ sub substitutetemplateinstances {
     while(1) {
         my $arg = getnext($args);
 
-        $arg =~ m{((?<ident>[_a-zA-Z][_a-zA-Z0-9]*+)|(?<callout>\d++))(?<qualifs>\S*+)};
+        $arg =~ m{((?<ident>[_a-zA-Z][_a-zA-Z0-9]*+)|(?<callout>\d++))(?<inargs><([^<>]++|(?&inargs))*+>)?+(?<qualifs>\S*+)};
 
         my $argident = $+{ident};
 
@@ -199,11 +205,19 @@ sub substitutetemplateinstances {
 
         my $argqualifs = $+{qualifs};
 
+        my $tmplargs = $+{inargs};
+
         my $param = getnext($params);
 
         last if(!$arg || !$param);
 
-        $body =~ s{(\(\?&{1,2})$param(<.*?>|facet)?+\)}{
+        if($tmplargs and not $argident ~~ @arrayoftemplate) { #if recursive template arguments append template body
+            $arg = "(?&&" . $argident . $tmplargs . ")"; 
+            substitutetemplateinstancesdoregex($arg, $regexcontent);
+            $body = $arg . $body;
+        }
+
+        $body =~ s{(\(\?&{1,2})$param((facet)?+(<.*?>)?+)\)}{
             if(not $argcallout) { $1 . $argident .  $2 . ")" . $argqualifs; }
             else {
                 "(" . $argqualifs . "?C" . $argcallout .  $2 . ")" ;
@@ -215,6 +229,8 @@ sub substitutetemplateinstances {
     } elsif(not $doubleref) {
         $body =~ s{\(\?<\Q$template\E\b.*?>}{(};
     }
+
+    dofacetreplacements($body) if($isfacet);
 
     return $body;
 
@@ -255,12 +271,13 @@ sub parseregexfile {
     @arrayoftemplates = ();
 
     sub substitutetemplateinstancesdoregex {
-        return $_[0] =~s {\(\?&(?<doubleref>&)?+(?<template>((?![)])\S)+)<(?<args>.*?)>
+        return $_[0] =~s {\(\?&(?<doubleref>&)?+(?<template>((?![)])\S)+?)(?<isfacet>facet)?+
+                            (?<inargs><(?<args>[^<>]++|(?&inargs))*+>)
                             (=(?<name>((?![)])\S)+))?\)}
-                            {substitutetemplateinstances($_[0])}gxxe;
+                            {substitutetemplateinstances($_[1])}gxxe;
     }
 
-    while(substitutetemplateinstancesdoregex($regexfilecontent)) {}
+    while(substitutetemplateinstancesdoregex($regexfilecontent, $regexfilecontent)) {}
 
     #print @arrayoftemplates;
 
@@ -309,26 +326,29 @@ sub parseregexfile {
 
     replacenofacetgroups($1, $regexfilecontent) while($regexfilecontentcopy =~/\(\?<(\w+)#nofacet>/g); # remove references to nofacet groups
 =cut
+    sub dofacetreplacements {
+        $_[0] =~s/\(\?C(\d++)(<(?<args>.*?)>)?+\)//g;
 
-    $regexfilecontent =~s/\(\?C(\d++)(<(?<args>.*?)>)?+\)//g;
+        #$regexfilecontent =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
-    #$regexfilecontent =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
+        $_[0] =~s/[(]\?&(\w+?)(facet)?+[)]/(?&$1facet)/g;
 
-    $regexfilecontent =~s/[(]\?&(\w+?)(facet)?+[)]/(?&$1facet)/g;
+        #$regexfilecontent =~s/([(]\?)?+[(]<(?>\w+?)(facet)?+>[)]/$1(<$2facet>)/g;
 
-    #$regexfilecontent =~s/([(]\?)?+[(]<(?>\w+?)(facet)?+>[)]/$1(<$2facet>)/g;
+        #$regexfilecontent =~s/[(]\?&(?>\w+?)\#nofacet[)]/(?&$1)/g;
 
-    #$regexfilecontent =~s/[(]\?&(?>\w+?)\#nofacet[)]/(?&$1)/g;
+        #$regexfilecontent =~s/[(]\?[(]<(\w+?)#nofacet>[)]/(?(<$1>)/g;
 
-    #$regexfilecontent =~s/[(]\?[(]<(\w+?)#nofacet>[)]/(?(<$1>)/g;
+        $_[0] =~s{([(]\?[(]?+)<(\w+?)(facet)?+>}{$1<$2facet>}g;
+        
+        #$regexfilecontent =~s/(\(\?<\w+)>/$1facet>/g;
 
-    $regexfilecontent =~s{([(]\?[(]?+)<(\w+?)(facet)?+>}{$1<$2facet>}g;
-    
-    #$regexfilecontent =~s/(\(\?<\w+)>/$1facet>/g;
+        $_[0] =~s/(\(\?<\w+)#restrictoutsidefacet>/$1facet>(*F)/g;
 
-    $regexfilecontent =~s/(\(\?<\w+)#restrictoutsidefacet>/$1facet>(*F)/g;
+        $_[0] =~s/\(\?<#restrictoutsidefacet>/((*F)/g;
+    }
 
-    $regexfilecontent =~s/\(\?<#restrictoutsidefacet>/((*F)/g;
+    dofacetreplacements($regexfilecontent);
 
     $mainregexfinal = $mainregexfinal . $regexfile . $regexfilecontent;
 
