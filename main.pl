@@ -156,7 +156,7 @@ sub entryregexmain {
 }
 
 sub getnext {
-    $_[0] =~ s {\s*+(?<arg>\S+?)\s*+($|,)}{};
+    $_[0] =~ s {^\s*+(?<arg>\S+?)\s*+($|,)}{};
 
     return $+{arg};
 }
@@ -195,33 +195,71 @@ sub substitutetemplateinstances {
     push @arrayoftemplates, $templatetoreplace unless ($& ~~ @arrayoftemplates);
 
     while(1) {
-        my $arg = getnext($args);
+        #my $arg = getnext($args);
 
-        $arg =~ m{((?<ident>[_a-zA-Z][_a-zA-Z0-9]*+)|(?<callout>\d++))(?<inargs><([^<>]++|(?&inargs))*+>)?+(?<qualifs>\S*+)};
+        $args =~ s{^(\s*+(?<inpar>(?<!\\)\((([^][()]|(?<=\\).)++|(?&inpar)
+                        |(?<insquare>(?<!\\)\[\^?+(.|\\.)(([^]]|(?<=\\).)++
+                        |(?&insquare))*(?<!\\)\]))*(?<!\\)\))\s*+|\s*+(?<arg>\S*?)\s*+($|,))}{}sxx;
 
-        my $argident = $+{ident};
+        my $inpar = $+{inpar};
 
-        my $argcallout = $+{callout};
+        my $arg = $+{arg};
 
-        my $argqualifs = $+{qualifs};
+        if(not $inpar) {
 
-        my $tmplargs = $+{inargs};
+            $arg =~ m{((?<ident>[_a-zA-Z][_a-zA-Z0-9]*+)|(?<callout>\d++))(?<qualifs>\S*+)}x;
+
+            my $argident = $+{ident};
+
+            my $argcallout = $+{callout};
+
+            my $argqualifs = $+{qualifs};
+
+            my $tmplargs = $+{inargs};
+            
+        }
 
         my $param = getnext($params);
 
-        last if(!$arg || !$param);
+        last if(!$param);
 
-        if($tmplargs and not $argident ~~ @arrayoftemplate) { #if recursive template arguments append template body
-            $arg = "(?&&" . $argident . $tmplargs . ")"; 
-            substitutetemplateinstancesdoregex($arg, $regexcontent);
-            $body = $arg . $body;
+        $arg = $argident = substitutetemplateinstancesdoregex($inpar, $regexcontent) if($inpar);
+        $body = $inpar . $body;
+
+        $body =~ s{(\(\?&{1,2})$param((facet)?+(?<inargs><(?<args>[^<>]++|(?&inargs))*+>)?+)\)}{
+            if(not $argcallout) { $1 . $argident .  $2 . ")" . $argqualifs; }
+            elif($arg) {
+                "(" . $argqualifs . "?C" . $argcallout .  $2 . ")" ;
+            } else {
+                "()"
+            }}eg;
+
+        my @arraofposandlenwords = ();
+        while($body =~ 
+                m{((*F)(?<inargsfacet><(?<args>(\s*+((?<word>[^<>,()\s]++)\s*+,
+                                |(?&restfacet))\s*+,)*+
+                                \s*+(?<word>[^<>,()\s]++)\s*+
+                                |(?<restfacet>(?&inargsfacet)
+                                |(?<inpar>(?<!\\)\((([^][()]|(?<=\\).)++|(?&inpar)
+                                |(?<insquare>(?<!\\)\[\^?+(.|\\.)(([^]]|(?<=\\).)++
+                                |(?&insquare))*(?<!\\)\]))*(?<!\\)\))))*+>))|
+                                
+                (?<inargs><(?<args>(\s*+((?<word>[^<>,()\s]++)\s*+,
+                                (?{push @arraofposandlenwords, [$-[$#- - 1], $+[$#- - 1] - $-[$#- - 1]] if($+{word} eq $param)})
+                                |(?&restfacet)\s*+,))*+
+                                \s*+(?<word>[^<>,()\s]++)\s*+
+                                (?{push @arraofposandlenwords, [$-[$#-], $+[$#-] - $-[$#-]] if($+{word} eq $param)})
+                                |(?<rest>(?&inargs)
+                                |(?<inpar>(?<!\\)\((([^][()]|(?<=\\).)++|(?&inpar)
+                                |(?<insquare>(?<!\\)\[\^?+(.|\\.)(([^]]|(?<=\\).)++
+                                |(?&insquare))*(?<!\\)\]))*(?<!\\)\))))*+>)}gxxs) {}
+
+        foreach my $word (reverse @arraofposandlenwords) {  
+            #print  "" . $word->[1] . "\n";
+            substr $body, $word->[0], $word->[1], $arg
         }
 
-        $body =~ s{(\(\?&{1,2})$param((facet)?+(<.*?>)?+)\)}{
-            if(not $argcallout) { $1 . $argident .  $2 . ")" . $argqualifs; }
-            else {
-                "(" . $argqualifs . "?C" . $argcallout .  $2 . ")" ;
-            }}eg
+        #print $str;
     }
 
     if($name) {
@@ -271,10 +309,16 @@ sub parseregexfile {
     @arrayoftemplates = ();
 
     sub substitutetemplateinstancesdoregex {
-        return $_[0] =~s {\(\?&(?<doubleref>&)?+(?<template>((?![)])\S)+?)(?<isfacet>facet)?+
+        my $templatename;
+        $_[0] =~s {\(\?&(?<doubleref>&)?+(?<template>((?![)])\S)+?)(?<isfacet>facet)?+
                             (?<inargs><(?<args>[^<>]++|(?&inargs))*+>)
                             (=(?<name>((?![)])\S)+))?\)}
-                            {substitutetemplateinstances($_[1])}gxxe;
+                            {
+                                $templatename = $+{template};
+                                substitutetemplateinstances($_[1])
+                            }gxxe;
+
+        return $templatename;
     }
 
     while(substitutetemplateinstancesdoregex($regexfilecontent, $regexfilecontent)) {}

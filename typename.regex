@@ -56,7 +56,7 @@
 
 (?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
 
-(?<Tabsqualifs, Tasbtdecloutter>)
+(?<Tabsqualifs, Tasbtdecloutter, Tabstinitorbitfl>)
 (?<abstdeclorallqualifs>(?<#restrictoutsidefacet>(?&&Tabsqualifsfacet<>)(?!(?&Tasbtdecloutter)))
 				|(?&&Tabsqualifs<>)(?&Tasbtdecloutterfacet)(?C55))
 
@@ -64,15 +64,15 @@
 (?<Tasbtdecloutter, Tabstinitorbitfl>)
 (?<decl>(?C42)(?&Tasbtdecloutter)
 			(?&Tabstinitorbitfl)?
-			(,(?C43)(?&Tasbtdecloutter)(?C42)(?&Tabstinitorbitfl)?+))
+			(,(?C43)(?&Tasbtdecloutter)(?C42)(?&Tabstinitorbitfl)?+)*)
 
-(?<decloptorfndef>(?&typenameinsidedecl)(\s*+;\s*+|(?&compoundstatement)))
+(?<decloptorfndef>(?&typenameinsideopt)(\s*+;\s*+|(?&compoundstatement)))
 
-(?&abstdeclorallqualifs<allqualifsdecl*+, decl<abstdecloutter, abstrinitialization>>=typenameinsideopt)
+(?&abstdeclorallqualifs<allqualifsdecl*+, abstdecloutter, abstrinitialization>=typenameinsideopt)
 
-(?&abstdeclorallqualifs<allqualifsdecl++, decl<abstdecloutter, abstrinitialization>>=typenameinsidedecl)
+(?&abstdeclorallqualifs<allqualifsdecl++, abstdecloutter, abstrinitialization>=typenameinsidedecl)
 
-(?&abstdeclorallqualifs<allqualifsparam++, abstdecloutterparams>=typenameinsideparams)
+(?&abstdeclorallqualifs<allqualifsparam++, (?&decl<abstdecloutterparams, abstrinitialization>=declparams)>=typenameinsideparams)
 
 (?<identifierminedecl>\s*+(?!(?&keywordlist))(?<ident>(?&identifierrawfacet))(?C39<ident, typedefnmmatchedfacet, typedefkeyfacet>)\s*+)
 (?<>)
