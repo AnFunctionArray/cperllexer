@@ -162,28 +162,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="idamain.cpp" />
+    <ClCompile Include="idaplugin\idamain.cpp" />
     <ClCompile Include="llvm\llvmgen.cpp">
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">stdcpplatest</LanguageStandard>
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpplatest</LanguageStandard>
     </ClCompile>
-    <ClCompile Include="main.c" />
-    <ClCompile Include="maintest.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="namedcapture.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="test.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="test.test.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="src\main.c" />
     <ClCompile Include="utility\utility.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -191,10 +175,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="llvm\llvmgen.h" />
-    <ClInclude Include="main.h" />
+    <ClInclude Include="src\main.h" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="perltoc.xs">
+    <CustomBuild Include="src\perltoc.xs">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xsubpp %(FullPath) &gt; .%(Filename).c</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.%(Filename).c</Outputs>
@@ -203,12 +187,6 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.%(Filename).c</Outputs>
       <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
     </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include=".clang-format" />
-    <None Include=".clang-tidy" />
-    <None Include="main.pl" />
-    <None Include="start.idc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

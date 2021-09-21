@@ -11,7 +11,7 @@
 #else
 #include <pcre2/pcre2.h>
 #endif
-#include "main.h"
+#include "src/main.h"
 
 MODULE = _6a4h8
 

@@ -1,0 +1,1 @@
+typedef test test, *test2;

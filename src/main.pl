@@ -6,7 +6,7 @@ use experimental 'switch';
 
 use File::Basename;
 
-$filename = "main.regex";
+$filename = "regexes/main.regex";
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
 my $mainregexfilecontent = do { local $/; <$fh> };
@@ -38,7 +38,11 @@ my $entryregex;
 
 my $matchinperl = 1;
 
+chdir "regexes";
+
 $mainregexfilecontent =~/$metaregexfilecontent/;
+
+chdir "..";
 
 #(?{parseregexfile($+{filename})})
 #(?{entryregexmain($+{entrygroup}, $+{prefix})})
@@ -192,7 +196,7 @@ sub substitutetemplateinstances {
 
     my $body = $+{inpar};
 
-    push @arrayoftemplates, $templatetoreplace unless ($& ~~ @arrayoftemplates);
+    push @arrayoftemplates, $templatetoreplace unless ($templatetoreplace ~~ @arrayoftemplates);
 
     while(1) {
         #my $arg = getnext($args);
@@ -201,21 +205,33 @@ sub substitutetemplateinstances {
                         |(?<insquare>(?<!\\)\[\^?+(.|\\.)(([^]]|(?<=\\).)++
                         |(?&insquare))*(?<!\\)\]))*(?<!\\)\))\s*+|\s*+(?<arg>\S*?)\s*+($|,))}{}sxx;
 
+        #print $+{inpar} . "\n\n";
+
         my $inpar = $+{inpar};
 
         my $arg = $+{arg};
+
+        #print $arg . "\n";
+
+        my $argident;
+
+        my $argcallout;
+
+        my $argqualifs;
+
+        my $tmplargs;
 
         if(not $inpar) {
 
             $arg =~ m{((?<ident>[_a-zA-Z][_a-zA-Z0-9]*+)|(?<callout>\d++))(?<qualifs>\S*+)}x;
 
-            my $argident = $+{ident};
+            $argident = $+{ident};
 
-            my $argcallout = $+{callout};
+            $argcallout = $+{callout};
 
-            my $argqualifs = $+{qualifs};
+            $argqualifs = $+{qualifs};
 
-            my $tmplargs = $+{inargs};
+            $tmplargs = $+{inargs};
             
         }
 
@@ -223,41 +239,22 @@ sub substitutetemplateinstances {
 
         last if(!$param);
 
+        #print $inpar;
+
         $arg = $argident = substitutetemplateinstancesdoregex($inpar, $regexcontent) if($inpar);
         $body = $inpar . $body;
 
+        print $param . "->" . $argident . "\n";
+
         $body =~ s{(\(\?&{1,2})$param((facet)?+(?<inargs><(?<args>[^<>]++|(?&inargs))*+>)?+)\)}{
-            if(not $argcallout) { $1 . $argident .  $2 . ")" . $argqualifs; }
-            elif($arg) {
+            if($arg) {if(not $argcallout) { $1 . $argident .  $2 . ")" . $argqualifs; }
+            else {
                 "(" . $argqualifs . "?C" . $argcallout .  $2 . ")" ;
-            } else {
+            } }else {
                 "()"
             }}eg;
 
-        my @arraofposandlenwords = ();
-        while($body =~ 
-                m{((*F)(?<inargsfacet><(?<args>(\s*+((?<word>[^<>,()\s]++)\s*+,
-                                |(?&restfacet))\s*+,)*+
-                                \s*+(?<word>[^<>,()\s]++)\s*+
-                                |(?<restfacet>(?&inargsfacet)
-                                |(?<inpar>(?<!\\)\((([^][()]|(?<=\\).)++|(?&inpar)
-                                |(?<insquare>(?<!\\)\[\^?+(.|\\.)(([^]]|(?<=\\).)++
-                                |(?&insquare))*(?<!\\)\]))*(?<!\\)\))))*+>))|
-                                
-                (?<inargs><(?<args>(\s*+((?<word>[^<>,()\s]++)\s*+,
-                                (?{push @arraofposandlenwords, [$-[$#- - 1], $+[$#- - 1] - $-[$#- - 1]] if($+{word} eq $param)})
-                                |(?&restfacet)\s*+,))*+
-                                \s*+(?<word>[^<>,()\s]++)\s*+
-                                (?{push @arraofposandlenwords, [$-[$#-], $+[$#-] - $-[$#-]] if($+{word} eq $param)})
-                                |(?<rest>(?&inargs)
-                                |(?<inpar>(?<!\\)\((([^][()]|(?<=\\).)++|(?&inpar)
-                                |(?<insquare>(?<!\\)\[\^?+(.|\\.)(([^]]|(?<=\\).)++
-                                |(?&insquare))*(?<!\\)\]))*(?<!\\)\))))*+>)}gxxs) {}
-
-        foreach my $word (reverse @arraofposandlenwords) {  
-            #print  "" . $word->[1] . "\n";
-            substr $body, $word->[0], $word->[1], $arg
-        }
+        $body =~ s{\b$param\b}{$argident}g;
 
         #print $str;
     }
@@ -322,6 +319,9 @@ sub parseregexfile {
     }
 
     while(substitutetemplateinstancesdoregex($regexfilecontent, $regexfilecontent)) {}
+
+    #print $regexfilecontent;
+    #exit;
 
     #print @arrayoftemplates;
 

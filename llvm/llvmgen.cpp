@@ -60,7 +60,7 @@
 #endif
 
 extern "C" {
-#include "../main.h"
+#include "../src/main.h"
 }
 
 const std::list<struct var>::reverse_iterator obtainvalbyidentifier(std::string ident, bool push = true, bool bfindtypedef = false);

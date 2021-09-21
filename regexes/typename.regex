@@ -57,8 +57,8 @@
 (?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
 
 (?<Tabsqualifs, Tasbtdecloutter, Tabstinitorbitfl>)
-(?<abstdeclorallqualifs>(?<#restrictoutsidefacet>(?&&Tabsqualifsfacet<>)(?!(?&Tasbtdecloutter)))
-				|(?&&Tabsqualifs<>)(?&Tasbtdecloutterfacet)(?C55))
+(?<abstdeclorallqualifs>(?<#restrictoutsidefacet>(?&&Tabsqualifsfacet<>)(?!(?&&decl<Tasbtdecloutter, Tabstinitorbitfl>)))
+				|(?&&Tabsqualifs<>)(?&declfacet)(?C55))
 
 
 (?<Tasbtdecloutter, Tabstinitorbitfl>)
@@ -72,7 +72,9 @@
 
 (?&abstdeclorallqualifs<allqualifsdecl++, abstdecloutter, abstrinitialization>=typenameinsidedecl)
 
-(?&abstdeclorallqualifs<allqualifsparam++, (?&decl<abstdecloutterparams, abstrinitialization>=declparams)>=typenameinsideparams)
+(?&abstdeclorallqualifs<allqualifsparam++, abstdecloutter>=typenameinsideparams)
+
+(?&abstdeclorallqualifs<allqualifsparam++, abstdecloutter, abstrbitfield>=typenamebitfl)
 
 (?<identifierminedecl>\s*+(?!(?&keywordlist))(?<ident>(?&identifierrawfacet))(?C39<ident, typedefnmmatchedfacet, typedefkeyfacet>)\s*+)
 (?<>)
@@ -92,10 +94,11 @@
 (?<calloutid>)
 (?<identifiermine>\s*+(?!(?&keywordlist))(?<identlast>(?&identifierrawfacet))(?&calloutid<identlast>)\s*+)
 
-(?<structorunion>\s*+(?<structorunionlast>struct|union)((?&identifierminestruct<>)?+\s*+[{](?C59)\s*+((?&typenameinsidedecl)(?&abstrbitfield)?+(?C42)
-(,(?C43)(?&abstdecloutter)(?&abstrbitfield)?+(?C42))*+\s*+;\s*+)*+[}](?C60)\s*+|(?&identifierminestruct<>))|(?&enum))
-(?<enum>\s*+enum(((?&&identifiermine<90>)|(?C94))\s*+[{](?<enumerator>(?&&identifiermine<89>)((=(?C40)(?&assignorsomething)(?C92))|(?C93)))?+(,(?&enumerator))*+,?+\s*+[}]\s*+
-				|(?&&identifiermine<91>)))
+(?<structorunion>\s*+(?<structorunionlast>struct|union)((?&identifierminestruct<>)?+\s*+[{](?C59)\s*+((?&typenamebitfl)\s*+;\s*+)*+[}](?C60)\s*+
+|(?&identifierminestruct<>))|(?&enum))(?<enum>\s*+enum(((?&&identifiermine<90>)
+|(?C94))\s*+[{](?<enumerator>(?&&identifiermine<89>)((=(?C40)(?&assignorsomething)(?C92))
+|(?C93)))?+(,(?&enumerator))*+,?+\s*+[}]\s*+
+|(?&&identifiermine<91>)))
 
 (?<>)
 (?<identifierminestruct>\s*+(?!(?&keywordlist))(?<ident>(?&identifierrawfacet))(?C58<structorunionlast, ident>)\s*+)

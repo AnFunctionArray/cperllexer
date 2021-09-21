@@ -217,7 +217,7 @@ char* openfile(char* chname, size_t* szfileout)
 	return filecontent;
 }
 
-#include "llvm/llvmgen.h"
+//#include "llvm/llvmgen.h"
 
 secondmain(char* subject, size_t szsubject, char* pattern, size_t szpattern, char* modulename, size_t szmodulename)
 {

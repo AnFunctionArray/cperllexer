@@ -361,3 +361,5 @@ a.out
 
 *.ll
 *.s
+.*
+!.gitignore
