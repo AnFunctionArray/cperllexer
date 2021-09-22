@@ -42,13 +42,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>ClangCL</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>ClangCL</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -80,11 +80,13 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>D:\llvm-project\llvm\build3\include;D:\llvm-project\llvm\include;D:\;D:\perl5;D:\perl5\win32;D:\perl5\win32\include;D:\IDA Pro 7.5\plugins\hexrays_sdk\include;D:\idasdk75\include;$(IncludePath)</IncludePath>
     <LibraryPath>D:\llvm-project\llvm\build3\Debug\lib;D:\perl5;D:\pcre2\Debug;D:\idasdk75\lib\x64_win_vc_32;$(LibraryPath)</LibraryPath>
+    <PublicModuleDirectories>C:\Program Files\Microsoft Visual Studio\2022\Preview\VC\Tools\MSVC\14.30.30528\include\experimental</PublicModuleDirectories>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>D:\llvm-project\llvm\build3\include;D:\llvm-project\llvm\include;D:\;D:\perl5;D:\perl5\win32;D:\perl5\win32\include;D:\IDA Pro 7.5\plugins\hexrays_sdk\include;D:\idasdk75\include;$(IncludePath)</IncludePath>
     <LibraryPath>D:\llvm-project\llvm\build3\MinSizeRel\lib;D:\perl5;D:\pcre2\Debug;D:\idasdk75\lib\x64_win_vc_32;$(LibraryPath)</LibraryPath>
+    <PublicModuleDirectories>C:\Program Files\Microsoft Visual Studio\2022\Preview\VC\Tools\MSVC\14.30.30528\include\experimental</PublicModuleDirectories>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <VcpkgInstalledDir>
@@ -132,6 +134,7 @@
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <BasicRuntimeChecks>StackFrameRuntimeCheck</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <EnableModules>true</EnableModules>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -150,6 +153,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <EnableModules>true</EnableModules>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

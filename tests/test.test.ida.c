@@ -1,1 +1,7 @@
-typedef test test, *test2;
+typedef int test;
+
+typedef test float test;
+
+test test() {
+    return 0;
+}

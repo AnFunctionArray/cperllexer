@@ -15,28 +15,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="namedcapture.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="llvm\llvmgen.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="maintest.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="test.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="utility\utility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="idamain.cpp">
+    <ClCompile Include="idaplugin\idamain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="test.test.c">
+    <ClCompile Include="src\main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -44,23 +32,11 @@
     <ClInclude Include="llvm\llvmgen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="main.h">
+    <ClInclude Include="src\main.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="perltoc.xs">
-      <Filter>Source Files</Filter>
-    </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="main.pl">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include=".clang-format" />
-    <None Include=".clang-tidy" />
-    <None Include="start.idc">
-      <Filter>Source Files</Filter>
-    </None>
+    <CustomBuild Include="src\perltoc.xs" />
   </ItemGroup>
 </Project>

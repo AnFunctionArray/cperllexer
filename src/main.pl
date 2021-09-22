@@ -34,6 +34,8 @@ close $fh;
 
 my $mainregexfinal = "((*F)";
 
+@typedefidentifiersvector = ("(*F)");
+
 my $entryregex;
 
 my $matchinperl = 1;
@@ -65,7 +67,7 @@ exit if(not $matchinperl);
 
 print $mainregexfinal;
 
-startmodule(basename($ARGV[0], @suffixlist));
+startmodule(basename($ARGV[0], @suffixlist)) if(defined &startmodule);
 
 {
     #$oldfh = select(STDERR);
@@ -76,6 +78,8 @@ startmodule(basename($ARGV[0], @suffixlist));
 }
 
 #print $&;
+
+exit;
 
 sub addtypdefidentifier {
     $typedefidentifiers = $typedefidentifiers . $+{identifierraw} . "|" if(not $mute_callbacks and $+{typedefkeyword});
@@ -102,7 +106,9 @@ sub debugcallout {
     foreach my $i (@arr) {
         print $i . "\n";
     }
-    callout(@arr);
+    my $res = parsing(@arr);
+    callout(@arr) if(defined &callout);
+    return $res;
 }
 
 =for comment
@@ -154,6 +160,27 @@ sub defaultcallback {
 }
 
 =cut
+
+sub parsing {
+    given ($_[0])
+    {
+        when (38) { return $typedefidentifiersvector[-1]; }
+        when (39) 
+        { 
+            my $lastelem = pop @typedefidentifiersvector;
+            push @typedefidentifiersvector, $lastelem . "|" . $_[1]
+            unless (not $_[3]);
+        }
+
+        when (44) {
+            push @typedefidentifiersvector, "(*F)";
+        }
+
+        when (45) {
+            pop @typedefidentifiersvector;
+        }
+    }
+}
 
 sub entryregexmain {
     $entryregex = $_[1] . "(?&" . $_[0] . ")";
@@ -371,7 +398,7 @@ sub parseregexfile {
     replacenofacetgroups($1, $regexfilecontent) while($regexfilecontentcopy =~/\(\?<(\w+)#nofacet>/g); # remove references to nofacet groups
 =cut
     sub dofacetreplacements {
-        $_[0] =~s/\(\?C(\d++)(<(?<args>.*?)>)?+\)//g;
+        $_[0] =~s/\(\?C(\d++)\s*+(<(?<args>.*?)>)?+\)//gs;
 
         #$regexfilecontent =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
@@ -396,7 +423,7 @@ sub parseregexfile {
 
     $mainregexfinal = $mainregexfinal . $regexfile . $regexfilecontent;
 
-    $mainregexfinal =~s/\((\?\??+)C(\d++)(<(?<args>.*?)>)?+\)/
+    $mainregexfinal =~s/\((\?\??+)C(\d++)\s*+(<(?<args>.*?)>)?+\)/
             my $prefix = "(" . $1 . "{debugcallout(" . $2;
             $prefix . ($+{args} ? "," . ($+{args} =~ s {\b\S+\b}{\$\+\{$&\}}gr) : "") . ")})"
             /ges if($matchinperl);

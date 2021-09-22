@@ -87,6 +87,8 @@ void startdeclaration(std::string typedefname);
 struct currtypevectorbeingbuild_t {
 	std::list<std::list<var>>::iterator p;
 	currdecltypeenum currdecltype;
+
+	decltype(p) endp;
 };
 
 std::list<currtypevectorbeingbuild_t> currtypevectorbeingbuild = {
@@ -207,12 +209,13 @@ struct bindings_parsing : bindings_payload {
 		return ret;
 	}
 	virtual std::string identifier_decl_39() {
-		if (qualifsandtypes.back().second)
+		/*if (qualifsandtypes.back().second)
 		{
 			//std::string n = getnameloc("ident", *ptable) + 1;
 			typedefs.back().push_back({ FIRST_ARG_PTR_AND_SZ });
 			qualifsandtypes.back().second = false;
-		}
+		}*/
+		if(szargs[3]) typedefs.back().push_back({ FIRST_ARG_PTR_AND_SZ });
 		return "";
 	}
 	virtual std::string start_constant_expr_40() { return ""; }
@@ -895,7 +898,19 @@ struct bindings_compiling : bindings_payload {
 		//handledeclident({ (char*)GROUP_PTR_AND_SZ(n) });
 		//adddeclarationident((char*)GROUP_PTR_AND_SZ(n), false);
 
-		currtypevectorbeingbuild.back().p->back().identifier = { FIRST_ARG_PTR_AND_SZ };//(char*)GROUP_PTR_AND_SZ(n) };
+		//currtypevectorbeingbuild.back().p->back().identifier = { FIRST_ARG_PTR_AND_SZ };//(char*)GROUP_PTR_AND_SZ(n) };
+
+		var var;
+
+		type basic{ type::BASIC };
+
+		basic.spec.basicdeclspec.basic[3] = std::string{ PTR_AND_SZ_N(2) };
+
+		var.linkage = std::string{ PTR_AND_SZ_N(3) };
+
+		var.type = { basic };
+
+		currtypevectorbeingbuild.back().p->push_back(var);
 	}
 	virtual void start_constant_expr_40() {
 		beginconstantexpr();
@@ -987,8 +1002,16 @@ struct bindings_compiling : bindings_payload {
 
 	}
 	virtual void struc_or_union_body_59() {
-		startbuildingstructorunion();
-
+		var tmp;
+		type typestruct{ type::BASIC };
+		typestruct.spec.basicdeclspec.basic[3] = PTR_AND_SZ_N(1);
+		typestruct.spec.basicdeclspec.basic[0] = PTR_AND_SZ_N(2);
+		tmp.type.push_back(typestruct);
+		tmp.identifier = currstruct.second;
+		tmp.pllvmtype = llvm::StructType::create(llvmctx);
+		structorunionmembers.back().push_back({ tmp });
+		currtypevectorbeingbuild.push_back(
+			{ --structorunionmembers.back().end(), currdecltypeenum::PARAMS });
 	}
 	virtual void struc_or_union_body_end_60() {
 		endbuildingstructorunion();
@@ -2433,21 +2456,6 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 
 extern std::pair<std::string, std::string> currstruct;
 
-extern "C" void startbuildingstructorunion() {
-	var tmp;
-	type typestruct{ type::BASIC };
-	typestruct.spec.basicdeclspec.basic[3] = currstruct.second;
-	typestruct.spec.basicdeclspec.basic[0] = currstruct.first;
-	tmp.type.push_back(typestruct);
-	tmp.identifier = currstruct.second;
-	tmp.pllvmtype = llvm::StructType::create(llvmctx);
-	structorunionmembers.back().push_back({ tmp });
-	currtypevectorbeingbuild.push_back(
-		{ --structorunionmembers.back().end(), currdecltypeenum::PARAMS });
-	currstruct.second.clear();
-	currstruct.first.clear();
-}
-
 extern "C" void endbuildingstructorunion() {
 	auto& lastmembers = structorunionmembers.back().back();
 	auto& structvar = lastmembers.front();
@@ -2475,7 +2483,7 @@ extern "C" void endbuildingstructorunion() {
 	//structvar.type.back().spec.basicdeclspec.iterunorstr = structorunionmembers.back().end();
 }
 
-void startdeclaration(std::string typedefname) {
+/*void startdeclaration(std::string typedefname) {
 	//std::string typedefname = currdeclspectypedef;
 	var var;
 
@@ -2499,7 +2507,7 @@ void startdeclaration(std::string typedefname) {
 	}
 	//immidiates.pop_back();
 
-	currenum /*= currdeclspectypedef*/ = "";
+	currenum /*= currdeclspectypedef/ = "";
 
 	//qualifsandtypes.back().first.clear();
 
@@ -2517,7 +2525,7 @@ void startdeclaration(std::string typedefname) {
 		var.type.push_back(basic);
 
 	currtypevectorbeingbuild.back().p->push_back(var);
-}
+}*/
 
 bool bIsBasicFloat(const type& type);
 
