@@ -3,19 +3,19 @@
 						|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|\b__int64\b|\b_Bool\b)|
 						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
 						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b))(?C49<typesandqualifiersmask>)\s*+)
-						|(?&&structorunion<>)|(\s*+(\b__inline\b|\b__forceinline\b)\s*+))|(?&&identifierminetypedeffacet<>))++
+						|(?&&structorunion<>)|(\s*+(\b__inline\b|\b__forceinline\b)\s*+))|(?&&identifierminetypedef<>))++
 						(?C55<typedefnmmatched>)
 						(?&abstdecloptoutter)?+[)](?C46)\s*+)
 
 (?<>)
-(?<typedefdecl>(?&&identifierminetypedeffacet<>)(?=(?&allqualifsfacet)*+(?&abstdecloutterfacet)))
+(?<typedefdecl>(?&&identifierminetypedef<>)(?=(?&allqualifsfacet)*+(?&abstdecloutterfacet)))
 
 (?<>)
 (?<allqualifsdecl>(?&allqualifs)|(?&&typedefdecl<>)|\s*+(?<typedefkeyfacet>\btypedef\b)\s*+)
 
 (?# The committee has decided against (if actually even possible) having the same name as a typedef for a parameter)
 (?<>)
-(?<typedefparam>(?&&identifierminetypedeffacet<>))
+(?<typedefparam>(?&&identifierminetypedef<>))
 (?<>)
 (?<allqualifsparam>(?&allqualifs)|(?&&typedefparam<>))
 
@@ -62,12 +62,13 @@
 			(*F)(?&&decl<Tasbtdecloutter, Tabstinitorbitfl>)
 			(?<declcomma>,(?&decl))
 		)|
+		(?<#restrictoutsidefacet>
 		(?&&Tabsqualifsfacet<>)(?!(?&decl))
 				|(?&&Tabsqualifs<>)(?&declfacet)
 				|(?<restoutter>(?=(?&&Tabsqualifsfacet<>)(?&declfacet)
 				(?<rest>(?(<rest>)\g{rest}),(?&decl)))
-				((?&&Tabsqualifs<>)(?&declfacet)\g{rest}|(?&restoutter)))
-				|(?&&Tabsqualifsfacet<>)(?&declfacet)(?&declcommafacet)*+)	
+				((?&&Tabsqualifs<>)(?&declfacet)\g{rest}|(?&restoutter))))
+				|(?&Tabsqualifsfacet)(?&declfacet)(?&declcommafacet)*+)	
 
 
 (?<Tasbtdecloutter, Tabstinitorbitfl>)
@@ -82,7 +83,7 @@
 
 (?&abstdeclorallqualifs<allqualifsparam++, abstdecloutter>=typenameinsideparams)
 
-(?&abstdeclorallqualifs<allqualifsparam++, abstdecloutter, abstrbitfield>=typenamebitfl)
+(?&abstdeclorallqualifs<allqualifsdecl++, abstdecloutter, abstrbitfield>=typenamebitfl)
 
 (?<identifierminedecl>\s*+(?!(?&keywordlist))(?<identfacet>(?&identifierrawfacet))(?C39<identfacet,
 																					 typedefnmmatchedfacet,

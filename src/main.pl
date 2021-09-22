@@ -168,8 +168,8 @@ sub parsing {
         when (39) 
         { 
             my $lastelem = pop @typedefidentifiersvector;
-            push @typedefidentifiersvector, $lastelem . "|" . $_[1]
-            unless (not $_[3]);
+            $lastelem = $lastelem . "|" . $_[1] unless (not $_[3]);
+            push @typedefidentifiersvector, $lastelem;
         }
 
         when (44) {
