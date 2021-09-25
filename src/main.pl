@@ -183,7 +183,11 @@ sub parsing {
 =cut
 
 sub identifier_typedef {
-    return $typedefidentifiersvector[-1];
+    my $ident = "(*F)";
+    foreach my $typedefidentifier (@typedefidentifiersvector) {
+        $ident = $ident . "|" . $typedefidentifier
+    }
+    return $ident;
 }
 
 sub identifier_decl {
@@ -416,7 +420,7 @@ sub parseregexfile {
     replacenofacetgroups($1, $regexfilecontent) while($regexfilecontentcopy =~/\(\?<(\w+)#nofacet>/g); # remove references to nofacet groups
 =cut
     sub dofacetreplacements {
-        $_[0] =~s/\(\?C&(\S++)\s*+(<(?<args>.*?)>)?+\)//gs;
+        $_[0] =~s/\(\?C&(\S+?)\s*(<(?<args>[^\)]*?)>)?\)//gs;
 
         #$regexfilecontent =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
@@ -441,10 +445,11 @@ sub parseregexfile {
 
     $mainregexfinal = $mainregexfinal . $regexfile . $regexfilecontent;
 
-    $mainregexfinal =~s/\((\?\??+)C&(\S++)\s*+(<(?<args>.*?)>)?+\)/
-            my $prefix = "(" . $1 . "{debugcallout(" . $2;
+    $mainregexfinal =~s/\((\?\??+)C&(\S+?)\s*(<(?<args>[^\)]*?)>)?\)/
+            my $prefix = "(" . $1 . "{debugcallout(" . "\"$2\"";
             $prefix . ($+{args} ? "," . ($+{args} =~ s {\b\S+\b}{\$\+\{$&\}}gr) : "") . ")})"
             /ges if($matchinperl);
 
     #$mainregexfinal =~s/\(\?\?C&(\S++)\)/(?C&$1)/g if(not $matchinperl);
+    $mainregexfinal =~s/\(\?C(\d++)\)//g;
 }
