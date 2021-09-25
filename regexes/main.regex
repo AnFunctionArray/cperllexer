@@ -5,44 +5,44 @@
 
 
 (?<castexpr>(?&typenamerev)|(?<unaryexpr>((?&inner)|(?<inparenths>\s*+[(](?C87)(?&primexpr)[)]
-						(?C88)\s*+))(((\[(?&primexpr)\](?C54)|[(](?C7)(?&primexpr)?[)](?C13))\s*+
+						(?C88)\s*+))(((\[(?&primexpr)\](?C&subscript)|[(](?C&startfunctioncall)(?&primexpr)?[)](?C&endfunctioncall))\s*+
 						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?&identifierminemember<>)
 						|(?<postfixarith>(?<postfixarithraw>[+][+]|--)\s*+)
-						(?C9<postfixarithraw>)))*+
+						(?C&unaryincdec<postfixarithraw, postfixarithraw>)))*+
 						|(?&unary)))
 (?<>)
 (?<identifierminemember>\s*+(?!(?&keywordlist))(?<ident>(?&identifierrawfacet))
-	(?C8<ident, arrowordotraw>)\s*+)
+	(?C&memberaccess<ident, arrowordotraw>)\s*+)
 
 (?<testentry>(?<innertest>(?&orlogiorsomething));)
 
 (?<testxpr>(?&inner)|(?&inparenths))
 
 	(?<assignorsomething>(?=(?&assignornothingfacet))(?<assignornothing>(?&unaryexpr)(?<assignop>(?<assignopraw>=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+))
-		(?&assignorsomething)(?!(?&orlogicplusrestfacet))(?C30<assignopraw>)|(?&ternaryorsomething))
+		(?&assignorsomething)(?!(?&orlogicplusrestfacet))(?C&binary<assignopraw>)|(?&ternaryorsomething))
 
 	(?<ternaryorsomething>(?=(?&ternornothingfacet))(?<ternornothing>(?&orlogiorsomething)(?&ternaryrest))(?&ternaryorsomething)(?!(?&orlogicplusrestfacet))(?C34)
 		|(?=(?&orlogiorsomethingfacet))(?&orlogiorsomething))
 
 	(?<ternaryrest>\?(?C33)(?&primexpr):(?C32))
 
-	(?<orlogiorsomething>(?=(?&castexprfacet))(?C85)(?&castexpr)(?>(?&orlogicplusrest))*+(?C83))
+	(?<orlogiorsomething>(?=(?&castexprfacet))(?C&begin_binary)(?&castexpr)(?>(?&orlogicplusrest))*+(?C&end_binary))
 	
 
 
-(?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?C79);|break\s*+(?C80);|return\b(?&primexpr)?+(?C52);)\s*+)
-(?<identifierminegoto>\s*+(?!(?&keywordlist))(?<gtid>(?&identifierrawfacet))(?C63<gtid>)\s*+)
+(?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?C&addcontinue);|break\s*+(?C&addbreak);|return\b(?&primexpr)?+(?C&endreturn);)\s*+)
+(?<identifierminegoto>\s*+(?!(?&keywordlist))(?<gtid>(?&identifierrawfacet))(?C&gotolabel<gtid>)\s*+)
 
-(?<iterationstatement>\s*+(while\s*+[(](?C73)(?&primexpr)[)](?C76)(?C74)(?&statement)(?C75)|do\b(?C77)(?&statement)while\s*+[(](?&primexpr)[)](?C78)\s*+;
-	|for\s*+[(]((?&typenameinsidedecl)|(?&exprstatement))?+(?C73)(?&primexpr)?;(?C76)\s*+(?&primexpr)?+(?C74)[)](?&statement)(?C75))\s*+)
-(?<exprstatement>(?&primexpr)?;(?C53)\s*+)
-(?<compoundstatement>\s*+[{](?C44)((?&structorunion)|(?&typenameinsidedecl)|(?&statement))*+[}](?C45)\s*+)
-(?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?C70)(?&statement)(else\b(?C71)(?&statement))?+(?C72)|switch\s*+[(](?&primexpr)[)](?C64)(?&statement)(?C66))\s*+)
+(?<iterationstatement>\s*+(while\s*+[(](?C&startforloopcond)(?&primexpr)[)](?C&endforloopcond)(?C&addforloopiter)(?&statement)(?C&endforloop)|do\b(?C&startdowhileloop)(?&statement)while\s*+[(](?&primexpr)[)](?C&enddowhileloop)\s*+;
+	|for\s*+[(]((?&typenameinsidedecl)|(?&exprstatement))?+(?C&startforloopcond)(?&primexpr)?;(?C&endforloopcond)\s*+(?&primexpr)?+(?C&addforloopiter)[)](?&statement)(?C&endforloop))\s*+)
+(?<exprstatement>(?&primexpr)?;(?C&endexpression)\s*+)
+(?<compoundstatement>\s*+[{](?C&beginscope)((?&structorunion)|(?&typenameinsidedecl)|(?&statement))*+[}](?C&endscope)\s*+)
+(?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?C&startifstatement)(?&statement)(else\b(?C&continueifstatement)(?&statement))?+(?C&endifstatement)|switch\s*+[(](?&primexpr)[)](?C&startswitch)(?&statement)(?C&endswitch))\s*+)
 
 (?<statement>(?=(?&labelfacet)++(?&statementinnerfacet))(?&label)++(?&statementinner)|(?&statementinner))
 (?<statementinner>(?&exprstatement)|(?&compoundstatement)|(?&selectionstatement)|(?&iterationstatement)|(?&jumpstatement))
 
-(?<label>(?&identifierminelabel)|\s*+(case\b(?C40)(?&primexpr):(?C65)|default\s*+:(?C67))\s*+)
-(?<identifierminelabel>\s*+(?!(?&keywordlist))(?<lbl>(?&identifierrawfacet))\s*+:(?C62<lbl>)\s*+)
+(?<label>(?&identifierminelabel)|\s*+(case\b(?C&beginconstantexpr)(?&primexpr):(?C&addCase)(?C&endconstantexpr)|default\s*+:(?C&addDefaultCase))\s*+)
+(?<identifierminelabel>\s*+(?!(?&keywordlist))(?<lbl>(?&identifierrawfacet))\s*+:(?C&splitbb<lbl>)\s*+)
 
 (?<cprogram>((?&structorunion)\s*+;\s*+|(?&decloptorfndef))*)

@@ -18,9 +18,6 @@
     <ClCompile Include="llvm\llvmgen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="utility\utility.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="idaplugin\idamain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -29,9 +26,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="llvm\llvmgen.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\main.h">
       <Filter>Header Files</Filter>
     </ClInclude>

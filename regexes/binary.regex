@@ -1,5 +1,5 @@
 (?<binoprest, binopraw>)
-(?<binopplusrest>(?<binop>(?<binoplast>(?&binopraw))(?&castexpr)(?>(?&binoprest))*(?C29<binop>))|(?>(?&binoprest)))
+(?<binopplusrest>(?<binop>(?<binoplast>(?&binopraw))(?&castexpr)(?>(?&binoprest))*(?C&binary<binop>))|(?>(?&binoprest)))
 
 (?&binopplusrest<andlogicplusrest, orlogicopraw>=orlogicplusrest)
 
@@ -21,8 +21,8 @@
 
 (?<mulop>(?<mulopraw>[\*\/\%])(?C82)(?&castexpr)(?C21))
 
-(?<orlogicopraw>\|\|(?C84))
-(?<andlogicopraw>&&(?C84)) 
+(?<orlogicopraw>\|\|(?C&begin_branch))
+(?<andlogicopraw>&&(?C&begin_branch)) 
 (?<oropraw>\|) 
 (?<xoropraw>\^) 
 (?<andopraw>&) 

@@ -15,6 +15,8 @@
 
 #include "main.h"
 
+#if 0
+
 FILE* foutput, *foutput2;
 
 int callout_test(pcre2_callout_block* a, void* b);
@@ -225,16 +227,18 @@ secondmain(char* subject, size_t szsubject, char* pattern, size_t szpattern, cha
 	int stat = compile_pattern_and_execute(pattern, subject, callout_test, szpattern, szsubject, 1, 0, PATTERN_FLAGS);
 }
 
-#include <EXTERN.h> /* from the Perl distribution     */
-#include <perl.h>	/* from the Perl distribution     */
-#include <XSUB.h>
-
 struct retgetnamevalue getnamevalue(const char* nametoget) {
 	struct retgetnamevalue retgetnamevalue;
 	SV* var = get_sv(nametoget, GV_ADD);   /* need "Foo::" now */
 	retgetnamevalue.ptr = SvPVutf8(var, retgetnamevalue.sz);
 	return retgetnamevalue;
 }
+
+#endif
+
+#include <EXTERN.h> /* from the Perl distribution     */
+#include <perl.h>	/* from the Perl distribution     */
+#include <XSUB.h>
 
 XS__startmatching(), XS__callout(), XS__startmodule(), boot_DynaLoader();
 
