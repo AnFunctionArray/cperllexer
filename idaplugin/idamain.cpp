@@ -1,13 +1,3 @@
-/*
- *      Hex-Rays Decompiler project
- *      Copyright (c) 2007-2020 by Hex-Rays, support@hex-rays.com
- *      ALL RIGHTS RESERVED.
- *
- *      Sample plugin for Hex-Rays Decompiler.
- *      It generates microcode for the current function and prints it
- *      in the output window.
- *
- */
 #include <range/v3/view/span.hpp>
 #include <range/v3/view/iota.hpp>
 #include <range/v3/algorithm/transform.hpp>
@@ -26,6 +16,17 @@
 #include <bytes.hpp>
 #include <segment.hpp>
 #include <cstdlib>
+
+extern "C" HANDLE hCurrModule;
+
+__declspec(dllexport) BOOL WINAPI DllMain(
+	_In_ HINSTANCE hinstDLL,
+	_In_ DWORD     fdwReason,
+	_In_ LPVOID    lpvReserved
+) {
+	hCurrModule = hinstDLL;
+	return TRUE;
+}
 
  // Hex-Rays API pointer
 hexdsp_t* hexdsp = nullptr;

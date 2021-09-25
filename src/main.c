@@ -247,7 +247,7 @@ xs_init(pTHX)
 {
 	/* DynaLoader is a special case */
 	newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, __FILE__);
-	newXS("startmatching", XS__startmatching, __FILE__);
+	//newXS("startmatching", XS__startmatching, __FILE__);
 	newXS("callout", XS__callout, __FILE__);
 	newXS("startmodule", XS__startmodule, __FILE__);
 }
@@ -290,6 +290,22 @@ int main(int argc, const char** argv, char** env)
 	perl_free(my_perl);
 	PERL_SYS_TERM();
 }
+
+#ifdef _WIN32
+
+HANDLE hCurrModule;
+
+void docall(const char** pargs, size_t* szargs) {
+	if (!hCurrModule) hCurrModule = GetModuleHandle(0);
+
+	FARPROC pfunc = GetProcAddress(hCurrModule, *pargs);
+
+	if (!pfunc) return;
+
+	((void (*)(const char** pargs, size_t * szargs))pfunc)(pargs, szargs);
+}
+
+#endif
 
 #if 0
 main()

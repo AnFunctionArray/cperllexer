@@ -103,16 +103,27 @@ struct retgetnamevalue {
 struct retgetnamevalue getnamevalue(const char* nametoget);
 #endif
 
+#define PTR_AND_SZ_N(n) pargs[n], szargs[n]
+#define FIRST_ARG_PTR_AND_SZ PTR_AND_SZ_N(1)
+
+
+
+#ifdef __cplusplus
+#define INTRANSIT extern "C"
+#else
+#define INTRANSIT
+#endif
+
 // Generic helper definitions for shared library support
 #if defined _WIN32 || defined __CYGWIN__
-#define DLL_IMPORT __declspec(dllimport)
-#define DLL_EXPORT __declspec(dllexport)
-#define DLL_LOCAL
+#define DLL_IMPORT INTRANSIT __declspec(dllimport)
+#define DLL_EXPORT INTRANSIT __declspec(dllexport)
+#define DLL_LOCAL  INTRANSIT
 #else
 #if __GNUC__ >= 4
-#define DLL_IMPORT __attribute__ ((visibility ("default")))
-#define DLL_EXPORT __attribute__ ((visibility ("default")))
-#define DLL_LOCAL  __attribute__ ((visibility ("hidden")))
+#define DLL_IMPORT INTRANSIT __attribute__ ((visibility ("default")))
+#define DLL_EXPORT INTRANSIT __attribute__ ((visibility ("default")))
+#define DLL_LOCAL  INTRANSIT __attribute__ ((visibility ("hidden")))
 #else
 #define DLL_IMPORT
 #define DLL_EXPORT

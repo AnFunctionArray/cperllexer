@@ -17,6 +17,7 @@ MODULE = _6a4h8
 
 PROTOTYPES: ENABLE
 
+=pod
 void startmatching(SV *in, SV *in1, SV *in2)
 PREINIT:
     STRLEN len;
@@ -33,23 +34,25 @@ CODE:
         s2 = SvPVutf8(in2, thirdlen);
         secondmain(s, len, s1, secondlen, s2, thirdlen);
     }
+=cut
 
-
-SV * callout(SV *in, ...)
+#SV *
+void callout(SV *in, ...)
 PREINIT:
     const char *argsarr[0xFF];
     size_t argsarrlen[0xFF];
 CODE:
     {
-        extern const char * callout_test(const char **, size_t *);
+        extern /*const char * */ void docall(const char **, size_t *);
         memset(argsarr, 0, sizeof argsarr);
         memset(argsarrlen, 0, sizeof argsarrlen);
         for(int i = 0; i < items; ++i)
             argsarr[i] = SvPVutf8(ST(i), argsarrlen[i]);
-        RETVAL = newSVpv(callout_test(argsarr, argsarrlen), 0);
+        docall(argsarr, argsarrlen);
+        #RETVAL = newSVpv(callout_test(argsarr, argsarrlen), 0);
     }
-OUTPUT:
-    RETVAL
+#OUTPUT:
+    #RETVAL
 
 
 void startmodule(SV *in)
