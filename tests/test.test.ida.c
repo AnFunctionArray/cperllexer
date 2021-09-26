@@ -2,7 +2,8 @@ typedef int test;
 
 test const test, *test3, test4[2];
 
-test() {
-    test a;
-    return 0;
+extern int printf(const char *, ...);
+
+main() {
+    return printf("%f\n", (double)9);
 }

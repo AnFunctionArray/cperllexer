@@ -1,10 +1,13 @@
-(?<typename>\s*+[(]((?<allqualifs>(?<typesandqualifiers>\s*+
+(?<typename>\s*+[(](?=(?&typenamequalifsfacet)++(?C&identifier_decl)(?&abstdecloptoutter)?+(?C&enddeclaration))
+						(?<typenamequalifs>(?<allqualifs>(?<typesandqualifiers>\s*+
 						(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b
 						|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|\b__int64\b|\b_Bool\b)|
 						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
-						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b))(?C&add_type_or_qualifier)\s*+)
-						|(?&&structorunion<>)|(\s*+(\b__inline\b|\b__forceinline\b)\s*+))|(?&&identifierminetypedef<>))++
-						(?C&identifier_decl)(?&abstdecloptoutter)?+[)](?C&enddeclaration)\s*+)
+						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b))
+						(?C&add_type_or_qualifier)\s*+)
+						|(?&&structorunion<>)|(\s*+(\b__inline\b|\b__forceinline\b)\s*+))
+						|(?&&identifierminetypedef<>))++
+						(?&abstdecloptoutterfacet)?+[)](?C&endqualifs)\s*+)
 
 (?<>)
 (?<typedefdecl>(?&&identifierminetypedef<>)(?=(?&allqualifsfacet)*+(?&abstdecloutterfacet)))
@@ -40,9 +43,9 @@
 
 (?<abstrdeclrest>(?&abstrmostoutterfacet)(?&abstrsubsfacet)*+)
 
-(?&abstdecl<abstrdecloptrestparams, abstrdecloptrestaltparams, abstrmostoutterparams?+>=abstdecloutterparams)
+(?&abstdecl<abstrdecloptrestparams, abstrdecloptrestaltparams, abstrmostoutterparams>=abstdecloutterparams)
 
-(?<abstrdecloptrestaltparams>(?&abstrmostoutterparams)(?&abstrsubs)*+|(?&abstrsubs)++)
+(?<abstrdecloptrestaltparams>(?&abstrmostoutterparams)(?&abstrsubs)*+|(?C&identifier_decl)(?&abstrsubs)++)
 
 (?<abstrdecloptrestparams>(?&abstrmostoutterparamsfacet)?+(?&abstrsubsfacet)*+)
 
@@ -52,9 +55,14 @@
 
 (?<abstrmostoutter>\s*+(?&callingconv)?+((?&abstrcommonoutter<abstdecloutter>)|(?&identifierminedecl))\s*+)
 
-(?<abstrmostoutterparams>\s*+((?&abstrcommonoutter<abstdecloutterparams>)|(?&identifierminedecl))\s*+)
+(?<abstrmostoutterparams>\s*+(?>(?&abstrcommonoutter<abstdecloutterparams>)|(?&identifierminedecl)|(?C&identifier_decl))\s*+)
 
 (?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
+
+(?<Tabsqualifs, Tdecl>)
+(?<abstdeclorallqualifsbasic>
+(?&&Tabsqualifsfacet<>)(?!(?&Tdecl)(?C&enddeclaration))
+				|(?&&Tabsqualifs<>)(?&Tdeclfacet)(?C&endqualifs))
 
 (?<Tabsqualifs, Tasbtdecloutter, Tabstinitorbitfl>)
 (?<abstdeclorallqualifs>
@@ -64,11 +72,12 @@
 		)|
 		(?<#restrictoutsidefacet>
 		(?&&Tabsqualifsfacet<>)(?!(?&decl)(?C&enddeclaration))
-				|(?&&Tabsqualifs<>)(?&declfacet)
+				|(?&&Tabsqualifs<>)(?&declfacet)(?C&endqualifs)
 				|(?<restoutter>(?=(?&&Tabsqualifsfacet<>)(?&declfacet)
 				(?<rest>(?(<rest>)\g{rest}),(?&decl)(?C&enddeclaration)))
-				((?&&Tabsqualifs<>)(?&declfacet)\g{rest}|(?&restoutter))))
-				|(?&Tabsqualifsfacet)(?&declfacet)(?&declcommafacet)*+)	
+				((?&&Tabsqualifs<>)(?&declfacet)\g{rest}(?C&endqualifs)
+				|(?&restoutter))))
+				|(?&Tabsqualifsfacet)(?&declfacet)(?&declcommafacet)*+)
 
 
 (?<Tasbtdecloutter, Tabstinitorbitfl>)
@@ -81,7 +90,7 @@
 
 (?&abstdeclorallqualifs<allqualifsdecl++, abstdecloutter, abstrinitialization>=typenameinsidedecl)
 
-(?&abstdeclorallqualifs<allqualifsparam++, abstdecloutter>=typenameinsideparams)
+(?&abstdeclorallqualifsbasic<allqualifsparam++, abstdecloutterparams>=typenameinsideparams)
 
 (?&abstdeclorallqualifs<allqualifsdecl++, abstdecloutter, abstrbitfield>=typenamebitfl)
 

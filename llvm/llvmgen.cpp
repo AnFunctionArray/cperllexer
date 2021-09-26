@@ -68,7 +68,7 @@ extern "C" void insertinttoimm(const char* str, size_t szstr, const char* suffix
 
 extern "C" void constructstring();
 
-llvm::BranchInst * splitbb(const char* identifier, size_t szident);
+llvm::BranchInst* splitbb(const char* identifier, size_t szident);
 
 //static struct basehndl* phndl;
 
@@ -227,94 +227,94 @@ struct bindings_payload {
 			typedefs.back().push_back({ FIRST_ARG_PTR_AND_SZ });
 			qualifsandtypes.back().second = false;
 		}*/
-	/*	if (szargs[3]) typedefs.back().push_back({FIRST_ARG_PTR_AND_SZ});
-		return "";
-	}
-	virtual std::string start_constant_expr_40() { return ""; }
-	virtual std::string end_decl_sub_41() { return ""; }
-	virtual std::string end_full_decl_42() { return ""; }
-	virtual std::string extend_decl_43() { return ""; }
-	virtual std::string start_new_scope_44() {
-		typedefs.push_back({});
-		return "";
-	}
-	virtual std::string end_of_scope_45() {
-		typedefs.pop_back();
-		return "";
-	}
-	virtual std::string unexplored_46() { return ""; }
-	virtual std::string begin_param_list_47() { return ""; }
-	virtual std::string end_param_list_48() { return ""; }
-	virtual std::string add_type_or_qualifier_49() {
-		//std::string n = getnameloc("typesandqualifiersmask", *ptable);
-		qualifsandtypes.back().first.push_back(std::string{ FIRST_ARG_PTR_AND_SZ });
+		/*	if (szargs[3]) typedefs.back().push_back({FIRST_ARG_PTR_AND_SZ});
+			return "";
+		}
+		virtual std::string start_constant_expr_40() { return ""; }
+		virtual std::string end_decl_sub_41() { return ""; }
+		virtual std::string end_full_decl_42() { return ""; }
+		virtual std::string extend_decl_43() { return ""; }
+		virtual std::string start_new_scope_44() {
+			typedefs.push_back({});
+			return "";
+		}
+		virtual std::string end_of_scope_45() {
+			typedefs.pop_back();
+			return "";
+		}
+		virtual std::string unexplored_46() { return ""; }
+		virtual std::string begin_param_list_47() { return ""; }
+		virtual std::string end_param_list_48() { return ""; }
+		virtual std::string add_type_or_qualifier_49() {
+			//std::string n = getnameloc("typesandqualifiersmask", *ptable);
+			qualifsandtypes.back().first.push_back(std::string{ FIRST_ARG_PTR_AND_SZ });
 
-		return "";
-	}
-	virtual std::string unused_50() { return ""; };
-	virtual std::string add_literal_51() { return ""; }
-	virtual std::string finish_return_statement_52() { return ""; }
-	virtual std::string finish_statement_53() { return ""; }
-	virtual std::string subscript_op_54() { return ""; };
-	virtual std::string decl_begin_55();
-	virtual std::string end_of_sizeof_56() { return ""; }
-	virtual std::string end_of_sizeof_tp_nm_57() { return ""; }
-	virtual std::string ident_struc_58() { return ""; }
-	virtual std::string struc_or_union_body_59() { qualifsandtypes.push_back({}); return ""; }
-	virtual std::string struc_or_union_body_end_60() { qualifsandtypes.pop_back();  return ""; }
-	virtual std::string perform_explicit_conversion_61() { return ""; }
-	virtual std::string create_label_62() { return ""; }
-	virtual std::string goto_stmt_63() { return ""; }
-	virtual std::string switch_stmt_64() { return ""; }
-	virtual std::string create_case_65() { return ""; }
-	virtual std::string switch_stmt_end_66() { return ""; }
-	virtual std::string create_default_case_67() { return ""; }
-	virtual std::string collect_float_literal_68() { return ""; }
-	virtual std::string finish_float_literal_69() { return ""; }
-	virtual std::string begin_if_stm_70() { return ""; }
-	virtual std::string cnt_if_stm_71() { return ""; }
-	virtual std::string finish_if_stm_72() { return ""; }
-	virtual std::string begin_loop_73() { return ""; }
-	virtual std::string loop_iter_74() { return ""; }
-	virtual std::string finish_loop_75() { return ""; }
-	virtual std::string cond_loop_76() { return ""; }
-	virtual std::string begin_do_while_77() { return ""; }
-	virtual std::string finish_do_while_78() { return ""; }
-	virtual std::string finish_continue_stm_79() { return ""; }
-	virtual std::string finish_break_stm_80() { return ""; }
-	virtual std::string register_calling_conv_81() { return ""; }
-	virtual std::string unexplored_82() { return ""; }
-	virtual std::string end_binary_83() { printf2("%s\n", __func__);  return ""; }
-	virtual std::string begin_branch_84() { return ""; }
-	virtual std::string begin_binary_85() { return ""; }
-	virtual std::string unused_86() { return ""; }
-	virtual std::string begin_nested_expr_87() { return ""; }
-	virtual std::string end_nested_expr_88() { return ""; }
-	virtual std::string add_ident_to_enum_def_89() { return ""; }
-	virtual std::string begin_enumerator_def_90() { return ""; }
-	virtual std::string begin_enumerator_decl_91() { return ""; }
-	virtual std::string end_ass_to_enum_def_92() { return ""; }
-	virtual std::string end_without_ass_to_enum_def_93() { return ""; }
-	virtual std::string begin_unnamed_enum_def_94() { return ""; }
-	virtual std::string end_expr_init_95() { return ""; }
-};
+			return "";
+		}
+		virtual std::string unused_50() { return ""; };
+		virtual std::string add_literal_51() { return ""; }
+		virtual std::string finish_return_statement_52() { return ""; }
+		virtual std::string finish_statement_53() { return ""; }
+		virtual std::string subscript_op_54() { return ""; };
+		virtual std::string decl_begin_55();
+		virtual std::string end_of_sizeof_56() { return ""; }
+		virtual std::string end_of_sizeof_tp_nm_57() { return ""; }
+		virtual std::string ident_struc_58() { return ""; }
+		virtual std::string struc_or_union_body_59() { qualifsandtypes.push_back({}); return ""; }
+		virtual std::string struc_or_union_body_end_60() { qualifsandtypes.pop_back();  return ""; }
+		virtual std::string perform_explicit_conversion_61() { return ""; }
+		virtual std::string create_label_62() { return ""; }
+		virtual std::string goto_stmt_63() { return ""; }
+		virtual std::string switch_stmt_64() { return ""; }
+		virtual std::string create_case_65() { return ""; }
+		virtual std::string switch_stmt_end_66() { return ""; }
+		virtual std::string create_default_case_67() { return ""; }
+		virtual std::string collect_float_literal_68() { return ""; }
+		virtual std::string finish_float_literal_69() { return ""; }
+		virtual std::string begin_if_stm_70() { return ""; }
+		virtual std::string cnt_if_stm_71() { return ""; }
+		virtual std::string finish_if_stm_72() { return ""; }
+		virtual std::string begin_loop_73() { return ""; }
+		virtual std::string loop_iter_74() { return ""; }
+		virtual std::string finish_loop_75() { return ""; }
+		virtual std::string cond_loop_76() { return ""; }
+		virtual std::string begin_do_while_77() { return ""; }
+		virtual std::string finish_do_while_78() { return ""; }
+		virtual std::string finish_continue_stm_79() { return ""; }
+		virtual std::string finish_break_stm_80() { return ""; }
+		virtual std::string register_calling_conv_81() { return ""; }
+		virtual std::string unexplored_82() { return ""; }
+		virtual std::string end_binary_83() { printf2("%s\n", __func__);  return ""; }
+		virtual std::string begin_branch_84() { return ""; }
+		virtual std::string begin_binary_85() { return ""; }
+		virtual std::string unused_86() { return ""; }
+		virtual std::string begin_nested_expr_87() { return ""; }
+		virtual std::string end_nested_expr_88() { return ""; }
+		virtual std::string add_ident_to_enum_def_89() { return ""; }
+		virtual std::string begin_enumerator_def_90() { return ""; }
+		virtual std::string begin_enumerator_decl_91() { return ""; }
+		virtual std::string end_ass_to_enum_def_92() { return ""; }
+		virtual std::string end_without_ass_to_enum_def_93() { return ""; }
+		virtual std::string begin_unnamed_enum_def_94() { return ""; }
+		virtual std::string end_expr_init_95() { return ""; }
+	};
 
-struct destr_clear_qualifsandtypes : bindings_parsing {
-	virtual std::string decl_begin_55() {
-		qualifsandtypes.back().second = std::find(qualifsandtypes.back().first.begin(), qualifsandtypes.back().first.end(), "typedef") != qualifsandtypes.back().first.end();
-		//bwastypedefmatched = false;
-		return "";
-	}
-	void cleanup() override {
-		qualifsandtypes.back().first.clear();
-	}
-};
+	struct destr_clear_qualifsandtypes : bindings_parsing {
+		virtual std::string decl_begin_55() {
+			qualifsandtypes.back().second = std::find(qualifsandtypes.back().first.begin(), qualifsandtypes.back().first.end(), "typedef") != qualifsandtypes.back().first.end();
+			//bwastypedefmatched = false;
+			return "";
+		}
+		void cleanup() override {
+			qualifsandtypes.back().first.clear();
+		}
+	};
 
-std::string bindings_parsing::decl_begin_55() {
-	this->~bindings_parsing();
-	new (this)destr_clear_qualifsandtypes();
-	return decl_begin_55();
-}*/
+	std::string bindings_parsing::decl_begin_55() {
+		this->~bindings_parsing();
+		new (this)destr_clear_qualifsandtypes();
+		return decl_begin_55();
+	}*/
 
 extern "C" unsigned constexpr stringhash(char const* input) {
 	return *input ? static_cast<unsigned int> (*input) +
@@ -440,7 +440,7 @@ typedef std::bitset<4> pointrtypequalifiers;
 3 - __ptr64
 */
 
-struct bascitypespec /* : basic_type_origin*/ {
+struct basic_type_origin {
 	std::array<std::string, 4> basic;
 	/*
 		0 - last signed/unsigned or struct/union/enum
@@ -451,23 +451,30 @@ struct bascitypespec /* : basic_type_origin*/ {
 	size_t longspecsn{}; //amount of long qualifiers
 	std::bitset<3> qualifiers;
 
+	void* pexternaldata=nullptr;
+
+	bool operator==(const basic_type_origin&) const = default;
+};
+
+struct bascitypespec : basic_type_origin {
+	
+
 	bascitypespec& operator= (const bascitypespec& source) { // basic assignment
-		basic[0] = source.basic[0];
-		basic[1] = source.basic[1];
-		basic[3] = source.basic[3];
-		longspecsn = source.longspecsn;
+		basic_type_origin::operator=(source);
+		basic[2].clear();
 		return *this;
 	}
 
-	bool hasLinkage() {
+	/*bool hasLinkage() {
 		return ranges::contains(std::array{ "extern", "static" }, basic[2]);
-	}
+	}*/
 
 	bool operator== (const bascitypespec& comparer) {
-		return comparer.basic[0] == basic[0] &&
-			comparer.basic[1] == basic[1] &&
-			comparer.basic[3] == basic[3] &&
-			comparer.longspecsn == longspecsn;
+		std::string ignoredmember = comparer.basic[2];
+		std::swap(ignoredmember, basic[2]);
+		bool bareequal = basic_type_origin::operator==(comparer);
+		basic[2] = ignoredmember;
+		return bareequal;
 	}
 
 	bool compareSign(const bascitypespec& comparer) {
@@ -502,7 +509,7 @@ pointrtypequalifiers parsequalifiers(const std::string& qualifs) {
 	return ret;
 }
 
-bascitypespec parsebasictype(const std::list<std::string>& qualifs, bascitypespec &ret) {
+bascitypespec parsebasictype(const std::list<std::string>& qualifs, bascitypespec& ret) {
 	//bascitypespec ret;
 
 	for (const auto& a : qualifs)
@@ -617,7 +624,7 @@ struct valandtype {
 		llvm::Value* value{};
 		llvm::Constant* constant;
 	};
-	std::vector<::type> type;
+	std::list<::type> type;
 };
 
 struct val : valandtype {
@@ -625,12 +632,12 @@ struct val : valandtype {
 	std::string originident = "[[immidiate]]";
 };
 
-llvm::Type* createllvmtype(std::vector<type> decltypevector);
+llvm::Type* createllvmtype(std::list<type> decltypevector);
 
 void addvar(var& lastvar, llvm::Constant* pInitializer = nullptr);
 
 struct var {
-	std::vector<::type> type;
+	std::list<::type> type;
 	//bool bistypedef;
 	std::string identifier;
 	llvm::Type* pllvmtype{};
@@ -680,9 +687,9 @@ operator=(T p)
 
 static std::list<std::list<::val>::iterator> callees{};
 
-llvm::Type* createllvmtype(std::vector<type> decltypevector);
+llvm::Type* createllvmtype(std::list<type> decltypevector);
 
-val convertTo(val target, std::vector<::type> to);
+val convertTo(val target, std::list<::type> to);
 
 /*auto gen_pointer_to_elem_if_ptr_to_array(llvm::Value* value,
 	llvm::Type** p_type = nullptr) {
@@ -719,6 +726,112 @@ static std::list<opscopeinfo> opsscopeinfo;
 
 struct basehndl /* : bindings_compiling*/ {
 	//virtual llvm::Value* assigntwovalues() = 0;
+
+	virtual void end_binary() {
+		auto& currbranch = nbranches.back();
+
+		var& ordinary = *currbranch.iterval;
+
+		/*llvm::BranchInst* normalflow = nullptr;
+
+		if (nbranches.back().first.size() > 1)
+			normalflow = splitbb("", 0);*/
+
+		val ordinary_imm = ordinary;
+
+		//auto iternbranch = nbranches.begin();
+
+		/*for (auto branch : nbranches.back().first | ranges::views::drop(1)) {
+			//iternbranch = ++iternbranch;
+			int fullindex = branch->first[0]->getSuccessor(1) != branch->second;
+			branch->first[0]->setSuccessor(!fullindex, pcurrblock.back());
+			branch->second->eraseFromParent();
+			//ifstatements.erase(branch);
+
+			ordinary_imm = ordinary;
+			ordinary_imm.lvalues.push_back({ ordinary_imm.value, ordinary.type });
+
+			immidiates.push_back(ordinary_imm);
+
+			insertinttoimm((char*)branch->first[1], 1, "", 0, 3);
+
+			phndl->assigntwovalues();
+
+			immidiates.pop_back();
+
+			branch->first[0] = splitbb("", 0);
+		}*/
+
+		llvm::BranchInst* lastsplit;
+
+		if (!nbranches.back().second.empty()) {
+			lastsplit = nbranches.back().second.back()[1];
+			lastsplit->setSuccessor(0, pcurrblock.back());
+			auto imm = immidiates.back();
+			ordinary_imm.lvalues.push_back({ ordinary_imm.value, currbranch.iterval->type });
+			immidiates.pop_back();
+			immidiates.push_back(ordinary_imm);
+			immidiates.push_back(imm);
+			assigntwovalues();
+			splitbb("", 0);
+		}
+
+		for (auto branch : nbranches.back().second)
+			branch[0]->setSuccessor(0, pcurrblock.back());
+
+		/*if (normalflow) {
+			normalflow->setSuccessor(0, pcurrblock.back());*/
+		if (!nbranches.back().second.empty()) {
+			ordinary_imm.value = llvmbuilder.CreateLoad(ordinary.requestValue());
+
+			immidiates.pop_back();
+
+			immidiates.push_back(ordinary_imm);
+
+		}
+		//else //((llvm::AllocaInst*)ordinary.pValue)->replaceAllUsesWith(llvm::UndefValue::get(ordinary.pValue->getType())),
+			//((llvm::AllocaInst*)ordinary.pValue)->eraseFromParent();
+		//}
+
+		scopevar.back().erase(currbranch.iterval);
+
+		/**/
+
+		nbranches.pop_back();
+	}
+	virtual void begin_branch() {
+		auto& currbranch = nbranches.back();
+		/*val ordinary_imm = *currbranch.iterval;
+		auto imm = immidiates.back();
+		ordinary_imm.lvalues.push_back({ ordinary_imm.value, currbranch.iterval->type });
+		immidiates.pop_back();
+		immidiates.push_back(ordinary_imm);
+		immidiates.push_back(imm);
+		phndl->assigntwovalues();*/
+		currbranch.first.insert(++currbranch.first.begin(), startifstatement(false));
+		//currbranch.second.push_back(currbranch.first.back());
+		//ordinary_imm.value = llvmbuilder.CreateLoad(ordinary_imm.value);
+		//immidiates.push_back(ordinary_imm);
+	}
+	virtual void begin_binary() {
+		var ordinary; type basicint{ type::BASIC };
+		basicint.spec.basicdeclspec.basic[1] = "int";
+		ordinary.type = { basicint };
+		scopevar.back().push_back(ordinary);
+		nbranches.push_back({ std::list<arrtwovals>{1}, --scopevar.back().end() });
+		nbranches.back().itersecond = nbranches.back().first.begin();
+
+		/*val ordinary_imm = scopevar.back().back();
+		ordinary_imm.lvalues.push_back({ ordinary_imm.value, ordinary.type });
+
+		immidiates.push_back(ordinary_imm);
+
+		insertinttoimm("1", sizeof "1" - 1, "", 0, 3);
+
+		assigntwovalues();
+
+		immidiates.pop_back();*/
+	}
 
 	static std::list<val>& immidiates;
 
@@ -1381,7 +1494,7 @@ struct basehndl /* : bindings_compiling*/ {
 
 		imm.assign(str, szstr);
 
-		std::vector<::type> currtype = { 1, ::type::BASIC };
+		std::list<::type> currtype = { 1, ::type::BASIC };
 
 		const bool isunsigned = suffix.find("u") != suffix.npos || suffix.find("U") != suffix.npos;
 
@@ -1586,9 +1699,9 @@ struct handlefpexpr : basehndl {
 
 struct handlecnstexpr : handlefpexpr {
 	/*No branching needed for cnst expr*/
-	virtual void begin_binary_85() { }
-	virtual void begin_branch_84() { }
-	virtual void end_binary_83() { }
+	virtual void begin_binary() { }
+	virtual void begin_branch() { }
+	virtual void end_binary() { }
 
 	virtual basehndl* (*getrestorefn())(basehndl*) {
 		return [](basehndl* pnhdl) -> basehndl* {
@@ -1773,7 +1886,7 @@ void printvaltype(val val) {
 
 extern valandtype getrvalue(valandtype lvalue);
 
-DLL_EXPORT void obtainvalbyidentifier(std::unordered_map<unsigned, std::string> &hashmap) {
+DLL_EXPORT void obtainvalbyidentifier(std::unordered_map<unsigned, std::string>& hashmap) {
 	obtainvalbyidentifier(hashmap["ident"_h]);
 }
 
@@ -1834,12 +1947,12 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 	return var;
 }
 
-DLL_EXPORT void addplaintexttostring(std::unordered_map<unsigned, std::string> &hashes) {
-	currstring += std::string{ hashes["textraw"_h]};
+DLL_EXPORT void addplaintexttostring(std::unordered_map<unsigned, std::string>& hashes) {
+	currstring += std::string{ hashes["textraw"_h] };
 }
 
-DLL_EXPORT void addescapesequencetostring(std::unordered_map<unsigned, std::string> &hashes) {
-	std::string escape{ hashes["escaperaw"_h]};
+DLL_EXPORT void addescapesequencetostring(std::unordered_map<unsigned, std::string>& hashes) {
+	std::string escape{ hashes["escaperaw"_h] };
 
 	switch (stringhash(escape.c_str())) {
 	case "\\n"_h:
@@ -1849,7 +1962,7 @@ DLL_EXPORT void addescapesequencetostring(std::unordered_map<unsigned, std::stri
 }
 
 extern "C" void constructstring() {
-	std::vector<::type> stirngtype{ 1, ::type::ARRAY };
+	std::list<::type> stirngtype{ 1, ::type::ARRAY };
 
 	stirngtype.back().spec.arraysz = currstring.size() + 1;
 
@@ -1869,10 +1982,9 @@ extern "C" void constructstring() {
 
 void addvar(var& lastvar, llvm::Constant* pInitializer) {
 
-	const char* lastvartypestoragespec =
-		lastvar.type.back().spec.basicdeclspec.basic[2].c_str();
+	const char* lastvartypestoragespec = lastvar.linkage.c_str();
 
-	if (lastvar.linkage == "typedef")
+	if (lastvartypestoragespec == "typedef")
 		for (lastvar.pValue = nullptr /*(llvm::Value *)lastvar.pllvmtype*/;;)
 			return;
 
@@ -1889,7 +2001,7 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 			linkagetype = llvm::GlobalValue::LinkageTypes::InternalLinkage;
 		}
 
-		switch (lastvar.type[0].uniontype) {
+		switch (lastvar.type.front().uniontype) {
 		case type::POINTER:
 		case type::ARRAY:
 		case type::BASIC:
@@ -1939,8 +2051,8 @@ DLL_EXPORT void endbuildingstructorunion() {
 
 	currtypevectorbeingbuild.pop_back();
 
-	currstruct.first = structvar.type.back().spec.basicdeclspec.basic[0];
-	currstruct.second = structvar.type.back().spec.basicdeclspec.basic[3];
+	//currstruct.first = structvar.type.back().spec.basicdeclspec.basic[0];
+	//currstruct.second = structvar.type.back().spec.basicdeclspec.basic[3];
 
 	//static_cast<basic_type_origin&>(structvar.type.back().spec.basicdeclspec) = basic_type_origin{ iterunorstrtype{} };
 
@@ -2002,7 +2114,7 @@ bool bIsBasicFloat(const type& type) {
 	return type.uniontype == type::BASIC && ranges::contains(std::array{ "float", "double" }, type.spec.basicdeclspec.basic[1]);
 }
 
-val convertTo(val target, std::vector<::type> to) {
+val convertTo(val target, std::list<::type> to) {
 	printvaltype(target);
 	printtype(createllvmtype(to), "to");
 	if (bIsBasicInteger(to.front()))
@@ -2048,7 +2160,7 @@ DLL_EXPORT void applycast() {
 
 	auto& currtype = lasttypevar.type;
 
-	std::rotate(currtype.begin(), currtype.begin() + 1, currtype.end());
+	//std::rotate(currtype.begin(), currtype.begin() + 1, currtype.end());
 
 	auto target = phndl->immidiates.back();
 
@@ -2059,7 +2171,7 @@ DLL_EXPORT void applycast() {
 	phndl->immidiates.push_back(target);
 }
 
-void endpriordecl() {
+/*void endpriordecl() {
 	auto& currtype = currtypevectorbeingbuild.back().p->back().type;
 
 	std::rotate(currtype.begin(), currtype.begin() + 1, currtype.end());
@@ -2075,7 +2187,7 @@ void endpriordecl() {
 		.p->back()
 		.pllvmtype = createllvmtype(currtype),
 		addvar(currtypevectorbeingbuild.back().p->back());
-}
+}*/
 
 size_t getbasictypesz(type basictype) {
 	if (basictype.uniontype == type::POINTER)
@@ -2100,7 +2212,7 @@ size_t getbasictypesz(type basictype) {
 	throw "invalid type";
 }
 
-void pushsizeoftype(std::vector<type> type) {
+void pushsizeoftype(std::list<type> type) {
 	size_t szoftype = 1;
 
 	::type sztype{ ::type::BASIC };
@@ -2125,7 +2237,7 @@ void pushsizeoftype(std::vector<type> type) {
 					 "[[sizeoftypename]]" }));
 }
 
-extern const std::list<::var>* getstructorunion(std::string ident);
+extern const std::list<::var>* getstructorunion(bascitypespec& basic);
 
 extern "C" void memberaccess(std::unordered_map<unsigned, std::string> hashentry) {
 	if (hashentry["arrowordotraw"_h] == "->")
@@ -2134,7 +2246,7 @@ extern "C" void memberaccess(std::unordered_map<unsigned, std::string> hashentry
 	auto& lastvar = phndl->immidiates.back();
 
 	auto pliststruct = //lastvar.type.front().spec.basicdeclspec.iterunorstr;
-		getstructorunion(lastvar.type.front().spec.basicdeclspec.basic[3]);
+		getstructorunion(lastvar.type.front().spec.basicdeclspec);
 
 	auto imember = 0;
 
@@ -2182,7 +2294,7 @@ DLL_EXPORT void endsizeoftypename() {
 
 	auto currtype = currtypevectorbeingbuild.back().p->back().type;
 
-	std::rotate(currtype.begin(), currtype.begin() + 1, currtype.end());
+	//std::rotate(currtype.begin(), currtype.begin() + 1, currtype.end());
 
 	currtypevectorbeingbuild.back().p->pop_back();
 
@@ -2191,7 +2303,7 @@ DLL_EXPORT void endsizeoftypename() {
 
 std::list<std::pair<std::array<llvm::BranchInst*, 2>, llvm::BasicBlock*>> ifstatements{ 1 };
 
-llvm::BranchInst * splitbb(const char* identifier, size_t szident);
+llvm::BranchInst* splitbb(const char* identifier, size_t szident);
 
 extern "C" void insertinttoimm(const char* str, size_t szstr, const char* suffix, size_t szstr1, int type);
 
@@ -2447,8 +2559,25 @@ DLL_EXPORT void endsizeofexpr() {
 
 //extern "C" void finalizedeclaration() { endpriordecl(); }
 
-const std::list<::var>* getstructorunion(std::string ident) {
+void fixupstructype(std::list<::var>* var) {
+	for (auto& a : *var | ranges::views::drop(1))
+		a.pllvmtype = createllvmtype(a.type);
+
+	auto& structvar = var->front();
+
+	std::vector<llvm::Type*> structtypes;
+
+	std::transform(++var->begin(), var->end(),
+		std::back_inserter(structtypes),
+		[](const ::var& elem) { return elem.pllvmtype; });
+
+	dyn_cast<llvm::StructType> (structvar.pllvmtype)->setBody(structtypes);
+}
+
+const std::list<::var>* getstructorunion(bascitypespec &basic ) {
 	std::list<::var>* var = nullptr;
+
+	std::string ident = basic.basic[3];
 
 	std::find_if(structorunionmembers.rbegin(), structorunionmembers.rend(),
 		[&](std::list<std::list<::var>>& scope) {
@@ -2463,25 +2592,14 @@ const std::list<::var>* getstructorunion(std::string ident) {
 			return false;
 		});
 
-	if (var) if (!var->back().pllvmtype) {
-		for (auto& a : *var | ranges::views::drop(1))
-			a.pllvmtype = createllvmtype(a.type);
+	if (!var) var = static_cast<std::list<::var>*>(basic.pexternaldata);
 
-		auto& structvar = var->front();
-
-		std::vector<llvm::Type*> structtypes;
-
-		std::transform(++var->begin(), var->end(),
-			std::back_inserter(structtypes),
-			[](const ::var& elem) { return elem.pllvmtype; });
-
-		dyn_cast<llvm::StructType> (structvar.pllvmtype)->setBody(structtypes);
-	}
+	if (var) if (!var->back().pllvmtype) fixupstructype(var);
 
 	return var;
 }
 
-llvm::Type* createllvmtype(std::vector<type> decltypevector) {
+llvm::Type* createllvmtype(std::list<type> decltypevector) {
 	llvm::Type* pcurrtype;
 
 	std::array lambdas = {
@@ -2529,7 +2647,7 @@ llvm::Type* createllvmtype(std::vector<type> decltypevector) {
 			switch (
 				stringhash(type.spec.basicdeclspec.basic[0].c_str())) {
 			case "struct"_h: {
-				auto currstruct = getstructorunion(type.spec.basicdeclspec.basic[3]);
+				auto currstruct = getstructorunion(type.spec.basicdeclspec);
 				if (!currstruct) goto addchar;
 				pcurrtype =
 					currstruct
@@ -2582,7 +2700,7 @@ void finalizedecl();
 
 static std::list<std::pair<llvm::SwitchInst*, llvm::BasicBlock*>> currswitch;
 
-llvm::BranchInst * splitbb(const char* identifier, size_t szident);
+llvm::BranchInst* splitbb(const char* identifier, size_t szident);
 
 DLL_EXPORT void beginscope() {
 	bool beginofafnuc = scopevar.size() == 1;
@@ -2747,7 +2865,7 @@ val decay(val lvalue) {
 
 		currtype.erase(currtype.begin());
 		currtype.push_back(ptrtype);
-		std::rotate(currtype.rbegin(), currtype.rbegin() + 1,
+		std::rotate(currtype.rbegin(), ++currtype.rbegin(),
 			currtype.rend());
 
 		assert(currtype.front().uniontype == ::type::POINTER);
@@ -2788,7 +2906,7 @@ DLL_EXPORT void startfunctioncall() {
 
 std::list<std::pair<llvm::BranchInst*, std::string>> branches;
 
-llvm::BranchInst * splitbb(const char* identifier, size_t szident) {
+llvm::BranchInst* splitbb(const char* identifier, size_t szident) {
 	bool bareweabrupt = bareweinabrupt();
 	if (pcurrblock.size())
 		pcurrblock.pop_back();
@@ -2808,7 +2926,7 @@ DLL_EXPORT void splitbb(std::unordered_map<unsigned, std::string>&& hashes) {
 }
 
 DLL_EXPORT void gotolabel(std::unordered_map<unsigned, std::string>&& hashes) {
-	branches.push_back({ llvmbuilder.CreateBr(pcurrblock.back()), hashes["gtid"_h]});
+	branches.push_back({ llvmbuilder.CreateBr(pcurrblock.back()), hashes["gtid"_h] });
 }
 
 void fixuplabels() {
@@ -2864,10 +2982,10 @@ DLL_EXPORT void addDefaultCase() {
 	currswitch.back().first->setDefaultDest(pcurrblock.back());
 }
 
-std::vector<::type> getreturntype(std::vector<::type> type) {
-	for (auto iter = type.begin(); iter < type.end(); ++iter)
+std::list<::type> getreturntype(std::list<::type> type) {
+	for (auto iter = type.begin(); iter != type.end(); ++iter)
 		if (iter->uniontype == type::FUNCTION) {
-			type.erase(type.begin(), iter + 1);
+			type.erase(type.begin(), ++iter);
 			return type;
 		}
 	return type;
@@ -2970,6 +3088,36 @@ DLL_EXPORT void endfunctionparamdecl(std::unordered_map<unsigned, std::string>&&
 }*/
 
 DLL_EXPORT void addptrtotype(std::unordered_map<unsigned, std::string>&& hashes);
+
+DLL_EXPORT void endqualifs(std::unordered_map<unsigned, std::string>&& hashes) {
+	auto& lastvar = currtypevectorbeingbuild.back().p->back();
+
+	auto& refbasic = lastvar.type.back().spec.basicdeclspec.basic;
+
+	std::string nontypedeflinkage = refbasic[2];
+
+	if (!nontypedeflinkage.empty()) lastvar.linkage = nontypedeflinkage;
+
+	if (std::all_of(refbasic.begin(), refbasic.end(), [](const std::string& elem) {return elem.empty(); }))
+		if (lastvar.firstintroduced == 1) refbasic[1] = "int";
+		else throw std::exception{ "decl with no basic info" };
+
+	if (ranges::contains(std::array{ "struct", "union", "enum" }, refbasic[0]) && refbasic[3].empty())
+		switch (stringhash(refbasic[0].c_str()))
+		if (0) case "struct"_h:
+		case "union"_h:
+		{
+			auto* reflaststruc = &structorunionmembers.back().back();
+			if (!reflaststruc->back().pllvmtype) fixupstructype(reflaststruc);
+
+			lastvar.type.back().spec.basicdeclspec.pexternaldata = reflaststruc;
+		}
+		/*					  else
+		if (0) case "enum"_h:
+	{
+		lastvar.type.back().spec.basicdeclspec.pexternaldata = &enums.back().back();
+	}*/
+}
 
 DLL_EXPORT void startfunctionparamdecl() {
 
@@ -3408,7 +3556,7 @@ extern "C" const char* callout_test(const char** pargs, size_t * szargs) {
 #endif
 		//if (a->callout_number != 255)
 		//(((parsing_plain&)*pbindings).lpVtbl->vtbl[calloutnum](pbindings, res)),
-			(((compiling_plain&)*phndl).lpVtbl->vtbl[calloutnum - 1](phndl), 0);
+		(((compiling_plain&)*phndl).lpVtbl->vtbl[calloutnum - 1](phndl), 0);
 	}
 #ifdef _WIN32
 	__except (EXCEPTION_EXECUTE_HANDLER) {
@@ -3474,7 +3622,7 @@ extern "C" const char* callout_test(const char** pargs, size_t * szargs) {
 	}
 	return res;
 #endif
-}
+	}
 #endif
 
 #if 0
@@ -3609,7 +3757,7 @@ virtual void identifier_typedef_38() {
 	//handledeclident({ (char*)GROUP_PTR_AND_SZ(n) });
 }
 #endif
-DLL_EXPORT void identifier_decl(std::unordered_map<unsigned, std::string>&& hashes) {
+DLL_EXPORT void identifier_decl(std::unordered_map<unsigned, std::string> && hashes) {
 	//int n = getnameloc("ident", *ptable) + 1;
 
 	//handledeclident({ (char*)GROUP_PTR_AND_SZ(n) });
@@ -3623,9 +3771,11 @@ DLL_EXPORT void identifier_decl(std::unordered_map<unsigned, std::string>&& hash
 
 	basic.spec.basicdeclspec.basic[3] = hashes["identlasttagfacet"_h];
 
-	if(basic.spec.basicdeclspec.basic[3].empty())
+	if (basic.spec.basicdeclspec.basic[3].empty())
 
 		basic.spec.basicdeclspec.basic[3] = hashes["typedefnmmatchedfacet"_h];
+
+	var.identifier = hashes["identfacet"_h];
 
 	var.linkage = hashes["typedefkeyfacet"_h];
 
@@ -3674,12 +3824,23 @@ virtual void end_param_list_48() {
 
 }
 #endif
-DLL_EXPORT void add_type_or_qualifier() {
-	//parsebasictype(std::string{ PTR_AND_SZ_N(1) }, currtypevectorbeingbuild.back().p->back().type
+DLL_EXPORT void add_type_or_qualifier(std::unordered_map<unsigned, std::string>&hashes) {
+	auto& lastvar = currtypevectorbeingbuild.back().p->back();
+	parsebasictype({ hashes["typesandqualifiersmask"_h] }, lastvar.type.back().spec.basicdeclspec);
+}
+
+DLL_EXPORT void enddeclaration(std::unordered_map<unsigned, std::string>&hashes) {
+	auto& lastvar = currtypevectorbeingbuild.back().p->back();
+
+	std::rotate(lastvar.type.begin(), ++lastvar.type.begin(), lastvar.type.end());
+
+	lastvar.firstintroduced = scopevar.size();
+
+	//currtypevectorbeingbuild.pop_back();
 }
 //virtual void unused_50() { };
 DLL_EXPORT void add_literal(std::unordered_map<unsigned, std::string> &hashes) {
-	if (!hashes["begincharliteral"_h].empty()) constructstring();
+	if (hashes["begincharliteral"_h].empty()) constructstring();
 	else {
 		std::stringstream ssstream;
 		ssstream << (int)currstring[0];
@@ -3724,7 +3885,7 @@ virtual void ident_struc_58() {
 	currstruct.second = { PTR_AND_SZ_N(2) };
 
 
-}
+	}
 #endif
 DLL_EXPORT void struc_or_union_body(std::unordered_map<unsigned, std::string> &hashes) {
 	var tmp;
@@ -3732,7 +3893,7 @@ DLL_EXPORT void struc_or_union_body(std::unordered_map<unsigned, std::string> &h
 	typestruct.spec.basicdeclspec.basic[3] = hashes["identlasttagfacet"_h];
 	typestruct.spec.basicdeclspec.basic[0] = hashes["structorunionlast"_h];
 	tmp.type.push_back(typestruct);
-	tmp.identifier = currstruct.second;
+	tmp.identifier = hashes["identlasttagfacet"_h];
 	tmp.pllvmtype = llvm::StructType::create(llvmctx);
 	structorunionmembers.back().push_back({ tmp });
 	currtypevectorbeingbuild.push_back(
@@ -3792,7 +3953,7 @@ rest:
 
 	if (exponent.empty())
 		exponent = ntoclear;
-	std::vector<::type> currtype = { 1, ::type::BASIC };
+	std::list<::type> currtype = { 1, ::type::BASIC };
 
 	llvm::Type* pllvmtype;
 
@@ -3842,109 +4003,13 @@ virtual void register_calling_conv_81() { }
 virtual void unexplored_82() { }
 #endif
 DLL_EXPORT void end_binary() {
-	auto& currbranch = nbranches.back();
-
-	var& ordinary = *currbranch.iterval;
-
-	/*llvm::BranchInst* normalflow = nullptr;
-
-	if (nbranches.back().first.size() > 1)
-		normalflow = splitbb("", 0);*/
-
-	val ordinary_imm = ordinary;
-
-	//auto iternbranch = nbranches.begin();
-
-	/*for (auto branch : nbranches.back().first | ranges::views::drop(1)) {
-		//iternbranch = ++iternbranch;
-		int fullindex = branch->first[0]->getSuccessor(1) != branch->second;
-		branch->first[0]->setSuccessor(!fullindex, pcurrblock.back());
-		branch->second->eraseFromParent();
-		//ifstatements.erase(branch);
-
-		ordinary_imm = ordinary;
-		ordinary_imm.lvalues.push_back({ ordinary_imm.value, ordinary.type });
-
-		immidiates.push_back(ordinary_imm);
-
-		insertinttoimm((char*)branch->first[1], 1, "", 0, 3);
-
-		phndl->assigntwovalues();
-
-		immidiates.pop_back();
-
-		branch->first[0] = splitbb("", 0);
-	}*/
-
-	llvm::BranchInst* lastsplit;
-
-	if (!nbranches.back().second.empty()) {
-		lastsplit = nbranches.back().second.back()[1];
-		lastsplit->setSuccessor(0, pcurrblock.back());
-		auto imm = immidiates.back();
-		ordinary_imm.lvalues.push_back({ ordinary_imm.value, currbranch.iterval->type });
-		immidiates.pop_back();
-		immidiates.push_back(ordinary_imm);
-		immidiates.push_back(imm);
-		phndl->assigntwovalues();
-		splitbb("", 0);
-	}
-
-	for (auto branch : nbranches.back().second)
-		branch[0]->setSuccessor(0, pcurrblock.back());
-
-	/*if (normalflow) {
-		normalflow->setSuccessor(0, pcurrblock.back());*/
-	if (!nbranches.back().second.empty()) {
-		ordinary_imm.value = llvmbuilder.CreateLoad(ordinary.requestValue());
-
-		immidiates.pop_back();
-
-		immidiates.push_back(ordinary_imm);
-
-	}
-	//else //((llvm::AllocaInst*)ordinary.pValue)->replaceAllUsesWith(llvm::UndefValue::get(ordinary.pValue->getType())),
-		//((llvm::AllocaInst*)ordinary.pValue)->eraseFromParent();
-	//}
-
-	scopevar.back().erase(currbranch.iterval);
-
-	/**/
-
-	nbranches.pop_back();
+	phndl->end_binary();
 }
 DLL_EXPORT void begin_branch() {
-	auto& currbranch = nbranches.back();
-	/*val ordinary_imm = *currbranch.iterval;
-	auto imm = immidiates.back();
-	ordinary_imm.lvalues.push_back({ ordinary_imm.value, currbranch.iterval->type });
-	immidiates.pop_back();
-	immidiates.push_back(ordinary_imm);
-	immidiates.push_back(imm);
-	phndl->assigntwovalues();*/
-	currbranch.first.insert(++currbranch.first.begin(), startifstatement(false));
-	//currbranch.second.push_back(currbranch.first.back());
-	//ordinary_imm.value = llvmbuilder.CreateLoad(ordinary_imm.value);
-	//immidiates.push_back(ordinary_imm);
+	phndl->begin_branch();
 }
 DLL_EXPORT void begin_binary() {
-	var ordinary; type basicint{ type::BASIC };
-	basicint.spec.basicdeclspec.basic[1] = "int";
-	ordinary.type = { basicint };
-	scopevar.back().push_back(ordinary);
-	nbranches.push_back({ std::list<arrtwovals>{1}, --scopevar.back().end() });
-	nbranches.back().itersecond = nbranches.back().first.begin();
-
-	/*val ordinary_imm = scopevar.back().back();
-	ordinary_imm.lvalues.push_back({ ordinary_imm.value, ordinary.type });
-
-	immidiates.push_back(ordinary_imm);
-
-	insertinttoimm("1", sizeof "1" - 1, "", 0, 3);
-
-	assigntwovalues();
-
-	immidiates.pop_back();*/
+	phndl->begin_binary();
 }
 #if 0
 virtual void unused_86() { }
@@ -3968,9 +4033,9 @@ DLL_EXPORT void add_ident_to_enum_def(std::unordered_map<unsigned, std::string> 
 
 	enums.back().back().memberconstants.push_back(--scopevar.back().end());
 }
-DLL_EXPORT void begin_enumerator_def(std::unordered_map<unsigned, std::string>&& hashes) {
+DLL_EXPORT void begin_enumerator_def(std::unordered_map<unsigned, std::string> && hashes) {
 	//begin_enumerator_decl(pargs, szargs);
-	enums.back().push_back({ hashes["identlasttagfacet"_h], {}});
+	enums.back().push_back({ hashes["identlasttagfacet"_h], {} });
 }
 /*DLL_EXPORT void begin_enumerator_decl(const char** pargs, size_t* szargs) {
 	//int n = getnameloc3("identlast", *ptable, a, 1, { .dontsearchforclosest = 0 }) + 1;

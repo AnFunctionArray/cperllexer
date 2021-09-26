@@ -221,6 +221,7 @@ sub getnext {
 }
 
 sub substitutetemplateinstances {
+    my $backup = $&;
     my $regexcontent = $_[0];
 
     my $template = $+{template};
@@ -239,9 +240,9 @@ sub substitutetemplateinstances {
 
     #$isfacet = "(*F)" if(not $isfacet);
 
-    $regexcontent =~ m {\(\?<(?<params>.*?)>\)\s*+(?=\(\?<$templatetoreplace(?<isfacet>$isfacet)?+\b)(?<inpar>(?<!\\)\((
+    return $backup unless($regexcontent =~ m {\(\?<(?<params>.*?)>\)\s*+(?=\(\?<$templatetoreplace(?<isfacet>$isfacet)?+\b)(?<inpar>(?<!\\)\((
                     ([^][()]|(?<=\\).)++|(?&inpar)|(?<insquare>(?<!\\)\[\^?+(.|\\.)(
-                    ([^]]|(?<=\\).)++|(?&insquare))*(?<!\\)\]))*(?<!\\)\))}gxx;
+                    ([^]]|(?<=\\).)++|(?&insquare))*(?<!\\)\]))*(?<!\\)\))}gxx);
 
     #$isfacet = not $+{isfacet};
 
@@ -251,7 +252,7 @@ sub substitutetemplateinstances {
 
     my $body = $+{inpar};
 
-    push @arrayoftemplates, $templatetoreplace unless ($templatetoreplace ~~ @arrayoftemplates);
+    #push @arrayoftemplates, $templatetoreplace unless ($templatetoreplace ~~ @arrayoftemplates);
 
     while(1) {
         #my $arg = getnext($args);
@@ -328,10 +329,10 @@ sub substitutetemplateinstances {
 }
 
 sub parseregexfile {
-
+    my $filename;
     if(not defined $_[1])
     {
-        my $filename = $_[0];
+        $filename = $_[0];
         open my $fh, '<', $filename or die "error opening $filename: $!";
 
         $regexfilecontent = do { local $/; <$fh> };
@@ -358,7 +359,19 @@ sub parseregexfile {
                         |(?<insquare>(?<!\\)\[\^?+(.|\\.)(([^]]|(?<=\\).)++
                         |(?&insquare))*(?<!\\)\]))*(?<!\\)\))}{}gsxx if(not $matchinperl);
 
-    @arrayoftemplates = ();
+    #@arrayoftemplates = ();
+
+    my $alltemplates = "";
+
+    $alltemplates = $alltemplates . "\n\n" . $& while($regexfilecontent =~s {\(\?<(?<params>[^()<>]*?)>\)\s*+
+                    (?<inpar>(?<!\\)\((
+                    ([^][()]|(?<=\\).)++|(?&inpar)|(?<insquare>(?<!\\)\[\^?+(.|\\.)(
+                    ([^]]|(?<=\\).)++|(?&insquare))*(?<!\\)\]))*(?<!\\)\))}{}sxx);
+
+    
+    #print $alltemplates if($filename eq "inner.regex");
+
+    #exit if($filename eq "inner.regex");
 
     sub substitutetemplateinstancesdoregex {
         my $templatename;
@@ -367,13 +380,18 @@ sub parseregexfile {
                             (=(?<name>((?![)])\S)+))?\)}
                             {
                                 $templatename = $+{template};
+                                print "\n\n\n========================================================";
+                                print "substituting $templatename \n";
+                                print "========================================================\n\n\n";
                                 substitutetemplateinstances($_[1])
                             }gxxe;
 
         return $templatename;
     }
 
-    while(substitutetemplateinstancesdoregex($regexfilecontent, $regexfilecontent)) {}
+    while(substitutetemplateinstancesdoregex($regexfilecontent, $alltemplates)) {
+        print $regexfilecontent;
+    }
 
     #print $regexfilecontent;
     #exit;
@@ -426,7 +444,7 @@ sub parseregexfile {
     replacenofacetgroups($1, $regexfilecontent) while($regexfilecontentcopy =~/\(\?<(\w+)#nofacet>/g); # remove references to nofacet groups
 =cut
     sub dofacetreplacements {
-        $_[0] =~s/\(\?C&(\S+?)\s*(<(?<args>[^\)]*?)>)?\)//gs;
+        $_[0] =~s/\(\?C&(\S+?)\s*(<(?<args>[^()<>]*?)>)?\)//gs;
 
         #$regexfilecontent =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
@@ -451,7 +469,7 @@ sub parseregexfile {
 
     $mainregexfinal = $mainregexfinal . $regexfile . $regexfilecontent;
 
-    $mainregexfinal =~s/\((\?\??+)C&(\S+?)\s*(<(?<args>[^\)]*?)>)?\)/
+    $mainregexfinal =~s/\((\?\??+)C&(\S+?)\s*(<(?<args>[^()<>]*?)>)?\)/
             my $prefix = "(" . $1 . "{debugcallout(" . "\"$2\"";
             $prefix . ($+{args} ? "," . ($+{args} =~ s {\b\S+\b}{\$\+\{$&\}}gr) : "") . ")})"
             /ges if($matchinperl);
