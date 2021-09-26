@@ -94,20 +94,26 @@ sub printifdefined{
 }
 
 sub debugcallout {
+    #print Dumper(\%+);
+    my $captures = { %+ };
     #require re;
     #re->import('debug') if($_[1] eq "Ptr64ToPtr");
     #select($oldfh) if($_[1] eq "Ptr64ToPtr");
-    my @arr = @_;
+    #my @arr = @_;
     my $subslice = substr $subject, pos(), 10;
 
     $subslice =~ s{\R}{ }g;
+
+    use Data::Dumper;
     
     print  "capture: " . $subslice . "\n";
-    foreach my $i (@arr) {
-        print $i . "\n";
-    }
-    my $res = $arr[0]->(@arr) if(defined &{ $arr[0] });
-    callout(@arr) if(defined &callout);
+    print $_[0] . "\n";
+    print Dumper(\$captures);
+    #foreach my $i (@arr) {
+    #    print $i . "\n";
+    #}
+    my $res = $_[0]->($captures) if(defined &{ $_[0] });
+    callout($_[0], $captures) if(defined &callout);
     return $res;
 }
 
@@ -192,7 +198,7 @@ sub identifier_typedef {
 
 sub identifier_decl {
     my $lastelem = pop @typedefidentifiersvector;
-    $lastelem = $lastelem . "|" . $_[1] unless (not $_[3]);
+    $lastelem = $lastelem . "|" . $_[0]{'identfacet'} unless (not $_[0]{'typedefkeyfacet'});
     push @typedefidentifiersvector, $lastelem;
 }
 

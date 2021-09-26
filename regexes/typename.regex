@@ -109,7 +109,7 @@
 
 (?<>)
 (?<structorunion>\s*+(?<structorunionlast>struct|union|(?<enum>enum))
-	((?&identifierminestruct<>)?+\s*+[{](?(<enum>)(?C&begin_enumerator_def<identlasttagfacet)
+	((?&identifierminestruct<>)?+\s*+[{](?(<enum>)(?C&begin_enumerator_def<identlasttagfacet>)
 	(?<enumerator>(?&&identifiermine<add_ident_to_enum_def>)
 	((=(?C&beginconstantexpr)(?&assignorsomething)(?C&end_ass_to_enum_def))
 	|(?C&end_without_ass_to_enum_def)))?+(,(?&enumerator))*+,?+\s*+

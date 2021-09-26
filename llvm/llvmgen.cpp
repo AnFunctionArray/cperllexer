@@ -45,6 +45,7 @@
 #include <type_traits>
 #include <vector>
 #include <variant>
+#include <unordered_map>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -315,7 +316,7 @@ std::string bindings_parsing::decl_begin_55() {
 	return decl_begin_55();
 }*/
 
-unsigned constexpr stringhash(char const* input) {
+extern "C" unsigned constexpr stringhash(char const* input) {
 	return *input ? static_cast<unsigned int> (*input) +
 		33 * stringhash(input + 1)
 		: 5381;
@@ -1772,8 +1773,8 @@ void printvaltype(val val) {
 
 extern valandtype getrvalue(valandtype lvalue);
 
-DLL_EXPORT void obtainvalbyidentifier(const char** pargs, size_t* szargs) {
-	obtainvalbyidentifier({FIRST_ARG_PTR_AND_SZ});
+DLL_EXPORT void obtainvalbyidentifier(std::unordered_map<unsigned, std::string> &hashmap) {
+	obtainvalbyidentifier(hashmap["ident"_h]);
 }
 
 const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident, bool push, bool bfindtypedef) {
@@ -1833,12 +1834,12 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 	return var;
 }
 
-DLL_EXPORT void addplaintexttostring(const char** pargs, size_t * szargs) {
-	currstring += std::string{ FIRST_ARG_PTR_AND_SZ };
+DLL_EXPORT void addplaintexttostring(std::unordered_map<unsigned, std::string> &hashes) {
+	currstring += std::string{ hashes["textraw"_h]};
 }
 
-DLL_EXPORT void addescapesequencetostring(const char** pargs, size_t * szargs) {
-	std::string escape{ FIRST_ARG_PTR_AND_SZ };
+DLL_EXPORT void addescapesequencetostring(std::unordered_map<unsigned, std::string> &hashes) {
+	std::string escape{ hashes["escaperaw"_h]};
 
 	switch (stringhash(escape.c_str())) {
 	case "\\n"_h:
@@ -2126,9 +2127,8 @@ void pushsizeoftype(std::vector<type> type) {
 
 extern const std::list<::var>* getstructorunion(std::string ident);
 
-extern "C" void memberaccess(const char* arrowordot, size_t szstr,
-	const char* ident, size_t szstr1) {
-	if (std::string{ arrowordot, szstr } == "->")
+extern "C" void memberaccess(std::unordered_map<unsigned, std::string> hashentry) {
+	if (hashentry["arrowordotraw"_h] == "->")
 		phndl->applyindirection();
 
 	auto& lastvar = phndl->immidiates.back();
@@ -2141,7 +2141,7 @@ extern "C" void memberaccess(const char* arrowordot, size_t szstr,
 	auto listiter = ++pliststruct->begin();
 
 	for (; listiter != pliststruct->end() &&
-		listiter->identifier != std::string{ ident, szstr1 };
+		listiter->identifier != hashentry["ident"_h];
 		++imember, ++listiter)
 		;
 
@@ -2803,12 +2803,12 @@ llvm::BranchInst * splitbb(const char* identifier, size_t szident) {
 	return preturn;
 }
 
-DLL_EXPORT void splitbb(const char** pargs, size_t* szargs) {
-	splitbb(FIRST_ARG_PTR_AND_SZ);
+DLL_EXPORT void splitbb(std::unordered_map<unsigned, std::string>&& hashes) {
+	splitbb(STRING_TO_PTR_AND_SZ(hashes["lbl"_h]));
 }
 
-DLL_EXPORT void gotolabel(const char** pargs, size_t * szargs) {
-	branches.push_back({ llvmbuilder.CreateBr(pcurrblock.back()), std::string{FIRST_ARG_PTR_AND_SZ} });
+DLL_EXPORT void gotolabel(std::unordered_map<unsigned, std::string>&& hashes) {
+	branches.push_back({ llvmbuilder.CreateBr(pcurrblock.back()), hashes["gtid"_h]});
 }
 
 void fixuplabels() {
@@ -2940,7 +2940,7 @@ DLL_EXPORT void endreturn() {
 	llvmbuilder.CreateRet(immidiates.back().value);
 }
 
-DLL_EXPORT void endfunctionparamdecl(const char** pargs, size_t* szargs) {
+DLL_EXPORT void endfunctionparamdecl(std::unordered_map<unsigned, std::string>&& hashes) {
 
 	//for (auto& a : *currtypevectorbeingbuild.back().p)
 	//	a.pllvmtype = createllvmtype(a.type);
@@ -2951,7 +2951,7 @@ DLL_EXPORT void endfunctionparamdecl(const char** pargs, size_t* szargs) {
 
 	assert(functype.uniontype == type::FUNCTION);
 
-	functype.spec.func.bisvariadic = szargs[1];
+	functype.spec.func.bisvariadic = !hashes["rest"_h].empty();
 }
 
 /*extern "C" void continuedeclaration() {
@@ -2969,14 +2969,14 @@ DLL_EXPORT void endfunctionparamdecl(const char** pargs, size_t* szargs) {
 	currtypevectorbeingbuild.back().p->push_back(lastvar);
 }*/
 
-DLL_EXPORT void addptrtotype(const char**, size_t*);
+DLL_EXPORT void addptrtotype(std::unordered_map<unsigned, std::string>&& hashes);
 
 DLL_EXPORT void startfunctionparamdecl() {
 
 	if (currtypevectorbeingbuild.back().currdecltype ==
 		currdecltypeenum::PARAMS) // if declaring a function inside another
 								  // declaration
-		addptrtotype((const char* []) { "" }, (size_t[]) { 0 });
+		addptrtotype(std::unordered_map<unsigned, std::string>{});
 
 	currtypevectorbeingbuild.back().p->back().type.push_back(
 		{ type::FUNCTION });
@@ -3002,12 +3002,12 @@ DLL_EXPORT void addsubtotype() {
 	hndlcnstexpr.immidiates.pop_back();
 }
 
-DLL_EXPORT void addptrtotype(const char** pargs, size_t * szargs) {
+DLL_EXPORT void addptrtotype(std::unordered_map<unsigned, std::string>&& hashes) {
 
 	type ptrtype{ type::POINTER };
 
 	ptrtype.spec.ptrqualifiers =
-		parsequalifiers(std::string{ FIRST_ARG_PTR_AND_SZ });
+		parsequalifiers(hashes["qualifptr"_h]);
 
 	currtypevectorbeingbuild.back().p->back().type.push_back(ptrtype);
 }
@@ -3067,10 +3067,10 @@ extern "C" void endmodule() {
 	delete pdatalayout;
 }
 
-DLL_EXPORT void unary(const char** pargs, size_t* szargs) {
+DLL_EXPORT void unary(std::unordered_map<unsigned, std::string>&& hashes) {
 	std::string imm;
 
-	imm.assign(FIRST_ARG_PTR_AND_SZ);
+	imm.assign(hashes["unop"_h]);
 
 	auto phpriorhndlfn = phndl->getrestorefn();
 
@@ -3110,10 +3110,10 @@ DLL_EXPORT void unary(const char** pargs, size_t* szargs) {
 	phndl = phpriorhndlfn(phndl);
 }
 
-DLL_EXPORT void unaryincdec(const char** pargs, size_t* szargs) {
-	std::string imm;
+DLL_EXPORT void unaryincdec(std::unordered_map<unsigned, std::string>&& hashes) {
+	std::string immpostfix = hashes["postfixarithraw"_h];
 
-	imm.assign(FIRST_ARG_PTR_AND_SZ);
+	std::string imm = !immpostfix.empty() ? immpostfix : hashes["prefixarithraw"_h];
 
 	auto phpriorhndl = phndl->getrestorefn();
 
@@ -3141,7 +3141,7 @@ DLL_EXPORT void unaryincdec(const char** pargs, size_t* szargs) {
 
 	phndl->assigntwovalues();
 
-	if (szargs[2])
+	if (!immpostfix.empty())
 		immidiates.back() = immlvalue;
 
 	phndl->~basehndl();
@@ -3149,10 +3149,10 @@ DLL_EXPORT void unaryincdec(const char** pargs, size_t* szargs) {
 	phndl = phpriorhndl(phndl);
 }
 
-DLL_EXPORT void binary(const char** pargs, size_t * szargs) {
+DLL_EXPORT void binary(std::unordered_map<unsigned, std::string>&& hashes) {
 	std::string imm;
 
-	imm.assign(FIRST_ARG_PTR_AND_SZ);
+	imm.assign(hashes["binop"_h]);
 
 	auto phpriorhndl = phndl->getrestorefn();
 
@@ -3495,15 +3495,7 @@ virtual void start_str_4() {
 	//a->offset_vector[n * 2] = a->offset_vector[n * 2 + 1] = -1;
 }
 #endif
-DLL_EXPORT void num_lit(const char** pargs, size_t * szargs) {
-	enum ARGS {
-		lng = 1,
-		hex,
-		bin,
-		oct,
-		dec,
-		MAX
-	};
+DLL_EXPORT void num_lit(std::unordered_map<unsigned, std::string> &hashes) {
 	unsigned int type;
 	//int n = getnameloc("numberliteralraw", *ptable);
 
@@ -3513,18 +3505,19 @@ DLL_EXPORT void num_lit(const char** pargs, size_t * szargs) {
 
 	//ntoprint[1] = getnameloc2("lng", *ptable,a,0);
 
-	//const char* groups[] = { "hex", "bin", "oct", "dec" };
+	std::string groups[] = { "hex", "bin", "oct", "dec" };
 
 	//for (const char** pgroup = groups; pgroup != 1[&groups]; ++pgroup)
-	for (int i = hex; i < MAX; ++i)
+	for (int i = 0; i < _countof(groups); ++i)
 	{
 		//ntoclear = getnameloc3(*pgroup, *ptable, a, 0, { .dontsearchforclosest = 0 });
 		//if (ntoclear != -1 && a->offset_vector[2 * ntoclear] != -1)
-		if (szargs[i])
+		std::string curr = hashes[stringhash(groups[i].c_str())];
+		if (!curr.empty())
 		{
-			type = i - hex; //pgroup - groups; //<< 2;//| (a->offset_vector[2 * ntoprint[0]] != -1) | (a->offset_vector[2 * ntoprint[1]] != -1) << 1;
+			type = i; //pgroup - groups; //<< 2;//| (a->offset_vector[2 * ntoprint[0]] != -1) | (a->offset_vector[2 * ntoprint[1]] != -1) << 1;
 
-			insertinttoimm(PTR_AND_SZ_N(i), PTR_AND_SZ_N(lng), type);
+			insertinttoimm(STRING_TO_PTR_AND_SZ(curr), STRING_TO_PTR_AND_SZ(hashes["lng"_h]), type);
 
 			//a->offset_vector[2 * ntoclear] = a->offset_vector[2 * ntoclear + 1] = -1;
 
@@ -3616,7 +3609,7 @@ virtual void identifier_typedef_38() {
 	//handledeclident({ (char*)GROUP_PTR_AND_SZ(n) });
 }
 #endif
-DLL_EXPORT void identifier_decl(const char** pargs, size_t * szargs) {
+DLL_EXPORT void identifier_decl(std::unordered_map<unsigned, std::string>&& hashes) {
 	//int n = getnameloc("ident", *ptable) + 1;
 
 	//handledeclident({ (char*)GROUP_PTR_AND_SZ(n) });
@@ -3628,9 +3621,13 @@ DLL_EXPORT void identifier_decl(const char** pargs, size_t * szargs) {
 
 	type basic{ type::BASIC };
 
-	basic.spec.basicdeclspec.basic[3] = std::string{ PTR_AND_SZ_N(2) };
+	basic.spec.basicdeclspec.basic[3] = hashes["identlasttagfacet"_h];
 
-	var.linkage = std::string{ PTR_AND_SZ_N(3) };
+	if(basic.spec.basicdeclspec.basic[3].empty())
+
+		basic.spec.basicdeclspec.basic[3] = hashes["typedefnmmatchedfacet"_h];
+
+	var.linkage = hashes["typedefkeyfacet"_h];
 
 	var.type = { basic };
 
@@ -3681,8 +3678,8 @@ DLL_EXPORT void add_type_or_qualifier() {
 	//parsebasictype(std::string{ PTR_AND_SZ_N(1) }, currtypevectorbeingbuild.back().p->back().type
 }
 //virtual void unused_50() { };
-DLL_EXPORT void add_literal(const char** pargs, size_t * szargs) {
-	if (!szargs[1]) constructstring();
+DLL_EXPORT void add_literal(std::unordered_map<unsigned, std::string> &hashes) {
+	if (!hashes["begincharliteral"_h].empty()) constructstring();
 	else {
 		std::stringstream ssstream;
 		ssstream << (int)currstring[0];
@@ -3729,11 +3726,11 @@ virtual void ident_struc_58() {
 
 }
 #endif
-DLL_EXPORT void struc_or_union_body(const char** pargs, size_t * szargs) {
+DLL_EXPORT void struc_or_union_body(std::unordered_map<unsigned, std::string> &hashes) {
 	var tmp;
 	type typestruct{ type::BASIC };
-	typestruct.spec.basicdeclspec.basic[3] = { PTR_AND_SZ_N(1) };
-	typestruct.spec.basicdeclspec.basic[0] = { PTR_AND_SZ_N(2) };
+	typestruct.spec.basicdeclspec.basic[3] = hashes["identlasttagfacet"_h];
+	typestruct.spec.basicdeclspec.basic[0] = hashes["structorunionlast"_h];
 	tmp.type.push_back(typestruct);
 	tmp.identifier = currstruct.second;
 	tmp.pllvmtype = llvm::StructType::create(llvmctx);
@@ -3770,7 +3767,7 @@ virtual void create_case_65() {
 virtual void switch_stmt_end_66() { endswitch(); }
 virtual void create_default_case_67() { addDefaultCase(); }
 #endif
-DLL_EXPORT void collect_float_literal(const char** pargs, size_t * szargs) {
+DLL_EXPORT void collect_float_literal(std::unordered_map<unsigned, std::string> &hashes) {
 	enum {
 		wholeopt = 1,
 		whole,
@@ -3778,29 +3775,29 @@ DLL_EXPORT void collect_float_literal(const char** pargs, size_t * szargs) {
 		fraction,
 		sign,
 		exp,
-		modifiers
+		flt
 	};
 	std::string wholepart, fractionpart, exponent, exponent_sign;
 	std::string ntoclear;
-	if ((ntoclear = { PTR_AND_SZ_N(wholeopt) }).empty())
-		if ((ntoclear = { PTR_AND_SZ_N(whole) }).empty())
-			if ((ntoclear = { PTR_AND_SZ_N(wholenodot) }).empty())
+	if ((ntoclear = hashes["wholeopt"_h]).empty())
+		if ((ntoclear = hashes["whole"_h]).empty())
+			if ((ntoclear = hashes["wholenodot"_h]).empty())
 				goto rest;
 
 	if (wholepart.empty())
 		wholepart = ntoclear;
 rest:
-	ntoclear = { PTR_AND_SZ_N(fraction) };//getnameloc2("fraction", *ptable, a, 0);
+	ntoclear = hashes["fraction"_h];//getnameloc2("fraction", *ptable, a, 0);
 
 	if (fractionpart.empty())
 		fractionpart = ntoclear;
 
-	ntoclear = { PTR_AND_SZ_N(sign) };
+	ntoclear = hashes["sign"_h];
 
 	if (exponent_sign.empty())
 		exponent_sign = ntoclear;
 
-	ntoclear = { PTR_AND_SZ_N(exp) };
+	ntoclear = hashes["exp"_h];
 
 	if (exponent.empty())
 		exponent = ntoclear;
@@ -3808,7 +3805,7 @@ rest:
 
 	llvm::Type* pllvmtype;
 
-	std::string postfix = { PTR_AND_SZ_N(modifiers) };
+	std::string postfix = hashes["flt"_h];
 
 	const llvm::fltSemantics& floatsem = postfix.empty() ? currtype.back().spec.basicdeclspec.basic[1] = "double",
 		pllvmtype = llvm::Type::getDoubleTy(llvmctx),
@@ -3827,7 +3824,6 @@ rest:
 
 	immidiates.push_back({ llvm::ConstantFP::get(pllvmtype, floatlit), currtype });
 }
-#define STRING_TO_PTR_AND_SZ(str) str.c_str(), str.size()
 #if 0
 virtual void finish_float_literal_69() {
 	//int ntoclear = getnameloc2("flt", *ptable, a, 0);
@@ -3964,7 +3960,7 @@ virtual void unused_86() { }
 virtual void begin_nested_expr_87() { }
 virtual void end_nested_expr_88() { }
 #endif
-DLL_EXPORT void add_ident_to_enum_def(const char** pargs, size_t * szargs) {
+DLL_EXPORT void add_ident_to_enum_def(std::unordered_map<unsigned, std::string> &hashes) {
 	var tmp;
 	type enumtype{ type::BASIC };
 	enumtype.spec.basicdeclspec.basic = { "enum", "int", "", enums.back().back().ident };
@@ -3975,15 +3971,15 @@ DLL_EXPORT void add_ident_to_enum_def(const char** pargs, size_t * szargs) {
 
 	//int n = getnameloc3("identlast", *ptable, a, 1, { .dontsearchforclosest = 0 }) + 1;
 
-	tmp.identifier = { FIRST_ARG_PTR_AND_SZ };//(char*)GROUP_PTR_AND_SZ(n) };
+	tmp.identifier = hashes["identlasttagfacet"_h];//(char*)GROUP_PTR_AND_SZ(n) };
 
 	scopevar.back().push_back(tmp);
 
 	enums.back().back().memberconstants.push_back(--scopevar.back().end());
 }
-DLL_EXPORT void begin_enumerator_def(const char** pargs, size_t * szargs) {
+DLL_EXPORT void begin_enumerator_def(std::unordered_map<unsigned, std::string>&& hashes) {
 	//begin_enumerator_decl(pargs, szargs);
-	enums.back().push_back({ {FIRST_ARG_PTR_AND_SZ}, {} });
+	enums.back().push_back({ hashes["identlasttagfacet"_h], {}});
 }
 /*DLL_EXPORT void begin_enumerator_decl(const char** pargs, size_t* szargs) {
 	//int n = getnameloc3("identlast", *ptable, a, 1, { .dontsearchforclosest = 0 }) + 1;
@@ -4017,3 +4013,30 @@ static std::list<val>& immidiates;
 std::list<val>& bindings_compiling::immidiates = ::immidiates;
 
 #endif
+
+
+extern "C" {
+#include <EXTERN.h> /* from the Perl distribution     */
+#include <perl.h>	/* from the Perl distribution     */
+#include <XSUB.h>
+}
+
+extern "C" void docall(const char*, size_t, void*);
+
+extern "C" void do_callout(SV * in, HV * hash)
+{
+	char* key, * pinstr;
+	I32 key_length;
+	STRLEN inlen;
+	SV* value;
+	hv_iterinit(hash);
+	std::unordered_map<unsigned, std::string> map;
+	while (value = hv_iternextsv(hash, &key, &key_length)) {
+		pinstr = SvPVutf8(value, inlen);
+		map.insert({ stringhash(std::string{key, (size_t)key_length}.c_str()), std::string{pinstr, inlen} });
+	}
+
+	pinstr = SvPVutf8(in, inlen);
+
+	docall(pinstr, inlen, &map);
+}

@@ -295,14 +295,16 @@ int main(int argc, const char** argv, char** env)
 
 HANDLE hCurrModule;
 
-void docall(const char** pargs, size_t* szargs) {
+void docall(const char *name, size_t szname, void *phashmap) {
+	char cProcName[USHRT_MAX];
+	sprintf(cProcName, "%.*s", szname, name);
 	if (!hCurrModule) hCurrModule = GetModuleHandle(0);
 
-	FARPROC pfunc = GetProcAddress(hCurrModule, *pargs);
+	FARPROC pfunc = GetProcAddress(hCurrModule, cProcName);
 
 	if (!pfunc) return;
 
-	((void (*)(const char** pargs, size_t * szargs))pfunc)(pargs, szargs);
+	((void (*)(void* phashmap))pfunc)(phashmap);
 }
 
 #endif

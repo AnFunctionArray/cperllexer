@@ -34,7 +34,6 @@ CODE:
         s2 = SvPVutf8(in2, thirdlen);
         secondmain(s, len, s1, secondlen, s2, thirdlen);
     }
-=cut
 
 #SV *
 void callout(SV *in, ...)
@@ -53,7 +52,15 @@ CODE:
     }
 #OUTPUT:
     #RETVAL
+=cut
 
+void callout(SV *in, HV *hash)
+CODE:
+    {
+        extern void do_callout(SV* in, HV* hash);
+
+        do_callout(in, hash);
+    }
 
 void startmodule(SV *in)
 PREINIT:

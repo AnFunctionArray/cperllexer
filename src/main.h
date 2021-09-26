@@ -129,4 +129,34 @@ struct retgetnamevalue getnamevalue(const char* nametoget);
 #define DLL_EXPORT
 #define DLL_LOCAL
 #endif
+
+#define MAX_HASH_ENTRIES 0xFF
+
+struct hashentry {
+	unsigned hash;
+	const char* value;
+	size_t szvalue;
+#ifdef __cplusplus
+
+	/*std::string operator[](std::string name) {
+		extern unsigned constexpr stringhash(char const*);
+		auto entry = getentrybyhash(this, stringhash(name.c_str()));
+		return { entry.value, entry.szvalue };
+	}*/
+
+	using type = std::unordered_map<unsigned, std::string>;
+
+	operator std::unordered_map<unsigned, std::string>() {
+		std::unordered_map<unsigned, std::string> map;
+		hashentry* parray = this;
+		while (parray++->szvalue != ~0ULL) map.insert({ parray->hash, std::string{parray->value, parray->szvalue} });
+		return map;
+	}
+
+#endif
+};
+#endif
+
+#ifdef __cplusplus
+#define STRING_TO_PTR_AND_SZ(str) str.c_str(), str.size()
 #endif
