@@ -8,18 +8,18 @@
 						(?C88)\s*+))(((\[(?&primexpr)\](?C&subscript)|[(](?C&startfunctioncall)(?&primexpr)?[)](?C&endfunctioncall))\s*+
 						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?&identifierminemember<>)
 						|(?<postfixarith>(?<postfixarithraw>[+][+]|--)\s*+)
-						(?C&unaryincdec<postfixarithraw, postfixarithraw>)))*+
+						(?C&unaryincdec)))*+
 						|(?&unary)))
 (?<>)
 (?<identifierminemember>\s*+(?!(?&keywordlist))(?<ident>(?&identifierrawfacet))
-	(?C&memberaccess<ident, arrowordotraw>)\s*+)
+	(?C&memberaccess)\s*+)
 
 (?<testentry>(?<innertest>(?&orlogiorsomething));)
 
 (?<testxpr>(?&inner)|(?&inparenths))
 
 	(?<assignorsomething>(?=(?&assignornothingfacet))(?<assignornothing>(?&unaryexpr)(?<assignop>(?<assignopraw>=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+))
-		(?&assignorsomething)(?!(?&orlogicplusrestfacet))(?C&binary<assignopraw>)|(?&ternaryorsomething))
+		(?&assignorsomething)(?!(?&orlogicplusrestfacet))(?C&binary)|(?&ternaryorsomething))
 
 	(?<ternaryorsomething>(?=(?&ternornothingfacet))(?<ternornothing>(?&orlogiorsomething)(?&ternaryrest))(?&ternaryorsomething)(?!(?&orlogicplusrestfacet))(?C34)
 		|(?=(?&orlogiorsomethingfacet))(?&orlogiorsomething))
@@ -31,7 +31,7 @@
 
 
 (?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?C&addcontinue);|break\s*+(?C&addbreak);|return\b(?&primexpr)?+(?C&endreturn);)\s*+)
-(?<identifierminegoto>\s*+(?!(?&keywordlist))(?<gtid>(?&identifierrawfacet))(?C&gotolabel<gtid>)\s*+)
+(?<identifierminegoto>\s*+(?!(?&keywordlist))(?<gtid>(?&identifierrawfacet))(?C&gotolabel)\s*+)
 
 (?<iterationstatement>\s*+(while\s*+[(](?C&startforloopcond)(?&primexpr)[)](?C&endforloopcond)(?C&addforloopiter)(?&statement)(?C&endforloop)|do\b(?C&startdowhileloop)(?&statement)while\s*+[(](?&primexpr)[)](?C&enddowhileloop)\s*+;
 	|for\s*+[(]((?&typenameinsidedecl)|(?&exprstatement))?+(?C&startforloopcond)(?&primexpr)?;(?C&endforloopcond)\s*+(?&primexpr)?+(?C&addforloopiter)[)](?&statement)(?C&endforloop))\s*+)
@@ -43,6 +43,6 @@
 (?<statementinner>(?&exprstatement)|(?&compoundstatement)|(?&selectionstatement)|(?&iterationstatement)|(?&jumpstatement))
 
 (?<label>(?&identifierminelabel)|\s*+(case\b(?C&beginconstantexpr)(?&primexpr):(?C&addCase)(?C&endconstantexpr)|default\s*+:(?C&addDefaultCase))\s*+)
-(?<identifierminelabel>\s*+(?!(?&keywordlist))(?<lbl>(?&identifierrawfacet))\s*+:(?C&splitbb<lbl>)\s*+)
+(?<identifierminelabel>\s*+(?!(?&keywordlist))(?<lbl>(?&identifierrawfacet))\s*+:(?C&splitbb)\s*+)
 
 (?<cprogram>((?&structorunion)\s*+;\s*+|(?&decloptorfndef))*)

@@ -3768,15 +3768,6 @@ virtual void switch_stmt_end_66() { endswitch(); }
 virtual void create_default_case_67() { addDefaultCase(); }
 #endif
 DLL_EXPORT void collect_float_literal(std::unordered_map<unsigned, std::string> &hashes) {
-	enum {
-		wholeopt = 1,
-		whole,
-		wholenodot,
-		fraction,
-		sign,
-		exp,
-		flt
-	};
 	std::string wholepart, fractionpart, exponent, exponent_sign;
 	std::string ntoclear;
 	if ((ntoclear = hashes["wholeopt"_h]).empty())
