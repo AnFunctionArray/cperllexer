@@ -7,11 +7,11 @@
 #define PCRE2_STATIC
 
 #if !defined(_WIN32) & !defined(_WIN64)
-#include <pcre2.h>
+//#include <pcre2.h>
 #else
 #include <pcre2/pcre2.h>
 #endif
-#include "src/main.h"
+#include "../src/main.h"
 
 MODULE = _6a4h8
 

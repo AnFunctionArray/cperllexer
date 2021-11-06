@@ -1,6 +1,7 @@
 //#include "llvmgen.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Value.h"
+#include <exception>
 #include <iterator>
 #include <array>
 #include <bitset>
@@ -55,7 +56,7 @@
 #define PCRE2_STATIC
 
 #if !defined(_WIN32) & !defined(_WIN64)
-#include <pcre2.h>
+//#include <pcre2.h>
 #else
 #include <pcre2/pcre2.h>
 #endif
@@ -3125,7 +3126,7 @@ DLL_EXPORT void endqualifs(std::unordered_map<unsigned, std::string>&& hashes) {
 
 	if (std::all_of(refbasic.begin(), refbasic.end(), [](const std::string& elem) {return elem.empty(); }))
 		if (lastvar.firstintroduced == 1) refbasic[1] = "int";
-		else throw std::exception{ "decl with no basic info" };
+		else throw std::runtime_error{ "decl with no basic info"};
 
 	if (ranges::contains(std::array{ "struct", "union", "enum" }, refbasic[0]) && refbasic[3].empty())
 		switch (stringhash(refbasic[0].c_str()))
@@ -3681,7 +3682,7 @@ DLL_EXPORT void num_lit(std::unordered_map<unsigned, std::string> &hashes) {
 	std::string groups[] = { "hex", "bin", "oct", "dec" };
 
 	//for (const char** pgroup = groups; pgroup != 1[&groups]; ++pgroup)
-	for (int i = 0; i < _countof(groups); ++i)
+	for (int i = 0; i < std::extent< decltype( groups ) >::value; ++i)
 	{
 		//ntoclear = getnameloc3(*pgroup, *ptable, a, 0, { .dontsearchforclosest = 0 });
 		//if (ntoclear != -1 && a->offset_vector[2 * ntoclear] != -1)

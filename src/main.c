@@ -3,7 +3,7 @@
 #define _LARGEFILE64_SOURCE
 
 #if !defined(_WIN32) & !defined(_WIN64)
-#include <pcre2.h>
+//#include <pcre2.h>
 #else
 #include <pcre2/pcre2.h>
 #endif
@@ -312,6 +312,23 @@ void docall(const char *name, size_t szname, void *phashmap) {
 	__except (EXCEPTION_EXECUTE_HANDLER) {
 
 	}
+}
+#else
+#include <dlfcn.h>
+void docall(const char *name, size_t szname, void *phashmap) {
+	char cProcName[USHRT_MAX];
+	sprintf(cProcName, "%.*s", szname, name);
+	//if (!hCurrModule) hCurrModule = GetModuleHandle(0);
+
+	void *dlhndl = dlopen(0, 0);
+
+	//FARPROC pfunc = GetProcAddress(hCurrModule, cProcName);
+
+	void *pfunc = dlsym(dlhndl, cProcName);
+
+	if (!pfunc) return;
+
+	((void (*)(void* phashmap))pfunc)(phashmap);
 }
 
 #endif
