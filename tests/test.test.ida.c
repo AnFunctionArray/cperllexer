@@ -1,9 +1,3 @@
-typedef int test;
+typedef unsigned int uintptr_t;
 
-test const test, *test3, test4[2];
-
-extern int printf(const char *, ...);
-
-main() {
-    return printf("%f\n", (double)9);
-}
+void __fastcall __security_check_cookie(  uintptr_t _StackCookie);

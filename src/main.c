@@ -240,7 +240,7 @@ struct retgetnamevalue getnamevalue(const char* nametoget) {
 #include <perl.h>	/* from the Perl distribution     */
 #include <XSUB.h>
 
-XS__startmatching(), XS__callout(), XS__startmodule(), boot_DynaLoader();
+XS__startmatching(), XS__callout(), XS__startmodule(), boot_DynaLoader(), endmodule();
 
 static void
 xs_init(pTHX)
@@ -249,6 +249,7 @@ xs_init(pTHX)
 	newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, __FILE__);
 	//newXS("startmatching", XS__startmatching, __FILE__);
 	newXS("callout", XS__callout, __FILE__);
+	newXS("endmodule", endmodule, __FILE__);
 	newXS("startmodule", XS__startmodule, __FILE__);
 }
 
@@ -304,7 +305,13 @@ void docall(const char *name, size_t szname, void *phashmap) {
 
 	if (!pfunc) return;
 
-	((void (*)(void* phashmap))pfunc)(phashmap);
+	__try {
+
+		((void (*)(void* phashmap))pfunc)(phashmap);
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER) {
+
+	}
 }
 
 #endif
