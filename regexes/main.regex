@@ -6,15 +6,15 @@
 
 (?<castexpr>(?&typenamerev)|(?<unaryexpr>((?&inner)|(?<inparenths>\s*+[(](?C87)(?&primexpr)[)]
 						(?C88)\s*+))(((\[(?&primexpr)\](?C&subscript)|[(](?C&startfunctioncall)(?&primexpr)?[)](?C&endfunctioncall))\s*+
-						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?&&identifierminemember)
+						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?&identifierminemember<>)
 						|(?<postfixarith>(?<postfixarithraw>[+][+]|--)\s*+)
 						(?C&unaryincdec)))*+
 						|(?&unary)))
-
+(?<>)
 (?<identifierminemember>\s*+(?!(?&keywordlist))(?<ident>(?&identifierrawfacet))
 	(?C&memberaccess)\s*+)
 
-(?<testentry>(?&typenameinsideparams)\s*+;\s*+)
+(?<testentry>(?<innertest>(?&orlogiorsomething));)
 
 (?<testxpr>(?&inner)|(?&inparenths))
 
@@ -34,9 +34,9 @@
 (?<identifierminegoto>\s*+(?!(?&keywordlist))(?<gtid>(?&identifierrawfacet))(?C&gotolabel)\s*+)
 
 (?<iterationstatement>\s*+(while\s*+[(](?C&startforloopcond)(?&primexpr)[)](?C&endforloopcond)(?C&addforloopiter)(?&statement)(?C&endforloop)|do\b(?C&startdowhileloop)(?&statement)while\s*+[(](?&primexpr)[)](?C&enddowhileloop)\s*+;
-	|for\s*+[(]((?&declnormal)|(?&exprstatement))?+(?C&startforloopcond)(?&primexpr)?;(?C&endforloopcond)\s*+(?&primexpr)?+(?C&addforloopiter)[)](?&statement)(?C&endforloop))\s*+)
+	|for\s*+[(]((?&typenameinsidedecl)|(?&exprstatement))?+(?C&startforloopcond)(?&primexpr)?;(?C&endforloopcond)\s*+(?&primexpr)?+(?C&addforloopiter)[)](?&statement)(?C&endforloop))\s*+)
 (?<exprstatement>(?&primexpr)?;(?C&endexpression)\s*+)
-(?<compoundstatement>\s*+[{](?C&beginscope)((?&structoruniondecl)|(?&declnormal)|(?&statement))*+[}](?C&endscope)\s*+)
+(?<compoundstatement>\s*+[{](?C&beginscope)((?&structorunion)|(?&typenameinsidedecl)|(?&statement))*+[}](?C&endscope)\s*+)
 (?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?C&startifstatement)(?&statement)(else\b(?C&continueifstatement)(?&statement))?+(?C&endifstatement)|switch\s*+[(](?&primexpr)[)](?C&startswitch)(?&statement)(?C&endswitch))\s*+)
 
 (?<statement>(?=(?&labelfacet)++(?&statementinnerfacet))(?&label)++(?&statementinner)|(?&statementinner))
@@ -45,4 +45,4 @@
 (?<label>(?&identifierminelabel)|\s*+(case\b(?C&beginconstantexpr)(?&primexpr):(?C&addCase)(?C&endconstantexpr)|default\s*+:(?C&addDefaultCase))\s*+)
 (?<identifierminelabel>\s*+(?!(?&keywordlist))(?<lbl>(?&identifierrawfacet))\s*+:(?C&splitbb)\s*+)
 
-(?<cprogram>((?&structoruniondecl)|(?&decloptorfndef))*+)
+(?<cprogram>((?&structorunion)\s*+;\s*+|(?&decloptorfndef))*)

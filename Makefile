@@ -1,8 +1,8 @@
 CC=clang
 CXX=clang++
-CFLAGS=-I$(HOME)/localperl/lib/5.35.6/darwin-thread-multi-2level/CORE -g -O0 -I/usr/local/include/llvm -I/usr/local/include/llvm-c -Wno-error=implicit-function-declaration
+CFLAGS=-I$(HOME)/localperl/lib/5.35.6/darwin-thread-multi-2level/CORE -g -O0 -I/usr/local/include/llvm -I/usr/local/include/llvm-c -I/Users/anikolov/include -Wno-error=implicit-function-declaration
 CXXFLAGS=$(CFLAGS) -std=c++2b -I/usr/local/include/llvm -I$(HOME)/vcpkg/packages/range-v3_arm64-osx/include
-LDFLAGS=$(shell llvm-config --libs --ldflags) -L$(HOME)/localperl/lib/5.35.6/darwin-thread-multi-2level/CORE -lperl -lm -lpthread -lz -lcurses
+LDFLAGS=-L/Users/anikolov/lib $(shell llvm-config --libs --ldflags) -L$(HOME)/localperl/lib/5.35.6/darwin-thread-multi-2level/CORE -lperl -lm -lpthread -lz -lcurses
 DEPS = src/main.h
 
 %.o: ./llvm/%.cpp $(DEPS) 

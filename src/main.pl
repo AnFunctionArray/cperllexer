@@ -1,21 +1,14 @@
 #!/usr/bin/perl
 
-my $inpar = qr{(?<inpar>\((?<inner>(([^][()\\]|\\.)++|(?&inpar)
-                        |(?<insquare>\[\^?+(.|\\.)(([^]\\]|\\.)++
-                        |(?&insquare))*\]))*)\))}xxs;
-
-my $matchinperl = 1;
-
 use re 'eval';
 
 use experimental 'switch';
 
-
-use Data::Dumper;
-
 use File::Basename;
 
-use List::Util qw(first);
+my $inpar = qr{(?<inpar>\((?<inner>(([^][()\\]|\\.)++|(?&inpar)
+                        |(?<insquare>\[\^?+(.|\\.)(([^]\\]|\\.)++
+                        |(?&insquare))*\]))*)\))}xxs;
 
 $filename = "regexes/main.regex";
 open my $fh, '<', $filename or die "error opening $filename: $!";
@@ -43,11 +36,13 @@ close $fh;
 
 #select fhoutput;
 
-my $mainregexfinal = $matchinperl ? "(?(DEFINE)" : "((*F)";
+my $mainregexfinal = "((*F)";
 
-#@typedefidentifiersvector = ("(*F)");
+@typedefidentifiersvector = ("(*F)");
 
 my $entryregex;
+
+my $matchinperl = 1;
 
 chdir "regexes";
 
@@ -62,183 +57,7 @@ entryregexmain($-{entrygroup}[0], $-{prefix}[0]);
 
 parseregexfile((substr $mainregexfilecontent, length $&), 1);
 
-$mainregexfinal = $mainregexfinal . ")" . ($matchinperl ? "" : "|")  . $entryregex;
-
-%regexsubshash;
-
-$mainregexfinal =~s/\((\?\??+)C&(\S+?)\s*(<(?<args>[^()<>]*?)>)?\)/
-            my $prefix = "(" . $1 . "{debugcallout(" . "\"$2\"";
-            $prefix . ($+{args} ? "," . ($+{args} =~ s {\b\S+\b}{\$\+\{$&\}}gr) : "") . ")})"
-            /ges if($matchinperl);
-
-    #$mainregexfinal =~s/\(\?\?C&(\S++)\)/(?C&$1)/g if(not $matchinperl);
-$mainregexfinal =~s/\(\?C(\d++)\)//g;
-
-$mainregexfinal =~ s{[(]\?&(?<doubleref>&)?+(\w+?)(?<isfacet>facet)?+[)]}
-                    {(??{callsub("$2", "$+{isfacet}", $-[0], "$+{doubleref}")})}g;
-
-$mainregexfinal =~ s{(?<=[(]\?[(])<(\w+?)>}{?{iscaptexist($1)}}g;
-
-$mainregexfinal =~ s{\\g\{(\w+?)\}}{(??{getcapt($1)})}g;
-
-sub getcapt {
-    return %lastmatches{$_[0]}
-}
-
-sub iscaptexist {
-    return %lastmatches{$_[0]}
-}
-
-sub findsubs {
-
-    while($_[0] =~ m{[(]\?<(\w+?)(?<isfacet>facet)?+>(?<inside>$inpar|(?&inner))[)]}gsxx) {
-        my $subname = $1;
-        my $subbody = $&;
-        my $isfacet = $+{isfacet};
-        my $lastpos = $-[0];
-        my $inside = $+{inside};
-
-        findsubs($inside);
-
-        print "\n\n\n".  $subbody . "\n\n\n";
-
-        #$regexsubshash{$subname} = [] unless defined $regexsubshash{$subname};
-
-        #use re 'debug';
-
-        #use re qw(Debug MATCH);
-
-        while($subbody =~ s{[(]\?<(\w+?)(?<isfacet>facet)?+>(?<inside>$inpar|(?&inner))[)]}
-        {((?{registernc("$1$+{isfacet}")})($+{inside})(?{popnc()})|(?{popnc()})(*F))}gsxx){}
-
-
-        my $regextmpimpl = qr{($subbody(?{callsubcleanup()})|
-                    (?{callsubcleanup()})(*F))}sxx;
-
-        push @{$regexsubshash{$subname}}, ({impl => $regextmpimpl,
-                                    initialpos => $lastpos,
-                                    isfacet => $isfacet}) unless first { $lastpos eq $_{initialpos} } @{$regexsubshash{$subname}};
-    }
-}
-
-findsubs($mainregexfinal);
-
-@_ = sort {$a{initialpos} <=> $b{initialpos}} @_ for values %regexsubshash;
-
-@facetstack = ();
-#my @matchesstack = ({});
-%lastmatches;
-@infostack = ();
-
-@namedcaptures;
-
-@substack;
-
-sub registernc {
-    push @namedcaptures, $_[0];
-}
-
-sub popnc {
-    my $capt;
-    $capt = ${$#-} if($#-);
-    my $nmcapt = pop @namedcaptures;
-    print "pop: " . $nmcapt . " - $capt\n";
-    $lastmatches{$nmcapt} = $capt;
-}
-
-sub callsub {
-    #print Dumper, %+;
-    my $subname = $_[0];
-    my $isfacet = $_[1];
-    my $initialpos = $_[2];
-    my $doubleref = $_[3];
-    #my %lastmatch = %+;
-    my @currsubs = @{$regexsubshash{$subname}};
-
-    my %lastsub;
-
-    #print Dumper \%+;
-
-    for my $el (reverse(@currsubs)) {
-        $lastsub = { %$el } if(($el{isfacet} eq $isfacet) or $isfacet);
-        last if($el{initialpos} < $initialpos)
-    }
-
-    #print Dumper \$lastsub;
-
-    push @substack, { %lastmatches };
-
-    push @facetstack, {} if($isfacet);
-    print "gosub \n" . scalar @facetstack . "\n";
-    #print Dumper \%$lastmatch;
-    #push @matchesstack, { %$lastmatch };
-    #@lastmatches{keys %lastmatch} = values %lastmatch;
-    push @infostack, {isfacet => $isfacet,
-                    doubleref => $doubleref};
-
-    return $lastsub->{impl};
-}
-
-sub callsubcleanup {
-    #print Dumper, %+;
-    #my %lastmatch = %+;
-    my $lastinfo = pop @infostack;
-    #my $subname = $_[0];
-    my $isfacet = $lastinfo->{isfacet};#$_[1];
-    #my $initialpos = $_[2];
-    my $doubleref = $lastinfo->{doubleref};
-    
-    pop @facetstack if($isfacet);
-
-    #my $lastmatches = pop @matchesstack;
-    #my $lastlastmatches = pop @matchesstack;
-
-    #print Dumper, \$lastmatch;
-
-    if($doubleref) {
-        #@lastmatches{keys %lastmatch} = values %lastmatch;
-
-        #print Dumper \$lastlastmatches;
-
-        #push @matchesstack, %$merged;
-    } else {
-        %lastmatches = %{pop @substack};
-        #push @matchesstack, %$lastmatches;
-    }
-    #return $result;
-}
-
-=for comment
-
-$mainregexfinal =~s{[(]\?&(\w+?)facet[)]}{
-
-    The strategy is - last on the left side determines
-    or any of the right side - with priority taking a facet declaration
-
-        my $whole = $&;
-        my $lastmatch = @-;
-        my $subname = $1;
-        my $foundlastfacet;
-        my $foundany;
-        my $foundanyfacet;
-        my $isafter;
-        while($_ =~ m{[(]\?<${subname}(?<isfacet>facet)?+>(?<inside>(?<inpar>(?<!\\)\((?<inner>(([^][()]|(?<=\\).)++|(?&inpar)
-                        |(?<insquare>(?<!\\)\[\^?+(.|\\.)(([^]]|(?<=\\).)++
-                        |(?&insquare))*(?<!\\)\]))*)(?<!\\)\))|(?&inner))[)]}g) {
-            last if(@- > $lastmatch and $foundany and not $isafter);
-            $foundlastfacet = $+{isfacet};
-            $foundany //= $&;
-            $foundanyfacet //= $+{isfacet};
-            $isafter = @- > $lastmatch;
-        }
-        if(not $isafter and not $foundlastfacet or not $foundanyfacet) {
-            "((?<facetarg>)(?&$1)(?<facetarg>(*F))|)"
-        } else {
-            $whole
-        }
-    }ge;
-
-=cut
+$mainregexfinal = $mainregexfinal . ")|" . $entryregex;
 
 my $typedefidentifiers = "";
 
@@ -250,61 +69,19 @@ startmatching($subject, $mainregexfinal, basename($ARGV[0], @suffixlist)) if(not
 
 exit if(not $matchinperl);
 
-#system cls;
+print $mainregexfinal;
 
-#print $mainregexfinal;
+startmodule(basename($ARGV[0], @suffixlist)) if(defined &startmodule);
 
-#exit;
-
-#use Chj::ruse;
-
-push @INC, ".";
-
-eval {
-    delete @{\%INC}{grep m{^src/}, keys %INC };
-    #print Dumper \%INC;
-    require src::typedefs;
+{
     #$oldfh = select(STDERR);
 
-    $filename = $ARGV[0];
+    #use re 'debug';
 
-    open my $fh, '<', $filename or die "error opening $filename: $!";
-
-    my $subject = do { local $/; <$fh> };
-
-    close $fh;
-
-    startmodule(basename($ARGV[0], @suffixlist)) if(defined &startmodule);
-
-    if($^X =~ m{perl.exe$}) {
-        use re 'debug';
-
-        $subject =~ callsub("cprogram", "", 0)
-    } else {
-        print "\n\n\n========================================================";
-        print "final regex \n";
-        print "========================================================\n\n\n";
-        #print $mainregexfinal . "\n";
-        print Dumper \%regexsubshash; 
-
-        $subject =~ callsub("cprogram", "", 0)
-    }
-
-    #struc_or_union_body();
-
-    endmodule() if(defined &endmodule);
-    
-    {
-        1
-    }
-} or do {
-    print $@;
-}; #while({#system CLS,
- #system PAUSE, 1});
+    $subject =~m{$mainregexfinal}sxx;
+}
 
 #print $&;
-
-print Dumper(@compoundscope);
 
 exit;
 
@@ -321,37 +98,27 @@ sub printifdefined{
 }
 
 sub debugcallout {
-    #print Dumper, %+;
     #print Dumper(\%+);
-    print "callout \n" . scalar @facetstack . "\n";
-    return if(scalar @facetstack);
-    
-    my %captures = %lastmatches;
-
-    #@captures{keys %+} = values %+;
-
-    #@captures{ keys %$_ } = values %$_ for (@matchesstack, ({ %+ }));
-    
+    my $captures = { %+ };
     #require re;
     #re->import('debug') if($_[1] eq "Ptr64ToPtr");
     #select($oldfh) if($_[1] eq "Ptr64ToPtr");
     #my @arr = @_;
-    my $subslice = substr $subject, pos() - 10, 20;
+    my $subslice = substr $subject, pos(), 10;
 
     $subslice =~ s{\R}{ }g;
+
+    use Data::Dumper;
     
-    if($_[0] ne "identifier_typedef") {
-        print  "capture: " . (substr $subslice, 10) . "\n";
-        print  "capture: " . (substr $subslice, 0, 10) . "\n";
-        print $_[0] . "\n";
-        print Dumper(\%captures);
-    }
+    print  "capture: " . $subslice . "\n";
+    print $_[0] . "\n";
+    print Dumper(\$captures);
     #foreach my $i (@arr) {
     #    print $i . "\n";
     #}
-    my $res = $_[0]->(%captures) if(defined &{ $_[0] });
-    callout($_[0], %captures) if(defined &callout);
-    #return $res;
+    my $res = $_[0]->($captures) if(defined &{ $_[0] });
+    callout($_[0], $captures) if(defined &callout);
+    return $res;
 }
 
 =for comment
@@ -425,6 +192,28 @@ sub parsing {
 
 =cut
 
+sub identifier_typedef {
+    my $ident = "(*F)";
+    foreach my $typedefidentifier (@typedefidentifiersvector) {
+        $ident = $ident . "|" . $typedefidentifier
+    }
+    return $ident;
+}
+
+sub identifier_decl {
+    my $lastelem = pop @typedefidentifiersvector;
+    $lastelem = $lastelem . "|" . $_[0]{'identfacet'} unless (not $_[0]{'typedefkeyfacet'});
+    push @typedefidentifiersvector, $lastelem;
+}
+
+sub beginscope {
+    push @typedefidentifiersvector, "(*F)";
+}
+
+sub endscope {
+    pop @typedefidentifiersvector;
+}
+
 sub entryregexmain {
     $entryregex = $_[1] . "(?&" . $_[0] . ")";
 }
@@ -455,7 +244,7 @@ sub substitutetemplateinstances {
 
     #$isfacet = "(*F)" if(not $isfacet);
 
-    return $backup unless($regexcontent =~ m {\(\?<(?<params>[^()<>]*?)>\)\s*+(?=\(\?<$templatetoreplace(?<isfacet>$isfacet)?+\b)$inpar}gxxs);
+    return $backup unless($regexcontent =~ m {\(\?<(?<params>.*?)>\)\s*+(?=\(\?<$templatetoreplace(?<isfacet>$isfacet)?+\b)$inpar}gxx);
 
     #$isfacet = not $+{isfacet};
 
@@ -531,15 +320,13 @@ sub substitutetemplateinstances {
     } elsif(not $doubleref) {
         $body =~ s{\(\?<\Q$template\E\b.*?>}{(};
     }
-
-    while(substitutetemplateinstancesdoregex($body, $regexcontent)) {
-        print $body;
+    if($isfacet) {
+        dofacetreplacements($body);
+    } else {
+        my $bodyoriginal = $body;
+        dofacetreplacements($body);
+        $body = "(?(DEFINE)" . $body . ")" . $bodyoriginal;
     }
-
-    dofacetreplacements($body) if($isfacet); #{
-    #    $body =~ s{[(]\?<\S+?>}{$&(?(<facet>)(?<lastfacet>)|((?<lastfacet>(*F))|)(?<facet>))};
-    #    $body =~ s{[)]\s*+$}{(?(<lastfacet>)|((?<facet>(*F))|))$&};
-    #}
 
     return $body;
 
@@ -610,7 +397,7 @@ sub parseregexfile {
 
     foreach my $template (@arrayoftemplates) {
         #print "\n\n$template\n\n";
-        $regexfilecontent =~s {\(\?<(?<params>[^()<>]*?)>\)\s*+(?=\(\?<\Q$template\E\b)$inpar}{}gxxs;
+        $regexfilecontent =~s {\(\?<(?<params>.*?)>\)\s*+(?=\(\?<\Q$template\E\b)$inpar}{}gxx ;
     }
 
     #print $regexfilecontent;
@@ -619,11 +406,9 @@ sub parseregexfile {
 
     my $regexfile = $regexfilecontent; 
     
-    #$regexfile =~s/(?<!<)#restrictoutsidefacet\b//g;
+    $regexfile =~s/(?<!<)#restrictoutsidefacet\b//g;
 
-    #$regexfile =~s/(\(\?<\w+)#restrictinsidefacet>/$1>(*F)/g;
-
-    #$regexfile =~s/\(\?<#restrictinsidefacet>/((*F)/g;
+    $regexfile =~s/\(\?<#restrictoutsidefacet>/(/g;
 
     #$regexfile =~s/[(]\?&(?>\w+?)\#nofacet[)]/(?&$1)/g;
 
@@ -646,32 +431,17 @@ sub parseregexfile {
     sub replacenofacetgroups {
         my $name = $_[0];
         $_[1] =~s/[(]\?&\Q$name\E[)]/(?&$name#nofacet)/g;
-        $_[1] =~s/\(\?<\Q$name\E\#nofacet>((?<inpar>(?<!\\)\((?<content>(([^][()]|(?<=\\).)++|(?&inpar)
-                        |(?<insquare>(?<!\\)\[\^?+(.|\\.)(([^]]|(?<=\\).)++
-                        |(?&insquare))*(?<!\\)\]))*)(?<!\\)\))|(?&content))\)/(?&$name#nofacet)/gsx;
+        $_[1] =~s/\(\?<\Q$name\E\#nofacet>($inpar|(?&inner))\)/(?&$name#nofacet)/gsx;
     }
 
     replacenofacetgroups($1, $regexfilecontent) while($regexfilecontentcopy =~/\(\?<(\w+)#nofacet>/g); # remove references to nofacet groups
-
-    dofacetreplacements($regexfilecontent);
-
 =cut
     sub dofacetreplacements {
-        print "\n\n\n========================================================";
-        print "facet replacement before \n";
-        print "========================================================\n\n\n"; 
-
-        print $_[0];
-
-        #$_[0] =~s/(?<!<)#restrictinsidefacet\b//g;
-
-        #$_[0] =~s/\(\?<#restrictinsidefacet>/(/g;
-        
         $_[0] =~s/\(\?C&(\S+?)\s*(<(?<args>[^()<>]*?)>)?\)//gs;
 
         #$regexfilecontent =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
-        $_[0] =~s/[(]\?&&?+(\w+?)(facet)?+[)]/(?&$1facet)/g;
+        $_[0] =~s/[(]\?&(\w+?)(facet)?+[)]/(?&$1facet)/g;
 
         #$regexfilecontent =~s/([(]\?)?+[(]<(?>\w+?)(facet)?+>[)]/$1(<$2facet>)/g;
 
@@ -680,36 +450,23 @@ sub parseregexfile {
         #$regexfilecontent =~s/[(]\?[(]<(\w+?)#nofacet>[)]/(?(<$1>)/g;
 
         $_[0] =~s{([(]\?[(]?+)<(\w+?)(facet)?+>}{$1<$2facet>}g;
+        
+        #$regexfilecontent =~s/(\(\?<\w+)>/$1facet>/g;
 
-        $_[0] =~s/(\(\?<\w+)#restrictoutsidefacet>/$1facet>(*F)/g;
+        $_[0] =~s/(\(\?<\w+)#restrictoutsidefacet>/${1}>facet(*F)/g;
 
         $_[0] =~s/\(\?<#restrictoutsidefacet>/((*F)/g;
-
-        $_[0] =~s/(\(\?<\w+)facet?+>/$1facet>/g;
-
-        print "\n\n\n========================================================";
-        print "facet replacement after \n";
-        print "========================================================\n\n\n"; 
-
-        print $_[0];
     }
 
-     #((?<facetarg>)(?&$1)(?<facetarg>(*F))|)
+    dofacetreplacements($regexfilecontent);
 
-    $regexfile =~s{(\(\?<\w*?)\#restrictoutsidefacet>(?<inside>$inpar|(?&inner))[)]}{$1>(?(?{scalar \@facetstack})(*F)|($+{inside})))}gsxx;
+    $mainregexfinal = $mainregexfinal . $regexfile . $regexfilecontent;
 
-    $regexfile =~s{[(]\?\<\>}{(}gsxx;
+    $mainregexfinal =~s/\((\?\??+)C&(\S+?)\s*(<(?<args>[^()<>]*?)>)?\)/
+            my $prefix = "(" . $1 . "{debugcallout(" . "\"$2\"";
+            $prefix . ($+{args} ? "," . ($+{args} =~ s {\b\S+\b}{\$\+\{$&\}}gr) : "") . ")})"
+            /ges if($matchinperl);
 
-    #$regexfile =~s/[(]\?&(\w+?)[)]/((?<facetarg>(*F))|(?&$1))/g;
-
-    #$regexfile =~s/[(]\?<(\w+?)>/$&(?<facet>\g{facetarg})|/g;
-
-    #$regexfile =~ s{(?=\(\?<\w+?facet\b)(?<inpar>(?<!\\)\((
-                    #([^][()]|(?<=\\).)++|(?&inpar)|(?<insquare>(?<!\\)\[\^?+(.|\\.)(
-                    #([^]]|(?<=\\).)++|(?&insquare))*(?<!\\)\]))*(?<!\\)\))}{dofacetreplacements($&)}gxxs;
-
-    #$regexfile =~s/[(]\?<(\w+?)facet>/$&(?<facet>)/g;
-
-
-    $mainregexfinal = $mainregexfinal . $regexfile; #$regexfile . $regexfilecontent;
+    #$mainregexfinal =~s/\(\?\?C&(\S++)\)/(?C&$1)/g if(not $matchinperl);
+    $mainregexfinal =~s/\(\?C(\d++)\)//g;
 }

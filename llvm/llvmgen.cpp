@@ -47,6 +47,7 @@
 #include <vector>
 #include <variant>
 #include <unordered_map>
+#include <oniguruma.h>
 
 #ifdef _WIN32
 #include <windows.h>

@@ -1,11 +1,11 @@
 [
     { "directory": "/Users/anikolov/cparser2/src",
-      "command": "/usr/bin/clang -I/Users/anikolov/localperl/lib/5.35.6/darwin-thread-multi-2level/CORE -g -O0 -I/usr/local/include/llvm -I/usr/local/include/llvm-c -Wno-error=implicit-function-declaration main.c",
+      "command": "/usr/bin/clang -I/Users/anikolov/include -I/Users/anikolov/localperl/lib/5.35.6/darwin-thread-multi-2level/CORE -g -O0 -I/usr/local/include/llvm -I/usr/local/include/llvm-c -Wno-error=implicit-function-declaration main.c",
       "file": "main.c" 
     },
     { 
         "directory": "/Users/anikolov/cparser2/llvm",
-        "command": "/usr/bin/clang++ -I/Users/anikolov/localperl/lib/5.35.6/darwin-thread-multi-2level/CORE -g -O0 -I/usr/local/include/llvm -I/usr/local/include/llvm-c -Wno-error=implicit-function-declaration -std=c++2b -I/usr/local/include/llvm -I/Users/anikolov/vcpkg/packages/range-v3_arm64-osx/include llvmgen.cpp",
+        "command": "/usr/bin/clang++ -I/Users/anikolov/include -I/Users/anikolov/localperl/lib/5.35.6/darwin-thread-multi-2level/CORE -g -O0 -I/usr/local/include/llvm -I/usr/local/include/llvm-c -Wno-error=implicit-function-declaration -std=c++2b -I/usr/local/include/llvm -I/Users/anikolov/vcpkg/packages/range-v3_arm64-osx/include llvmgen.cpp",
         "file": "llvmgen.cpp" 
     }
 ]
