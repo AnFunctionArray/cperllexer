@@ -6,6 +6,8 @@ use experimental 'switch';
 
 use File::Basename;
 
+$oldfh = select(STDERR);
+
 my $inpar = qr{(?<inpar>\((?<inner>(([^][()\\]|\\.)++|(?&inpar)
                         |(?<insquare>\[\^?+(.|\\.)(([^]\\]|\\.)++
                         |(?&insquare))*\]))*)\))}xxs;
@@ -74,11 +76,9 @@ print $mainregexfinal;
 startmodule(basename($ARGV[0], @suffixlist)) if(defined &startmodule);
 
 {
-    #$oldfh = select(STDERR);
-
     #use re 'debug';
 
-    $subject =~m{$mainregexfinal}sxx;
+    $subject =~m{$mainregexfinal$}sxx;
 }
 
 #print $&;
@@ -108,15 +108,22 @@ sub debugcallout {
 
     $subslice =~ s{\R}{ }g;
 
-    use Data::Dumper;
+    if ($_[0] ne "identifier_typedef") {
+        use Data::Dumper;
     
-    print  "capture: " . $subslice . "\n";
-    print $_[0] . "\n";
-    print Dumper(\$captures);
+        print  "capture: " . $subslice . "\n";
+        print $_[0] . "\n";
+        print Dumper(\$captures)
+    }
+    
     #foreach my $i (@arr) {
     #    print $i . "\n";
     #}
-    my $res = $_[0]->($captures) if(defined &{ $_[0] });
+    my $res;
+    if(defined &{ $_[0] }) {
+        $res = $_[0]->($captures) 
+    }
+
     callout($_[0], $captures) if(defined &callout);
     return $res;
 }
@@ -323,9 +330,9 @@ sub substitutetemplateinstances {
     if($isfacet) {
         dofacetreplacements($body);
     } else {
-        my $bodyoriginal = $body;
-        dofacetreplacements($body);
-        $body = "(?(DEFINE)" . $body . ")" . $bodyoriginal;
+        #my $bodyoriginal = $body;
+        #dofacetreplacements($body);
+        #$body = "(?(DEFINE)" . $body . ")" . $bodyoriginal;
     }
 
     return $body;
@@ -458,9 +465,16 @@ sub parseregexfile {
         $_[0] =~s/\(\?<#restrictoutsidefacet>/((*F)/g;
     }
 
-    dofacetreplacements($regexfilecontent);
+    #dofacetreplacements($regexfilecontent);
 
-    $mainregexfinal = $mainregexfinal . $regexfile . $regexfilecontent;
+    $regexfile =~s{(?(DEFINE)$inpar)[(]\?<\S+?>(?&inner)++[)]}
+    {
+        my $bodyorig = $&, $bodyfacet = $&;
+        dofacetreplacements($bodyfacet);
+        "(?(DEFINE)" . $bodyfacet . ")" . $bodyorig
+        }sxxge;
+
+    $mainregexfinal = $mainregexfinal . $regexfile;
 
     $mainregexfinal =~s/\((\?\??+)C&(\S+?)\s*(<(?<args>[^()<>]*?)>)?\)/
             my $prefix = "(" . $1 . "{debugcallout(" . "\"$2\"";
