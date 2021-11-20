@@ -14,7 +14,7 @@
 #include <stdarg.h>
 
 #include "main.h"
-#include <oniguruma.h>
+//#include <oniguruma.h>
 
 #if 0
 
@@ -248,7 +248,7 @@ xs_init(pTHX)
 {
 	/* DynaLoader is a special case */
 	newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, __FILE__);
-	newXS("startmatching", XS__startmatching, __FILE__);
+	//newXS("startmatching", XS__startmatching, __FILE__);
 	newXS("callout", XS__callout, __FILE__);
 	newXS("endmodule", endmodule, __FILE__);
 	newXS("startmodule", XS__startmodule, __FILE__);
@@ -259,7 +259,7 @@ static PerlInterpreter* my_perl; /***    The Perl interpreter    ***/
 #include <userenv.h>
 #include <wtsapi32.h>
 #endif
-
+#if 0
 int callout(OnigCalloutArgs* args, void* user_data) {
 	const char *pfuncname = onig_get_contents_by_callout_args(args);
 	return f();
@@ -276,10 +276,10 @@ secondmain(char* subject, size_t szsubject, char* pattern, size_t szpattern, cha
 
 	onig_search(preg, subject, subject + szsubject, subject, subject + szsubject, 0, 0);
 }
-
+#endif
 int main(int argc, const char** argv, char** env)
 {
-	onig_initialize((OnigEncoding[]){&OnigEncodingUTF8}, 1);
+	//onig_initialize((OnigEncoding[]){&OnigEncodingUTF8}, 1);
 #if 0
 	//argv[0] = "D:\\perl5\\perl.exe";
 	//env = (char* []){ "PATH=D:\\perl5", 0 };
@@ -293,7 +293,7 @@ int main(int argc, const char** argv, char** env)
 	for (const wchar_t* curr = lpenv; *curr; curr += wcslen(curr) + 1)
 		wcstombs(tmp = malloc(0xFFF), curr, 0xFFF), *pcurr++ = tmp;
 #endif
-	onig_initialize();
+	//onig_initialize();
 	PERL_SYS_INIT3(&argc, &argv, &env);
 	my_perl = perl_alloc();
 	perl_construct(my_perl);

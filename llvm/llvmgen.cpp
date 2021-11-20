@@ -47,7 +47,7 @@
 #include <vector>
 #include <variant>
 #include <unordered_map>
-#include <oniguruma.h>
+//#include <oniguruma.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -3808,6 +3808,8 @@ DLL_EXPORT void identifier_decl(std::unordered_map<unsigned, std::string> && has
 
 	type basic{ type::BASIC };
 
+	basic.spec.basicdeclspec.basic[3] = hashes["typedefnmmatchedfacet"_h];;
+
 	//basic.spec.basicdeclspec.basic[0] = hashes["structorunionlastfacet"_h];
 
 	//basic.spec.basicdeclspec.basic[3] = hashes["identlasttagfacet"_h];
@@ -3892,7 +3894,7 @@ DLL_EXPORT void enddeclaration(std::unordered_map<unsigned, std::string>&hashes)
 
 	lastvar.type.clear();
 
-	expandtype(lasttype, lastvar.type);
+	//expandtype(lasttype, lastvar.type);
 
 	lastvar.firstintroduced = scopevar.size();
 
