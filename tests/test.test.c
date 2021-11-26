@@ -1,5 +1,6 @@
-
-
-int f(int([2])) {
-	i = o = a  ? + (++*(int (*[4])())b++, f()) : 1 || c && a * 8;
-}
+struct a {
+	int a, b;
+	struct b {
+		int d;
+	} e;
+};

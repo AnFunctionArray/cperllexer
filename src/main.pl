@@ -59,13 +59,15 @@ entryregexmain($-{entrygroup}[0], $-{prefix}[0]);
 
 parseregexfile((substr $mainregexfilecontent, length $&), 1);
 
-$mainregexfinal = $mainregexfinal . ")|" . $entryregex;
+my $mainregexdefs = $mainregexfinal . ")";
 
 my $typedefidentifiers = "";
 
-$mainregexfinal =~s/\s|\n//g if(not $matchinperl);
+$mainregexdefs =~s/\s|\n//g if(not $matchinperl);
 
-#print $mainregexfinal;
+$mainregexfinal = $mainregexdefs . "|" . $entryregex;
+
+print $mainregexfinal;
 
 startmatching($subject, $mainregexfinal, basename($ARGV[0], @suffixlist)) if(not $matchinperl);
 
@@ -76,7 +78,7 @@ print $mainregexfinal;
 startmodule(basename($ARGV[0], @suffixlist)) if(defined &startmodule);
 
 {
-    #use re 'debug';
+    #use re qw(Debug EXECUTE); 
 
     $subject =~m{$mainregexfinal$}sxx;
 }
@@ -251,7 +253,7 @@ sub substitutetemplateinstances {
 
     #$isfacet = "(*F)" if(not $isfacet);
 
-    return $backup unless($regexcontent =~ m {\(\?<(?<params>.*?)>\)\s*+(?=\(\?<$templatetoreplace(?<isfacet>$isfacet)?+\b)$inpar}gxx);
+    return $backup unless($regexcontent =~ m {\(\?<(?<params>[^<>()]*?)>\)\s*+(?=\(\?<$templatetoreplace(?<isfacet>$isfacet)?+\b)$inpar}gxxs);
 
     #$isfacet = not $+{isfacet};
 
@@ -330,9 +332,9 @@ sub substitutetemplateinstances {
     if($isfacet) {
         dofacetreplacements($body);
     } else {
-        #my $bodyoriginal = $body;
-        #dofacetreplacements($body);
-        #$body = "(?(DEFINE)" . $body . ")" . $bodyoriginal;
+        my $bodyoriginal = $body;
+        dofacetreplacements($body);
+        $body = "(?(DEFINE)" . $body . ")" . $bodyoriginal;
     }
 
     return $body;
@@ -412,6 +414,13 @@ sub parseregexfile {
     #exit;
 
     my $regexfile = $regexfilecontent; 
+
+    $regexfile =~s{(?(DEFINE)$inpar)[(]\?<\S+?>(?&inner)++[)]}
+    {
+        my $bodyorig = $&, $bodyfacet = $&;
+        dofacetreplacements($bodyfacet);
+        "(?(DEFINE)" . $bodyfacet . ")" . $bodyorig
+        }sxxge;
     
     $regexfile =~s/(?<!<)#restrictoutsidefacet\b//g;
 
@@ -448,7 +457,7 @@ sub parseregexfile {
 
         #$regexfilecontent =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
-        $_[0] =~s/[(]\?&(\w+?)(facet)?+[)]/(?&$1facet)/g;
+        $_[0] =~s/[(]\?&(&?+\w+?)(facet)?+\b/(?&$1facet/g;
 
         #$regexfilecontent =~s/([(]\?)?+[(]<(?>\w+?)(facet)?+>[)]/$1(<$2facet>)/g;
 
@@ -460,19 +469,12 @@ sub parseregexfile {
         
         #$regexfilecontent =~s/(\(\?<\w+)>/$1facet>/g;
 
-        $_[0] =~s/(\(\?<\w+)#restrictoutsidefacet>/${1}>facet(*F)/g;
+        $_[0] =~s/(\(\?<\w+)#restrictoutsidefacet>/$1facet>(*F)/g;
 
         $_[0] =~s/\(\?<#restrictoutsidefacet>/((*F)/g;
     }
 
     #dofacetreplacements($regexfilecontent);
-
-    $regexfile =~s{(?(DEFINE)$inpar)[(]\?<\S+?>(?&inner)++[)]}
-    {
-        my $bodyorig = $&, $bodyfacet = $&;
-        dofacetreplacements($bodyfacet);
-        "(?(DEFINE)" . $bodyfacet . ")" . $bodyorig
-        }sxxge;
 
     $mainregexfinal = $mainregexfinal . $regexfile;
 

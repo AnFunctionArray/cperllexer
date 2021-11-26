@@ -1,11 +1,11 @@
-typedef unsigned int uintptr_t;
 
-uintptr_t printf(const char *pformat, ...);
 
-uintptr_t f() {
-        return 9;
+struct test { int a : 5, b, c;
+                double d : 4;
+                struct test3 {
+                        float e;
+                } test3;
 }
-
-uintptr_t main() {
+ main() {
         return printf("%d\n", f());
 }

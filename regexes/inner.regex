@@ -7,7 +7,7 @@
 						|(?:(0)(?<oct>[0-7]++)|(?<dec>\d++))))(?<lng>[Uu](ll|LL|[lL])?+|(ll|LL|[lL])[Uu]?+)?+)
 						(?C&num_lit))
 						|(?&floating)
-						|(?<identifier>\s*+(?!(?&keywordlist))(?<ident>(?&identifierrawfacet))(?C&obtainvalbyidentifier)\s*+)))\s*+)
+						|(?<identifier>\s*+(?!(?&keywordlistfacet))(?<ident>(?&identifierrawfacet))(?C&obtainvalbyidentifier)\s*+)))\s*+)
 
 (?<identifierrawfacet>[_a-zA-Z][_a-zA-Z0-9]*+)
 

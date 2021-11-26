@@ -11,7 +11,7 @@
 						(?C&unaryincdec)))*+
 						|(?&unary)))
 (?<>)
-(?<identifierminemember>\s*+(?!(?&keywordlist))(?<ident>(?&identifierrawfacet))
+(?<identifierminemember>\s*+(?!(?&keywordlistfacet))(?<ident>(?&identifierrawfacet))
 	(?C&memberaccess)\s*+)
 
 (?<testentry>(?<innertest>(?&orlogiorsomething));)
@@ -31,7 +31,7 @@
 
 
 (?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?C&addcontinue);|break\s*+(?C&addbreak);|return\b(?&primexpr)?+(?C&endreturn);)\s*+)
-(?<identifierminegoto>\s*+(?!(?&keywordlist))(?<gtid>(?&identifierrawfacet))(?C&gotolabel)\s*+)
+(?<identifierminegoto>\s*+(?!(?&keywordlistfacet))(?<gtid>(?&identifierrawfacet))(?C&gotolabel)\s*+)
 
 (?<iterationstatement>\s*+(while\s*+[(](?C&startforloopcond)(?&primexpr)[)](?C&endforloopcond)(?C&addforloopiter)(?&statement)(?C&endforloop)|do\b(?C&startdowhileloop)(?&statement)while\s*+[(](?&primexpr)[)](?C&enddowhileloop)\s*+;
 	|for\s*+[(]((?&typenameinsidedecl)|(?&exprstatement))?+(?C&startforloopcond)(?&primexpr)?;(?C&endforloopcond)\s*+(?&primexpr)?+(?C&addforloopiter)[)](?&statement)(?C&endforloop))\s*+)
@@ -43,6 +43,6 @@
 (?<statementinner>(?&exprstatement)|(?&compoundstatement)|(?&selectionstatement)|(?&iterationstatement)|(?&jumpstatement))
 
 (?<label>(?&identifierminelabel)|\s*+(case\b(?C&beginconstantexpr)(?&primexpr):(?C&addCase)(?C&endconstantexpr)|default\s*+:(?C&addDefaultCase))\s*+)
-(?<identifierminelabel>\s*+(?!(?&keywordlist))(?<lbl>(?&identifierrawfacet))\s*+:(?C&splitbb)\s*+)
+(?<identifierminelabel>\s*+(?!(?&keywordlistfacet))(?<lbl>(?&identifierrawfacet))\s*+:(?C&splitbb)\s*+)
 
-(?<cprogram>((?&structorunion)\s*+;\s*+|(?&decloptorfndef))*)
+(?<cprogram>((?=(?&structoruniondeclfacet))(?<structoruniondecl>(?&structorunion)\s*+;)\s*+|(?&decloptorfndef))*)
