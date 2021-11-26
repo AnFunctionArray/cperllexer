@@ -30,8 +30,8 @@
 						(?!(?&abstrptrrev)(?C&addptrtotype))
 						(?<abstrrest>(?&Tinside)(?<abstrsubs>\s*+(\[(?C&beginconstantexpr)(?&primexpr)\]
 						(?C&addsubtotype)(?C&endconstantexpr)
-						|[(](?C&startfunctionparamdecl)(\s*+\bvoid\b\s*+|(((?&typenameinsideparams)(?#C42))?+
-						(,(?&typenameinsideparams)(?#C42))*(?<rest>,\s*+\.\.\.\s*+)?+))[)](?C&endfunctionparamdecl))\s*+)*+(?C&addptrtotype))|
+						|[(](?C&startfunctionparamdecl)(\s*+\bvoid\b\s*+|(((?&&typenameinsideparams)(?#C42))?+
+						(,(?&&typenameinsideparams)(?#C42))*(?<rest>,\s*+\.\.\.\s*+)?+))[)](?C&endfunctionparamdecl))\s*+)*+(?C&addptrtotype))|
 						(?&abstrptr))(?&abstrptr)*+(?&Tabstrrest)|(?&Tabstrrestalt))
 
 
@@ -106,8 +106,7 @@
 
 (?<identifierminedecl>\s*+(?!(?&keywordlistfacet))(?<identfacet>(?&identifierrawfacet))(?C&identifier_decl)\s*+)
 (?<>)
-(?<identifierminetypedeffacet#restrictpcre2only>\s*+(?!(?&keywordlistfacet))(?<typedefnmmatched>(?<typedefnmfacet>(?&identifierrawfacet))(??C&identifier_typedef))\s*+)
-(?<identifierminetypedeffacet#restrictperlonly>\s*+\b(??C&identifier_typedef)\b\s*+)
+(?<identifierminetypedeffacet#restrictperlonly>\s*+\b(?<typedefnmmatchedfacet>(??C&identifier_typedef))\b\s*+)
 
 (?<keywordlistfacet>(?&typesandqualifiersmask)|\b(typedef|struct|enum|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)\b)
 

@@ -65,6 +65,24 @@ my $typedefidentifiers = "";
 
 $mainregexdefs =~s/\s|\n//g if(not $matchinperl);
 
+my %cached_instances = ();
+
+while($mainregexdefs =~ m{
+    [(][?]&&(\w+)[)]
+}sxxg) {
+    $cached_instances{$1} = "(?&$1)"
+}
+
+$mainregexdefs =~ s{
+    [(][?]&&(\w+)[)]
+}{
+    (??{\$cached_instances{$1}})
+}sxxg;
+
+while(my($k, $v) = each %cached_instances) { 
+    $cached_instances{$k} = qr{$mainregexdefs|$v}sxx
+}
+
 $mainregexfinal = $mainregexdefs . "|" . $entryregex;
 
 print $mainregexfinal;
@@ -332,9 +350,9 @@ sub substitutetemplateinstances {
     if($isfacet) {
         dofacetreplacements($body);
     } else {
-        my $bodyoriginal = $body;
-        dofacetreplacements($body);
-        $body = "(?(DEFINE)" . $body . ")" . $bodyoriginal;
+        #my $bodyoriginal = $body;
+        #dofacetreplacements($body);
+        #$body = "(?(DEFINE)" . $body . ")" . $bodyoriginal;
     }
 
     return $body;
