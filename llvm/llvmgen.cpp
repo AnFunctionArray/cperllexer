@@ -3792,9 +3792,9 @@ void expandtype(std::list<::type> typein, std::list<::type> &typeout) {
 	} else typeout.insert(typeout.begin(), typein.begin(), typein.end());
 }
 
-DLL_EXPORT void add_typedef_to_decl(std::unordered_map<unsigned, std::string>&& hashes) {
+/*DLL_EXPORT void add_typedef_to_decl(std::unordered_map<unsigned, std::string>&& hashes) {
 	currtypevectorbeingbuild.back().p->back().type.front().spec.basicdeclspec.basic[3] = hashes["typedefnmmatched"_h];
-}
+}*/
 
 DLL_EXPORT void identifier_decl(std::unordered_map<unsigned, std::string> && hashes) {
 	//int n = getnameloc("ident", *ptable) + 1;

@@ -433,16 +433,25 @@ sub parseregexfile {
 
     my $regexfile = $regexfilecontent; 
 
-    $regexfile =~s{(?(DEFINE)$inpar)[(]\?<\S+?>(?&inner)++[)]}
-    {
-        my $bodyorig = $&, $bodyfacet = $&;
-        dofacetreplacements($bodyfacet);
-        "(?(DEFINE)" . $bodyfacet . ")" . $bodyorig
-        }sxxge;
+    sub addfacetdefines {
+        $_[0] =~s{(?(DEFINE)$inpar)(?=(?<parnnm>[(]\?<\w+?>))(?<body>(?&inpar))}
+        {
+            my $bodyorig = $+{body}, $bodyfacet = $&;
+            my $parnnm = $+{parnnm};
+            $bodyorig =~ s{^[(]\?<\w+?>}{}sxx;
+            $bodyorig =~ s{[)]$}{}sxx;
+            print "paramnm -> " . $bodyorig . "\n";
+            "((*F)" . dofacetreplacements($bodyfacet) . "|" . $parnnm . addfacetdefines($bodyorig) . "))"
+            }sxxge;
+
+        return $_[0]
+    }
     
     $regexfile =~s/(?<!<)#restrictoutsidefacet\b//g;
 
     $regexfile =~s/\(\?<#restrictoutsidefacet>/(/g;
+
+    addfacetdefines($regexfile);
 
     #$regexfile =~s/[(]\?&(?>\w+?)\#nofacet[)]/(?&$1)/g;
 
@@ -490,6 +499,8 @@ sub parseregexfile {
         $_[0] =~s/(\(\?<\w+)#restrictoutsidefacet>/$1facet>(*F)/g;
 
         $_[0] =~s/\(\?<#restrictoutsidefacet>/((*F)/g;
+        
+        return $_[0]
     }
 
     #dofacetreplacements($regexfilecontent);
