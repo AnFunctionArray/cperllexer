@@ -1,18 +1,13 @@
-typedef enum _EXCEPTION_DISPOSITION
+typedef struct __crt_locale_pointers
 {
-    ExceptionContinueExecution,
-    ExceptionContinueSearch,
-    ExceptionNestedException,
-    ExceptionCollidedUnwind
-} EXCEPTION_DISPOSITION;
+    char*    locinfo;
+    char* mbcinfo;
+} __crt_locale_pointers;
 
-        struct _EXCEPTION_RECORD;
-        struct _CONTEXT;
-        struct _DISPATCHER_CONTEXT;
+typedef __crt_locale_pointers* _locale_t;
 
-         EXCEPTION_DISPOSITION __cdecl __C_specific_handler(
-                 struct _EXCEPTION_RECORD*   ExceptionRecord,
-                 void*                       EstablisherFrame,
-              struct _CONTEXT*            ContextRecord,
-              struct _DISPATCHER_CONTEXT* DispatcherContext
-            );
+    __inline char* __cdecl __acrt_get_locale_data_prefix(void const volatile* const _LocalePointers)
+    {
+        _locale_t const _TypedLocalePointers;
+        return (char*)_TypedLocalePointers->locinfo;
+    }

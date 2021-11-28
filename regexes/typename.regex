@@ -60,9 +60,9 @@
 
 (?&abstdecl<abstrdecloptrestparams, abstrdecloptrestaltparams, abstrmostoutterparams>=abstdecloutterparams)
 
-(?<abstrdecloptrestaltparams>(?&abstrmostoutterparams)(?&abstrsubs)*+|(?C&identifier_decl)(?&abstrsubs)++)
+(?<abstrdecloptrestaltparams>(?&abstrmostoutterparams)(?&abstrsubs)*+)
 
-(?<abstrdecloptrestparams>((?&abstrmostoutterparamsfacet)|(?C&identifier_decl))(?&abstrsubsfacet)*+)
+(?<abstrdecloptrestparams>(?&abstrmostoutterparamsfacet)(?&abstrsubsfacet)*+)
 
 (?<Tabstrdeclinside>)(?<abstrcommonoutter>[(](?<cc>((?&callingconv))?+)(?&Tabstrdeclinside)(?C81)[)])
 
@@ -70,7 +70,7 @@
 
 (?<abstrmostoutter>\s*+(?&callingconv)?+((?&abstrcommonoutter<abstdecloutter>)|(?&identifierminedecl))\s*+)
 
-(?<abstrmostoutterparams>\s*+(?(?=(?&abstrsubsfacet))(?C&identifier_decl)(?&abstrsubs)|((?&abstrcommonoutter<abstdecloutterparams>)|(?&identifierminedecl)))\s*+)
+(?<abstrmostoutterparams>\s*+(?(?=(?&abstrsubsfacet))(?C&identifier_decl)(?&abstrsubs)|((?&abstrcommonoutter<abstdecloutterparams>)|(?&identifierminedecl)|(?C&identifier_decl)))\s*+)
 
 (?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
 

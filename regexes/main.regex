@@ -27,7 +27,7 @@
 	(?<ternaryrest>\?(?C33)(?&primexpr):(?C32))	
 
 
-(?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?C&addcontinue);|break\s*+(?C&addbreak);|return\b(?&primexpr)?+(?C&endreturn);)\s*+)
+(?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?C&addcontinue);|break\s*+(?C&addbreak);|return\b(?&primexpr)?;(?C&endreturn))\s*+)
 (?<identifierminegoto>\s*+(?!(?&keywordlistfacet))(?<gtid>(?&identifierrawfacet))(?C&gotolabel)\s*+)
 (?<declsbb>(?&typenameinsidedecl)\s*+;)
 (?<iterationstatement>\s*+(while\s*+[(](?C&startforloopcond)(?&primexpr)[)](?C&endforloopcond)(?C&addforloopiter)(?&statement)(?C&endforloop)|do\b(?C&startdowhileloop)(?&statement)while\s*+[(](?&primexpr)[)](?C&enddowhileloop)\s*+;
