@@ -24,10 +24,7 @@
 	(?<ternaryorsomething>(?=(?&ternornothingfacet))(?<ternornothing>(?&orlogiorsomething)(?&ternaryrest))(?&ternaryorsomething)(?!(?&orlogicplusrestfacet))(?C34)
 		|(?=(?&orlogiorsomethingfacet))(?&orlogiorsomething))
 
-	(?<ternaryrest>\?(?C33)(?&primexpr):(?C32))
-
-	(?<orlogiorsomething>(?=(?&castexprfacet))(?C&begin_binary)(?&castexpr)(?>(?&orlogicplusrest))*+(?C&end_binary))
-	
+	(?<ternaryrest>\?(?C33)(?&primexpr):(?C32))	
 
 
 (?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?C&addcontinue);|break\s*+(?C&addbreak);|return\b(?&primexpr)?+(?C&endreturn);)\s*+)

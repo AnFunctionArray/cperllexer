@@ -23,6 +23,16 @@ notajokenow(struct notajoke{ int n; } n) {
 
 unsigned long long longlong;
 
+int condtest() {
+    int a, b, c;
+
+    c = 7;
+    b = 2;
+    (a = 4 && 0) || b++ && c++;
+
+    return printf("a %d, b %d c %d\n", a || b && 0, b, c);
+}
+
 main () {
     longlong = 18446744073709551615u;
     b = 9UL;
@@ -115,5 +125,5 @@ main () {
         notajokenow(tmp);
         }
     }
-    return 0;
+    return condtest();
 }

@@ -1,25 +1,32 @@
 (?<binoprest, binopraw>)
-(?<binopplusrest>(?<binop>(?<binoplast>(?&binopraw))(?&castexpr)(?>(?&binoprest))*(?C&binary))|(?>(?&binoprest)))
+(?<binopplusrest>((*F)(?&&binoprest<>)(?&binoprest))|
+(?<binop>(?<binoplast>(?&binopraw))(?&castexpr)(?&binoprest)*(?C&binary))|(?&binoprest))
 
-(?&binopplusrest<andlogicplusrest, orlogicopraw>=orlogicplusrest)
+(?&&orlogicplusrest<>)
 
-(?&binopplusrest<orplusrest, andlogicopraw>=andlogicplusrest)
+(?<orlogiorsomething>(?=(?&castexprfacet))(?C&begin_binary)(?&castexpr)((?&orlogicplusrestfacet)(*F))*(?&orlogicplusrest)*?(?C&end_binary))
 
-(?&binopplusrest<xorplusrest, oropraw>=orplusrest)
 
-(?&binopplusrest<andplusrest, xoropraw>=xorplusrest)
-
-(?&binopplusrest<eqplusrest, andopraw>=andplusrest)
-
-(?&binopplusrest<relplusrest, eqopraw>=eqplusrest)
-
-(?&binopplusrest<shiftplusrest, relopraw>=relplusrest)
-
-(?&binopplusrest<addmulplusrest, shiftopraw>=shiftplusrest)
-
-(?&binopplusrest<mulop, addopraw>=addmulplusrest)
-
-(?<mulop>(?<mulopraw>[\*\/\%])(?C82)(?&castexpr)(?C21))
+(?<>)
+(?<orlogicplusrest>(?&binopplusrest<andlogicplusrest, orlogicopraw>))
+(?<>)
+(?<andlogicplusrest>(?&binopplusrest<orplusrest, andlogicopraw>))
+(?<>)
+(?<orplusrest>(?&binopplusrest<xorplusrest, oropraw>))
+(?<>)
+(?<xorplusrest>(?&binopplusrest<andplusrest, xoropraw>))
+(?<>)
+(?<andplusrest>(?&binopplusrest<eqplusrest, andopraw>))
+(?<>)
+(?<eqplusrest>(?&binopplusrest<relplusrest, eqopraw>))
+(?<>)
+(?<relplusrest>(?&binopplusrest<shiftplusrest, relopraw>))
+(?<>)
+(?<shiftplusrest>(?&binopplusrest<addmulplusrest, shiftopraw>))
+(?<>)
+(?<addmulplusrest>(?&binopplusrest<mulop, addopraw>))
+(?<>)
+(?<mulop>(?<mulopraw>[\*\/\%])(?C82)(?&castexpr)(?C&binary)(?C21))
 
 (?<orlogicopraw>\|\|(?C&begin_branch))
 (?<andlogicopraw>&&(?C&begin_branch)) 
