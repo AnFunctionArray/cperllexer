@@ -80,6 +80,7 @@ $mainregexdefs =~ s{
 }sxxg;
 
 while(my($k, $v) = each %cached_instances) { 
+    use if $ARGV[1], re => qw(Debug EXECUTE);
     $cached_instances{$k} = qr{$mainregexdefs|$v}sxx
 }
 
@@ -96,7 +97,7 @@ print $mainregexfinal;
 startmodule(basename($ARGV[0], @suffixlist)) if(defined &startmodule);
 
 {
-    #use re qw(Debug EXECUTE); 
+    use if $ARGV[1], re => qw(Debug EXECUTE); 
 
     $subject =~m{$mainregexfinal$}sxx;
 }
@@ -229,7 +230,7 @@ sub identifier_typedef {
 
 sub identifier_decl {
     my $lastelem = pop @typedefidentifiersvector;
-    $lastelem = $lastelem . "|" . $_[0]{'identfacet'} unless (not $_[0]{'typedefkeyfacet'});
+    $lastelem = $lastelem . "|" . $_[0]{'ident'} unless (not $_[0]{'typedefkeyfacet'});
     push @typedefidentifiersvector, $lastelem;
 }
 
@@ -446,12 +447,12 @@ sub parseregexfile {
 
         return $_[0]
     }
+
+    addfacetdefines($regexfile);
     
     $regexfile =~s/(?<!<)#restrictoutsidefacet\b//g;
 
     $regexfile =~s/\(\?<#restrictoutsidefacet>/(/g;
-
-    addfacetdefines($regexfile);
 
     #$regexfile =~s/[(]\?&(?>\w+?)\#nofacet[)]/(?&$1)/g;
 

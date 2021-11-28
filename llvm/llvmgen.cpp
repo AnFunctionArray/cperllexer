@@ -638,7 +638,7 @@ struct val : valandtype {
 	std::string originident = "[[immidiate]]";
 };
 
-llvm::Type* createllvmtype(std::list<type> decltypevector);
+llvm::Type* createllvmtype(std::list<type> decltypevector, std::list<::var>* last_struct=nullptr);
 
 void addvar(var& lastvar, llvm::Constant* pInitializer = nullptr);
 
@@ -694,7 +694,7 @@ operator=(T p)
 
 static std::list<std::list<::val>::iterator> callees{};
 
-llvm::Type* createllvmtype(std::list<type> decltypevector);
+llvm::Type* createllvmtype(std::list<type> decltypevector, std::list<::var>* last_struct);
 
 val convertTo(val target, std::list<::type> to);
 
@@ -1947,7 +1947,7 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 
 	printvaltype(immidiate);
 
-	if (immidiate.value && !llvm::isa<llvm::Constant>(immidiate.value) && !immidiate.value->getType()->getPointerElementType()->isFunctionTy())
+	if (immidiate.value && !immidiate.value->getType()->getPointerElementType()->isFunctionTy())
 		immidiate.value = llvmbuilder.CreateLoad(immidiate.value);
 
 	phndl->immidiates.push_back(immidiate);
@@ -2015,7 +2015,7 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 		case type::POINTER:
 		case type::ARRAY:
 		case type::BASIC:
-			if (scopevar.size() == 1)
+			if (lastvar.firstintroduced == 1)
 				lastvar.pValue = new llvm::GlobalVariable(
 					nonconstructable.mainmodule, lastvar.requestType(), false,
 					linkagetype,
@@ -2253,9 +2253,9 @@ void pushsizeoftype(std::list<type> type) {
 					 "[[sizeoftypename]]" }));
 }
 
-extern const std::list<::var>* getstructorunion(bascitypespec& basic);
+extern const std::list<::var>* getstructorunion(bascitypespec& basic, std::list<::var>* last_struct=nullptr);
 
-extern "C" void memberaccess(std::unordered_map<unsigned, std::string> hashentry) {
+DLL_EXPORT void memberaccess(std::unordered_map<unsigned, std::string>&& hashentry) {
 	if (hashentry["arrowordotraw"_h] == "->")
 		phndl->applyindirection();
 
@@ -2577,7 +2577,7 @@ DLL_EXPORT void endsizeofexpr() {
 
 void fixupstructype(std::list<::var>* var) {
 	for (auto& a : *var | ranges::views::drop(1))
-		a.pllvmtype = createllvmtype(a.type);
+		a.pllvmtype = createllvmtype(a.type, var);
 
 	auto& structvar = var->front();
 
@@ -2590,7 +2590,7 @@ void fixupstructype(std::list<::var>* var) {
 	dyn_cast<llvm::StructType> (structvar.pllvmtype)->setBody(structtypes);
 }
 
-const std::list<::var>* getstructorunion(bascitypespec& basic) {
+const std::list<::var>* getstructorunion(bascitypespec& basic, std::list<::var>* last_struct) {
 	std::list<::var>* var = nullptr;
 
 	std::string ident = basic.basic[3];
@@ -2610,12 +2610,14 @@ const std::list<::var>* getstructorunion(bascitypespec& basic) {
 
 	if (!var) var = static_cast<std::list<::var>*>(basic.pexternaldata);
 
-	if (var) if (!var->back().pllvmtype) fixupstructype(var);
+	if (var) if (!var->back().pllvmtype)
+		if (var != last_struct) fixupstructype(var);
+		else var->back().pllvmtype = var->front().pllvmtype;
 
 	return var;
 }
 
-llvm::Type* createllvmtype(std::list<type> decltypevector) {
+llvm::Type* createllvmtype(std::list<type> decltypevector, std::list<::var>* last_struct) {
 	llvm::Type* pcurrtype;
 
 	//bool bjastypedef = false;
@@ -2665,7 +2667,7 @@ llvm::Type* createllvmtype(std::list<type> decltypevector) {
 			switch (
 				stringhash(type.spec.basicdeclspec.basic[0].c_str())) {
 			case "struct"_h: {
-				auto currstruct = getstructorunion(type.spec.basicdeclspec);
+				auto currstruct = getstructorunion(type.spec.basicdeclspec, last_struct);
 				if (!currstruct) {
 					//bincompletetype = true;
 					goto addchar;
@@ -2961,7 +2963,7 @@ void fixuplabels() {
 	branches.clear();
 }
 
-extern "C" void startswitch() {
+DLL_EXPORT void startswitch() {
 	//pcurrblock.pop_back();
 	//pcurrblock.push_back(llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue)));
 	auto dummyblock = llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->requestValue()));
@@ -3006,15 +3008,6 @@ DLL_EXPORT void addDefaultCase() {
 	currswitch.back().first->setDefaultDest(pcurrblock.back());
 }
 
-std::list<::type> getreturntype(std::list<::type> type) {
-	for (auto iter = type.begin(); iter != type.end(); ++iter)
-		if (iter->uniontype == type::FUNCTION) {
-			type.erase(type.begin(), ++iter);
-			return type;
-		}
-	return type;
-}
-
 /*val<> getfunctionptr(val<> fptr) {
 	for(auto a = fptr.type.begin(); a != fptr.type.end(); ++a)
 		if(a->uniontype == type::FUNCTION) break;
@@ -3027,9 +3020,12 @@ DLL_EXPORT void endfunctioncall() {
 
 	auto argsiter = callees.back();
 
-	auto calleevalntype = *argsiter;
+	auto calleevalntype = decay(*argsiter);
 
 	assert(calleevalntype.value->getType()->isPointerTy());
+
+	if (calleevalntype.type.front().uniontype == type::POINTER)
+		calleevalntype.type.pop_front();
 
 	/*std::string type_str;
 	llvm::raw_string_ostream rso (type_str);
@@ -3073,8 +3069,10 @@ DLL_EXPORT void endfunctioncall() {
 	// llvm::dyn_cast<llvm::Function> (callee)->getFunctionType (),
 	// llvm::dyn_cast<llvm::Value> (callee), immidiates);
 
+	calleevalntype.type.pop_front();
+
 	phndl->immidiates.push_back(
-		val{ pval, getreturntype(calleevalntype.type) });
+		val{ pval, calleevalntype.type });
 }
 
 DLL_EXPORT void endreturn() {
@@ -3144,6 +3142,7 @@ DLL_EXPORT void endqualifs(std::unordered_map<unsigned, std::string>&& hashes) {
 	{
 		lastvar.type.back().spec.basicdeclspec.pexternaldata = &enums.back().back();
 	}*/
+		//currtypevectorbeingbuild.pop_back();
 }
 
 DLL_EXPORT void startfunctionparamdecl() {
@@ -3193,13 +3192,13 @@ extern "C" void insertinttoimm(const char* str, size_t szstr, const char* suffix
 
 DLL_EXPORT void subscript() { phndl->subscripttwovalues(); }
 
-static size_t hndlstack;
+static basehndl* (*phpriorhndlfn_cnst_expr)(basehndl*);
 
 DLL_EXPORT void beginconstantexpr() {
 	//cnstexpriterstart = phndl->immidiates.end();
 	szcnstexprinitial = phndl->immidiates.size();
 
-	++hndlstack;
+	phpriorhndlfn_cnst_expr = phndl->getrestorefn();
 
 	//phndl = &hndlcnstexpr;
 
@@ -3209,7 +3208,7 @@ DLL_EXPORT void beginconstantexpr() {
 }
 
 DLL_EXPORT void endconstantexpr() {
-	assert(szcnstexprinitial == phndl->immidiates.size());
+	//assert(szcnstexprinitial == phndl->immidiates.size());
 
 	// auto res = dyn_cast<llvm::ConstantInt>(immidiates.back());
 
@@ -3217,10 +3216,8 @@ DLL_EXPORT void endconstantexpr() {
 
 	// std::cout << "computed value: " << *res->getValue().getRawData() <<
 	// std::endl;
-
-	if (!--hndlstack)
 		phndl->~basehndl(),
-		phndl = new (phndl) handlecnstexpr{};
+		phndl = phpriorhndlfn_cnst_expr(phndl);
 }
 
 extern "C" void startmodule(const char* modulename, size_t szmodulename) {
@@ -3228,6 +3225,8 @@ extern "C" void startmodule(const char* modulename, size_t szmodulename) {
 		llvm::Module{ std::string{modulename, szmodulename}, llvmctx };
 
 	pdatalayout = new llvm::DataLayout{ &nonconstructable.mainmodule };
+
+	//system("PAUSE");
 }
 
 extern "C" void endmodule() {
@@ -3237,7 +3236,7 @@ extern "C" void endmodule() {
 		outputll{ std::string{nonconstructable.mainmodule.getName()} + ".ll",
 				 code };
 	nonconstructable.mainmodule.print(outputll, nullptr);
-	//llvm::WriteBitcodeToFile(nonconstructable.mainmodule, output);
+	llvm::WriteBitcodeToFile(nonconstructable.mainmodule, output);
 	nonconstructable.mainmodule.~Module();
 	delete pdatalayout;
 }
@@ -3290,11 +3289,12 @@ DLL_EXPORT void unaryincdec(std::unordered_map<unsigned, std::string>&& hashes) 
 
 	std::string imm = !immpostfix.empty() ? immpostfix : hashes["prefixarithraw"_h];
 
-	auto phpriorhndl = phndl->getrestorefn();
+	decltype(phndl->getrestorefn()) phpriorhndl = nullptr;//phndl->getrestorefn();
 
 	if (bIsBasicFloat(phndl->immidiates.back().type.front()))
+		phpriorhndl = phndl->getrestorefn(),
 		phndl->~basehndl(),
-		phndl = new (phndl) handlecnstexpr{};
+		phndl = new (phndl) handlefpexpr{};
 
 	unsigned int type = 3; // << 2 | 2;
 
@@ -3318,16 +3318,16 @@ DLL_EXPORT void unaryincdec(std::unordered_map<unsigned, std::string>&& hashes) 
 
 	if (!immpostfix.empty())
 		immidiates.back() = immlvalue;
+	if(phpriorhndl)
+		phndl->~basehndl(),
 
-	phndl->~basehndl();
-
-	phndl = phpriorhndl(phndl);
+		phndl = phpriorhndl(phndl);
 }
 
 DLL_EXPORT void binary(std::unordered_map<unsigned, std::string>&& hashes) {
 	std::string imm;
 
-	imm.assign(hashes["binop"_h]);
+	imm.assign(hashes["binoplast"_h]);
 
 	auto phpriorhndl = phndl->getrestorefn();
 
@@ -3822,6 +3822,8 @@ DLL_EXPORT void identifier_decl(std::unordered_map<unsigned, std::string> && has
 
 	var.linkage = hashes["typedefkeyfacet"_h];
 
+	var.firstintroduced = scopevar.size();
+
 	/*basic.spec.basicdeclspec.basic[3] = hashes["typedefnmmatchedfacet"_h];
 
 	
@@ -3881,8 +3883,10 @@ DLL_EXPORT void add_type_or_qualifier(std::unordered_map<unsigned, std::string>&
 
 DLL_EXPORT void add_tag(std::unordered_map<unsigned, std::string>&hashes) {
 	auto& lastvar = currtypevectorbeingbuild.back().p->back();
-	lastvar.type.back().spec.basicdeclspec.basic[0] = hashes["structorunionlast"_h],
-		lastvar.type.back().spec.basicdeclspec.basic[3] = hashes["identlasttag"_h];
+	lastvar.type.back().spec.basicdeclspec.basic[0] = hashes["structorunionlast"_h];
+	if (hashes["identlasttagfacet"_h].empty())
+		lastvar.type.back().spec.basicdeclspec.pexternaldata = &structorunionmembers.back().back();
+	else lastvar.type.back().spec.basicdeclspec.basic[3] = hashes["identlasttagfacet"_h];
 }
 
 DLL_EXPORT void enddeclaration(std::unordered_map<unsigned, std::string>&hashes) {
@@ -3892,11 +3896,11 @@ DLL_EXPORT void enddeclaration(std::unordered_map<unsigned, std::string>&hashes)
 
 	auto lasttype = lastvar.type;
 
-	lastvar.type.clear();
+	//lastvar.type.clear();
 
 	//expandtype(lasttype, lastvar.type);
 
-	lastvar.firstintroduced = scopevar.size();
+	//lastvar.firstintroduced = scopevar.size();
 
 	//currtypevectorbeingbuild.pop_back();
 }
@@ -3954,18 +3958,14 @@ DLL_EXPORT void struc_or_union_body(std::unordered_map<unsigned, std::string> &h
 
 	var tmp;
 	type typestruct{ type::BASIC };
-	typestruct.spec.basicdeclspec.basic[3] = hashes["identlasttag"_h];
+	typestruct.spec.basicdeclspec.basic[3] = hashes["identlasttagfacet"_h];
 	typestruct.spec.basicdeclspec.basic[0] = hashes["structorunionlast"_h];
 	tmp.type.push_back(typestruct);
-	tmp.identifier = hashes["identlasttag"_h];
+	tmp.identifier = hashes["identlasttagfacet"_h];
 	tmp.pllvmtype = llvm::StructType::create(llvmctx);
 	structorunionmembers.back().push_back({ tmp });
 	currtypevectorbeingbuild.push_back(
 		{ --structorunionmembers.back().end(), currdecltypeenum::PARAMS });
-
-	if (hashes["identlasttag"_h].empty())
-		lastvar.type.back().spec.basicdeclspec.pexternaldata = &structorunionmembers.back().back();
-	else add_tag(hashes);
 }
 #if 0
 virtual void struc_or_union_body_end_60() {
@@ -4095,7 +4095,7 @@ DLL_EXPORT void add_ident_to_enum_def(std::unordered_map<unsigned, std::string> 
 
 	//int n = getnameloc3("identlast", *ptable, a, 1, { .dontsearchforclosest = 0 }) + 1;
 
-	tmp.identifier = hashes["identlasttag"_h];//(char*)GROUP_PTR_AND_SZ(n) };
+	tmp.identifier = hashes["identlasttagfacet"_h];//(char*)GROUP_PTR_AND_SZ(n) };
 
 	scopevar.back().push_back(tmp);
 
@@ -4103,8 +4103,8 @@ DLL_EXPORT void add_ident_to_enum_def(std::unordered_map<unsigned, std::string> 
 }
 DLL_EXPORT void begin_enumerator_def(std::unordered_map<unsigned, std::string> && hashes) {
 	//begin_enumerator_decl(pargs, szargs);
-	enums.back().push_back({ hashes["identlasttag"_h], {} });
-	add_tag(hashes);
+	enums.back().push_back({ hashes["identlasttagfacet"_h], {} });
+	//add_tag(hashes);
 }
 /*DLL_EXPORT void begin_enumerator_decl(const char** pargs, size_t* szargs) {
 	//int n = getnameloc3("identlast", *ptable, a, 1, { .dontsearchforclosest = 0 }) + 1;
