@@ -4,7 +4,8 @@
 
 (?&&orlogicplusrest<>)
 
-(?<orlogiorsomething>(?=(?&castexprfacet))(?C&begin_binary)(?&castexpr)((?&orlogicplusrestfacet)(*F))*(?&orlogicplusrest)*?(?C&end_binary))
+(?<orlogiorsomething>(?=(?&castexprfacet))(?C&begin_binary)(?&castexpr)
+    ((?&orlogicplusrestfacet)(*F))*(?&orlogicplusrest)*?(?=(?&orlogicplusrestfacet)|(?C&end_binary)))
 
 
 (?<>)

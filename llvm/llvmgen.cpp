@@ -825,6 +825,7 @@ struct basehndl /* : bindings_compiling*/ {
 		basicint.spec.basicdeclspec.basic[1] = "int";
 		ordinary.type = { basicint };
 		scopevar.back().push_back(ordinary);
+		scopevar.back().back().requestValue();
 		nbranches.push_back({ std::list<arrtwovals>{1}, --scopevar.back().end() });
 		nbranches.back().itersecond = nbranches.back().first.begin();
 
