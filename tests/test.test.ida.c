@@ -1,16 +1,18 @@
-int printf (const char *fmt, ...);
+typedef enum _EXCEPTION_DISPOSITION
+{
+    ExceptionContinueExecution,
+    ExceptionContinueSearch,
+    ExceptionNestedException,
+    ExceptionCollidedUnwind
+} EXCEPTION_DISPOSITION;
 
+        struct _EXCEPTION_RECORD;
+        struct _CONTEXT;
+        struct _DISPATCHER_CONTEXT;
 
-int condtest() {
-    int a, b, c;
-
-    c = 7;
-    b = 2;
-    (a = 4 && 0) || b++ && c++;
-
-    return printf("a %d, b %d c %d\n", a || b && 0, b, c);
-}
-
-main() {
-        return condtest();
-}
+         EXCEPTION_DISPOSITION __cdecl __C_specific_handler(
+                 struct _EXCEPTION_RECORD*   ExceptionRecord,
+                 void*                       EstablisherFrame,
+              struct _CONTEXT*            ContextRecord,
+              struct _DISPATCHER_CONTEXT* DispatcherContext
+            );
