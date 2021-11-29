@@ -140,7 +140,7 @@
 	(?<enumerator>(?&&identifiermine<add_ident_to_enum_def>)
 	((=(?C&beginconstantexpr)(?&assignorsomething)(?C&end_ass_to_enum_def))
 	|(?C&end_without_ass_to_enum_def)))?+(,(?&enumerator))*+,?+\s*+
-	|(?C&struc_or_union_body)\s*+((?&typenamebitfl)\s*+;\s*+)*+)
+	|(?C&struc_or_union_body)\s*+((?&strucdecl)|(?&typenamebitfl)\s*+;\s*+)*+)
 	[}](?(<enum>)()|(?C&endbuildingstructorunion))(?C&add_tag)\s*+
 |(?&identifierminestruct<>)(?C&add_tag))(?#|(?&enum<>)))
 

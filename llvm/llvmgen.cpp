@@ -434,7 +434,7 @@ struct basic_type_origin : variant_origin_type
 	}
 };*/
 
-typedef std::bitset<4> pointrtypequalifiers;
+typedef std::bitset<5> pointrtypequalifiers;
 /*
 0 - const
 1 - restrict
