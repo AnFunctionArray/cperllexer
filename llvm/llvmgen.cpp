@@ -440,6 +440,7 @@ typedef std::bitset<4> pointrtypequalifiers;
 1 - restrict
 2 - volatile
 3 - __ptr64
+4 - __ptr32
 */
 
 struct basic_type_origin {
@@ -507,6 +508,9 @@ pointrtypequalifiers parsequalifiers(const std::string& qualifs) {
 			break;
 		case "__ptr64"_h:
 			ret[3] = 1;
+			break;
+		case "__ptr32"_h:
+			ret[4] = 1;
 			break;
 		default:
 			std::cerr << "invalid specifier: " << spec << std::endl;
@@ -640,7 +644,7 @@ struct val : valandtype {
 
 llvm::Type* createllvmtype(std::list<type> decltypevector,
 	std::list<::var>* last_struct = nullptr,
-	std::list<type>&& refdecltypevector = std::list<type>{});
+	std::list<type> *refdecltypevector = nullptr);
 
 void addvar(var& lastvar, llvm::Constant* pInitializer = nullptr);
 
@@ -651,14 +655,18 @@ struct var {
 	llvm::Type* pllvmtype{};
 
 	llvm::Type* requestType(std::list<::type> *pout = nullptr) {
-		std::list<::type> type = this->type;
-		if (!pout)
-			pout = &this->type,
-			this->type.clear();
 		if (!pllvmtype) {
-			pllvmtype = createllvmtype(type, nullptr, std::move(*pout));
+			pllvmtype = createllvmtype(type, nullptr, pout);
 		}
 		return pllvmtype;
+	}
+	std::list<::type> requestRealType() {
+		if (type.back().spec.basicdeclspec.istypedef()) {
+			auto typedefval = obtainvalbyidentifier(type.back().spec.basicdeclspec.basic[3], false, true);
+			type.pop_back();
+			type.splice(type.end(), typedefval->requestRealType());
+		}
+		return type;
 	}
 	union {
 		llvm::Value* pValue{};
@@ -702,7 +710,7 @@ static std::list<std::list<::val>::iterator> callees{};
 
 llvm::Type* createllvmtype(std::list<type> decltypevector,
 	std::list<::var>* last_struct,
-	std::list<type>&& refdecltypevector);
+	std::list<type> *refdecltypevector);
 
 val convertTo(val target, std::list<::type> to);
 
@@ -2626,7 +2634,7 @@ const std::list<::var>* getstructorunion(bascitypespec& basic, std::list<::var>*
 	return var;
 }
 
-llvm::Type* createllvmtype(std::list<type> decltypevector, std::list<::var>* last_struct, std::list<type>&& refdecltypevector) {
+llvm::Type* createllvmtype(std::list<type> decltypevector, std::list<::var>* last_struct, std::list<type> * refdecltypevector) {
 	llvm::Type* pcurrtype;
 
 	//refdecltypevector.clear();
@@ -2695,12 +2703,12 @@ llvm::Type* createllvmtype(std::list<type> decltypevector, std::list<::var>* las
 				break;
 			default: { // typedef
 				//bjastypedef = true;
-				pcurrtype = obtainvalbyidentifier(type.spec.basicdeclspec.basic[3], false, true)->requestType(&refdecltypevector);
+				pcurrtype = obtainvalbyidentifier(type.spec.basicdeclspec.basic[3], false, true)->requestType(refdecltypevector);
 				return false;
 			}
 			}
-			return true;
 		}
+			return true;
 	}},
 	std::function{[&](type& type) {
 		pcurrtype = dyn_cast<llvm::Type> (pcurrtype->getPointerTo());
@@ -2725,7 +2733,7 @@ llvm::Type* createllvmtype(std::list<type> decltypevector, std::list<::var>* las
 	try {
 		for (auto& type : decltypevector)
 			lambdas[type.uniontype](type) &&
-			(refdecltypevector.push_front(type), true);
+			refdecltypevector && (refdecltypevector->push_front(type), true);
 	}
 	catch (std::nullptr_t exc) {
 		return exc;
@@ -2749,10 +2757,11 @@ DLL_EXPORT void beginscope() {
 	if (beginofafnuc) {
 		var current_arg;
 		currfunc = --scopevar.back().end();
+		auto currfuncval = currfunc->requestValue();
 		auto iter_params = currfunc->type.front()
 			.spec.func.parametertypes_list.front()
 			.begin();
-		for (auto& arg : dyn_cast<llvm::Function> (currfunc->requestValue())->args())
+		for (auto& arg : dyn_cast<llvm::Function> (currfuncval)->args())
 			iter_params++->pValue = &arg;
 	}
 
@@ -3153,6 +3162,9 @@ DLL_EXPORT void endqualifs(std::unordered_map<unsigned, std::string>&& hashes) {
 
 			lastvar.type.back().spec.basicdeclspec.pexternaldata = reflaststruc;
 		}
+							  else;
+	else
+		lastvar.requestRealType();
 		/*					  else
 		if (0) case "enum"_h:
 	{

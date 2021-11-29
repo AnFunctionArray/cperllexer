@@ -37,7 +37,7 @@
 (?<allqualifsparam>(?&allqualifs)|(?&&typedefparam<>))
 
 (?<Tabstrrest, Tabstrrestalt, Tinside>)(?<abstdecl>(?<abstrptrrev#restrictoutsidefacet>(?<abstrptr>\s*+[*]\s*+
-						(?<qualifptr>(?&qualifiers)|\b__ptr64\b\s*+)*+)
+						(?<qualifptr>(?&qualifiers)|\s*+\b__ptr(64|32)\b\s*+)*+)
 						(?!(?&abstrptrrev)(?C&addptrtotype))
 						(?<abstrrest>(?&Tinside)(?<abstrsubs>\s*+(\[(?C&beginconstantexpr)(?&primexpr)\]
 						(?C&addsubtotype)(?C&endconstantexpr)

@@ -325,13 +325,15 @@ void docall(const char *name, size_t szname, void *phashmap) {
 
 	if (!pfunc) return;
 
-	__try {
+	//EXCEPTION_POINTERS* pexc;
+
+	//__try {
 
 		((void (*)(void* phashmap))pfunc)(phashmap);
-	}
-	__except (EXCEPTION_EXECUTE_HANDLER) {
-
-	}
+	//}
+	//__except (pexc=GetExceptionInformation(), EXCEPTION_EXECUTE_HANDLER) {
+	//	__debugbreak();
+	//}
 }
 #else
 #include <dlfcn.h>
