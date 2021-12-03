@@ -106,7 +106,7 @@ main () {
 
         printf("obj - %d\n", obj);
 
-        if(i == 1) switch(i)
+        if(&i == 1) switch(i)
     case 1:
         break;
 

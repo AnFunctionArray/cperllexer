@@ -40,7 +40,10 @@ close $fh;
 
 my $mainregexfinal = "((*F)";
 
-@typedefidentifiersvector = ("(*F)");
+@typedefidentifiersvector = {
+    allowed => qr{(*F)},
+    disallowed => qr{(*F)}
+};
 
 my $entryregex;
 
@@ -59,7 +62,7 @@ entryregexmain($-{entrygroup}[0], $-{prefix}[0]);
 
 parseregexfile((substr $mainregexfilecontent, length $&), 1);
 
-my $mainregexdefs = $mainregexfinal . ")";
+$mainregexdefs = $mainregexfinal . ")";
 
 my $typedefidentifiers = "";
 
@@ -96,6 +99,8 @@ print $mainregexfinal;
 
 startmodule(basename($ARGV[0], @suffixlist)) if(defined &startmodule);
 
+use extractfns;
+
 {
     use if $ARGV[1], re => qw(Debug EXECUTE); 
 
@@ -131,8 +136,9 @@ sub debugcallout {
 
     if ($_[0] ne "identifier_typedef") {
         use Data::Dumper;
+        use POSIX;
     
-        print  "capture: " . $subslice . "\n";
+        print strftime ("%F %T", localtime time) . " capture: " . $subslice . "\n";
         print $_[0] . "\n";
         print Dumper(\$captures)
     }
@@ -221,21 +227,25 @@ sub parsing {
 =cut
 
 sub identifier_typedef {
-    my $ident = "(*F)";
+    my $ident = qr{(*F)}sxx;
     foreach my $typedefidentifier (@typedefidentifiersvector) {
-        $ident = $ident . "|" . $typedefidentifier
+        $ident = $typedefidentifier . "|" . $ident 
     }
+    print $ident . "\n";
     return $ident;
 }
 
 sub identifier_decl {
     my $lastelem = pop @typedefidentifiersvector;
-    $lastelem = $lastelem . "|" . $_[0]{'ident'} unless (not $_[0]{'typedefkeyfacet'});
+    my $identifier = $_[0]{'identfacet'};
+    return if not $identifier;
+    $lastelem{$_[0]{'typedefkeyfacet'} // ""} = $identifier if (not );
+    $lastelem = qr{$identifier|$lastelem}sxx unless (not $_[0]{'typedefkeyfacet'});
     push @typedefidentifiersvector, $lastelem;
 }
 
 sub beginscope {
-    push @typedefidentifiersvector, "(*F)";
+    push @typedefidentifiersvector, qr{(*F)}sxx;
 }
 
 sub endscope {
@@ -435,7 +445,7 @@ sub parseregexfile {
     my $regexfile = $regexfilecontent; 
 
     sub addfacetdefines {
-        $_[0] =~s{(?(DEFINE)$inpar)(?=(?<parnnm>[(]\?<\w+?>))(?<body>(?&inpar))}
+        $_[0] =~s{(?(DEFINE)$inpar)(?=(?<parnnm>[(]\?<\w+?>(?<!facet>)))(?<body>(?&inpar))}
         {
             my $bodyorig = $+{body}, $bodyfacet = $&;
             my $parnnm = $+{parnnm};

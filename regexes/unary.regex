@@ -1,6 +1,6 @@
 (?<unary>(?<prefixarith>\s*+(?<prefixarithraw>[+][+]|--))(?&unaryexpr)(?C&unaryincdec)
 	|((?<#restrictoutsidefacet>(?&unaryopfacet)(?!(?&castexpr)))|(?&unaryop)(?&castexprfacet))
-	|sizeof((?&typename)(?C&endsizeoftypename)|(?&unaryexpr)(?C&endsizeofexpr)))
+	|\s*+\bsizeof\b((?&typename)(?C&endsizeoftypename)|(?&unaryexpr)(?C&endsizeofexpr)))
 
 
 						(?<unaryop>\s*+(?<unop>[\&\*\+\-\~\!])(?C&unary))

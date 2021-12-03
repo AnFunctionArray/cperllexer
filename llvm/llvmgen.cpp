@@ -979,7 +979,6 @@ struct basehndl /* : bindings_compiling*/ {
 
 	std::array<val, 2> usualarithmeticconversions(std::array<val, 2> ops_in) {
 		std::array ops = { &ops_in[0], &ops_in[1] };
-		assert(ops[0]->type.size() == 1 && ops[1]->type.size() == 1);
 
 		std::array refspecops = { &ops[0]->type.back().spec.basicdeclspec, &ops[1]->type.back().spec.basicdeclspec };
 
@@ -990,7 +989,13 @@ struct basehndl /* : bindings_compiling*/ {
 		printvaltype(*ops[1]);
 
 		for (auto i = 0; i < 2; ++i)
-			if (ranges::contains(std::array{ "double", "float" }, refspecops[i]->basic[1]))
+			if (std::list listtp = { type{type::BASIC} };
+				listtp.back().spec.basicdeclspec.basic[0] = "unsigned",
+				listtp.back().spec.basicdeclspec.basic[1] = "long",
+				listtp.back().spec.basicdeclspec.longspecsn = 2,
+				ops[i]->type.size() > 1)
+				ops_in[i] = convertTo(*ops[!i], listtp);
+			else if (ranges::contains(std::array{ "double", "float" }, refspecops[i]->basic[1]))
 				for (ops_in[!i] = convertTo(*ops[!i], ops[i]->type);;)
 					return ops_in;
 
@@ -3844,7 +3849,7 @@ DLL_EXPORT void identifier_decl(std::unordered_map<unsigned, std::string> && has
 
 	//if (basic.spec.basicdeclspec.basic[3].empty())
 
-	var.identifier = hashes["ident"_h];
+	var.identifier = hashes["identfacet"_h];
 
 	var.type = { basic };
 

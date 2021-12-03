@@ -1,5 +1,5 @@
 #include "typename.regex", "inner.regex", "unary.regex", "binary.regex"
-#entry ^cprogram	
+#entry ^cprogram
 
 (?<primexpr>(?&assignorsomething)(,(?C35)\s*+(?&assignorsomething))*)
 
@@ -42,4 +42,14 @@
 (?<label>(?&identifierminelabel)|\s*+(case\b(?C&beginconstantexpr)(?&primexpr):(?C&addCase)(?C&endconstantexpr)|default\s*+:(?C&addDefaultCase))\s*+)
 (?<identifierminelabel>\s*+(?!(?&keywordlistfacet))(?<lbl>(?&identifierrawfacet))\s*+:(?C&splitbb)\s*+)
 
-(?<cprogram>((?<strucdecl>(?=(?&structoruniondeclfacet))(?<structoruniondecl>(?&structorunion)\s*+;)\s*+)|(?&decloptorfndef))*)
+(?<cprogram>(((?=(?&structoruniondeclfacet))(?<structoruniondecl>(?&structorunion)\s*+;)\s*+)
+	|(?&decloptorfndef))*+)
+
+(?<decloptorfndef>(?=(?&declsfacet))(?<decls>(?&typenameinsideopt)\s*+;)\s*+
+	|(?&typenameinsideoptbasic)(?&compoundstatement))
+
+(?<cprogram_extract>((?<strucdecl>(?&structorunionfacet)\s*+;\s*+)
+	(?C&extract_struc)|(?&decloptorfndef_extract))*+)
+
+(?<decloptorfndef_extract>(?<decls>(?&typenameinsideopt)\s*+;)\s*+(?C&extract_decls)
+	|(?<func>(?&typenameinsideoptbasic_fn_declfacet)(?&compoundstatementfacet))(?C&extract_func))

@@ -2,11 +2,11 @@
 (?<>)
 (?<typenamequalifs>(?<qualifs>(?<typesandqualifiers>\s*+
 						(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b
-						|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|\b__int64\b|\b_Bool\b)|
+						|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|\b__int(64|32|8|16)\b|\b_Bool\b)|
 						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
 						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b))
 						(?C&add_type_or_qualifier)\s*+)
-						|(\s*+(\b__inline\b|\b__forceinline\b)\s*+))|(?&structorunion)
+						|(\s*+(\b__inline\b|\b__forceinline\b|\b__unaligned\b)\s*+))|(?&structorunion)
 						|(?&&identifierminetypedeffacet<>))
 (?<>)
 (?<allqualifs>(?&qualifs)|(?&structorunion))
@@ -54,9 +54,15 @@
 
 (?&abstdecl<abstrdeclrest, abstrdeclrestalt, abstrmostoutter>=abstdecloutter)
 
+(?&abstdecl<abstrdeclrest_fn_decl, abstrdeclrestalt_fn_decl, abstrmostoutter_fn_declfacet>=abstdecloutter_fn_decl)
+
 (?<abstrdeclrestalt>(?&abstrmostoutter)(?&abstrsubs)*+)
 
+(?<abstrdeclrestalt_fn_decl>(?&abstrmostoutter_fn_declfacet)(?&abstrsubs)*+)
+
 (?<abstrdeclrest>(?&abstrmostoutterfacet)(?&abstrsubsfacet)*+)
+
+(?<abstrdeclrest_fn_decl>(?&abstrmostoutter_fn_declfacet)(?&abstrsubsfacet)*+)
 
 (?&abstdecl<abstrdecloptrestparams, abstrdecloptrestaltparams, abstrmostoutterparams>=abstdecloutterparams)
 
@@ -70,6 +76,10 @@
 
 (?<abstrmostoutter>\s*+(?&callingconv)?+((?&abstrcommonoutter<abstdecloutter>)|(?&identifierminedecl))\s*+)
 
+(?<identifierminedecl_fn_facet>(?&&identifiermine<fn_decl_ident>))
+
+(?<abstrmostoutter_fn_decl>\s*+(?&callingconv)?+((?&abstrcommonoutter<abstdecloutter>)|(?&identifierminedecl_fn_facet))\s*+)
+
 (?<abstrmostoutterparams>\s*+(?(?=(?&abstrsubsfacet))(?C&identifier_decl)(?&abstrsubs)|((?&abstrcommonoutter<abstdecloutterparams>)|(?&identifierminedecl)|(?C&identifier_decl)))\s*+)
 
 (?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
@@ -78,9 +88,9 @@
 (?<abstdeclorallqualifsbasic>
 (
 	(*F)(?&&allqualifs<>)(?&&Tabsqualifs<>)
-)|
-(?&&Tabsqualifsfacet<>)(?!(?&Tdecl)(?C&enddeclaration))
-				|(?&Tabsqualifs)(?&Tdeclfacet)(?C&endqualifs))
+)|(?<#restrictoutsidefacet>
+(?&&Tabsqualifsfacet<>)(?!(?&Tdecl)(?C&enddeclaration)))
+				|(?&&Tabsqualifsfacet<>)(?&Tdeclfacet)(?C&endqualifs))
 
 (?<Tabsqualifs, Tasbtdecloutter, Tabstinitorbitfl>)
 (?<abstdeclorallqualifs>
@@ -98,18 +108,18 @@
 				((?(DEFINE)(?&qualifsnext<>=allqualifs)(?&&Tabsqualifs<>))
 				(?&Tabsqualifs)(?&declfacet)\g{rest}(?C&endqualifs)
 				|(?&restoutter))))
-				|(?&Tabsqualifsfacet)(?&declfacet)(?&declcommafacet)*+)
+				|(?&&Tabsqualifsfacet<>)(?&declfacet)(?&declcommafacet)*+)
 
 
 (?<Tasbtdecloutter, Tabstinitorbitfl>)
 (?<decl>(?&Tasbtdecloutter)
 			(?&Tabstinitorbitfl)?+)
 
-(?<decloptorfndef>(?=(?&declsfacet))(?<decls>(?&typenameinsideopt)\s*+;)\s*+|(?&typenameinsideoptbasic)(?&compoundstatement))
-
 (?&abstdeclorallqualifs<allqualifsdecl*+, abstdecloutter, abstrinitialization>=typenameinsideopt)
 
-(?&abstdeclorallqualifsbasic<allqualifsdecl*+, abstdecloutter, abstrinitialization>=typenameinsideoptbasic)
+(?&abstdeclorallqualifsbasic<allqualifsdecl*+, abstdecloutter>=typenameinsideoptbasic)
+
+(?&abstdeclorallqualifsbasic<allqualifsdecl*+, abstdecloutter_fn_decl>=typenameinsideoptbasic_fn_decl)
 
 (?&abstdeclorallqualifs<allqualifsdecl++, abstdecloutter, abstrinitialization>=typenameinsidedecl)
 
@@ -117,11 +127,12 @@
 
 (?&abstdeclorallqualifs<allqualifsdecl++, abstdecloutter, abstrbitfield>=typenamebitfl)
 
-(?<identifierminedecl>\s*+(?!(?&keywordlistfacet))(?<ident>(?&identifierrawfacet))(?C&identifier_decl)\s*+)
+(?<identifierminedecl>\s*+(?!(?&keywordlistfacet))(?<identfacet>(?&identifierrawfacet))(?C&identifier_decl)\s*+)
 (?<>)
 (?<identifierminetypedeffacet#restrictperlonly>\s*+\b(?<typedefnmmatchedfacet>(??C&identifier_typedef))\b\s*+)
 
-(?<keywordlistfacet>(?&typesandqualifiersmask)|\b(typedef|struct|enum|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)\b)
+(?<keywordlistfacet>(?&typesandqualifiersmask)
+	|\b(typedef|struct|enum|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)\b)
 
 (?<typenamerev>(?<#restrictoutsidefacet>(?&typenamefacet)(?!(?&castexpr)))|(?&typename)(?C&applycast)(?&castexprfacet))
 
