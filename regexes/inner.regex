@@ -10,7 +10,7 @@
 						|(?<identifier>\s*+(?!(?&keywordlistfacet)|(??C&identifier_typedef))
 						(?<ident>(?&identifierrawfacet))(?C&obtainvalbyidentifier)\s*+)))\s*+)
 
-(?<identifierrawfacet>[_a-zA-Z][_a-zA-Z0-9]*+)
+(?<identifierraw>[_a-zA-Z][_a-zA-Z0-9]*+)
 
 (?<>)
 (?<fltcl>(?C&collect_float_literal))

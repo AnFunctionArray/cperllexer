@@ -40,10 +40,9 @@ close $fh;
 
 my $mainregexfinal = "((*F)";
 
-@typedefidentifiersvector = {
-    allowed => qr{(*F)},
-    disallowed => qr{(*F)}
-};
+my $defaultidentifiers = {};
+
+@typedefidentifiersvector = ($defaultidentifiers);
 
 my $entryregex;
 
@@ -64,68 +63,71 @@ parseregexfile((substr $mainregexfilecontent, length $&), 1);
 
 $mainregexdefs = $mainregexfinal . ")";
 
-my $typedefidentifiers = "";
-
 $mainregexdefs =~s/\s|\n//g if(not $matchinperl);
+
+$mainregexdefs = "$mainregexdefs(?&&$entryregex)";
 
 my %cached_instances = ();
 
 while($mainregexdefs =~ m{
-    [(][?]&&(\w+)[)]
+    [(][?]&&(\w+?)[)]
 }sxxg) {
-    $cached_instances{$1} = "(?&$1)"
+    $cached_instances{"$1"} = "(?&$1)";
+    $cached_instances{"${1}facet"} = dofacetreplacements("(?&$1)")
+}
+
+sub instantiate_cached_instance {
+    my $arg = $_[0];
+    my $isfacet = $arg =~ m{facet$} or $+{facet} ? "facet" : "";
+    $arg =~ s{facet$}{};
+    return $arg . $isfacet;
 }
 
 $mainregexdefs =~ s{
-    [(][?]&&(\w+)[)]
+    [(][?]&&(\w+?(facet)?+)[)]
 }{
-    (??{\$cached_instances{$1}})
+    (??{instantiate_cached_instance($1)})
 }sxxg;
+
+$mainregexdefs =~ s{
+    [(][?]&(\w+)facet[)]
+}{
+    dofacetreplacements("(?&$1)")
+}sxxge;
 
 while(my($k, $v) = each %cached_instances) { 
     use if $ARGV[1], re => qw(Debug EXECUTE);
     $cached_instances{$k} = qr{$mainregexdefs|$v}sxx
 }
 
-$mainregexfinal = $mainregexdefs . "|" . $entryregex;
-
-print $mainregexfinal;
+print $mainregexdefs;
 
 startmatching($subject, $mainregexfinal, basename($ARGV[0], @suffixlist)) if(not $matchinperl);
 
 exit if(not $matchinperl);
 
-print $mainregexfinal;
-
 startmodule(basename($ARGV[0], @suffixlist)) if(defined &startmodule);
 
-use extractfns;
+use if ($entryregex =~ m{facet}), extractfns => "extractfns";
 
 {
     use if $ARGV[1], re => qw(Debug EXECUTE); 
 
-    $subject =~m{$mainregexfinal$}sxx;
+    my $entry = $cached_instances{$entryregex};
+
+    $subject =~ m{^$entry$}sxx;
 }
 
 #print $&;
 
 exit;
 
-sub addtypdefidentifier {
-    $typedefidentifiers = $typedefidentifiers . $+{identifierraw} . "|" if(not $mute_callbacks and $+{typedefkeyword});
-}
-
-sub getypedefidentifiers {
-    return substr $typedefidentifiers, 0, -1;
-}
-
-sub printifdefined{
-    print $_[0] if($_[1]);
-}
-
 sub debugcallout {
     #print Dumper(\%+);
     my $captures = { %+ };
+    #print "facet -> $facet\n";
+    my $cond = ($entryregex =~ m{facet$} or not $facet);
+    #return unless($entryregex =~ m{facet$} or not $facet);
     #require re;
     #re->import('debug') if($_[1] eq "Ptr64ToPtr");
     #select($oldfh) if($_[1] eq "Ptr64ToPtr");
@@ -134,7 +136,7 @@ sub debugcallout {
 
     $subslice =~ s{\R}{ }g;
 
-    if ($_[0] ne "identifier_typedef") {
+    if ($_[0] ne "identifier_typedef" and $cond) {
         use Data::Dumper;
         use POSIX;
     
@@ -147,11 +149,11 @@ sub debugcallout {
     #    print $i . "\n";
     #}
     my $res;
-    if(defined &{ $_[0] }) {
+    if(defined &{ $_[0] } and $cond or $_[0] eq "identifier_typedef") {
         $res = $_[0]->($captures) 
     }
 
-    callout($_[0], $captures) if(defined &callout);
+    callout($_[0], $captures) if(defined &callout and $cond);
     return $res;
 }
 
@@ -227,25 +229,30 @@ sub parsing {
 =cut
 
 sub identifier_typedef {
-    my $ident = qr{(*F)}sxx;
-    foreach my $typedefidentifier (@typedefidentifiersvector) {
-        $ident = $typedefidentifier . "|" . $ident 
+    my $ident = "(*F)";
+    my %disallowed;
+    foreach my $typedefidentifier (reverse @typedefidentifiersvector) {
+        foreach my $k (keys %$typedefidentifier) {
+            $ident = "$ident|$k" if($typedefidentifier->{$k} and not exists $disallowed{$k});
+            $disallowed{$k} = 1;
+        }
     }
+    use if $ARGV[1] eq 2, re => qw(Debug EXECUTE);
+    #$ident = qr{(?>(?<typedef>(?<ident>(*F)))|$ident)(?(<ident>)(*F))}sxx;
+    #$ident = "(?>$ident)";
     print $ident . "\n";
-    return $ident;
+    return qr{$ident}sxx;
 }
 
-sub identifier_decl {
-    my $lastelem = pop @typedefidentifiersvector;
-    my $identifier = $_[0]{'identfacet'};
+sub identifier_decl_object {
+    my $identifier = $_[0]{'ident'};
     return if not $identifier;
-    $lastelem{$_[0]{'typedefkeyfacet'} // ""} = $identifier if (not );
-    $lastelem = qr{$identifier|$lastelem}sxx unless (not $_[0]{'typedefkeyfacet'});
-    push @typedefidentifiersvector, $lastelem;
+    ${$typedefidentifiersvector[-1]}{$identifier} = $_[0]{'typedefkey'};
+
 }
 
 sub beginscope {
-    push @typedefidentifiersvector, qr{(*F)}sxx;
+    push @typedefidentifiersvector, {};
 }
 
 sub endscope {
@@ -253,7 +260,7 @@ sub endscope {
 }
 
 sub entryregexmain {
-    $entryregex = $_[1] . "(?&" . $_[0] . ")";
+    $entryregex = $_[0];
 }
 
 sub getnext {
@@ -359,7 +366,7 @@ sub substitutetemplateinstances {
         $body =~ s{\(\?<\Q$template\E\b.*?>}{(};
     }
     if($isfacet) {
-        dofacetreplacements($body);
+        $body = dofacetreplacements($body);
     } else {
         #my $bodyoriginal = $body;
         #dofacetreplacements($body);
@@ -443,7 +450,7 @@ sub parseregexfile {
     #exit;
 
     my $regexfile = $regexfilecontent; 
-
+=begin
     sub addfacetdefines {
         $_[0] =~s{(?(DEFINE)$inpar)(?=(?<parnnm>[(]\?<\w+?>(?<!facet>)))(?<body>(?&inpar))}
         {
@@ -459,10 +466,10 @@ sub parseregexfile {
     }
 
     addfacetdefines($regexfile);
-    
-    $regexfile =~s/(?<!<)#restrictoutsidefacet\b//g;
+=cut    
+    $regexfile =~s/(?<!<)#restrictoutsidefacet\b>/>(?(?{\$facet})(*F))/g;
 
-    $regexfile =~s/\(\?<#restrictoutsidefacet>/(/g;
+    $regexfile =~s/\(\?<#restrictoutsidefacet>/((?(?{\$facet})(*F))/g;
 
     #$regexfile =~s/[(]\?&(?>\w+?)\#nofacet[)]/(?&$1)/g;
 
@@ -475,7 +482,7 @@ sub parseregexfile {
     #$regexfile =~s/\(\?<(\w+)#nofacet>/(?<$1>/g;
 
     my $regexfilecontentcopy = $regexfilecontent;
-=begin comment
+=begin
     sub replacefacetgroups {
         $regexfilecontent =~s/\Q$_[0]\E(facet)?>/(/g;
     }
@@ -489,13 +496,13 @@ sub parseregexfile {
     }
 
     replacenofacetgroups($1, $regexfilecontent) while($regexfilecontentcopy =~/\(\?<(\w+)#nofacet>/g); # remove references to nofacet groups
-=cut
+
     sub dofacetreplacements {
-        $_[0] =~s/\(\?C&(\S+?)\s*(<(?<args>[^()<>]*?)>)?\)//gs;
+        $_[0] =~s/\(\?C&(?!\S+?facet)(\S+?)\s*(<(?<args>[^()<>]*?)>)?\)/(?C&$1facet$2)/gs;
 
         #$regexfilecontent =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
-        $_[0] =~s/[(]\?&(&?+\w+?)(facet)?+\b/(?&$1facet/g;
+        $_[0] =~s/[(]\?([(]R)?+&(&?+\w+?)(facet)?+\b/(?$1&$2facet/g;
 
         #$regexfilecontent =~s/([(]\?)?+[(]<(?>\w+?)(facet)?+>[)]/$1(<$2facet>)/g;
 
@@ -513,7 +520,13 @@ sub parseregexfile {
         
         return $_[0]
     }
+=cut
+    sub dofacetreplacements {
+        my $actual = $_[0];
 
+        #return "(?(DEFINE)(?<facetsub>(?<facet>)$actual))(?&facetsub)";
+        return "(?(?{\$facet})$actual|((?{\$facet=1})$actual(?{\$facet=0})|(?{\$facet=0})(*F)))";
+    }
     #dofacetreplacements($regexfilecontent);
 
     $mainregexfinal = $mainregexfinal . $regexfile;

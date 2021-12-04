@@ -17,7 +17,7 @@
 (?<>)
 (?<qualifsnext>(?&qualifs)
 	|(?<#restrictoutsidefacet>(?=(?<structorunionlast>struct|union|(?<enum>enum))
-	\s*+(?&align<>)?+(?<identlasttagfacet>(?!(?&keywordlistfacet))(?&identifierrawfacet))?+(?C&add_tag))
+	\s*+(?&align<>)?+(?<identlasttag>(?!(?&keywordlistfacet))(?&identifierrawfacet))?+(?C&add_tag))
 	(?&structorunionfacet))|(?&structorunionfacet))
 
 (?<typename>\s*+[(](?=(?&&typenamequalifsfacet<>)++(?C&identifier_decl)(?&abstdecloptoutter)?+(?C&enddeclaration))
@@ -28,7 +28,7 @@
 (?<typedefdecl>(?&&identifierminetypedeffacet<>)(?=(?&allqualifsfacet)*+(?&abstdecloutterfacet)))
 
 (?<>)
-(?<allqualifsdecl>(?&allqualifs)|(?&&typedefdecl<>)|\s*+(?<typedefkeyfacet>\btypedef\b)\s*+)
+(?<allqualifsdecl>(?&allqualifs)|(?&&typedefdecl<>)|\s*+(?<typedefkey>\btypedef\b)\s*+)
 
 (?# The committee has decided against (if actually even possible) having the same name as a typedef for a parameter)
 (?<>)
@@ -54,15 +54,9 @@
 
 (?&abstdecl<abstrdeclrest, abstrdeclrestalt, abstrmostoutter>=abstdecloutter)
 
-(?&abstdecl<abstrdeclrest_fn_decl, abstrdeclrestalt_fn_decl, abstrmostoutter_fn_declfacet>=abstdecloutter_fn_decl)
-
 (?<abstrdeclrestalt>(?&abstrmostoutter)(?&abstrsubs)*+)
 
-(?<abstrdeclrestalt_fn_decl>(?&abstrmostoutter_fn_declfacet)(?&abstrsubs)*+)
-
 (?<abstrdeclrest>(?&abstrmostoutterfacet)(?&abstrsubsfacet)*+)
-
-(?<abstrdeclrest_fn_decl>(?&abstrmostoutter_fn_declfacet)(?&abstrsubsfacet)*+)
 
 (?&abstdecl<abstrdecloptrestparams, abstrdecloptrestaltparams, abstrmostoutterparams>=abstdecloutterparams)
 
@@ -75,10 +69,6 @@
 (?<abstrmostoutteropt>\s*+(?&callingconv)?+(?&abstrcommonoutter<abstdecloptoutter>)\s*+)
 
 (?<abstrmostoutter>\s*+(?&callingconv)?+((?&abstrcommonoutter<abstdecloutter>)|(?&identifierminedecl))\s*+)
-
-(?<identifierminedecl_fn_facet>(?&&identifiermine<fn_decl_ident>))
-
-(?<abstrmostoutter_fn_decl>\s*+(?&callingconv)?+((?&abstrcommonoutter<abstdecloutter>)|(?&identifierminedecl_fn_facet))\s*+)
 
 (?<abstrmostoutterparams>\s*+(?(?=(?&abstrsubsfacet))(?C&identifier_decl)(?&abstrsubs)|((?&abstrcommonoutter<abstdecloutterparams>)|(?&identifierminedecl)|(?C&identifier_decl)))\s*+)
 
@@ -119,19 +109,23 @@
 
 (?&abstdeclorallqualifsbasic<allqualifsdecl*+, abstdecloutter>=typenameinsideoptbasic)
 
-(?&abstdeclorallqualifsbasic<allqualifsdecl*+, abstdecloutter_fn_decl>=typenameinsideoptbasic_fn_decl)
-
 (?&abstdeclorallqualifs<allqualifsdecl++, abstdecloutter, abstrinitialization>=typenameinsidedecl)
 
 (?&abstdeclorallqualifsbasic<allqualifsparam++, abstdecloutterparams>=typenameinsideparams)
 
 (?&abstdeclorallqualifs<allqualifsdecl++, abstdecloutter, abstrbitfield>=typenamebitfl)
 
-(?<identifierminedecl>\s*+(?!(?&keywordlistfacet))(?<identfacet>(?&identifierrawfacet))(?C&identifier_decl)\s*+)
+(?<identifierminedecl>\s*+(?!(?&keywordlistfacet))(?<ident>(?&identifierrawfacet))
+	(?(R&typenameinsideopt)(?C&identifier_decl_object)
+	|(?(R&typenameinsideoptbasic)
+	((?<#restrictoutsidefacet>(?C&identifier_decl_object))|
+	(?C&identifier_decl_function))
+	|(?(R&typenameinsidedecl)(?C&identifier_decl_object))))
+	(?C&identifier_decl)\s*+)
 (?<>)
-(?<identifierminetypedeffacet#restrictperlonly>\s*+\b(?<typedefnmmatchedfacet>(??C&identifier_typedef))\b\s*+)
+(?<identifierminetypedeffacet#restrictperlonly>\s*+\b(?<typedefnmmatched>(??C&identifier_typedef))\b\s*+)
 
-(?<keywordlistfacet>(?&typesandqualifiersmask)
+(?<keywordlist>(?&typesandqualifiersmask)
 	|\b(typedef|struct|enum|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)\b)
 
 (?<typenamerev>(?<#restrictoutsidefacet>(?&typenamefacet)(?!(?&castexpr)))|(?&typename)(?C&applycast)(?&castexprfacet))
@@ -143,7 +137,7 @@
 (?<abstrinitialization>=(?&initializer))
 
 (?<calloutid>)
-(?<identifiermine>\s*+(?!(?&keywordlistfacet))(?<identlasttagfacet>(?&identifierrawfacet))(?C&calloutid)\s*+)
+(?<identifiermine>\s*+(?!(?&keywordlistfacet))(?<identlasttag>(?&identifierrawfacet))(?C&calloutid)\s*+)
 
 
 (?<structorunion>\s*+(?<structorunionlast>struct|union|(?<enum>enum))(?&align<>)?+
@@ -163,7 +157,7 @@
 	|(?&&identifiermine<begin_enumerator_decl>)))
 )
 (?<>)
-(?<identifierminestruct>\s*+(?!(?&keywordlistfacet))(?<identlasttagfacet>(?&identifierrawfacet))\s*+)
+(?<identifierminestruct>\s*+(?!(?&keywordlistfacet))(?<identlasttag>(?&identifierrawfacet))\s*+)
 (?#C42)
 (?<declninitopt>(?&typenameinsidedeclfacet)(?&abstrinitialization)?+)
 (?<declaration>((?&declninitoptfacet)(?!)

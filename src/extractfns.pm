@@ -19,21 +19,17 @@ sub extract_func {
     open my $fdefs, '>', $filename or die "error opening $filename: $!";
     print {$fdefs} "\#include \"decls.h\"\n\n" . $funcbody . "\n";
     close $fdefs;
-    $func_n++
+    #$func_n++
 }
 
 
 
-sub identifier_decl_facet {
-    return identifier_decl(
-        {
-            'ident' => $_[0]{'identfacet'},
-            'typedefkeyfacet' => $_[0]{'typedefkeyfacet'}
-        })
+sub identifier_declfunction {
+    $func_n = $_[0]{'ident'};
 }
 
-sub extract_decls {
-    print {$fdecls} $+{decloptorfndef} . "\n";
+sub extract_decl {
+    print {$fdecls} $+{decls} . "\n";
     $fdecls->flush()
 }
 
