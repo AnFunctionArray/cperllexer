@@ -42,8 +42,8 @@
 (?<label>(?&identifierminelabel)|\s*+(case\b(?C&beginconstantexpr)(?&primexpr):(?C&addCase)(?C&endconstantexpr)|default\s*+:(?C&addDefaultCase))\s*+)
 (?<identifierminelabel>\s*+(?!(?&keywordlistfacet))(?<lbl>(?&identifierrawfacet))\s*+:(?C&splitbb)\s*+)
 
-(?<cprogram>((?<strucdecl>(?=(?&structoruniondeclfacet))(?<structoruniondecl>(?&structorunion)\s*+;)\s*+)(?C&extract_struc)
-	|(?&decloptorfndef))*+)
+(?<cprogram>(?<strucdecl>(?=(?&structoruniondeclfacet))(?<structoruniondecl>(?&structorunion)\s*+;)\s*+)(?C&extract_struc)
+	|(?&decloptorfndef))
 
 (?<decloptorfndef>(?=(?&declsfacet))(?<decls>(?&typenameinsideopt)\s*+;)\s*+(?C&extract_decl)
-	|(?<func>(?&typenameinsideoptbasic)(?&compoundstatement))(?C&extract_func))
+	|(?=(?<func>(?&typenameinsideoptbasic)(?&compoundstatement)))(?&func))

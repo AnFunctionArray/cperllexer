@@ -70,7 +70,7 @@ $mainregexdefs = "$mainregexdefs(?&&$entryregex)";
 my %cached_instances = ();
 
 while($mainregexdefs =~ m{
-    [(][?]&&(\w+?)[)]
+    [(][?]&&(\w+?)(facet)?+[)]
 }sxxg) {
     $cached_instances{"$1"} = "(?&$1)";
     $cached_instances{"${1}facet"} = dofacetreplacements("(?&$1)")
@@ -80,7 +80,7 @@ sub instantiate_cached_instance {
     my $arg = $_[0];
     my $isfacet = $arg =~ m{facet$} or $+{facet} ? "facet" : "";
     $arg =~ s{facet$}{};
-    return $arg . $isfacet;
+    return $cached_instances{$arg . $isfacet};
 }
 
 $mainregexdefs =~ s{
@@ -108,14 +108,14 @@ exit if(not $matchinperl);
 
 startmodule(basename($ARGV[0], @suffixlist)) if(defined &startmodule);
 
-use if ($entryregex =~ m{facet}), extractfns => "extractfns";
-
 {
+    require "extractfns.pm";
+
     use if $ARGV[1], re => qw(Debug EXECUTE); 
 
     my $entry = $cached_instances{$entryregex};
 
-    $subject =~ m{^$entry$}sxx;
+    while($subject =~ m{$entry}sxxg){}
 }
 
 #print $&;
@@ -467,9 +467,9 @@ sub parseregexfile {
 
     addfacetdefines($regexfile);
 =cut    
-    $regexfile =~s/(?<!<)#restrictoutsidefacet\b>/>(?(?{\$facet})(*F))/g;
+    $regexfile =~s/(?<!<)#restrictoutsidefacet\b>/>/g;
 
-    $regexfile =~s/\(\?<#restrictoutsidefacet>/((?(?{\$facet})(*F))/g;
+    $regexfile =~s/\(\?<#restrictoutsidefacet>/(/g;
 
     #$regexfile =~s/[(]\?&(?>\w+?)\#nofacet[)]/(?&$1)/g;
 

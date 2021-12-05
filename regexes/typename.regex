@@ -118,8 +118,7 @@
 (?<identifierminedecl>\s*+(?!(?&keywordlistfacet))(?<ident>(?&identifierrawfacet))
 	(?(R&typenameinsideopt)(?C&identifier_decl_object)
 	|(?(R&typenameinsideoptbasic)
-	((?<#restrictoutsidefacet>(?C&identifier_decl_object))|
-	(?C&identifier_decl_function))
+	(?C&identifier_decl_object)(?C&extract_func)
 	|(?(R&typenameinsidedecl)(?C&identifier_decl_object))))
 	(?C&identifier_decl)\s*+)
 (?<>)

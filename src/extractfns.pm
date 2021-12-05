@@ -5,17 +5,20 @@ $filename = "D:/out/decls.h";
 open $fdecls, '>', $filename or die "error opening $filename: $!";
 
 sub extract_struc {
-    print {$fdecls} $+{strucdecl} . "\n";
+    print {$fdecls} $_[0]{strucdecl} . "\n";
     $fdecls->flush()
 }
 
-my $func_n = 0;
-
 sub extract_func {
 
-    my $funcbody = $+{func};
+    my $funcbody = $_[0]{func};
+    my $funcname = $_[0]{ident};
 
-    my $filename = "D:/out/func_$func_n.c";
+    return if not exists $_[0]{func};
+
+    print "$funcname\n";
+
+    my $filename = "D:/out/$funcname.c";
     open my $fdefs, '>', $filename or die "error opening $filename: $!";
     print {$fdefs} "\#include \"decls.h\"\n\n" . $funcbody . "\n";
     close $fdefs;
@@ -24,12 +27,12 @@ sub extract_func {
 
 
 
-sub identifier_declfunction {
+sub identifier_decl_function {
     $func_n = $_[0]{'ident'};
 }
 
 sub extract_decl {
-    print {$fdecls} $+{decls} . "\n";
+    print {$fdecls} $_[0]{decls} . "\n";
     $fdecls->flush()
 }
 
