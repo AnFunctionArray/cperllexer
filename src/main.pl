@@ -240,7 +240,7 @@ sub identifier_typedef {
     my %disallowed;
     foreach my $typedefidentifier (reverse @typedefidentifiersvector) {
         foreach my $k (keys %$typedefidentifier) {
-            $ident = "$ident|$k(?!(?&templateargsdecomp)|(?&identifierrawrest))" if($typedefidentifier->{$k} and not exists $disallowed{$k});
+            $ident = "$ident|\Q$k\E(?!(?&templateargsdecomp)|(?&identifierrawrest))" if($typedefidentifier->{$k} and not exists $disallowed{$k});
             $disallowed{$k} = 1;
         }
     }
@@ -249,14 +249,12 @@ sub identifier_typedef {
     #$ident = "(?>$ident)";
     no warnings qw(experimental::vlb);
     #print $ident . "\n";
-    return qr{(?(DEFINE)$identifierregexfilecontent)\b$ident\b}sxx;
+    return qr{(?(DEFINE)$identifierregexfilecontent)(?=(?&identifierrawinner))$ident}sxx;
 }
 
 sub identifier_decl_object {
     my $identifier = $_[0]{'ident'};
-    return if not $identifier;
-    $identifier =~ s{[*+()\]\[|]}{\\$&}gsxx;
-    $identifier =~ s{\s+}{\\s*}gsxx;
+    return if not $identifier;  
     ${$typedefidentifiersvector[-1]}{$identifier} = $_[0]{'typedefkey'};
 
 }
