@@ -2,11 +2,11 @@
 (?<>)
 (?<typenamequalifs>(?<qualifs>(?<typesandqualifiers>\s*+
 						(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b
-						|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b|\b__int(64|32|8|16)\b|\b_Bool\b)|
+						|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b(?#|\b__int(64|32|8|16)\b|\b_Bool\b))|
 						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
 						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b))
 						(?C&add_type_or_qualifier)\s*+)
-						|(\s*+(\b__inline\b|\b__forceinline\b|\b__unaligned\b)\s*+))|(?&structorunion)
+						(?#|(\s*+(\b__inline\b|\b__forceinline\b|\b__unaligned\b)\s*+)))|(?&structorunion)
 						|(?&&identifierminetypedeffacet<>))
 (?<>)
 (?<allqualifs>(?&qualifs)|(?&structorunion))
@@ -37,7 +37,7 @@
 (?<allqualifsparam>(?&allqualifs)|(?&&typedefparam<>))
 
 (?<Tabstrrest, Tabstrrestalt, Tinside>)(?<abstdecl>(?<abstrptrrev#restrictoutsidefacet>(?<abstrptr>\s*+[*]\s*+
-						(?<qualifptr>(?&qualifiers)|\s*+\b__ptr(64|32)\b\s*+)*+)
+						(?<qualifptr>(?&qualifiers)(?#|\s*+\b__ptr(64|32)\b\s*+))*+)
 						(?!(?&abstrptrrev)(?C&addptrtotype))
 						(?<abstrrest>(?&Tinside)(?<abstrsubs>\s*+(\[(?C&beginconstantexpr)(?&primexpr)\]
 						(?C&addsubtotype)(?C&endconstantexpr)
@@ -122,7 +122,7 @@
 	|(?(R&typenameinsidedecl)(?C&identifier_decl_object))))
 	(?C&identifier_decl)\s*+)
 (?<>)
-(?<identifierminetypedeffacet#restrictperlonly>\s*+\b(?<typedefnmmatched>(??C&identifier_typedef))\b\s*+)
+(?<identifierminetypedeffacet#restrictperlonly>\s*+(?<typedefnmmatched>(??C&identifier_typedef))(?!(?&letter))\s*+)
 
 (?<keywordlist>(?&typesandqualifiersmask)
 	|\b(typedef|struct|enum|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)\b)
@@ -144,7 +144,7 @@
 	(?<enumerator>(?&&identifiermine<add_ident_to_enum_def>)
 	((=(?C&beginconstantexpr)(?&assignorsomething)(?C&end_ass_to_enum_def))
 	|(?C&end_without_ass_to_enum_def)))?+(,(?&enumerator))*+,?+\s*+
-	|(?C&struc_or_union_body)\s*+((?&strucdecl)|(?&typenamebitfl)\s*+;\s*+)*+)
+	|(?C&struc_or_union_body)\s*+((?&typenamebitfl)\s*+;\s*+)*+)
 	[}](?(<enum>)()|(?C&endbuildingstructorunion))(?C&add_tag)\s*+
 |(?&identifierminestruct<>)(?C&add_tag))(?#|(?&enum<>)))
 

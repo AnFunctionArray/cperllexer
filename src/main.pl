@@ -19,6 +19,13 @@ my $mainregexfilecontent = do { local $/; <$fh> };
 
 close $fh;
 
+$filename = "regexes/identifier.regex";
+open my $fh, '<', $filename or die "error opening $filename: $!";
+
+my $identifierregexfilecontent = do { local $/; <$fh> };
+
+close $fh;
+
 $filename = "./utility/regex.regex";
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
@@ -115,7 +122,7 @@ startmodule(basename($ARGV[0], @suffixlist)) if(defined &startmodule);
 
     my $entry = $cached_instances{$entryregex};
 
-    while($subject =~ m{$entry}sxxg){}
+    $subject =~ m{^$entry$}sxx
 }
 
 #print $&;
@@ -233,20 +240,23 @@ sub identifier_typedef {
     my %disallowed;
     foreach my $typedefidentifier (reverse @typedefidentifiersvector) {
         foreach my $k (keys %$typedefidentifier) {
-            $ident = "$ident|$k" if($typedefidentifier->{$k} and not exists $disallowed{$k});
+            $ident = "$ident|$k(?!(?&templateargsdecomp)|(?&identifierrawrest))" if($typedefidentifier->{$k} and not exists $disallowed{$k});
             $disallowed{$k} = 1;
         }
     }
     use if $ARGV[1] eq 2, re => qw(Debug EXECUTE);
     #$ident = qr{(?>(?<typedef>(?<ident>(*F)))|$ident)(?(<ident>)(*F))}sxx;
     #$ident = "(?>$ident)";
-    print $ident . "\n";
-    return qr{$ident}sxx;
+    no warnings qw(experimental::vlb);
+    #print $ident . "\n";
+    return qr{(?(DEFINE)$identifierregexfilecontent)\b$ident\b}sxx;
 }
 
 sub identifier_decl_object {
     my $identifier = $_[0]{'ident'};
     return if not $identifier;
+    $identifier =~ s{[*+()\]\[|]}{\\$&}gsxx;
+    $identifier =~ s{\s+}{\\s*}gsxx;
     ${$typedefidentifiersvector[-1]}{$identifier} = $_[0]{'typedefkey'};
 
 }
