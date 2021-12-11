@@ -1,5 +1,5 @@
 #include "typename.regex", "inner.regex", "unary.regex", "binary.regex", "primexpr.regex"
-#entry ^cprogramfacet
+#entry ^cprogram
 
 (?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?C&addcontinue);|break\s*+(?C&addbreak);|return\b(?&primexpr)?;(?C&endreturn))\s*+)
 (?<identifierminegoto>\s*+(?!(?&keywordlistfacet))(?<gtid>(?&identifierrawfacet))(?C&gotolabel)\s*+)
@@ -19,4 +19,6 @@
 (?<cprogram>((?<strucdecl>(?=(?&structoruniondeclfacet))(?<structoruniondecl>(?&structorunion)\s*+;)\s*+)(?C&extract_struc)
 	|(?&decloptorfndef))*+)
 
-(?<decloptorfndef>(?=(?&func))(?<func>(?&typenameinsideoptbasic)(?&compoundstatement))|(?<decls>(?&typenameinsideopt)\s*+;)\s*+(?C&extract_decl))
+(?<funcdef>(?=(?<func>(?&funcinnerfacet)))(?<funcinner>(?&typenameinsideoptbasic)(?&compoundstatement)))
+
+(?<decloptorfndef>(?&funcdef)|(?<decls>(?&typenameinsideopt)\s*+;)\s*+(?C&extract_decl))

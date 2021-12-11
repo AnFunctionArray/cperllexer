@@ -1,4 +1,6 @@
-struct {
+typedef int a;
+
+int main() {
     int a;
-    float b;
-};
+    sizeof(a);
+}

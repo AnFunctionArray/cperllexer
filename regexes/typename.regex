@@ -17,7 +17,7 @@
 (?<>)
 (?<qualifsnext>(?&qualifs)
 	|(?(?{$facet})|(?=(?<structorunionlast>struct|union|(?<enum>enum))
-	\s*+(?&align<>)?+(?<identlasttag>(?#!(?&keywordlistfacet))(?&identifierrawfacet))?+(?C&add_tag)))
+	\s*+(?&align<>)?+(?<identlasttag>(?!(?&keywordlistfacet))(?&identifierrawfacet))?+(?C&add_tag)))
 	(?&structorunionfacet))
 
 (?<typename>\s*+[(](?=(?&&typenamequalifsfacet<>)++(?C&identifier_decl)(?&abstdecloptoutter)?+(?C&enddeclaration))
@@ -116,7 +116,7 @@
 
 (?&abstdeclorallqualifs<allqualifsdecl++, abstdecloutter, abstrbitfield>=typenamebitfl)
 
-(?<identifierminedecl>\s*+(?#!(?&keywordlistfacet))(?<ident>(?&identifierrawfacet))
+(?<identifierminedecl>\s*+(?!(?&keywordlistfacet))(?<ident>(?&identifierrawfacet))
 	(?(R&func)|(?(R&typenameinsideopt)(?C&identifier_decl_object)
 	|(?(R&typenameinsideoptbasic)
 	(?C&identifier_decl_object)(?C&extract_func)
@@ -137,7 +137,7 @@
 (?<abstrinitialization>=(?&initializer))
 
 (?<calloutid>)
-(?<identifiermine>\s*+(?#!(?&keywordlistfacet))(?<identlasttag>(?&identifierrawfacet))(?C&calloutid)\s*+)
+(?<identifiermine>\s*+(?!(?&keywordlistfacet))(?<identlasttag>(?&identifierrawfacet))(?C&calloutid)\s*+)
 
 
 (?<structorunion>\s*+(?<structorunionlast>struct|union|(?<enum>enum))(?&align<>)?+
@@ -157,7 +157,7 @@
 	|(?&&identifiermine<begin_enumerator_decl>)))
 )
 (?<>)
-(?<identifierminestruct>\s*+(?#!(?&keywordlistfacet))(?<identlasttag>(?&identifierrawfacet))\s*+)
+(?<identifierminestruct>\s*+(?!(?&keywordlistfacet))(?<identlasttag>(?&identifierrawfacet))\s*+)
 (?#C42)
 (?<declninitopt>(?&typenameinsidedeclfacet)(?&abstrinitialization)?+)
 (?<declaration>((?&declninitoptfacet)(?!)

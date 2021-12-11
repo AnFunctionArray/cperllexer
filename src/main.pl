@@ -19,6 +19,8 @@ my $subject = do { local $/; <$fh> };
 
 close $fh;
 
+$typedef_regex = "(*F)";
+
 #$filename = "output.txt";
 #open fhoutput, '>', $filename or die "error opening $filename: $!";
 
@@ -68,7 +70,7 @@ $mainregexdefs = $mainregexfinal . ")";
 
 $mainregexdefs =~s/\s|\n//g if(not $matchinperl);
 
-$mainregexdefs = "$mainregexdefs(?&&$entryregex)";
+$mainregexdefs = "$mainregexdefs^(?&&$entryregex)";
 
 my %cached_instances = ();
 
@@ -100,7 +102,7 @@ $mainregexdefs =~ s{
 
 while(my($k, $v) = each %cached_instances) { 
     use if $ARGV[1], re => qw(Debug EXECUTE);
-    $cached_instances{$k} = qr{$mainregexdefs|$v}sxx
+    $cached_instances{$k} = qr{$mainregexdefs|$v}sxxn
 }
 
 print $cached_instances{$entryregex};
@@ -119,7 +121,7 @@ if(not $isnested)
 
     my $entry = $cached_instances{$entryregex};
 
-    $subject =~ m{^$entry$}sxx
+    $subject =~ m{$entry$}sxxn
 }
 
 #}
@@ -154,7 +156,7 @@ exit;
 sub debugcallout {
     #print Dumper(\%+);
     my $captures = { %+ };
-    print "facet -> $facet\n";
+    #print "facet -> $facet\n";
     my $cond = ($entryregex =~ m{facet$} or not $facet);
     #return unless($entryregex =~ m{facet$} or not $facet);
     #require re;
@@ -257,7 +259,7 @@ sub parsing {
 
 =cut
 
-sub identifier_typedef {
+sub regenerate_typedef_regex {
     my $ident = "(*F)";
     my %disallowed;
     foreach my $typedefidentifier (reverse @typedefidentifiersvector) {
@@ -271,14 +273,19 @@ sub identifier_typedef {
     #$ident = "(?>$ident)";
     no warnings qw(experimental::vlb);
     print $ident . "\n";
-    return qr{$ident}sxx;
+    $typedef_regex = qr{$ident}sxxn;
+}
+
+sub identifier_typedef {
+    #print "$typedef_regex\n";
+    return $typedef_regex;
 }
 
 sub identifier_decl_object {
     my $identifier = $_[0]{'ident'};
     return if not $identifier;  
     ${$typedefidentifiersvector[-1]}{$identifier} = $_[0]{'typedefkey'};
-
+    regenerate_typedef_regex() if(${$typedefidentifiersvector[-1]}{$identifier} or $identifier =~ $typedef_regex);
 }
 
 sub beginscope {

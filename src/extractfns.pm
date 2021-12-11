@@ -1,7 +1,7 @@
 use IO::Handle;
 use re 'eval';
 
-$filename = "/Users/alexander/out/decls.h";
+$filename = "D:/out/decls.h";
 open $fdecls, '>', $filename or die "error opening $filename: $!";
 
 sub extract_struc {
@@ -18,7 +18,7 @@ sub extract_func {
 
     print "$funcname\n";
 
-    my $filename = "/Users/alexander/out/$funcname.c";
+    my $filename = "D:/out/$funcname.c";
     open my $fdefs, '>', $filename or die "error opening $filename: $!";
     print {$fdefs} "\#include \"decls.h\"\n\n" . $funcbody . "\n";
     close $fdefs;
