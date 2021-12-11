@@ -1,5 +1,5 @@
 (?<unary>(?<prefixarith>\s*+(?<prefixarithraw>[+][+]|--))(?&unaryexpr)(?C&unaryincdec)
-	|((?<#restrictoutsidefacet>(?&unaryopfacet)(?!(?&castexpr)))|(?&unaryop)(?&castexprfacet))
+	|((?(?{$facet})(*F))((?&unaryopfacet)(?!(?&castexpr)))|(?&unaryop)(?&castexprfacet))
 	|\s*+\bsizeof\b((?&typename)(?C&endsizeoftypename)|(?&unaryexpr)(?C&endsizeofexpr)))
 
 

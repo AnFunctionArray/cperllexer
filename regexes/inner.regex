@@ -1,8 +1,8 @@
-(?<inner>\s*+((("|(?<begincharliteral>'))
+(?<inner>\s*+(((?<stringlit>("|(?<begincharliteral>'))
 						(?#C4<begincharliteral>)((?<escape>(?<escaperaw>\\(?:(x)[0-9a-fA-F]++|(?:(b)[01]++|(?:(0)[0-7]++|(\d++|(?&quote<>)|t|n))))))
 						(?C&addescapesequencetostring)|
 						(?<text>(?<textraw>((?!(?&escape)|(?&quote<>)).)++)(?C&addplaintexttostring)))*+(?&quote<>)
-						(?C&add_literal)
+						(?C&add_literal))
 						|(?!(?&floatingfacet))(?<numberliteral>(?<numberliteralraw>(?:(0x)(?<hex>[0-9a-fA-F]++)|(?:(0b)(?<bin>[01]++)
 						|(?:(0)(?<oct>[0-7]++)|(?<dec>\d++))))(?<lng>[Uu](ll|LL|[lL])?+|(ll|LL|[lL])[Uu]?+)?+)
 						(?C&num_lit))
@@ -21,3 +21,5 @@
 
 (?<>)
 (?<quote>(?(<begincharliteral>)'|"))
+
+(?<identifierraw>\b[_a-zA-Z](?<letter>[_a-zA-Z0-9])*+\b)

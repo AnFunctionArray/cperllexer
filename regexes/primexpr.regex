@@ -1,0 +1,24 @@
+(?<primexpr>(?&assignorsomething)(,(?C35)\s*+(?&assignorsomething))*)
+
+
+(?<castexpr>(?&typenamerev)|(?<unaryexpr>((?&inner)|(?<inparenths>\s*+[(](?C87)(?&primexpr)[)]
+						(?C88)\s*+))(((\[(?&primexpr)\](?C&subscript)|[(](?C&startfunctioncall)(?&primexpr)?[)](?C&endfunctioncall))\s*+
+						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?&identifierminemember<>)
+						|(?<postfixarith>(?<postfixarithraw>[+][+]|--)\s*+)
+						(?C&unaryincdec)))*+
+						|(?&unary)))
+(?<>)
+(?<identifierminemember>\s*+(?!(?&keywordlistfacet))(?<ident>(?&identifierrawfacet))
+	(?C&memberaccess)\s*+)
+
+(?<testentry>(?<innertest>(?&orlogiorsomething));)
+
+(?<testxpr>(?&inner)|(?&inparenths))
+
+	(?<assignorsomething>(?=(?&assignornothingfacet))(?<assignornothing>(?&unaryexpr)(?<assignop>(?<binoplast>=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+))
+		(?&assignorsomething)(?!(?&orlogicplusrestfacet))(?C&binary)|(?&ternaryorsomething))
+
+	(?<ternaryorsomething>(?=(?&ternornothingfacet))(?<ternornothing>(?&orlogiorsomething)(?&ternaryrest))(?&ternaryorsomething)(?!(?&orlogicplusrestfacet))(?C34)
+		|(?=(?&orlogiorsomethingfacet))(?&orlogiorsomething))
+
+	(?<ternaryrest>\?(?C33)(?&primexpr):(?C32))	

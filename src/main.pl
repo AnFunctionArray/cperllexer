@@ -12,27 +12,6 @@ my $inpar = qr{(?<inpar>\((?<inner>(([^][()\\]|\\.)++|(?&inpar)
                         |(?<insquare>\[\^?+(.|\\.)(([^]\\]|\\.)++
                         |(?&insquare))*\]))*)\))}xxs;
 
-$filename = "regexes/main.regex";
-open my $fh, '<', $filename or die "error opening $filename: $!";
-
-my $mainregexfilecontent = do { local $/; <$fh> };
-
-close $fh;
-
-$filename = "regexes/identifier.regex";
-open my $fh, '<', $filename or die "error opening $filename: $!";
-
-my $identifierregexfilecontent = do { local $/; <$fh> };
-
-close $fh;
-
-$filename = "./utility/regex.regex";
-open my $fh, '<', $filename or die "error opening $filename: $!";
-
-my $metaregexfilecontent = do { local $/; <$fh> };
-
-close $fh;
-
 $filename = $ARGV[0];
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
@@ -44,6 +23,23 @@ close $fh;
 #open fhoutput, '>', $filename or die "error opening $filename: $!";
 
 #select fhoutput;
+
+#sub loadregex {
+my $isnested = $_[0];
+
+$filename = "regexes/main.regex";
+open my $fh, '<', $filename or die "error opening $filename: $!";
+
+my $mainregexfilecontent = do { local $/; <$fh> };
+
+close $fh;
+
+$filename = "./utility/regex.regex";
+open my $fh, '<', $filename or die "error opening $filename: $!";
+
+my $metaregexfilecontent = do { local $/; <$fh> };
+
+close $fh;
 
 my $mainregexfinal = "((*F)";
 
@@ -107,14 +103,15 @@ while(my($k, $v) = each %cached_instances) {
     $cached_instances{$k} = qr{$mainregexdefs|$v}sxx
 }
 
-print $mainregexdefs;
+print $cached_instances{$entryregex};
 
 startmatching($subject, $mainregexfinal, basename($ARGV[0], @suffixlist)) if(not $matchinperl);
 
 exit if(not $matchinperl);
 
-startmodule(basename($ARGV[0], @suffixlist)) if(defined &startmodule);
+startmodule(basename($ARGV[0], @suffixlist)) if(defined &startmodule and not $nested);
 
+if(not $isnested)
 {
     require "extractfns.pm";
 
@@ -125,6 +122,31 @@ startmodule(basename($ARGV[0], @suffixlist)) if(defined &startmodule);
     $subject =~ m{^$entry$}sxx
 }
 
+#}
+
+=for comment
+
+sub recovery_mode() {
+    my $failedat = pos();
+    my $subslice = substr $subject, pos(), 30;
+
+    $subslice =~ s{\R}{ }g;
+
+    print "Failed to match around: $subslice.\n";
+
+    print {$fh} $failedat;
+
+    {local $,='\n';print @typedefidentifiersvector}
+
+    open my $fh, '>', $filename or die "error opening $filename: $!";
+    print {$fh} $file;
+    close $fh;
+}
+
+=cut
+
+#loadregex();
+
 #print $&;
 
 exit;
@@ -132,7 +154,7 @@ exit;
 sub debugcallout {
     #print Dumper(\%+);
     my $captures = { %+ };
-    #print "facet -> $facet\n";
+    print "facet -> $facet\n";
     my $cond = ($entryregex =~ m{facet$} or not $facet);
     #return unless($entryregex =~ m{facet$} or not $facet);
     #require re;
@@ -240,7 +262,7 @@ sub identifier_typedef {
     my %disallowed;
     foreach my $typedefidentifier (reverse @typedefidentifiersvector) {
         foreach my $k (keys %$typedefidentifier) {
-            $ident = "$ident|\Q$k\E(?!(?&templateargsdecomp)|(?&identifierrawrest))" if($typedefidentifier->{$k} and not exists $disallowed{$k});
+            $ident = qr{$ident|\Q$k\E} if($typedefidentifier->{$k} and not exists $disallowed{$k});
             $disallowed{$k} = 1;
         }
     }
@@ -248,8 +270,8 @@ sub identifier_typedef {
     #$ident = qr{(?>(?<typedef>(?<ident>(*F)))|$ident)(?(<ident>)(*F))}sxx;
     #$ident = "(?>$ident)";
     no warnings qw(experimental::vlb);
-    #print $ident . "\n";
-    return qr{(?(DEFINE)$identifierregexfilecontent)(?=(?&identifierrawinner))$ident}sxx;
+    print $ident . "\n";
+    return qr{$ident}sxx;
 }
 
 sub identifier_decl_object {
@@ -363,7 +385,7 @@ sub substitutetemplateinstances {
                 "()"
             }}eg;
 
-        $body =~ s{\b$param\b}{$argident}g;
+        $body =~ s{\b$param(facet)?+\b}{$argident$1}g;
 
         #print $str;
     }
@@ -475,9 +497,9 @@ sub parseregexfile {
 
     addfacetdefines($regexfile);
 =cut    
-    $regexfile =~s/(?<!<)#restrictoutsidefacet\b>/>/g;
+    #$regexfile =~s/(?<!<)#restrictoutsidefacet\b>/>(?(?{$facet})/g;
 
-    $regexfile =~s/\(\?<#restrictoutsidefacet>/(/g;
+    #$regexfile =~s/\(\?<#restrictoutsidefacet>/((*F)/g;
 
     #$regexfile =~s/[(]\?&(?>\w+?)\#nofacet[)]/(?&$1)/g;
 
