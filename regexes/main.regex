@@ -1,13 +1,11 @@
-#include "typename.regex", "inner.regex", "unary.regex", "binary.regex", "primexpr.regex"
-#entry ^cprogram
+
 
 (?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?C&addcontinue);|break\s*+(?C&addbreak);|return\b(?&primexpr)?;(?C&endreturn))\s*+)
 (?<identifierminegoto>\s*+(?!(?&keywordlistfacet))(?<gtid>(?&identifierrawfacet))(?C&gotolabel)\s*+)
-(?<declsbb>(?&typenameinsidedecl)\s*+;)
 (?<iterationstatement>\s*+(while\s*+[(](?C&startforloopcond)(?&primexpr)[)](?C&endforloopcond)(?C&addforloopiter)(?&statement)(?C&endforloop)|do\b(?C&startdowhileloop)(?&statement)while\s*+[(](?&primexpr)[)](?C&enddowhileloop)\s*+;
-	|for\s*+[(]((?&declsbb)|(?&exprstatement))?+(?C&startforloopcond)(?&primexpr)?;(?C&endforloopcond)\s*+(?&primexpr)?+(?C&addforloopiter)[)](?&statement)(?C&endforloop))\s*+)
+	|for\s*+[(]((?&&declsbb)|(?&exprstatement))?+(?C&startforloopcond)(?&primexpr)?;(?C&endforloopcond)\s*+(?&primexpr)?+(?C&addforloopiter)[)](?&statement)(?C&endforloop))\s*+)
 (?<exprstatement>(?&primexpr)?;(?C&endexpression)\s*+)
-(?<compoundstatement>\s*+[{](?C&beginscope)((?&strucdecl)|(?&declsbb)|(?&statement))*+\s*+[}](?C&endscope)\s*+)
+(?<compoundstatement>\s*+[{](?C&beginscope)((?&&declsbb)|(?&statement))*+\s*+[}](?C&endscope)\s*+)
 (?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?C&startifstatement)(?&statement)(else\b(?C&continueifstatement)(?&statement))?+(?C&endifstatement)|switch\s*+[(](?&primexpr)[)](?C&startswitch)(?&statement)(?C&endswitch))\s*+)
 
 (?<statement>(?=(?&labelfacet)++(?&statementinnerfacet))(?&label)++(?&statementinner)|(?&statementinner))
@@ -15,10 +13,3 @@
 
 (?<label>(?&identifierminelabel)|\s*+(case\b(?C&beginconstantexpr)(?&primexpr):(?C&addCase)(?C&endconstantexpr)|default\s*+:(?C&addDefaultCase))\s*+)
 (?<identifierminelabel>\s*+(?!(?&keywordlistfacet))(?<lbl>(?&identifierrawfacet))\s*+:(?C&splitbb)\s*+)
-
-(?<cprogram>((?<strucdecl>(?=(?&structoruniondeclfacet))(?<structoruniondecl>(?&structorunion)\s*+;)\s*+)(?C&extract_struc)
-	|(?&decloptorfndef))*+)
-
-(?<funcdef>(?=(?<func>(?&funcinnerfacet)))(?<funcinner>(?&typenameinsideoptbasic)(?&compoundstatement)))
-
-(?<decloptorfndef>(?&funcdef)|(?<decls>(?&typenameinsideopt)\s*+;)\s*+(?C&extract_decl))

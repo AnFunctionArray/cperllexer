@@ -29,7 +29,7 @@ $typedef_regex = "(*F)";
 #sub loadregex {
 my $isnested = $_[0];
 
-$filename = "regexes/main.regex";
+$filename = "regexes/typename.regex";
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
 my $mainregexfilecontent = do { local $/; <$fh> };
@@ -49,6 +49,8 @@ my $defaultidentifiers = {};
 
 @typedefidentifiersvector = ($defaultidentifiers);
 
+@typedefidentifierschanged = (0);
+
 my $entryregex;
 
 my $matchinperl = 1;
@@ -66,7 +68,7 @@ entryregexmain($-{entrygroup}[0], $-{prefix}[0]);
 
 parseregexfile((substr $mainregexfilecontent, length $&), 1);
 
-$mainregexdefs = $mainregexfinal . ")";
+$mainregexdefs = "$mainregexfinal";
 
 $mainregexdefs =~s/\s|\n//g if(not $matchinperl);
 
@@ -274,25 +276,43 @@ sub regenerate_typedef_regex {
     no warnings qw(experimental::vlb);
     print $ident . "\n";
     $typedef_regex = qr{$ident}sxxn;
+    $needregen = 0;
 }
 
 sub identifier_typedef {
-    #print "$typedef_regex\n";
+    regenerate_typedef_regex() if($needregen);
+    print "$typedef_regex\n";
     return $typedef_regex;
+}
+
+sub endfulldecl {
+    if($typedefidentifierschanged[-1]) {
+        regenerate_typedef_regex();
+    }
 }
 
 sub identifier_decl_object {
     my $identifier = $_[0]{'ident'};
-    return if not $identifier;  
+    return if not $identifier;
+    #$last_object_identifier = $identifier;
+    my $priorstate = exists ${$typedefidentifiersvector[-1]}{$identifier} ? ${$typedefidentifiersvector[-1]}{$identifier} : -1;
     ${$typedefidentifiersvector[-1]}{$identifier} = $_[0]{'typedefkey'};
-    regenerate_typedef_regex() if(${$typedefidentifiersvector[-1]}{$identifier} or $identifier =~ $typedef_regex);
+    #$regenerate_needed = 1 
+    if($priorstate ne ${$typedefidentifiersvector[-1]}{$identifier}
+         and ${$typedefidentifiersvector[-1]}{$identifier} ? $priorstate ne -1 : 1) {
+        #regenerate_typedef_regex();
+        $needregen = $typedefidentifierschanged[-1] = 1;
+        #$regenerate_needed = 0;
+    }
 }
 
 sub beginscope {
     push @typedefidentifiersvector, {};
+    push @typedefidentifierschanged, 0;
 }
 
 sub endscope {
+    $needregen = pop @typedefidentifierschanged;
     pop @typedefidentifiersvector;
 }
 
@@ -392,7 +412,7 @@ sub substitutetemplateinstances {
                 "()"
             }}eg;
 
-        $body =~ s{\b$param(facet)?+\b}{$argident$1}g;
+        $body =~ s{\b$param(facet)?+\b}{$argident$1$argqualifs}g;
 
         #print $str;
     }

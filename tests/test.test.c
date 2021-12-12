@@ -1,6 +1,6 @@
 typedef int a;
 
 int main() {
-    int a;
+    a a;
     sizeof(a);
 }

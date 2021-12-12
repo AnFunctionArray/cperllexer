@@ -27,9 +27,9 @@ sub extract_func {
 
 
 
-sub identifier_decl_function {
-    $func_n = $_[0]{'ident'};
-}
+#sub identifier_decl_function {
+#    $func_n = $_[0]{'ident'};
+#}
 
 sub extract_decl {
     print {$fdecls} $_[0]{decls} . "\n";

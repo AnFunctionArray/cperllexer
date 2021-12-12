@@ -1,6 +1,6 @@
 (?<unary>(?<prefixarith>\s*+(?<prefixarithraw>[+][+]|--))(?&unaryexpr)(?C&unaryincdec)
-	|((?(?{$facet})(*F))((?&unaryopfacet)(?!(?&castexpr)))|(?&unaryop)(?&castexprfacet))
-	|\s*+\bsizeof\b((?&typename)(?C&endsizeoftypename)|(?&unaryexpr)(?C&endsizeofexpr)))
+	|((?(?{$facet})(*F))(?=(?<unop>(?&unaryopfacet))(?&castexpr))\g{unop}(?&castexprfacet))
+	|\s*+\bsizeof\b(?>(?&typename)(?C&endsizeoftypename)|(?&unaryexpr)(?C&endsizeofexpr)))
 
 
 						(?<unaryop>\s*+(?<unop>[\&\*\+\-\~\!])(?C&unary))
