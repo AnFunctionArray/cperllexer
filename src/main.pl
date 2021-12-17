@@ -2,6 +2,12 @@
 
 use re 'eval';
 
+no warnings qw(experimental::vlb);
+
+$facet = 0;
+
+#use re qw(Debug ALL);
+
 use experimental 'switch';
 
 use File::Basename;
@@ -43,7 +49,7 @@ my $metaregexfilecontent = do { local $/; <$fh> };
 
 close $fh;
 
-my $mainregexfinal = "((*F)";
+my $mainregexfinal = "";
 
 my $defaultidentifiers = {};
 
@@ -72,9 +78,19 @@ $mainregexdefs = "$mainregexfinal";
 
 $mainregexdefs =~s/\s|\n//g if(not $matchinperl);
 
-$mainregexdefs = "$mainregexdefs^(?&&$entryregex)";
+$mainregexdefs = "$mainregexdefs(?&&$entryregex)";
 
 my %cached_instances = ();
+
+while($mainregexdefs =~ m{
+    (?=[(][?]<(\w+?)>)$inpar.*?[^()]*+[(][?]&&\1(facet)?+[)]
+}sxxg) {
+    $cached_instances{"$1"} = $+{inpar};
+    print "\n\n\n========================================================";
+                                print "creating $+{inpar} \n";
+                                print "========================================================\n\n\n";
+    $cached_instances{"${1}facet"} = dofacetreplacements($+{inpar})
+}
 
 while($mainregexdefs =~ m{
     [(][?]&&(\w+?)(facet)?+[)]
@@ -104,7 +120,14 @@ $mainregexdefs =~ s{
 
 while(my($k, $v) = each %cached_instances) { 
     use if $ARGV[1], re => qw(Debug EXECUTE);
-    $cached_instances{$k} = qr{$mainregexdefs|$v}sxxn
+        print "\n\n\n========================================================";
+                                print "compiling (*F)($mainregexdefs)|$v \n";
+                                print "========================================================\n\n\n";
+    if($entryregex ne $k) {
+        $cached_instances{$k} = qr{(*F)($mainregexdefs)|$v}sxxn
+    } else {
+        $cached_instances{$k} = qr{(*F)($mainregexdefs)|^$v}sxxn
+    }
 }
 
 print $cached_instances{$entryregex};
@@ -123,7 +146,7 @@ if(not $isnested)
 
     my $entry = $cached_instances{$entryregex};
 
-    $subject =~ m{$entry$}sxxn
+    $subject =~ $entry
 }
 
 #}
@@ -273,33 +296,33 @@ sub regenerate_typedef_regex {
     use if $ARGV[1] eq 2, re => qw(Debug EXECUTE);
     #$ident = qr{(?>(?<typedef>(?<ident>(*F)))|$ident)(?(<ident>)(*F))}sxx;
     #$ident = "(?>$ident)";
-    no warnings qw(experimental::vlb);
     print $ident . "\n";
     $typedef_regex = qr{$ident}sxxn;
     $needregen = 0;
 }
 
 sub identifier_typedef {
-    regenerate_typedef_regex() if($needregen);
+    #regenerate_typedef_regex() if($needregen);
     print "$typedef_regex\n";
     return $typedef_regex;
 }
 
 sub endfulldecl {
-    if($typedefidentifierschanged[-1]) {
+    if($needregen) {
         regenerate_typedef_regex();
     }
 }
 
-sub identifier_decl_object {
+sub identifier_decl {
     my $identifier = $_[0]{'ident'};
     return if not $identifier;
     #$last_object_identifier = $identifier;
     my $priorstate = exists ${$typedefidentifiersvector[-1]}{$identifier} ? ${$typedefidentifiersvector[-1]}{$identifier} : -1;
-    ${$typedefidentifiersvector[-1]}{$identifier} = $_[0]{'typedefkey'};
+    my $currentstate = $_[0]{'typedefkey'};
+    ${$typedefidentifiersvector[-1]}{$identifier} = $currentstate;
+    #print "$priorstate -> $currentstate\n";
     #$regenerate_needed = 1 
-    if($priorstate ne ${$typedefidentifiersvector[-1]}{$identifier}
-         and ${$typedefidentifiersvector[-1]}{$identifier} ? $priorstate ne -1 : 1) {
+    if($priorstate ne $currentstate) { #and $currentstate ? 1 : $priorstate ne -1) {
         #regenerate_typedef_regex();
         $needregen = $typedefidentifierschanged[-1] = 1;
         #$regenerate_needed = 0;
@@ -314,6 +337,7 @@ sub beginscope {
 sub endscope {
     $needregen = pop @typedefidentifierschanged;
     pop @typedefidentifiersvector;
+    regenerate_typedef_regex() if($needregen);
 }
 
 sub entryregexmain {
@@ -325,6 +349,7 @@ sub getnext {
 
     return $+{arg};
 }
+
 
 sub substitutetemplateinstances {
     my $backup = $&;
@@ -356,18 +381,22 @@ sub substitutetemplateinstances {
 
     my $body = $+{inpar};
 
+    my $closure = $+{closure};
+
     #push @arrayoftemplates, $templatetoreplace unless ($templatetoreplace ~~ @arrayoftemplates);
 
     while(1) {
         #my $arg = getnext($args);
 
-        $args =~ s{^(\s*+$inpar\s*+|\s*+(?<arg>\S*?)\s*+($|,))}{}sxx;
+        $args =~ s{^(\s*+$inpar\s*+|\s*+(?<arg>\S*?)(\s*+\bas\b\s*+(?<alias>\w*))?+\s*+($|,))}{}sxx;
 
         #print $+{inpar} . "\n\n";
 
         my $inpar = $+{inpar};
 
         my $arg = $+{arg};
+
+        my $alias = $+{alias};
 
         #print $arg . "\n";
 
@@ -402,17 +431,34 @@ sub substitutetemplateinstances {
         $arg = $argident = substitutetemplateinstancesdoregex($inpar, $regexcontent) if($inpar);
         $body = $inpar . $body;
 
-        print $param . "->" . $argident . "\n";
+        print $body . "\n";
 
-        $body =~ s{(\(\?&{1,2})$param((facet)?+(?<inargs><(?<args>[^<>]++|(?&inargs))*+>)?+)\)}{
-            if($arg) {if(not $argcallout) { $1 . $argident .  $2 . ")" . $argqualifs; }
-            else {
-                "(" . $argqualifs . "?C" . $argcallout .  $2 . ")" ;
+        die "expr as arguments not supported currently" if($inpar);
+
+        print $param . "->" . $argident . " as $alias\n";
+
+        $body =~ s{(\(\?&{1,2})$param(facet)?+((?<inargs><(?<args>[^<>]++|(?&inargs))*+>)?+)\)}{
+            if($arg) {if(not $argcallout) {
+                if($+{inargs} and $alias) {
+                    $1 . $argident . ($isfacet ? "" : $2) . $3 . "=$alias) . $argqualif" ;
+                } else {
+                    $1 . $argident . ($isfacet ? "" : $2) . $3 . ")" . $argqualifs ;
+                }
+            } else {
+                "(" . $argqualifs . "?C" . $argcallout . ")" ;
             } }else {
                 "()"
             }}eg;
 
-        $body =~ s{\b$param(facet)?+\b}{$argident$1$argqualifs}g;
+        #$body =~ s{\\g\{\b$param(facet)?+\b\}}{\\g{$argident}}g;}
+
+        $body =~ s{\b(?<=\\g\{|[(]\?[(]<)$param(facet)?+\b}{($alias ? $alias : $argident)}ge;
+
+        print "matched at\n";
+
+        $body =~ s{\b$param(facet)?+\b\s*+\bas\b\s*+\w*}{"$argident$1 as" . ($alias ? " $alias" : "")}ge;
+
+        print $& . "\n";
 
         #print $str;
     }
@@ -429,6 +475,10 @@ sub substitutetemplateinstances {
         #dofacetreplacements($body);
         #$body = "(?(DEFINE)" . $body . ")" . $bodyoriginal;
     }
+
+    print "done:\n";
+
+    print $body . "\n";
 
     return $body;
 
@@ -480,7 +530,7 @@ sub parseregexfile {
                             {
                                 $templatename = $+{template};
                                 print "\n\n\n========================================================";
-                                print "substituting $templatename \n";
+                                print "substituting $& \n";
                                 print "========================================================\n\n\n";
                                 substitutetemplateinstances($_[1])
                             }gxxe;
@@ -582,7 +632,7 @@ sub parseregexfile {
         my $actual = $_[0];
 
         #return "(?(DEFINE)(?<facetsub>(?<facet>)$actual))(?&facetsub)";
-        return "(?(?{\$facet})$actual|((?{\$facet=1})$actual(?{\$facet=0})|(?{\$facet=0})(*F)))";
+        return "((?{++\$facet})$actual(?{--\$facet})|(?{--\$facet})(*F))";
     }
     #dofacetreplacements($regexfilecontent);
 
