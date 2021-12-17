@@ -181,7 +181,7 @@ exit;
 sub debugcallout {
     #print Dumper(\%+);
     my $captures = { %+ };
-    #print "facet -> $facet\n";
+    print "facet -> $facet\n";
     my $cond = ($entryregex =~ m{facet$} or not $facet);
     #return unless($entryregex =~ m{facet$} or not $facet);
     #require re;
@@ -634,7 +634,7 @@ sub parseregexfile {
         my $actual = $_[0];
 
         #return "(?(DEFINE)(?<facetsub>(?<facet>)$actual))(?&facetsub)";
-        return "((?{++\$facet})$actual(?{--\$facet})|(?{--\$facet})(*F))";
+        return "(?(?{length $+{facet}})$actual|(?{\$facet++})(?!(?<facet>$actual)(*F))(?{\$facet--})\g{-1})";
     }
     #dofacetreplacements($regexfilecontent);
 
