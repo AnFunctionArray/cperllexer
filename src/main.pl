@@ -433,6 +433,8 @@ sub substitutetemplateinstances {
 
         print $body . "\n";
 
+        die "incorrect invocation for $param" if(not $argident);
+
         die "expr as arguments not supported currently" if($inpar);
 
         print $param . "->" . $argident . " as $alias\n";
@@ -440,9 +442,9 @@ sub substitutetemplateinstances {
         $body =~ s{(\(\?&{1,2})$param(facet)?+((?<inargs><(?<args>[^<>]++|(?&inargs))*+>)?+)\)}{
             if($arg) {if(not $argcallout) {
                 if($+{inargs} and $alias) {
-                    $1 . $argident . ($isfacet ? "" : $2) . $3 . "=$alias) . $argqualif" ;
+                    $1 . $argident . ($isfacet ? "" : $2) . $3 . "=$alias)" . $argqualifs ;
                 } else {
-                    $1 . $argident . ($isfacet ? "" : $2) . $3 . ")" . $argqualifs ;
+                    $1 . ($alias ? $alias : $argident) . ($isfacet ? "" : $2) . $3 . ")" . $argqualifs ;
                 }
             } else {
                 "(" . $argqualifs . "?C" . $argcallout . ")" ;
@@ -456,7 +458,7 @@ sub substitutetemplateinstances {
 
         print "matched at\n";
 
-        $body =~ s{\b$param(facet)?+\b\s*+\bas\b\s*+\w*}{"$argident$1 as" . ($alias ? " $alias" : "")}ge;
+        $body =~ s{\b$param(facet)?+\b\s*+\bas\s*+\w*}{"$argident$1$argqualifs as" . ($alias ? " $alias" : "")}ge;
 
         print $& . "\n";
 

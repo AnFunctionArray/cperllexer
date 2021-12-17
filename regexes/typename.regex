@@ -19,7 +19,7 @@
 						(?&abstdecloptoutterfacet)?+[)](?C&endqualifs)\s*+)
 
 (?<Tqualifsrest>)
-(?<allqualifsparam>\s*+(?&qualifs)\s*+|(?&&structorunion<>)|(?!\g{Tqualifsrest})(?&Tqualifsrest<>))
+(?<allqualifsparam>\s*+(?&qualifs)\s*+|(?&&structorunion<>)|(?(<Tqualifsrest>)(*F))(?&Tqualifsrest<>))
 
 (?<Tqualifsrest>)
 (?<allqualifsdecl>(?&allqualifsparam<Tqualifsrest as>)|\s*+(?<typedefkey>\btypedef\b)\s*+)
@@ -65,9 +65,9 @@
 
 (?<Tabsqualifs, Tdecl, Tidentifierminetypedef, Tidentifierminetypedeffwd>)
 (?<abstdeclorallqualifsbasic>
-	(?(?{$facet})(?&Tabsqualifsfacet<Tidentifierminetypedef as>)(?&Tdecl)|
+	(?(?{$facet})(?&&Tabsqualifsfacet<Tidentifierminetypedef as>)(?&Tdecl)|
 	(?=(?&&Tabsqualifsfacet<Tidentifierminetypedeffwd as>)(?<rest>(?&Tdecl))(?C&enddeclaration))
-				(?&Tabsqualifsfacet<Tidentifierminetypedef as>)\g{rest}(?C&endqualifs)
+				(?&&Tabsqualifsfacet<Tidentifierminetypedef as>)\g{rest}(?C&endqualifs)
 ))
 
 (?<Tabsqualifs, Tasbtdecloutter, Tabstinitorbitfl, Tidentifierminetypedef, Tidentifierminetypedeffwd>)
@@ -76,10 +76,10 @@
 			(*F)(?&&decl<Tasbtdecloutter as, Tabstinitorbitfl as>)
 			(?<declcomma>,(?&decl))
 		)|
-		(?(?{$facet})(?&Tabsqualifsfacet<Tidentifierminetypedef as>)(?&declfacet)(?&declcommafacet)*+|
+		(?(?{$facet})(?&&Tabsqualifsfacet<Tidentifierminetypedef as>)(?&declfacet)(?&declcommafacet)*+|
 		(?<restoutter>(?=\g{Tabsqualifsfacet}
 				(?<rest>(?(<rest>)\g{rest},)(?&decl)(?C&enddeclaration)))
-				((?&Tabsqualifs<Tidentifierminetypedef as>)\g{rest}(?C&endqualifs)
+				((?&&Tabsqualifs<Tidentifierminetypedef as>)\g{rest}(?C&endqualifs)
 				|(?&restoutter)))
 				))
 (?<Ttypename>)
@@ -89,24 +89,30 @@
 (?<Tdeclsbb>(?!((?&structorunion<>)\s*+;\s*+)(*F))
 	(\g{-1}|(?&&declstm<Ttypename as>)))
 
-(?&abstdeclorallqualifsbasicfacet<allqualifsdecl*+ as, abstdecloutter as,
-		identifierminetypedef as optbasictpnmfacet,
-		identifierminetypedef as optbasictpnmfwdfacet>=typenameinsideoptbasicfacet)
-
-(?<compoundstatement>)
-(?<extrnl_def>(?=(?&abstdeclorallqualifsbasic<allqualifsdecl*+ as qlfsopt, abstdecloutter as,
-		identifierminetypedef as optbasictpnm,
-		identifierminetypedef as optbasictpnmfwd>=typenameinsideoptbasic)
+(?<compoundstatement, allqualif, abstdecloutter, abstrinit,
+	 identifierminetypedef, identifierminetypedeffwd, Ttypename, Ttypenamebasic>)
+(?<extrnl_def>((*F)(?&&Ttypename<allqualif as, abstdecloutter as,
+		abstrinit as,
+		identifierminetypedef as,
+		identifierminetypedeffwd as>)
+		)
+		|(?=(?&&Ttypenamebasic<allqualif as, abstdecloutter as,
+		identifierminetypedef as,
+		identifierminetypedeffwd as>)
 	(?=(?<compound>(?&compoundstatement))|))
-	(?(<compound>)(?&typenameinsideoptbasicfacet)\g{compound}
-	|((?&Tdeclsbb<typenameinsideopt as>)
-	|\g{typenameinsideoptbasic}\s*+;(?C&endfulldecl)\s*+)))
+	(?(<compound>)(?&Ttypenamebasicfacet)\g{compound}
+	|((?&Tdeclsbb<Ttypename as>)
+	|\g{Ttypenamebasic}\s*+;(?C&endfulldecl)\s*+)))
 
-(?&&extrnl_def<compoundstatement as>)
+(?&&extrnl_def<compoundstatement as, allqualifsdecl*+ as qlfsopt, abstdecloutter as, abstrinitialization as,
+		identifierminetypedef as optbasictpnm, identifierminetypedef as optbasictpnmfwd,
+		abstdeclorallqualifs as extrnldecl, abstdeclorallqualifsbasic as extrndeclbasic>)
 
 (?<fail>(*F))
 
-(?&extrnl_def<fail as>=declsbb)
+(?&extrnl_def<fail as, allqualifsdecl++ as qlfs, abstdecloutter as, abstrinitialization as,
+	identifierminetypedef as tpnm, identifierminetypedef as tpnmfwd,
+	abstdeclorallqualifs as bbdecl, abstdeclorallqualifsbasic as bbdeclbasic>=declsbb)
 
 (?<cprogram>(?&&extrnl_def)*+)
 
@@ -128,7 +134,7 @@
 	identifierminetypedef as fldtpnm, identifierminetypedef as fldpnmfwd>=typenamebitfl)
 
 (?<identifierminedecl>\s*+(?!(?&keywordlistfacet))(?<ident>(?&identifierrawfacet))
-	(?(R&typenameinsideoptbasicfacet)(?(<compound>)(?C&extract_func)))
+	(?(R&extrndeclbasic)(?(<compound>)(?C&extract_func)))
 	(?C&identifier_decl)\s*+)
 (?<>)
 (?<identifierminetypedef#restrictperlonly>\s*+\b(?<typedefnmmatched>(??C&identifier_typedef))\b\s*+)
