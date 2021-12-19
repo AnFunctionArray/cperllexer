@@ -24,7 +24,7 @@
 (?<Tqualifsrest>)
 (?<allqualifsdecl>(?&allqualifsparam<Tqualifsrest as>)|\s*+(?<typedefkey>\btypedef\b)\s*+)
 
-(?<Tabstrrest, Tabstrrestalt, Tinside>)(?<abstdecl>(?(?{$facet})(?&abstrptr)(?&abstrptr)*+(?&Tabstrrest)
+(?<Tabstrrest, Tabstrrestalt, Tinside>)(?<abstdecl>(?(<facet>)(?&abstrptr)(?&abstrptr)*+(?&Tabstrrest)
 						|(?<abstrptrrev>(?<abstrptr>\s*+[*]\s*+
 						(?<qualifptr>(?&qualifiers)(?#|\s*+\b__ptr(64|32)\b\s*+))*+)
 						(?!(?&abstrptrrev)(?C&addptrtotype))
@@ -65,7 +65,7 @@
 
 (?<Tabsqualifs, Tdecl, Tidentifierminetypedef, Tidentifierminetypedeffwd>)
 (?<abstdeclorallqualifsbasic>
-	(?(?{$facet})(?&&Tabsqualifsfacet<Tidentifierminetypedef as>)(?&Tdecl)|
+	(?(<facet>)(?&&Tabsqualifsfacet<Tidentifierminetypedef as>)(?&Tdecl)|
 	(?=(?&&Tabsqualifsfacet<Tidentifierminetypedeffwd as>)(?<rest>(?&Tdecl))(?C&enddeclaration))
 				(?&&Tabsqualifsfacet<Tidentifierminetypedef as>)\g{rest}(?C&endqualifs)
 ))
@@ -76,7 +76,7 @@
 			(*F)(?&&decl<Tasbtdecloutter as, Tabstinitorbitfl as>)
 			(?<declcomma>,(?&decl))
 		)|
-		(?(?{$facet})(?&&Tabsqualifsfacet<Tidentifierminetypedef as>)(?&declfacet)(?&declcommafacet)*+|
+		(?(<facet>)(?&&Tabsqualifsfacet<Tidentifierminetypedef as>)(?&declfacet)(?&declcommafacet)*+|
 		(?<restoutter>(?=\g{Tabsqualifsfacet}
 				(?<rest>(?(<rest>)\g{rest},)(?&decl)(?C&enddeclaration)))
 				((?&&Tabsqualifs<Tidentifierminetypedef as>)\g{rest}(?C&endqualifs)
@@ -142,7 +142,7 @@
 (?<keywordlist>(?&typesandqualifiersmask)
 	|\b(typedef|struct|enum|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)\b)
 
-(?<typenamerev>(?(?{$facet})(*F))((?&typenamefacet)(?!(?&castexpr)))|(?&typename)(?C&applycast)(?&castexprfacet))
+(?<typenamerev>(?(<facet>)(*F))((?&typenamefacet)(?!(?&castexpr)))|(?&typename)(?C&applycast)(?&castexprfacet))
 
 
 (?<abstrbitfield>\s*+:\s*+(?C&beginconstantexpr)(?&assignorsomething)(?C&endconstantexpr))

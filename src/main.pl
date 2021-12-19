@@ -89,19 +89,19 @@ while($mainregexdefs =~ m{
     print "\n\n\n========================================================";
                                 print "creating $+{inpar} \n";
                                 print "========================================================\n\n\n";
-    $cached_instances{"${1}facet"} = dofacetreplacements($+{inpar})
+    $cached_instances{"${1}facet"} = dofacetreplacements($+{inpar}, $1)
 }
 
 while($mainregexdefs =~ m{
     [(][?]&&(\w+?)(facet)?+[)]
 }sxxg) {
     $cached_instances{"$1"} = "(?&$1)";
-    $cached_instances{"${1}facet"} = dofacetreplacements("(?&$1)")
+    $cached_instances{"${1}facet"} = dofacetsubreplacements($1)
 }
 
 sub instantiate_cached_instance {
     my $arg = $_[0];
-    my $isfacet = $arg =~ m{facet$} or $+{facet} ? "facet" : "";
+    my $isfacet = $arg =~ m{facet$} or exists $+{facet} ? "facet" : "";
     $arg =~ s{facet$}{};
     return $cached_instances{$arg . $isfacet};
 }
@@ -113,9 +113,9 @@ $mainregexdefs =~ s{
 }sxxg;
 
 $mainregexdefs =~ s{
-    [(][?]&(\w+)facet[)]
+    [(][?]&(\w+?)facet[)]
 }{
-    dofacetreplacements("(?&$1)")
+    dofacetsubreplacements($1)
 }sxxge;
 
 while(my($k, $v) = each %cached_instances) { 
@@ -181,7 +181,12 @@ exit;
 sub debugcallout {
     #print Dumper(\%+);
     my $captures = { %+ };
+    my $facet = exists $+{facet} or $_[0] =~ m{facet$};
+
+    my $funcnm = $_[0] =~ s{facet$}{}r;
+
     print "facet -> $facet\n";
+    
     my $cond = ($entryregex =~ m{facet$} or not $facet);
     #return unless($entryregex =~ m{facet$} or not $facet);
     #require re;
@@ -192,12 +197,12 @@ sub debugcallout {
 
     $subslice =~ s{\R}{ }g;
 
-    if ($_[0] ne "identifier_typedef" and $cond) {
+    if ($funcnm ne "identifier_typedef" and $cond) {
         use Data::Dumper;
         use POSIX;
     
         print strftime ("%F %T", localtime time) . " capture: " . $subslice . "\n";
-        print $_[0] . "\n";
+        print $funcnm . "\n";
         print Dumper(\$captures)
     }
     
@@ -205,11 +210,11 @@ sub debugcallout {
     #    print $i . "\n";
     #}
     my $res;
-    if(defined &{ $_[0] } and $cond or $_[0] eq "identifier_typedef") {
-        $res = $_[0]->($captures) 
+    if(defined &{ $funcnm } and $cond or $funcnm eq "identifier_typedef") {
+        $res = $funcnm->($captures) 
     }
 
-    callout($_[0], $captures) if(defined &callout and $cond);
+    callout($funcnm, $captures) if(defined &callout and $cond);
     return $res;
 }
 
@@ -471,7 +476,7 @@ sub substitutetemplateinstances {
         $body =~ s{\(\?<\Q$template\E\b.*?>}{(};
     }
     if($isfacet) {
-        $body = dofacetreplacements($body);
+        $body = dofacetreplacements($body, $template);
     } else {
         #my $bodyoriginal = $body;
         #dofacetreplacements($body);
@@ -567,7 +572,7 @@ sub parseregexfile {
             my $parnnm = $+{parnnm};
             $bodyorig =~ s{^[(]\?<\w+?>}{}sxx;
             $bodyorig =~ s{[)]$}{}sxx;
-            print "paramnm -> " . $bodyorig . "\n";
+            print "$parnnm -> " . $bodyorig . "\n";
             "((*F)" . dofacetreplacements($bodyfacet) . "|" . $parnnm . addfacetdefines($bodyorig) . "))"
             }sxxge;
 
@@ -575,7 +580,7 @@ sub parseregexfile {
     }
 
     addfacetdefines($regexfile);
-=cut    
+=cut   
     #$regexfile =~s/(?<!<)#restrictoutsidefacet\b>/>(?(?{$facet})/g;
 
     #$regexfile =~s/\(\?<#restrictoutsidefacet>/((*F)/g;
@@ -605,13 +610,17 @@ sub parseregexfile {
     }
 
     replacenofacetgroups($1, $regexfilecontent) while($regexfilecontentcopy =~/\(\?<(\w+)#nofacet>/g); # remove references to nofacet groups
-
+=cut
     sub dofacetreplacements {
-        $_[0] =~s/\(\?C&(?!\S+?facet)(\S+?)\s*(<(?<args>[^()<>]*?)>)?\)/(?C&$1facet$2)/gs;
+        my $ret = $_[0];
+
+        $ret =~s/\(\?\(<facet>\)/((*F)/g;
+
+        #$_[0] =~s/(\(\?C&{1,2})(?!\S+?facet)(\S+?)\s*(<(?<args>[^()<>]*?)>)?\)/$1$2facet$3)/gs;
 
         #$regexfilecontent =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
-        $_[0] =~s/[(]\?([(]R)?+&(&?+\w+?)(facet)?+\b/(?$1&$2facet/g;
+        $ret =~s/([(]\?([(]R|C)?+&(&?+\w+?))(facet)?+\b/$1facet/g;
 
         #$regexfilecontent =~s/([(]\?)?+[(]<(?>\w+?)(facet)?+>[)]/$1(<$2facet>)/g;
 
@@ -619,23 +628,20 @@ sub parseregexfile {
 
         #$regexfilecontent =~s/[(]\?[(]<(\w+?)#nofacet>[)]/(?(<$1>)/g;
 
-        $_[0] =~s{([(]\?[(]?+)<(\w+?)(facet)?+>}{$1<$2facet>}g;
+        #$ret =~s{([(]\?[(]?+)<(\w+?)(facet)?+>}{$1<$2facet>}g;
         
         #$regexfilecontent =~s/(\(\?<\w+)>/$1facet>/g;
-
-        $_[0] =~s/(\(\?<\w+)#restrictoutsidefacet>/$1facet>(*F)/g;
-
-        $_[0] =~s/\(\?<#restrictoutsidefacet>/((*F)/g;
         
-        return $_[0]
+        return $ret
     }
-=cut
-    sub dofacetreplacements {
-        my $actual = $_[0];
+
+    sub dofacetsubreplacements {
+        my $identifier = $_[0];
 
         #return "(?(DEFINE)(?<facetsub>(?<facet>)$actual))(?&facetsub)";
-        return "(?(?{length $+{facet}})$actual|(?{\$facet++})(?!(?<facet>$actual)(*F))(?{\$facet--})\g{-1})";
+        return "((*F)(?<subfacet>(?<facet>)(?&$identifier))|(?&subfacet))";
     }
+
     #dofacetreplacements($regexfilecontent);
 
     $mainregexfinal = $mainregexfinal . $regexfile;
