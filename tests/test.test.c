@@ -1,4 +1,4 @@
-typedef int a;
+typedef int a, b;
 
 int main() {
     a a;

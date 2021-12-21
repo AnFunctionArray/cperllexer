@@ -4,7 +4,7 @@ use re 'eval';
 
 no warnings qw(experimental::vlb);
 
-$facet = 0;
+#$facet = 0;
 
 #use re qw(Debug ALL);
 
@@ -82,34 +82,47 @@ $mainregexdefs = "$mainregexdefs(?&&$entryregex)";
 
 my %cached_instances = ();
 
-while($mainregexdefs =~ m{
-    (?=[(][?]<(\w+?)>)$inpar.*?[^()]*+[(][?]&&\1(facet)?+[)]
-}sxxg) {
-    $cached_instances{"$1"} = $+{inpar};
+while($mainregexdefs =~ s{
+    (?=(?=[(][?]<(\w+?)>)$inpar.*?[(][?]&&\1(facet)?+[)])[(][?]<\w+?>
+} {
+    (?<$1entry>
+}sxx) {
+    $cached_instances{"$1"} =  "(?&${1}entry)";#$+{inpar};
     print "\n\n\n========================================================";
                                 print "creating $+{inpar} \n";
                                 print "========================================================\n\n\n";
-    $cached_instances{"${1}facet"} = dofacetreplacements($+{inpar}, $1)
+    $cached_instances{"${1}facet"} = dofacetsubreplacements("${1}entry")#dofacetreplacements($+{inpar}, $1)
 }
 
+=begin
 while($mainregexdefs =~ m{
     [(][?]&&(\w+?)(facet)?+[)]
 }sxxg) {
     $cached_instances{"$1"} = "(?&$1)";
     $cached_instances{"${1}facet"} = dofacetsubreplacements($1)
 }
+=cut
 
 sub instantiate_cached_instance {
     my $arg = $_[0];
     my $isfacet = $arg =~ m{facet$} or exists $+{facet} ? "facet" : "";
     $arg =~ s{facet$}{};
+=begin
+    print "\n\n\n========================================================";
+    print "\n========================================================";
+    print "\n========================================================\n";
+                                print "executing $cached_instances{$arg . $isfacet} \n";
+                                 print "\n========================================================";
+                                 print "\n========================================================\n";
+                                print "========================================================\n\n\n";
+=cut
     return $cached_instances{$arg . $isfacet};
 }
 
 $mainregexdefs =~ s{
     [(][?]&&(\w+?(facet)?+)[)]
 }{
-    (??{instantiate_cached_instance($1)})
+    (??{instantiate_cached_instance("$1")})
 }sxxg;
 
 $mainregexdefs =~ s{
@@ -181,7 +194,7 @@ exit;
 sub debugcallout {
     #print Dumper(\%+);
     my $captures = { %+ };
-    my $facet = exists $+{facet} or $_[0] =~ m{facet$};
+    my $facet = (exists $+{facet} or $_[0] =~ m{facet$}) and $_[0] ne "probe" and $_[0] ne "probefacet";
 
     my $funcnm = $_[0] =~ s{facet$}{}r;
 
@@ -308,7 +321,7 @@ sub regenerate_typedef_regex {
 
 sub identifier_typedef {
     #regenerate_typedef_regex() if($needregen);
-    print "$typedef_regex\n";
+    #print "$typedef_regex\n";
     return $typedef_regex;
 }
 
@@ -447,9 +460,9 @@ sub substitutetemplateinstances {
         $body =~ s{(\(\?&{1,2})$param(facet)?+((?<inargs><(?<args>[^<>]++|(?&inargs))*+>)?+)\)}{
             if($arg) {if(not $argcallout) {
                 if($+{inargs} and $alias) {
-                    $1 . $argident . ($isfacet ? "" : $2) . $3 . "=$alias)" . $argqualifs ;
+                    $1 . $argident . ($isfacet // $2) . $3 . "=$alias)" . $argqualifs ;
                 } else {
-                    $1 . ($alias ? $alias : $argident) . ($isfacet ? "" : $2) . $3 . ")" . $argqualifs ;
+                    $1 . ($alias ? $alias : $argident) . ($isfacet // $2) . $3 . ")" . $argqualifs ;
                 }
             } else {
                 "(" . $argqualifs . "?C" . $argcallout . ")" ;
@@ -459,7 +472,7 @@ sub substitutetemplateinstances {
 
         #$body =~ s{\\g\{\b$param(facet)?+\b\}}{\\g{$argident}}g;}
 
-        $body =~ s{\b(?<=\\g\{|[(]\?[(]<)$param(facet)?+\b}{($alias ? $alias : $argident)}ge;
+        $body =~ s{@\b$param(facet)?+\b}{($alias ? $alias : $argident)}ge;
 
         print "matched at\n";
 
@@ -614,13 +627,13 @@ sub parseregexfile {
     sub dofacetreplacements {
         my $ret = $_[0];
 
-        $ret =~s/\(\?\(<facet>\)/((*F)/g;
+        $ret =~s/\Q(?(<facet>)\E/(?(?{1})/g;
 
         #$_[0] =~s/(\(\?C&{1,2})(?!\S+?facet)(\S+?)\s*(<(?<args>[^()<>]*?)>)?\)/$1$2facet$3)/gs;
 
         #$regexfilecontent =~s/\(\?\?C(\d++)\)/(?C$1)/g if(not $matchinperl);
 
-        $ret =~s/([(]\?([(]R|C)?+&(&?+\w+?))(facet)?+\b/$1facet/g;
+        $ret =~s/([(]\?([(]C)?+&(&?+\w+?))(facet)?+\b/$1facet/g;
 
         #$regexfilecontent =~s/([(]\?)?+[(]<(?>\w+?)(facet)?+>[)]/$1(<$2facet>)/g;
 
