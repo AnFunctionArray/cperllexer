@@ -83,9 +83,9 @@ $mainregexdefs = "$mainregexdefs(?&&$entryregex)";
 my %cached_instances = ();
 
 while($mainregexdefs =~ s{
-    (?=(?=[(][?]<(\w+?)>)$inpar.*?[(][?]&&\1(facet)?+[)])[(][?]<\w+?>
+    (?=[(][?]<(\w+?)>)($inpar)(?=.*?[(][?]&&\1(facet)?+[)])
 } {
-    (?<$1entry>
+    (?<$1entry>$2)
 }sxx) {
     $cached_instances{"$1"} =  "(?&${1}entry)";#$+{inpar};
     print "\n\n\n========================================================";
@@ -191,7 +191,11 @@ sub recovery_mode() {
 
 exit;
 
-sub debugcallout {
+sub overridematches {
+    @overridematches{keys %+} = values %+
+}
+
+sub call {
     #print Dumper(\%+);
     my $captures = { %+ };
     my $facet = (exists $+{facet} or $_[0] =~ m{facet$}) and $_[0] ne "probe" and $_[0] ne "probefacet";
@@ -199,6 +203,10 @@ sub debugcallout {
     my $funcnm = $_[0] =~ s{facet$}{}r;
 
     print "facet -> $facet\n";
+
+    @captures{keys %overridematches} = values %overridematches;
+
+    undef %overridematches;
     
     my $cond = ($entryregex =~ m{facet$} or not $facet);
     #return unless($entryregex =~ m{facet$} or not $facet);
@@ -519,6 +527,10 @@ sub parseregexfile {
     } else {
         $regexfilecontent = $_[0];
     }
+
+    $mainregexfinal = $mainregexfinal . $regexfilecontent;
+
+    return;
 
     $regexfilecontent =~ s {(?=\(\?\#)$inpar}{}gsxx;
 
