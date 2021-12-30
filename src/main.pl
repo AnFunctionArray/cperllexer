@@ -25,7 +25,7 @@ my $subject = do { local $/; <$fh> };
 
 close $fh;
 
-$typedef_regex = "(*F)";
+$typedef_regex = qr{(*F)}sxxn;
 
 #$filename = "output.txt";
 #open fhoutput, '>', $filename or die "error opening $filename: $!";
@@ -82,16 +82,24 @@ $mainregexdefs = "$mainregexdefs(?&&$entryregex)";
 
 my %cached_instances = ();
 
-while($mainregexdefs =~ s{
-    (?=[(][?]<(\w+?)>)($inpar)(?=.*?[(][?]&&\1(facet)?+[)])
-} {
-    (?<$1entry>$2)
-}sxx) {
-    $cached_instances{"$1"} =  "(?&${1}entry)";#$+{inpar};
+while($mainregexdefs =~ m{
+    (?=[(][?]<(\w+?)>)($inpar)(?=.*?[(][?]&(&\1(facet)?+|\1(facet))[)])
+}sxxg) {
+    $cached_instances{$1} = $+{inpar};
     print "\n\n\n========================================================";
-                                print "creating $+{inpar} \n";
+                                print "registered $cached_instances{$1} \n";
                                 print "========================================================\n\n\n";
-    $cached_instances{"${1}facet"} = dofacetsubreplacements("${1}entry")#dofacetreplacements($+{inpar}, $1)
+}
+
+while($mainregexdefs =~ m{
+    [(][?]&(&(?<ident>\w+?)(facet)?+\b|(?<ident>\w+?)(facet))[)]
+}sxxg) {
+    if(not exists $cached_instances{$1}) {
+        $cached_instances{$1} = $+{ident};
+        print "\n\n\n========================================================";
+                                    print "registered $cached_instances{$1} \n";
+                                    print "========================================================\n\n\n";
+    }
 }
 
 =begin
@@ -120,10 +128,12 @@ sub instantiate_cached_instance {
 }
 
 $mainregexdefs =~ s{
-    [(][?]&&(\w+?(facet)?+)[)]
+    [(][?]&(&(?<nm>\w+?(facet)?+)\b|(?<nm>\w+?facet))[)]
 }{
-    (??{instantiate_cached_instance("$1")})
+    (??{instantiate_cached_instance("$+{nm}")})
 }sxxg;
+
+=begin
 
 $mainregexdefs =~ s{
     [(][?]&(\w+?)facet[)]
@@ -131,16 +141,34 @@ $mainregexdefs =~ s{
     dofacetsubreplacements($1)
 }sxxge;
 
+=cut
+
+$mainregexdefs =~ s{
+    [(][?]{call(.*?)}[)]
+}{
+    (?(R&facet)(?{callfacet$1})|(?{call$1}))
+}sxxg;
+
 while(my($k, $v) = each %cached_instances) { 
     use if $ARGV[1], re => qw(Debug EXECUTE);
-        print "\n\n\n========================================================";
-                                print "compiling (*F)($mainregexdefs)|$v \n";
-                                print "========================================================\n\n\n";
-    if($entryregex ne $k) {
-        $cached_instances{$k} = qr{(*F)($mainregexdefs)|$v}sxxn
-    } else {
-        $cached_instances{$k} = qr{(*F)($mainregexdefs)|^$v}sxxn
-    }
+
+    my $body = $mainregexdefs;
+
+    my $prefix = $entryregex ne $k ? "" : "^";
+
+    my $postfix = "";
+
+    $body = $v =~ s{^[(][?]<(\w+?)>}{(?<${k}entry>}r;
+
+    print "$bodyZ\n==========\n";
+
+    $postfix = "entry" if(defined $1);
+
+    $body = $mainregexdefs =~ s{\Q$v\E}{$body}rs;
+
+    $cached_instances{$k} = qr{(*F)($body)|$prefix(?&${k}$postfix)}sxxn;
+    
+    $cached_instances{$k . "facet"} = qr{(*F)($body)(?<facet>(?&${k}$postfix))|$prefix(?&facet)}sxxn
 }
 
 print $cached_instances{$entryregex};
@@ -191,22 +219,18 @@ sub recovery_mode() {
 
 exit;
 
-sub overridematches {
-    @overridematches{keys %+} = values %+
+sub callfacet {
+    
 }
 
 sub call {
     #print Dumper(\%+);
     my $captures = { %+ };
-    my $facet = (exists $+{facet} or $_[0] =~ m{facet$}) and $_[0] ne "probe" and $_[0] ne "probefacet";
+    my $facet = (exists $+{facet} or $_[0] =~ m{facet$});
 
     my $funcnm = $_[0] =~ s{facet$}{}r;
 
     print "facet -> $facet\n";
-
-    @captures{keys %overridematches} = values %overridematches;
-
-    undef %overridematches;
     
     my $cond = ($entryregex =~ m{facet$} or not $facet);
     #return unless($entryregex =~ m{facet$} or not $facet);
@@ -231,9 +255,11 @@ sub call {
     #    print $i . "\n";
     #}
     my $res;
-    if(defined &{ $funcnm } and $cond or $funcnm eq "identifier_typedef") {
-        $res = $funcnm->($captures) 
-    }
+    eval {
+        if($cond) {
+            $res = $funcnm->($captures) 
+        }
+    };
 
     callout($funcnm, $captures) if(defined &callout and $cond);
     return $res;

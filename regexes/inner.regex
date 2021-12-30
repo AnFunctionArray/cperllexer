@@ -14,8 +14,8 @@
 (?<fltcl>(?{call collect_float_literal}))
 
 (?<floating>((?&fractional)(?&exponent)?+|(?<wholenodot>\d++)(?&exponent))(?<flt>[flFL])?+(?&fltcl))
-(?<fractional>((?<wholeopt>\d*+)\.(?<fraction>\d++)|(?<whole>\d++)\.)(?{overridematches}))
-(?<exponent>[eE](?<sign>[+-])?+(?<exp>\d++)(?{overridematches}))
+(?<fractional>((?<wholeopt>\d*+)\.(?<fraction>\d++)|(?<whole>\d++)\.))
+(?<exponent>[eE](?<sign>[+-])?+(?<exp>\d++))
 
 (?<quote>(?(<begincharliteral>)'|"))
 

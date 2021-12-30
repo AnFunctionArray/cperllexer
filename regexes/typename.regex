@@ -20,7 +20,7 @@
 
 (?<allqualifsparam>\s*+(?&qualifs)\s*+|(?&structorunion)|(?<tpdflocal>(?(<tpdflocal>)(*F)|(?&identifierminetypedef))))
 
-(?<allqualifsdecl>(?&allqualifsparam)|\s*+(\btypedef\b)(?{$overridematches{typedefkey}=$^N})\s*+)
+(?<allqualifsdecl>(?&allqualifsparam)|\s*+(\btypedef\b)\s*+)
 
 (?<abstrmostoutteropt>\s*+(?&callingconv)?+[(](?&abstdecloptoutter)[)]\s*+)
 
@@ -44,7 +44,7 @@
 	)
 
 (?<Tabstrrestalt>
-	(?(R&abstdecloptoutter)(?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++)
+	(?(R&abstdecloptoutter)((?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++))
 	(?(R&abstdecloutter)(?&abstrmostoutter)(?&abstrsubs)*+)
 	(?(R&abstdecloutterparams)(?&abstrmostoutterparams)(?&abstrsubs)*+)
 	)
@@ -61,8 +61,8 @@
 						(?!(?&abstrptrrev)(?{call addptrtotype}))
 						(?<abstrrest>(?&Tinside)(?<abstrsubs>\s*+(\[(?{call beginconstantexpr})(?&primexpr)\]
 						(?{call addsubtotype})(?{call endconstantexpr})
-						|[(](?{call startfunctionparamdecl})(\s*+\bvoid\b\s*+|(((?&&typenameinsideparams))?+
-						(,(?&&typenameinsideparams))*(?<rest>,\s*+\.\.\.\s*+)?+))[)](?{call endfunctionparamdecl}))\s*+)*+
+						|[(](?{call startfunctionparamdecl})(\s*+\bvoid\b\s*+|(((?&typenameinsideparams))?+
+						(,(?&typenameinsideparams))*(?<rest>,\s*+\.\.\.\s*+)?+))[)](?{call endfunctionparamdecl}))\s*+)*+
 						(?{call addptrtotype}))|
 						(?&abstrptr))(?&abstrptr)*+(?&Tabstrrest))|(?&Tabstrrestalt))
 
@@ -92,7 +92,7 @@
 (?#<Tabsqualifs, Tdecl, Tidentifierminetypedef, Tidentifierminetypedeffwd, Tqualifwrapper>)
 (?<abstdeclorallqualifsbasic>
 	(?(<facet>)(?&Tabsqualifsfacet)(?&Tdeclfacet)|
-	(?=(?&&Tabsqualifsfacet)(?<rest>(?&Tdecl))(?{call enddeclaration}))
+	(?=(?&Tabsqualifsfacet)(?<rest>(?&Tdecl))(?{call enddeclaration}))
 				(?&Tabsqualifs)\g{rest}(?{call endqualifs})
 ))
 
@@ -109,10 +109,10 @@
 				|(?&restoutter)))
 				))
 
-(?<decl>(?!(?(?!(?&structorunion)(?<fill>\s*+;\s*+))(?&Ttypenamebasic)
-	(?=(?<compound>(?&&compoundstatement)))(*F)|(*F)))
-	(?(<compound>)(?&Ttypenamebasicfacet)\g{compound}
-	|(?(<structbody>)\g{structbody}\g{fill}|(?&&Ttypename))\s*+;(?{call endfulldecl})\s*+))
+(?<decl>(?!(?(?!(?&structorunion)(?<fill>\s*+;\s*+))(?&abstdeclorallqualifsbasic)
+	(?=(?<compound>(?&compoundstatement)))(*F)|(*F)))
+	(?(<compound>)(?&abstdeclorallqualifsbasicfacet)\g{compound}
+	|(?(<structbody>)\g{structbody}\g{fill}|(?&abstdeclorallqualifs))\s*+;(?{call endfulldecl})\s*+))
 
 (?<declsbb>(?&decl))
 
@@ -122,9 +122,9 @@
 
 (?<typenameinsideparams>(?&decl))
 
-(?<cprogram>(?&&extrnl_def)*+)
+(?<cprogram>(?&extrnl_def)*+)
 
-(?<identifierminetypedef>\s*+\b((??{call identifier_typedef}))(?{$overridematches{typedefnmmatched}=$^N})\b\s*+)
+(?<identifierminetypedef>\s*+\b((??{identifier_typedef}))\b\s*+)
 
 (?<keywordlist>(?&typesandqualifiersmask)
 	|\b(typedef|struct|enum|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)\b)
@@ -150,4 +150,4 @@
 	((?&identifierminestruct)?+\s*+(\g{structbody}(?{call add_tag})|(?&structbody))
 	|(?&identifierminestruct)(?{call add_tag})))
 
-(?<identifierminestruct>\s*+(?!(?&keywordlistfacet))((?&identifierrawfacet))(?{$overridematches{identlasttag}=$^N})\s*+)
+(?<identifierminestruct>\s*+(?!(?&keywordlistfacet))((?&identifierrawfacet))\s*+)
