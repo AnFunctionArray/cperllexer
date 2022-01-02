@@ -78,12 +78,13 @@ $mainregexdefs = "$mainregexfinal";
 
 $mainregexdefs =~s/\s|\n//g if(not $matchinperl);
 
-$mainregexdefs = "$mainregexdefs(?&&$entryregex)";
+#$mainregexdefs = "$mainregexdefs|(?&&$entryregex)";
 
+=begin
 my %cached_instances = ();
 
 while($mainregexdefs =~ m{
-    (?=[(][?]<(\w+?)>)($inpar)(?=.*?[(][?]&(&\1(facet)?+|\1(facet))[)])
+    (?=[(][?]<(\w+?)>)($inpar)(?=.*?[(][?]&&\1(facet)?+[)])
 }sxxg) {
     $cached_instances{$1} = $+{inpar};
     print "\n\n\n========================================================";
@@ -92,7 +93,7 @@ while($mainregexdefs =~ m{
 }
 
 while($mainregexdefs =~ m{
-    [(][?]&(&(?<ident>\w+?)(facet)?+\b|(?<ident>\w+?)(facet))[)]
+    [(][?]&&(?<ident>\w+?)(facet)?+[)]
 }sxxg) {
     if(not exists $cached_instances{$1}) {
         $cached_instances{$1} = $+{ident};
@@ -102,14 +103,14 @@ while($mainregexdefs =~ m{
     }
 }
 
-=begin
+
 while($mainregexdefs =~ m{
     [(][?]&&(\w+?)(facet)?+[)]
 }sxxg) {
     $cached_instances{"$1"} = "(?&$1)";
     $cached_instances{"${1}facet"} = dofacetsubreplacements($1)
 }
-=cut
+
 
 sub instantiate_cached_instance {
     my $arg = $_[0];
@@ -123,17 +124,17 @@ sub instantiate_cached_instance {
                                  print "\n========================================================";
                                  print "\n========================================================\n";
                                 print "========================================================\n\n\n";
-=cut
+= cut
     return $cached_instances{$arg . $isfacet};
 }
 
 $mainregexdefs =~ s{
-    [(][?]&(&(?<nm>\w+?(facet)?+)\b|(?<nm>\w+?facet))[)]
+    [(][?]&&(?<nm>\w+?(facet)?+)[)]
 }{
     (??{instantiate_cached_instance("$+{nm}")})
 }sxxg;
 
-=begin
+=cut
 
 $mainregexdefs =~ s{
     [(][?]&(\w+?)facet[)]
@@ -141,13 +142,15 @@ $mainregexdefs =~ s{
     dofacetsubreplacements($1)
 }sxxge;
 
-=cut
+=begin
 
 $mainregexdefs =~ s{
     [(][?]{call(.*?)}[)]
 }{
     (?(R&facet)(?{callfacet$1})|(?{call$1}))
 }sxxg;
+
+
 
 while(my($k, $v) = each %cached_instances) { 
     use if $ARGV[1], re => qw(Debug EXECUTE);
@@ -160,18 +163,26 @@ while(my($k, $v) = each %cached_instances) {
 
     $body = $v =~ s{^[(][?]<(\w+?)>}{(?<${k}entry>}r;
 
-    print "$bodyZ\n==========\n";
+    print "$body\n==========\n";
 
     $postfix = "entry" if(defined $1);
 
     $body = $mainregexdefs =~ s{\Q$v\E}{$body}rs;
 
-    $cached_instances{$k} = qr{(*F)($body)|$prefix(?&${k}$postfix)}sxxn;
+    $cached_instances{$k} = qr{(*F)($body)|$prefix(?&$k$postfix)}sxxn;
+
+    my $facet = dofacetsubreplacements("$k$postfix");
+
+    $cached_instances{$k . "facet"} = qr{(*F)($body)|$prefix$facet}sxxn;
     
-    $cached_instances{$k . "facet"} = qr{(*F)($body)(?<facet>(?&${k}$postfix))|$prefix(?&facet)}sxxn
+    #$cached_instances{$k . "facet"} = qr{(*F)($body)(?<facet>(?&${k}$postfix))|$prefix(?&facet)}sxxn
 }
 
 print $cached_instances{$entryregex};
+
+=cut
+
+print "$mainregexdefs\n";
 
 startmatching($subject, $mainregexfinal, basename($ARGV[0], @suffixlist)) if(not $matchinperl);
 
@@ -185,7 +196,7 @@ if(not $isnested)
 
     use if $ARGV[1], re => qw(Debug EXECUTE); 
 
-    my $entry = $cached_instances{$entryregex};
+    my $entry = qr{(?(DEFINE)$mainregexdefs)(?&$entryregex)}sxxn;
 
     $subject =~ $entry
 }
@@ -219,14 +230,16 @@ sub recovery_mode() {
 
 exit;
 
-sub callfacet {
-    
+sub isfacet {
+    use Data::Dumper;
+    print Dumper($-{facet}[0]);
+    return defined $-{facet}[0] and length( do { no warnings "numeric"; $-{facet}[0] & "" } )
 }
 
 sub call {
     #print Dumper(\%+);
     my $captures = { %+ };
-    my $facet = (exists $+{facet} or $_[0] =~ m{facet$});
+    my $facet = isfacet;
 
     my $funcnm = $_[0] =~ s{facet$}{}r;
 
@@ -690,7 +703,7 @@ sub parseregexfile {
         my $identifier = $_[0];
 
         #return "(?(DEFINE)(?<facetsub>(?<facet>)$actual))(?&facetsub)";
-        return "((*F)(?<subfacet>(?<facet>)(?&$identifier))|(?&subfacet))";
+        return "(?<facet>(?&$identifier))";
     }
 
     #dofacetreplacements($regexfilecontent);
