@@ -2,15 +2,15 @@
 
 
 (?<castexpr>(?&typenamerev)|(?<unaryexpr>((?&inner)|(?<inparenths>\s*+[(](?&primexpr)[)]
-						\s*+))(((\[(?&primexpr)\](?{call subscript})|[(](?{call startfunctioncall})(?&primexpr)?[)]
-						(?{call endfunctioncall}))\s*+
+						\s*+))(((\[(?&primexpr)\](?{call "subscript"})|[(](?{call "startfunctioncall"})(?&primexpr)?[)]
+						(?{call "endfunctioncall"}))\s*+
 						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?&identifierminemember)
 						|(?<postfixarith>(?<postfixarithraw>[+][+]|--)\s*+)
-						(?{call unaryincdec})))*+
+						(?{call "unaryincdec"})))*+
 						|(?&unary)))
 
 (?<identifierminemember>\s*+(?!(?&keywordlistfacet))(?<ident>(?&identifierrawfacet))
-	(?{call memberaccess})\s*+)
+	(?{call "memberaccess"})\s*+)
 
 (?<testentry>(?<innertest>(?&orlogiorsomething));)
 
@@ -18,7 +18,7 @@
 
 	(?<assignorsomething>(?=(?&assignornothingfacet))(?<assignornothing>(?&unaryexpr)
 	(?<assignop>(?<binoplast>=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+))
-		(?&assignorsomething)(?!(?&orlogicplusrestfacet))(?{call binary})|(?&ternaryorsomething))
+		(?&assignorsomething)(?!(?&orlogicplusrestfacet))(?{call "binary"})|(?&ternaryorsomething))
 
 	(?<ternaryorsomething>(?=(?&ternornothingfacet))(?<ternornothing>(?&orlogiorsomething)(?&ternaryrest))
 	(?&ternaryorsomething)(?!(?&orlogicplusrestfacet))

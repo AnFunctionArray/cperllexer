@@ -1,17 +1,17 @@
 (?<inner>\s*+(((?<stringlit>("|(?<begincharliteral>'))
 						(?#C4<begincharliteral>)((?<escape>(?<escaperaw>\\(?:(x)[0-9a-fA-F]++|(?:(b)[01]++|(?:(0)[0-7]++
 						|(\d++|(?&quote)|t|n))))))
-						(?{call addescapesequencetostring})|
-						(?<text>(?<textraw>((?!(?&escape)|(?&quote)).)++)(?{call addplaintexttostring})))*+(?&quote)
-						(?{call add_literal}))
+						(?{call "addescapesequencetostring"})|
+						(?<text>(?<textraw>((?!(?&escape)|(?&quote)).)++)(?{call "addplaintexttostring"})))*+(?&quote)
+						(?{call "add_literal"}))
 						|(?!(?&floatingfacet))(?<numberliteral>(?<numberliteralraw>(?:(0x)(?<hex>[0-9a-fA-F]++)|(?:(0b)(?<bin>[01]++)
 						|(?:(0)(?<oct>[0-7]++)|(?<dec>\d++))))(?<lng>[Uu](ll|LL|[lL])?+|(ll|LL|[lL])[Uu]?+)?+)
-						(?{call num_lit}))
+						(?{call "num_lit"}))
 						|(?&floating)
-						|(?<identifier>\s*+(?!(?&keywordlistfacet)|(??{call identifier_typedef})\b)
-						(?<ident>(?&identifierrawfacet))(?{call obtainvalbyidentifier})\s*+)))\s*+)
+						|(?<identifier>\s*+(?!(?&keywordlistfacet)|(??{identifier_typedef})\b)
+						(?<ident>(?&identifierrawfacet))(?{call "obtainvalbyidentifier"})\s*+)))\s*+)
 
-(?<fltcl>(?{call collect_float_literal}))
+(?<fltcl>(?{call "collect_float_literal"}))
 
 (?<floating>((?&fractional)(?&exponent)?+|(?<wholenodot>\d++)(?&exponent))(?<flt>[flFL])?+(?&fltcl))
 (?<fractional>((?<wholeopt>\d*+)\.(?<fraction>\d++)|(?<whole>\d++)\.))

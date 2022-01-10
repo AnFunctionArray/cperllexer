@@ -6,34 +6,35 @@
 						|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b)|
 						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
 						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b))
-						(?{call add_type_or_qualifier})\s*+))|(?&structorunion)
+						(?{call "add_type_or_qualifier"})\s*+))|(?&structorunion)
 						|(?&identifierminetypedef))
 
 (?<align>\s*+\b__declspec[(]\s*+\balign[(]\s*+(?<align>(?&numberliteralraw))\s*+[)]\s*+[)]\s*+)
 
-(?<typenamequalifsfacet>(?<facet>)(?&typenamequalifs))
-
-(?<typename>\s*+[(](?=(?&typenamequalifsfacet)++(?{call identifier_decl})
-						(?<abstrdeclopt>(?&abstdecloptoutter)?+)(?{call enddeclaration}))
+(?<typename>\s*+[(](?=(?&typenamequalifsfacet)++(?{call "identifier_decl"})
+						(?<abstrdeclopt>(?&abstdecloptoutter)?+)(?{call "enddeclaration"}))
 						(?&typenamequalifs)++
-						\g{abstrdeclopt}[)](?{call endqualifs})\s*+)
+						\g{abstrdeclopt}[)](?{call "endqualifs"})\s*+)
 
-(?<allqualifsparam>\s*+(?&qualifs)\s*+|(?&structorunion)|(?<tpdflocal>(?(<tpdflocal>)(*F)|(?&identifierminetypedef))))
+(?<allqualifsparam>\s*+(?&qualifs)\s*+|(?&structorunion)
+	|(?(<tpdflocal>)(*F))(?<tpdflocal>(?&identifierminetypedef)))
 
-(?<allqualifsdecl>(?&allqualifsparam)|\s*+(\btypedef\b)\s*+)
+(?<typedefkey>\btypedef\b)
+
+(?<allqualifsdecl>(?&&allqualifsparam)|\s*+(?&+typedefkey)\s*+)
 
 (?<abstrmostoutteropt>\s*+(?&callingconv)?+[(](?&abstdecloptoutter)[)]\s*+)
 
 (?<abstrmostoutter>\s*+(?&callingconv)?+([(](?&abstdecloutter)[)]|(?&identifierminedecl))\s*+)
 
-(?<abstrmostoutterparams>\s*+(?(?=(?&abstrsubsfacet))(?{call identifier_decl})(?&abstrsubs)
+(?<abstrmostoutterparams>\s*+(?(?=(?&abstrsubsfacet))(?{call "identifier_decl"})(?&abstrsubs)
 			|([(](?&abstdecloutterparams)[)]
 			|(?&identifierminedecl)
-			|(?{call identifier_decl})))\s*+)
+			|(?{call "identifier_decl"})))\s*+)
 
 (?<identifierminedecl>\s*+(?!(?&keywordlistfacet))(?<ident>(?&identifierrawfacet))
-	(?(<compound>)(?{call identifier_decl})
-	(?{call identifier_decl})\s*+))
+	(?(<compound>)(?{call "identifier_decl"})
+	|(?{call "identifier_decl"})\s*+))
 
 (?#<Tabstrrest, Tabstrrestalt, Tinside>)
 
@@ -58,12 +59,12 @@
 (?<abstdecl>(?(?{isfacet})(?&abstrptr)(?&abstrptr)*+(?&Tabstrrest)
 						|(?<abstrptrrev>(?<abstrptr>\s*+[*]\s*+
 						(?<qualifptr>(?&qualifiers))*+)
-						(?!(?&abstrptrrev)(?{call addptrtotype}))
-						(?<abstrrest>(?&Tinside)(?<abstrsubs>\s*+(\[(?{call beginconstantexpr})(?&primexpr)\]
-						(?{call addsubtotype})(?{call endconstantexpr})
-						|[(](?{call startfunctionparamdecl})(\s*+\bvoid\b\s*+|(((?&typenameinsideparams))?+
-						(,(?&typenameinsideparams))*(?<rest>,\s*+\.\.\.\s*+)?+))[)](?{call endfunctionparamdecl}))\s*+)*+
-						(?{call addptrtotype}))|
+						(?!(?&abstrptrrev)(?{call "addptrtotype"}))
+						(?<abstrrest>(?&Tinside)(?<abstrsubs>\s*+(\[(?{call "beginconstantexpr"})(?&primexpr)\]
+						(?{call "addsubtotype"})(?{call "endconstantexpr"})
+						|[(](?{call "startfunctionparamdecl"})(\s*+\bvoid\b\s*+|(((?&typenameinsideparams))?+
+						(,(?&typenameinsideparams))*(?<rest>,\s*+\.\.\.\s*+)?+))[)](?{call "endfunctionparamdecl"}))\s*+)*+
+						(?{call "addptrtotype"}))|
 						(?&abstrptr))(?&abstrptr)*+(?&Tabstrrest))|(?&Tabstrrestalt))
 
 (?<abstdecloptoutter>(?&abstdecl))
@@ -86,14 +87,14 @@
 			(?&Tabstinitorbitfl)?+)
 
 (?<Tabsqualifs>
-	(?(R&extrnl_def)(?&allqualifsdecl)*+|(?(R&typenameinsideparams)(?&allqualifsparam)++|(?&allqualifsdecl)++))
+	(?(R&extrnl_def)(?&&allqualifsdecl)*+|(?(R&typenameinsideparams)(?&&allqualifsparam)++|(?&&allqualifsdecl)++))
 	)
 
 (?#<Tabsqualifs, Tdecl, Tidentifierminetypedef, Tidentifierminetypedeffwd, Tqualifwrapper>)
 (?<abstdeclorallqualifsbasic>
 	(?(?{isfacet})(?&Tabsqualifsfacet)(?&Tdeclfacet)|
-	(?=(?&Tabsqualifsfacet)(?<rest>(?&Tdecl))(?{call enddeclaration}))
-				(?&&Tabsqualifs)\g{rest}(?{call endqualifs})
+	(?=(?&Tabsqualifsfacet)(?<restdecl>(?&Tdecl))(?{call "enddeclaration"}))
+				(?&+Tabsqualifs)\g{restdecl}(?{call "endqualifs"})
 ))
 
 (?<declcomma>,(?&Tdecl))
@@ -103,16 +104,16 @@
 (?#<Tabsqualifs, Tasbtdecloutter, Tabstinitorbitfl, Tidentifierminetypedef, Tidentifierminetypedeffwd, Tqualifwrapper>)
 (?<abstdeclorallqualifs>
 		(?(?{isfacet})(?&Tabsqualifsfacet)(?&Tdeclfacet)(?&declcommafacet)*+|
-		(?<restoutter>(?=(?{print $+{Tabsqualifs} . "\n"})\g{Tabsqualifs}
-				(?<rest>(?(<rest>)\g{rest},)(?&Tdecl)(?{call enddeclaration})))
-				((?&Tabsqualifs)\g{rest}(?{call endqualifs})
+		(?<restoutter>(?=\g{Tabsqualifs}
+				(?<restdecl>(?(<restdecl>)\g{restdecl},)(?&Tdecl)(?{call "enddeclaration"})))
+				((?&Tabsqualifs)\g{restdecl}(?{call "endqualifs"})
 				|(?&restoutter)))
 				))
 
-(?<decl>(?(?=(?&&structorunion)(?<fill>\s*+;\s*+)?+))
-	(?(<fill>)\g{structbody}\g{fill}|(?=(?&&abstdeclorallqualifsbasic)(?<compound>(?&compoundstatement))?+)
+(?<decl>(?(?=(?&structorunion)(?<fill>\s*+;\s*+)?+))
+	(?(<fill>)\g{structbody}\g{fill}|(?=(?&abstdeclorallqualifsbasic)(?<compound>(?&compoundstatement))?+)
 	(?(<compound>)(?&abstdeclorallqualifsbasicfacet)\g{compound}
-	|(?&abstdeclorallqualifs)\s*+;(?{call endfulldecl})\s*+)))
+	|(?&abstdeclorallqualifs)\s*+;(?{call "endfulldecl"})\s*+)))
 
 (?<declsbb>(?&decl))
 
@@ -122,32 +123,32 @@
 
 (?<typenameinsideparams>(?&decl))
 
-(?<cprogram>(?&extrnl_def)*+)
+(?<cprogram>(?&&&extrnl_def)*+)
 
 (?<identifierminetypedef>\s*+\b((??{identifier_typedef}))\b\s*+)
 
 (?<keywordlist>(?&typesandqualifiersmask)
 	|\b(typedef|struct|enum|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)\b)
 
-(?<typenamerev>(?(?{isfacet})(*F))((?&typenamefacet)(?!(?&castexpr)))|(?&typename)(?{call applycast})(?&castexprfacet))
+(?<typenamerev>(?(?{isfacet})(*F))((?&typenamefacet)(?!(?&castexpr)))|(?&typename)(?{call "applycast"})(?&castexprfacet))
 
 
-(?<abstrbitfield>\s*+:\s*+(?{call beginconstantexpr})(?&assignorsomething)(?{call endconstantexpr}))
+(?<abstrbitfield>\s*+:\s*+(?{call "beginconstantexpr"})(?&assignorsomething)(?{call "endconstantexpr"}))
 (?<designator>\s*+(\[(?&primexpr)\]|\.\s*+(?&identifier))\s*+)
 (?<initializer>(?&assignorsomething)|\s*+[{]((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*+[}]\s*+)
 (?<abstrinitialization>=(?&initializer))
 
-(?<add_ident_to_enum_def>\s*+(?!(?&keywordlistfacet))(?<identlasttag>(?&identifierrawfacet))(?{call add_ident_to_enum_def})\s*+)
+(?<add_ident_to_enum_def>\s*+(?!(?&keywordlistfacet))(?<identlasttag>(?&identifierrawfacet))(?{call "add_ident_to_enum_def"})\s*+)
 
-(?<structbody>[{](?(<enum>)(?{call begin_enumerator_def})
+(?<structbody>[{](?(<enum>)(?{call "begin_enumerator_def"})
 	(?<enumerator>(?&add_ident_to_enum_def)
-	((=(?{call beginconstantexpr})(?&assignorsomething)(?{call end_ass_to_enum_def}))
-	|(?{call end_without_ass_to_enum_def})))?+(,(?&enumerator))*+,?+\s*+
-	|(?{call struc_or_union_body})\s*+((?&typenamebitfl)\s*+;\s*+)*+)
-	[}](?(<enum>)()|(?{call endbuildingstructorunion}))(?{call add_tag})\s*+)
+	((=(?{call "beginconstantexpr"})(?&assignorsomething)(?{call "end_ass_to_enum_def"}))
+	|(?{call "end_without_ass_to_enum_def"})))?+(,(?&enumerator))*+,?+\s*+
+	|(?{call "struc_or_union_body"})\s*+((?&typenamebitfl)\s*+;\s*+)*+)
+	[}](?(<enum>)()|(?{call "endbuildingstructorunion"}))(?{call "add_tag"})\s*+)
 
 (?<structorunion>\s*+(?<structorunionlast>struct|union|(?<enum>enum))(?&align)?+
-	((?&identifierminestruct)?+\s*+(\g{structbody}(?{call add_tag})|(?&structbody))
-	|(?&identifierminestruct)(?{call add_tag})))
+	((?&identifierminestruct)?+\s*+(\g{structbody}(?{call "add_tag"})|(?&+structbody))
+	|(?&identifierminestruct)(?{call "add_tag"})))
 
 (?<identifierminestruct>\s*+(?!(?&keywordlistfacet))((?&identifierrawfacet))\s*+)

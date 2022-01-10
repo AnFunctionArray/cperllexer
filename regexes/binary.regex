@@ -1,5 +1,5 @@
 (?#<binoprest, binopraw>)
-(?<binopplusrest>(?<binop>(?<binoplast>(?&binopraw))(?&castexpr)(?&binoprest)*(?{call binary}))|(?&binoprest))
+(?<binopplusrest>(?<binop>(?<binoplast>(?&binopraw))(?&castexpr)(?&binoprest)*(?{call "binary"}))|(?&binoprest))
 
 (?<binoprest>(?(R&addmulplusrest)(?&mulop)
             |(?(R&shiftplusrest)(?&addmulplusrest)
@@ -9,8 +9,8 @@
             |(?(R&xorplusrest)(?&andplusrest)
             |(?(R&orplusrest)(?&xorplusrest)
             |(?(R&andlogicplusrest)(?&orplusrest)
-            |(?(R&orlogicplusrest)(?&andlogicplusrest)
-            |))))))))))
+            |(?(R&orlogicplusrest)(?&andlogicplusrest)|(*F)
+            ))))))))))
 
 (?<binopraw>(?(R&addmulplusrest)(?&addopraw)
             |(?(R&shiftplusrest)(?&shiftopraw)
@@ -19,9 +19,9 @@
             |(?(R&andplusrest)(?&andopraw)
             |(?(R&xorplusrest)(?&xoropraw)
             |(?(R&orplusrest)(?&oropraw)
-            |(?(R&andlogicplusrest)(?&andopraw)
-            |(?(R&orlogicplusrest)(?&oropraw)
-            |))))))))))
+            |(?(R&andlogicplusrest)(?&andlogicopraw)
+            |(?(R&orlogicplusrest)(?&orlogicopraw)|(*F)
+            ))))))))))
 
 (?<orlogicplusrest>(?&binopplusrest))
 
@@ -42,16 +42,16 @@
 (?<addmulplusrest>(?&binopplusrest))
 
 
-(?<orlogiorsomething>(?=(?&castexprfacet))(?{call begin_binary})(?&castexpr)
-    ((?&orlogicplusrestfacet)(*F))*(?&orlogicplusrest)*?(?=(?&orlogicplusrestfacet)|(?{call end_binary})))
+(?<orlogiorsomething>(?=(?&castexprfacet))(?{call "begin_binary"})(?&castexpr)
+    ((?&orlogicplusrestfacet)(*F))*(?&orlogicplusrest)*?(?=(?&orlogicplusrestfacet)|(?{call "end_binary"})))
 
-(?<mulop>(?<mulopraw>[\*\/\%])(?&castexpr)(?{call binary}))
+(?<mulop>(?<mulopraw>[\*\/\%])(?&castexpr)(?{call "binary"}))
 
-(?<orlogicopraw>\|\|(?{call begin_branch}))
-(?<andlogicopraw>&&(?{call begin_branch})) 
-(?<oropraw>\|) 
+(?<orlogicopraw>\|\|(?{call "begin_branch"}))
+(?<andlogicopraw>&&(?{call "begin_branch"})) 
+(?<oropraw>(?!\|\|)\|) 
 (?<xoropraw>\^) 
-(?<andopraw>&) 
+(?<andopraw>(?!&&)&) 
 (?<eqopraw>==|!=)
 (?<relopraw>(?!<<)<|(?!>>)>|<=|>=) 
 (?<shiftopraw><<|>>) 

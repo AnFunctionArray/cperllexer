@@ -1,15 +1,15 @@
 
 
-(?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?{call addcontinue});|break\s*+(?{call addbreak});|return\b(?&primexpr)?;(?{call endreturn}))\s*+)
-(?<identifierminegoto>\s*+(?!(?&keywordlistfacet))(?<gtid>(?&identifierrawfacet))(?{call gotolabel})\s*+)
-(?<iterationstatement>\s*+(while\s*+[(](?{call startforloopcond})(?&primexpr)[)](?{call endforloopcond})(?{call addforloopiter})(?&statement)(?{call endforloop})|do\b(?{call startdowhileloop})(?&statement)while\s*+[(](?&primexpr)[)](?{call enddowhileloop})\s*+;
-	|for\s*+[(]((?&declsbb)|(?&exprstatement))?+(?{call startforloopcond})(?&primexpr)?;(?{call endforloopcond})\s*+(?&primexpr)?+(?{call addforloopiter})[)](?&statement)(?{call endforloop}))\s*+)
-(?<exprstatement>(?&primexpr)?;(?{call endexpression})\s*+)
-(?<compoundstatement>\s*+[{](?{call beginscope})((?&declsbb)|(?&statement))*+\s*+[}](?{call endscope})\s*+)
-(?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?{call startifstatement})(?&statement)(else\b(?{call continueifstatement})(?&statement))?+(?{call endifstatement})|switch\s*+[(](?&primexpr)[)](?{call startswitch})(?&statement)(?{call endswitch}))\s*+)
+(?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?{call "addcontinue"});|break\s*+(?{call "addbreak"});|return\b(?&primexpr)?;(?{call "endreturn"}))\s*+)
+(?<identifierminegoto>\s*+(?!(?&keywordlistfacet))(?<gtid>(?&identifierrawfacet))(?{call "gotolabel"})\s*+)
+(?<iterationstatement>\s*+(while\s*+[(](?{call "startforloopcond"})(?&primexpr)[)](?{call "endforloopcond"})(?{call "addforloopiter"})(?&statement)(?{call "endforloop"})|do\b(?{call "startdowhileloop"})(?&statement)while\s*+[(](?&primexpr)[)](?{call "enddowhileloop"})\s*+;
+	|for\s*+[(]((?&&&declsbb)|(?&exprstatement))?+(?{call "startforloopcond"})(?&primexpr)?;(?{call "endforloopcond"})\s*+(?&primexpr)?+(?{call "addforloopiter"})[)](?&statement)(?{call "endforloop"}))\s*+)
+(?<exprstatement>(?&primexpr)?;(?{call "endexpression"})\s*+)
+(?<compoundstatement>\s*+[{](?{call "beginscope"})((?&&&declsbb)|(?&statement))*+\s*+[}](?{call "endscope"})\s*+)
+(?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?{call "startifstatement"})(?&statement)(else\b(?{call "continueifstatement"})(?&statement))?+(?{call "endifstatement"})|switch\s*+[(](?&primexpr)[)](?{call "startswitch"})(?&statement)(?{call "endswitch"}))\s*+)
 
 (?<statement>(?=(?&labelfacet)++(?&statementinnerfacet))(?&label)++(?&statementinner)|(?&statementinner))
 (?<statementinner>(?&exprstatement)|(?&compoundstatement)|(?&selectionstatement)|(?&iterationstatement)|(?&jumpstatement))
 
-(?<label>(?&identifierminelabel)|\s*+(case\b(?{call beginconstantexpr})(?&primexpr):(?{call addCase})(?{call endconstantexpr})|default\s*+:(?{call addDefaultCase}))\s*+)
-(?<identifierminelabel>\s*+(?!(?&keywordlistfacet))(?<lbl>(?&identifierrawfacet))\s*+:(?{call splitbb})\s*+)
+(?<label>(?&identifierminelabel)|\s*+(case\b(?{call "beginconstantexpr"})(?&primexpr):(?{call "addCase"})(?{call "endconstantexpr"})|default\s*+:(?{call "addDefaultCase"}))\s*+)
+(?<identifierminelabel>\s*+(?!(?&keywordlistfacet))(?<lbl>(?&identifierrawfacet))\s*+:(?{call "splitbb"})\s*+)

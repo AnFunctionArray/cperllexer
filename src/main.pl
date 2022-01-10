@@ -70,7 +70,7 @@ chdir "..";
 #(?{parseregexfile($+{filename})})
 #(?{entryregexmain($+{entrygroup}, $+{prefix})})
 
-entryregexmain($-{entrygroup}[0], $-{prefix}[0]);
+entryregexmain($+{entrygroup}, $+{prefix});
 
 parseregexfile((substr $mainregexfilecontent, length $&), 1);
 
@@ -137,9 +137,9 @@ $mainregexdefs =~ s{
 =cut
 
 $mainregexdefs =~ s{
-    [(][?]&(\w+?)facet[)]
+    [(][?](&{1,3})(\w+?)facet[)]
 }{
-    dofacetsubreplacements($1)
+    dofacetsubreplacements($1, $2)
 }sxxge;
 
 =begin
@@ -232,18 +232,20 @@ exit;
 
 sub isfacet {
     use Data::Dumper;
-    print Dumper($-{facet}[0]);
-    return defined $-{facet}[0] and length( do { no warnings "numeric"; $-{facet}[0] & "" } )
+    print "facet -> " . $-{facet} . "\n";
+    return ref $-{facet} ne ARRAY
 }
 
 sub call {
     #print Dumper(\%+);
     my $captures = { %+ };
     my $facet = isfacet;
+    return if $facet;
+    print $_[0] . "\n";
 
     my $funcnm = $_[0] =~ s{facet$}{}r;
 
-    print "facet -> $facet\n";
+    #print "facet -> $facet\n";
     
     my $cond = ($entryregex =~ m{facet$} or not $facet);
     #return unless($entryregex =~ m{facet$} or not $facet);
@@ -255,7 +257,7 @@ sub call {
 
     $subslice =~ s{\R}{ }g;
 
-    if ($funcnm ne "identifier_typedef" and $cond) {
+    if ($cond) {
         use Data::Dumper;
         use POSIX;
     
@@ -700,10 +702,11 @@ sub parseregexfile {
     }
 
     sub dofacetsubreplacements {
-        my $identifier = $_[0];
+        my $identifier = $_[1];
+        my $prefix = $_[0];
 
         #return "(?(DEFINE)(?<facetsub>(?<facet>)$actual))(?&facetsub)";
-        return "(?<facet>(?&$identifier))";
+        return "(?<facet>(?$prefix$identifier))";
     }
 
     #dofacetreplacements($regexfilecontent);
