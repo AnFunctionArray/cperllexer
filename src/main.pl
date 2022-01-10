@@ -4,7 +4,7 @@ use re 'eval';
 
 no warnings qw(experimental::vlb);
 
-#$facet = 0;
+$facet = 0;
 
 #use re qw(Debug ALL);
 
@@ -232,8 +232,8 @@ exit;
 
 sub isfacet {
     use Data::Dumper;
-    print "facet -> " . $-{facet} . "\n";
-    return ref $-{facet} ne ARRAY
+    #print "facet -> " . $facet . "\n";
+    return $facet#ref $-{facet} ne ARRAY
 }
 
 sub call {
@@ -706,7 +706,7 @@ sub parseregexfile {
         my $prefix = $_[0];
 
         #return "(?(DEFINE)(?<facetsub>(?<facet>)$actual))(?&facetsub)";
-        return "(?<facet>(?$prefix$identifier))";
+        return "((?{++\$facet})|(?{--\$facet}))(?$prefix$identifier)((?{--\$facet})|(?{++\$facet}))";
     }
 
     #dofacetreplacements($regexfilecontent);
