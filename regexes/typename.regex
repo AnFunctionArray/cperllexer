@@ -19,7 +19,7 @@
 (?<allqualifsparam>\s*+(?&qualifs)\s*+|(?&structorunion)
 	|(?(?{exists $matches{tpdflocal}})(*F))((?&identifierminetypedef))(?{$matches{tpdflocal}=$^N}))
 
-(?<allqualifsdecl>(?&allqualifsparam)|\s*+(\btypedef\b)(?{$matches{typedefkey}=$^N})\s*+)
+(?<allqualifsdecl>(?&allqualifsparam)|\s*+(\btypedef\b)(?{print (($matches{typedefkey}=$^N) . "\n")})\s*+)
 
 (?<abstrmostoutteropt>\s*+(?&callingconv)?+[(](?&abstdecl<abstdecloptoutter>)[)]\s*+)
 
@@ -102,7 +102,7 @@
 (?<decl>(?(?=((?&structorunion)(?<fill>\s*+;\s*+)?+)))
 	(?(<fill>)\g{-1}|(?=(?&abstdeclorallqualifsbasic)(?<compound>(?&compoundstatement))?+)
 	(?(<compound>)(?&abstdeclorallqualifsbasicfacet)\g{compound}
-	|(?&abstdeclorallqualifs)\s*+;(?{call "endfulldecl"})\s*+)))
+	|(?&abstdeclorallqualifs)\s*+;(?{call "endfulldecl"; checkpoint})\s*+)))
 
 (?<cprogram>(?&decl<extrnl_def>)*+)
 

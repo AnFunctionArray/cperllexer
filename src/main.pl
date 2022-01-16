@@ -255,7 +255,7 @@ sub call {
 
     my $funcnm = $_[0] =~ s{facet$}{}r;
 
-    @captures{keys %matches} = values %matches;
+    @$captures{keys %matches} = values %matches;
 
     #print "facet -> $facet\n";
     
