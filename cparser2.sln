@@ -8,10 +8,10 @@ EndProject
 Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "perl", "..\perl5\perl.exe", "{1ED10D21-B02E-4285-B810-8D455412B214}"
 	ProjectSection(DebuggerProjectSystem) = preProject
 		PortSupplier = 00000000-0000-0000-0000-000000000000
-		Executable = D:\perl5\perl.exe
+		Executable = D:\perl5\miniperl.exe
 		RemoteMachine = DESKTOP-AMHEJ3L
-		StartingDirectory = D:\cparser2
-		Arguments = ./src/main.pl ./tests/test.test.c
+		StartingDirectory = D:\perl5\ext\DynaLoader
+		Arguments = "-I..\..\lib" "..\..\lib\ExtUtils\xsubpp" -noprototypes -typemap D:\perl5\lib\ExtUtils\typemap  DynaLoader.xs
 		Environment = perllib=src	
 		LaunchingEngine = 00000000-0000-0000-0000-000000000000
 		UseLegacyDebugEngines = No

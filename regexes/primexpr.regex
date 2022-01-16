@@ -16,12 +16,11 @@
 
 (?<testxpr>(?&inner)|(?&inparenths))
 
-	(?<assignorsomething>(?=(?&assignornothingfacet))(?<assignornothing>(?&unaryexpr)
-	(?<assignop>(?<binoplast>=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+))
-		(?&assignorsomething)(?!(?&orlogicplusrestfacet))(?{call "binary"})|(?&ternaryorsomething))
+	(?<assignorsomething>(?(?=((?&unaryexpr)))\g{-1}
+	((?<assignop>(?<binoplast>=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+)
+		(?&assignorsomething)|(?&ternaryorsomething))|(?&typenamerev)(?&ternaryorsomething)))
 
-	(?<ternaryorsomething>(?=(?&ternornothingfacet))(?<ternornothing>(?&orlogiorsomething)(?&ternaryrest))
-	(?&ternaryorsomething)(?!(?&orlogicplusrestfacet))
-		|(?=(?&orlogiorsomethingfacet))(?&orlogiorsomething))
+	(?<ternaryorsomething>(?&orlogiorsomething)((?&ternaryrest)
+	(?&ternaryorsomething))?+)
 
 	(?<ternaryrest>\?(?&primexpr):)	

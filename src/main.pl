@@ -2,10 +2,6 @@
 
 use re 'eval';
 
-no warnings qw(experimental::vlb);
-
-$facet = 0;
-
 #use re qw(Debug ALL);
 
 use experimental 'switch';
@@ -134,12 +130,22 @@ $mainregexdefs =~ s{
     (??{instantiate_cached_instance("$+{nm}")})
 }sxxg;
 
+$mainregexdefs =~ s{
+    [(][?](&{1,3}\+?+)(\w+?)[)]
+}{
+    (?&$2)
+}sxxg;
+
 =cut
 
 $mainregexdefs =~ s{
-    [(][?](&{1,3})(\w+?)facet[)]
+    [(][?](&{1,3})(\w+?)(facet|(?<facet>facet)?+<(?<name>\w+)>)[)]
 }{
-    dofacetsubreplacements($1, $2)
+    if(not $+{name}) {
+        dofacetsubreplacements($1, $2)
+    } else {
+        dotemplatesubreplacements($1, $2, $+{name}, $+{facet})
+    }
 }sxxge;
 
 =begin
@@ -196,7 +202,7 @@ if(not $isnested)
 
     use if $ARGV[1], re => qw(Debug EXECUTE); 
 
-    my $entry = qr{(?(DEFINE)$mainregexdefs)(?&$entryregex)}sxxn;
+    my $entry = qr{(?(DEFINE)$mainregexdefs)(?&$entryregex)}sxx;
 
     $subject =~ $entry
 }
@@ -232,8 +238,12 @@ exit;
 
 sub isfacet {
     use Data::Dumper;
-    #print "facet -> " . $facet . "\n";
+    print "facet -> " . $facet . "\n";
     return $facet#ref $-{facet} ne ARRAY
+}
+
+sub checkpoint {
+    undef %matches;
 }
 
 sub call {
@@ -244,6 +254,8 @@ sub call {
     print $_[0] . "\n";
 
     my $funcnm = $_[0] =~ s{facet$}{}r;
+
+    @captures{keys %matches} = values %matches;
 
     #print "facet -> $facet\n";
     
@@ -706,7 +718,28 @@ sub parseregexfile {
         my $prefix = $_[0];
 
         #return "(?(DEFINE)(?<facetsub>(?<facet>)$actual))(?&facetsub)";
-        return "((?{++\$facet})|(?{--\$facet}))(?$prefix$identifier)((?{--\$facet})|(?{++\$facet}))";
+        return "(((?{++\$facet})|(?{--\$facet}))
+                (?$prefix$identifier)
+                ((?{--\$facet})|(?{++\$facet})))";
+    }
+
+    sub dotemplatesubreplacements {
+        my $identifier = $_[1];
+        my $prefix = $_[0];
+        my $name = $_[2];
+        my $isalsofacet = $_[3];
+
+        #return "(?(DEFINE)(?<facetsub>(?<facet>)$actual))(?&facetsub)";
+        if(not $isalsofacet) {
+            return "(((?{++\$$name})|(?{--\$$name}))
+                    (?$prefix$identifier)
+                    ((?{--\$$name})|(?{++\$$name})))";
+        }
+        else {
+            return "(((?{++\$$name;++\$facet})|(?{--\$$name;--\$facet}))
+                    (?$prefix$identifier)
+                    ((?{--\$$name;--\$facet})|(?{++\$$name;++\$facet})))";
+        }
     }
 
     #dofacetreplacements($regexfilecontent);

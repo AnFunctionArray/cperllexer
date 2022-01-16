@@ -14,8 +14,14 @@
 (?<fltcl>(?{call "collect_float_literal"}))
 
 (?<floating>((?&fractional)(?&exponent)?+|(?<wholenodot>\d++)(?&exponent))(?<flt>[flFL])?+(?&fltcl))
-(?<fractional>((?<wholeopt>\d*+)\.(?<fraction>\d++)|(?<whole>\d++)\.))
-(?<exponent>[eE](?<sign>[+-])?+(?<exp>\d++))
+(?<fractional>((?<wholeopt>\d*+)\.(?<fraction>\d++)
+	(?{$matches{wholeopt}=$+{wholeopt}})
+	(?{$matches{fraction}=$+{fraction}})
+	|
+	(?<whole>\d++)\.(?{$matches{whole}=$+{whole}})))
+(?<exponent>[eE](?<sign>[+-])?+(?<exp>\d++)
+	(?{$matches{sign}=$+{sign}})
+	(?{$matches{exp}=$+{exp}}))
 
 (?<quote>(?(<begincharliteral>)'|"))
 

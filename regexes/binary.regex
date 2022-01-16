@@ -1,49 +1,33 @@
 (?#<binoprest, binopraw>)
 (?<binopplusrest>(?<binop>(?<binoplast>(?&binopraw))(?&castexpr)(?&binoprest)*(?{call "binary"}))|(?&binoprest))
 
-(?<binoprest>(?(R&addmulplusrest)(?&mulop)
-            |(?(R&shiftplusrest)(?&addmulplusrest)
-            |(?(R&relplusrest)(?&shiftplusrest)
-            |(?(R&eqplusrest)(?&relplusrest)
-            |(?(R&andplusrest)(?&eqplusrest)
-            |(?(R&xorplusrest)(?&andplusrest)
-            |(?(R&orplusrest)(?&xorplusrest)
-            |(?(R&andlogicplusrest)(?&orplusrest)
-            |(?(R&orlogicplusrest)(?&andlogicplusrest)|(*F)
+(?<binoprest>(?(?{$addmulplusrest})(?&mulop)
+            |(?(?{$shiftplusrest})(?&binopplusrest<addmulplusrest>)
+            |(?(?{$relplusrest})(?&binopplusrest<shiftplusrest>)
+            |(?(?{$eqplusrest})(?&binopplusrest<relplusrest>)
+            |(?(?{$andplusrest})(?&binopplusrest<eqplusrest>)
+            |(?(?{$xorplusrest})(?&binopplusrest<andplusrest>)
+            |(?(?{$orplusrest})(?&binopplusrest<xorplusrest>)
+            |(?(?{$andlogicplusrest})(?&binopplusrest<orplusrest>)
+            |(?(?{$orlogicplusrest})(?&binopplusrest<andlogicplusrest>)|(*F)
             ))))))))))
 
-(?<binopraw>(?(R&addmulplusrest)(?&addopraw)
-            |(?(R&shiftplusrest)(?&shiftopraw)
-            |(?(R&relplusrest)(?&relopraw)
-            |(?(R&eqplusrest)(?&eqopraw)
-            |(?(R&andplusrest)(?&andopraw)
-            |(?(R&xorplusrest)(?&xoropraw)
-            |(?(R&orplusrest)(?&oropraw)
-            |(?(R&andlogicplusrest)(?&andlogicopraw)
-            |(?(R&orlogicplusrest)(?&orlogicopraw)|(*F)
+(?<binopraw>(?(?{$addmulplusrest})(?&addopraw)
+            |(?(?{$shiftplusrest})(?&shiftopraw)
+            |(?(?{$relplusrest})(?&relopraw)
+            |(?(?{$eqplusrest})(?&eqopraw)
+            |(?(?{$andplusrest})(?&andopraw)
+            |(?(?{$xorplusrest})(?&xoropraw)
+            |(?(?{$orplusrest})(?&oropraw)
+            |(?(?{$andlogicplusrest})(?&andlogicopraw)
+            |(?(?{$orlogicplusrest})(?&orlogicopraw)|(*F)
             ))))))))))
 
-(?<orlogicplusrest>(?&binopplusrest))
 
-(?<andlogicplusrest>(?&binopplusrest))
-
-(?<orplusrest>(?&binopplusrest))
-
-(?<xorplusrest>(?&binopplusrest))
-
-(?<andplusrest>(?&binopplusrest))
-
-(?<eqplusrest>(?&binopplusrest))
-
-(?<relplusrest>(?&binopplusrest))
-
-(?<shiftplusrest>(?&binopplusrest))
-
-(?<addmulplusrest>(?&binopplusrest))
-
-
-(?<orlogiorsomething>(?=(?&castexprfacet))(?{call "begin_binary"})(?&castexpr)
-    ((?&orlogicplusrestfacet)(*F))*(?&orlogicplusrest)*?(?=(?&orlogicplusrestfacet)|(?{call "end_binary"})))
+(?<orlogiorsomething>(?{call "begin_binary"})
+    ((?&binopplusrestfacet<orlogicplusrest>)(*F))*
+    (?&binopplusrestfacet<orlogicplusrest>)*?
+    (?=(?&binopplusrestfacet<orlogicplusrest>)|(?{call "end_binary"})))
 
 (?<mulop>(?<mulopraw>[\*\/\%])(?&castexpr)(?{call "binary"}))
 
