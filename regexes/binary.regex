@@ -1,32 +1,27 @@
 (?#<binoprest, binopraw>)
-(?<binopplusrest>(?<binop>(?<binoplast>(?&binopraw))(?&castexpr)(?&binopplusrest)*(?{call "binary"})(?&setnextbinop)))
-
-(?<binopraw>(?(?{$mulop})(?<mulopraw>[\*\/\%])
-            |(?(?{$addmulplusrest})(?<addopraw>[\+\-])
-            |(?(?{$shiftplusrest})(?<shiftopraw><<|>>)
-            |(?(?{$relplusrest})(?<relopraw>(?!<<)<|(?!>>)>|<=|>=)
-            |(?(?{$eqplusrest})(?<eqopraw>==|!=)
-            |(?(?{$andplusrest})(?<andopraw>(?!&&)&) 
-            |(?(?{$xorplusrest})(?<xoropraw>\^) 
-            |(?(?{$orplusrest})(?<oropraw>(?!\|\|)\|)
-            |(?(?{$andlogicplusrest})(?<andlogicopraw>&&(?{call "begin_branch"}))
-            |(?(?{$orlogicplusrest})(?<orlogicopraw>\|\|(?{call "begin_branch"}))|(*F)
-            )))))))))))
-
-(?<setnextbinop>(?(?{$mulop})
-            |(?(?{$addmulplusrest})(?{$mulop++})
-            |(?(?{$shiftplusrest})(?{$addmulplusrest++})
-            |(?(?{$relplusrest})(?{$shiftplusrest++})
-            |(?(?{$eqplusrest})(?{$relplusrest++})
-            |(?(?{$andplusrest})(?{$eqplusrest++})
-            |(?(?{$xorplusrest})(?{$andplusrest++})
-            |(?(?{$orplusrest})(?{$xorplusrest++})
-            |(?(?{$andlogicplusrest})(?{$orplusrest++})
-            |(?(?{$orlogicplusrest})(?{$andlogicplusrest++})
-            |(?{$orlogicplusrest++})
-            )))))))))))
+(?<binopplusrest>(?<binop>(?<binoplast>
+(?(<addopraw>)(?&mulopraw)
+    |(?(<shiftopraw>)(?&addopraw)
+    |(?(<relopraw>)(?&shiftopraw)
+    |(?(<eqopraw>)(?&relopraw)
+    |(?(<andopraw>)(?&eqopraw)
+    |(?(<xoropraw>)(?&andopraw)
+    |(?(<oropraw>)(?&xoropraw)
+    |(?(<andlogicopraw>)(?&oropraw)
+    |(?(<orlogicopraw>)(?&andlogicopraw)
+    |(?<orlogicopraw>\|\|(?{call "begin_branch"})
+            |(?<andlogicopraw>&&(?{call "begin_branch"})
+            |(?<oropraw>(?!\|\|)\|
+            |(?<xoropraw>\^
+            |(?<andopraw>(?!&&)&
+            |(?<eqopraw>==|!=
+            |(?<relopraw>(?!<<)<|(?!>>)>|<=|>=
+            |(?<shiftopraw><<|>>
+            |(?<addopraw>[\+\-]
+            |(?<mulopraw>[\*\/\%]))))))))))
+            ))))))))))(?&castexpr)
+    (?&binopplusrest)*(?{call "binary"})))
 
 
 (?<orlogiorsomething>
-    (?&setnextbinop)
-    (?&binopplusrest<orlogicplusrest>)*+)
+    (?&binopplusrest)*)
