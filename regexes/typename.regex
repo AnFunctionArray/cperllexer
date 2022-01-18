@@ -36,22 +36,22 @@
 (?#<Tabstrrest, Tabstrrestalt, Tinside>)
 
 (?<Tabstrrest>
-	(?(?{$abstdecloptoutter})((??{inc "facet"})(?&abstrmostoutteropt)(??{dec "facet"}))?+((??{inc "facet"})(?&abstrsubs)(??{dec "facet"}))*+)
-	(?(?{$abstdecloutter})((??{inc "facet"})(?&abstrmostoutter)(??{dec "facet"}))((??{inc "facet"})(?&abstrsubs)(??{dec "facet"}))*+)
-	(?(?{$abstdecloutterparams})((??{inc "facet"})(?&abstrmostoutterparams)(??{dec "facet"}))((??{inc "facet"})(?&abstrsubs)(??{dec "facet"}))*+)
+	(?(?{$abstdecloutterparams})((??{inc "facet"})(?&abstrmostoutterparams)(??{dec "facet"}))((??{inc "facet"})(?&abstrsubs)(??{dec "facet"}))*+
+	|(?(?{$abstdecloutter})((??{inc "facet"})(?&abstrmostoutter)(??{dec "facet"}))((??{inc "facet"})(?&abstrsubs)(??{dec "facet"}))*+
+	|(?(?{$abstdecloptoutter})((??{inc "facet"})(?&abstrmostoutteropt)(??{dec "facet"}))?+((??{inc "facet"})(?&abstrsubs)(??{dec "facet"}))*+)))
 	)
 
 (?<Tabstrrestalt>
-	(?(?{$abstdecloptoutter})((?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++))
-	(?(?{$abstdecloutter})(?&abstrmostoutter)(?&abstrsubs)*+)
-	(?(?{$abstdecloutterparams})(?&abstrmostoutterparams)(?&abstrsubs)*+)
+	(?(?{$abstdecloutterparams})(?&abstrmostoutterparams)(?&abstrsubs)*+
+	|(?(?{$abstdecloutter})(?&abstrmostoutter)(?&abstrsubs)*+
+	|(?(?{$abstdecloptoutter})((?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++))))
 	)
 
 (?<Tinside>
-	(?(?{$abstdecloptoutter})(?&abstrmostoutteropt)?+)
-	(?(?{$abstdecloutter})(?&abstrmostoutter))
-	(?(?{$abstdecloutterparams})(?&abstrmostoutterparams))
-	)
+	(?(?{$abstdecloutterparams})(?&abstrmostoutterparams)
+	|(?(?{$abstdecloutter})(?&abstrmostoutter)
+	|(?(?{$abstdecloptoutter})(?&abstrmostoutteropt)?+))
+	))
 
 (?<abstdecl>(?(?{isfacet})(?&abstrptr)(?&abstrptr)*+(?&Tabstrrest)
 						|(?<abstrptrrev>(?<abstrptr>\s*+[*]\s*+
@@ -83,7 +83,7 @@
 )
 
 (?<Tabsqualifs>
-	(?(?{$extrnl_def})
+	(?(?{not $declsbb})
 	(?&allqualifsdecl)*+(?(?{$notpdfnm})|(?&identifierminetypedef)?+(?&allqualifsdecl)*+)
 	|(?&Tabsqualifnonoptional)*+((?(?{$notpdfnm})(*F)|(?&identifierminetypedef)(?&Tabsqualifnonoptional)*+)|(?&Tabsqualifnonoptional)++)
 	))
@@ -93,8 +93,10 @@
 (?#<Tabsqualifs, Tdecl, Tidentifierminetypedef, Tidentifierminetypedeffwd, Tqualifwrapper>)
 (?<abstdeclorallqualifsbasic>
 	(?(?{isfacet})((??{inc "facet"})(?&Tabsqualifs)(??{dec "facet"}))((??{inc "facet"})(?&Tdecl)(??{dec "facet"}))|
-	(?(?=(?{$facet++})((??{inc "notpdfnm"})(?&Tabsqualifs)(??{dec "notpdfnm"}))?\s*+(?<typedefnmmatched>\b(??{identifier_typedef})\b)\s*+)(?{$facet--})|(?{$facet--}))
-	(?(?=(?{$facet++})((??{inc "notypedef"})(?&Tabsqualifs)(??{dec "notypedef"}))?\s*+(?<typedefkey>(\btypedef\b))\s*+)(?{$facet--})|(?{$facet--}))
+	(?(?=(?{++$notpdfnm; ++$facet})(?&Tabsqualifs)?\s*+(?<typedefnmmatched>\b(??{identifier_typedef})\b)\s*+))
+	(?{--$notpdfnm; --$facet})
+	(?(?=(?{++$notypedef; ++$facet})(?&Tabsqualifs)?\s*+(?<typedefkey>(\btypedef\b))\s*+))
+	(?{--$notypedef; --$facet})
 	(?=((??{inc "facet"})(?&Tabsqualifs)(??{dec "facet"}))(?<restdeclbasic>(?&Tdecl))(?{call "enddeclaration"}))
 				(?&Tabsqualifs)\g{restdeclbasic}(?{call "endqualifs"})
 ))
@@ -104,18 +106,21 @@
 (?#<Tabsqualifs, Tasbtdecloutter, Tabstinitorbitfl, Tidentifierminetypedef, Tidentifierminetypedeffwd, Tqualifwrapper>)
 (?<abstdeclorallqualifs>
 		(?(?{isfacet})((??{inc "facet"})(?&Tabsqualifs)(??{dec "facet"}))((??{inc "facet"})(?&Tdecl)(??{dec "facet"}))((??{inc "facet"})(?&declcomma)(??{dec "facet"}))*+|
-		(?<restoutter>
-	(?(?=(?{$facet++})((??{inc "notpdfnm"})(?&Tabsqualifs)(??{dec "notpdfnm"}))?\s*+(?<typedefnmmatched>\b(??{identifier_typedef})\b)\s*+)(?{$facet--})|(?{$facet--}))
-	(?(?=(?{$facet++})((??{inc "notypedef"})(?&Tabsqualifs)(??{dec "notypedef"}))?\s*+(?<typedefkey>(\btypedef\b))\s*+)(?{$facet--})|(?{$facet--}))
-				(?=\g{absqualifsbasic}(?<restdecl>(?(<restdecl>)\g{restdecl}),(?&Tdecl)(?{call "enddeclaration"})))
+		(?<restoutter>	
+	(?(?=(?{++$notpdfnm; ++$facet})(?&Tabsqualifs)?\s*+(?<typedefnmmatched>\b(??{identifier_typedef})\b)\s*+))
+	(?{--$notpdfnm; --$facet})
+	(?(?=(?{++$notypedef; ++$facet})(?&Tabsqualifs)?\s*+(?<typedefkey>(\btypedef\b))\s*+))
+	(?{--$notypedef; --$facet})
+
+	(?=\g{absqualifsbasic}(?<restdecl>(?(<restdecl>)\g{restdecl}),(?&Tdecl)(?{call "enddeclaration"})))
 				(?=(?&Tabsqualifs))
 				(\g{absqualifsbasic}\g{restdecl}(?{call "endqualifs"})
 				|(?&restoutter)))
 				)|\g{absqualifsbasic})
 
 (?<decl>(?(?=((?<strc>(?&structorunion))(?<fill>\s*+;\s*+)?+)))
-	(?(<fill>)\g{-1}|(?=(?<absqualifsbasic>(?&abstdeclorallqualifsbasic))(?<compound>(?&compoundstatement))?+)
-	(?(<compound>)((??{inc "extractfns","facet"})(?&abstdeclorallqualifsbasic)(??{dec "extractfnsm","facet"}))\g{compound}
+	(?(<fill>)\g{-1}|(?=(?<absqualifsbasic>(?&abstdeclorallqualifsbasic)(?(?=(?<compound>(?&compoundstatement))))))
+	(?(<compound>)((??{inc "extractfns","facet"})(?&abstdeclorallqualifsbasic)(??{dec "extractfns","facet"}))\g{compound}
 	|(?&abstdeclorallqualifs)\s*+;(?{call "endfulldecl"})\s*+)))
 
 (?<cprogram>((??{inc "extrnl_def"})(?&decl)(??{dec "extrnl_def"}))*+)

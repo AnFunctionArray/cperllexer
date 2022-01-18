@@ -24,7 +24,7 @@ close $fh;
 $typedef_regex = qr{(*F)}sxxn;
 
 sub inc2 {
-    my @arr = split(',', $_[0]);
+    my @arr = @{$_[0]};
 
     foreach (@arr) {
         print $_ . "->" . ++$$_ . "\n"
@@ -32,21 +32,39 @@ sub inc2 {
 }
 
 sub dec2 {
-    my @arr = split(',', $_[0]);
+    my @arr = @{$_[0]};
 
     foreach (@arr) {
         print $_ . "->" . --$$_ . "\n"
     }
 }
 
+sub restore {
+    my @arr = @{$_[0]};
+    my @values = @{$_[1]};
+
+    use Data::Dumper;
+
+    #print Dumper(\@arr);
+    #print Dumper(\@values);
+
+    for my $i (0 .. $#values) {
+        print $arr[$i] . "->" . (${$arr[$i]} = $values[$i]) . "\n"
+    }
+}
+
 sub inc {
+    my $currvals = join(',', map { $$_ + 0 } @_);
+    my $currvalsalt = join(',', map { $$_ + 1 } @_);
     my $vars = join(',', @_);
-    return "((?{inc2 $vars})|(?{dec2 $vars}))"
+    return "((?{inc2 ([$vars], [$currvalsalt])})|(?{dec2 ([$vars], [$currvals])}))"
 }
 
 sub dec {
+    my $currvals = join(',', map { $$_ - 1 } @_);
+    my $currvalsalt = join(',', map { $$_ + 0 } @_);
     my $vars = join(',', @_);
-    return "((?{dec2 $vars})|(?{inc2 $vars}))"
+    return "((?{dec2 ([$vars], ($currvals))})|(?{inc2 ([$vars], [$currvalsalt])}))"
 }
 
 #$filename = "output.txt";
@@ -228,7 +246,7 @@ if(not $isnested)
 {
     require "extractfns.pm";
 
-    use if $ARGV[1], re => qw(Debug EXECUTE); 
+    use if $ARGV[1], re => qw(Debug ALL); 
 
     my $entry = qr{(?(DEFINE)$mainregexdefs)(?&$entryregex)}sxx;
 
