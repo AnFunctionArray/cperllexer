@@ -23,6 +23,32 @@ close $fh;
 
 $typedef_regex = qr{(*F)}sxxn;
 
+sub inc2 {
+    my @arr = split(',', $_[0]);
+
+    foreach (@arr) {
+        print $_ . "->" . ++$$_ . "\n"
+    }
+}
+
+sub dec2 {
+    my @arr = split(',', $_[0]);
+
+    foreach (@arr) {
+        print $_ . "->" . --$$_ . "\n"
+    }
+}
+
+sub inc {
+    my $vars = join(',', @_);
+    return "((?{inc2 $vars})|(?{dec2 $vars}))"
+}
+
+sub dec {
+    my $vars = join(',', @_);
+    return "((?{dec2 $vars})|(?{inc2 $vars}))"
+}
+
 #$filename = "output.txt";
 #open fhoutput, '>', $filename or die "error opening $filename: $!";
 
@@ -136,7 +162,7 @@ $mainregexdefs =~ s{
     (?&$2)
 }sxxg;
 
-=cut
+
 
 $mainregexdefs =~ s{
     [(][?](&{1,3})(\w+?)(facet|(?<facet>facet)?+<(?<name>\w+)>)[)]
@@ -147,6 +173,8 @@ $mainregexdefs =~ s{
         dotemplatesubreplacements($1, $2, $+{name}, $+{facet})
     }
 }sxxge;
+
+=cut
 
 =begin
 
@@ -712,7 +740,7 @@ sub parseregexfile {
         
         return $ret
     }
-
+=begin
     sub dofacetsubreplacements {
         my $identifier = $_[1];
         my $prefix = $_[0];
@@ -722,6 +750,7 @@ sub parseregexfile {
                 (?$prefix$identifier)
                 ((?{--\$facet})|(?{++\$facet})))";
     }
+=cut
 
     sub dotemplatesubreplacements {
         my $identifier = $_[1];
@@ -730,16 +759,10 @@ sub parseregexfile {
         my $isalsofacet = $_[3];
 
         #return "(?(DEFINE)(?<facetsub>(?<facet>)$actual))(?&facetsub)";
-        if(not $isalsofacet) {
-            return "(((?{++\$$name})|(?{--\$$name}))
-                    (?$prefix$identifier)
-                    ((?{--\$$name})|(?{++\$$name})))";
-        }
-        else {
-            return "(((?{++\$$name;++\$facet})|(?{--\$$name;--\$facet}))
-                    (?$prefix$identifier)
-                    ((?{--\$$name;--\$facet})|(?{++\$$name;++\$facet})))";
-        }
+
+        return "(((?{++\$$name})|(?{--\$$name}))
+                (?$prefix$identifier)
+                ((?{--\$$name})|(?{++\$$name})))";
     }
 
     #dofacetreplacements($regexfilecontent);

@@ -4,12 +4,12 @@
 						(?{call "addescapesequencetostring"})|
 						(?<text>(?<textraw>((?!(?&escape)|(?&quote)).)++)(?{call "addplaintexttostring"})))*+(?&quote)
 						(?{call "add_literal"}))
-						|(?!(?&floatingfacet))(?<numberliteral>(?<numberliteralraw>(?:(0x)(?<hex>[0-9a-fA-F]++)|(?:(0b)(?<bin>[01]++)
+						|(?!((??{inc "facet"})(?&floating)(??{dec "facet"})))(?<numberliteral>(?<numberliteralraw>(?:(0x)(?<hex>[0-9a-fA-F]++)|(?:(0b)(?<bin>[01]++)
 						|(?:(0)(?<oct>[0-7]++)|(?<dec>\d++))))(?<lng>[Uu](ll|LL|[lL])?+|(ll|LL|[lL])[Uu]?+)?+)
 						(?{call "num_lit"}))
 						|(?&floating)
-						|(?<identifier>\s*+(?!(?&keywordlistfacet)|(??{identifier_typedef})\b)
-						(?<ident>(?&identifierrawfacet))(?{call "obtainvalbyidentifier"})\s*+)))\s*+)
+						|(?<identifier>\s*+(?!((??{inc "facet"})(?&keywordlist)(??{dec "facet"}))|(??{identifier_typedef})\b)
+						(?<ident>((??{inc "facet"})(?&identifierraw)(??{dec "facet"})))(?{call "obtainvalbyidentifier"})\s*+)))\s*+)
 
 (?<fltcl>(?{call "collect_float_literal"}))
 

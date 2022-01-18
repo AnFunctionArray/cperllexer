@@ -9,7 +9,7 @@
 						(?{call "unaryincdec"})))*+
 						|(?&unary)))
 
-(?<identifierminemember>\s*+(?!(?&keywordlistfacet))(?<ident>(?&identifierrawfacet))
+(?<identifierminemember>\s*+(?!((??{inc "facet"})(?&keywordlist)(??{dec "facet"})))(?<ident>((??{inc "facet"})(?&identifierraw)(??{dec "facet"})))
 	(?{call "memberaccess"})\s*+)
 
 (?<testentry>(?<innertest>(?&orlogiorsomething));)
