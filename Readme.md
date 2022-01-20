@@ -1,19 +1,13 @@
 ﻿# C Parser/Compiler with LLVM
 
-Since no one ever has written a C parser the easy way (AKA with RegEx) I decided to do it - no hard algorithmic recursions - just plain Regex with measly one callout function that only fetch and displays named groups/diagnostics.
+Regex is better for writing parsers. Prove me wrong. Working with default perl.
 
-Obviously there were some challenges - for example the first one was distinguishing between a random sequence of text and an terminated escape sequence.
+To parse:
 
-Currently the last challenge I was faced with was capturing/triggering the callbacks for right-to-left operators in the right order. I have a generic method for this now, for a single operator but it must be extended for more complex cases.
+`perl ./regexes/parse.pl ./tests/test.test.c`
 
-# Usage
+You can also figure out how to compile.
 
-You would need to install perl with dynamic modules and finally llvm. Of-course you would need a g++ and gcc compiler (or msvc).
+No custom syntax - you can reorganzie the content of the files inside ./regex to your liking. Possibilities are for example to remove semicolons
 
-Preprocessor (any of it - including #line) and attributes are not supported.
-
-Example launch:
-
-clear; ./cparser ./main.pl maintest.c
-
-maintest.c is the example included in this project.
+(since my syntax is not self agnostic).
