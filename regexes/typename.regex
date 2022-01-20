@@ -1,5 +1,4 @@
-#include "main.regex", "inner.regex", "unary.regex", "binary.regex", "primexpr.regex"
-#entry ^cprogram
+
 
 (?<typenamequalifs>(?<qualifs>(?<typesandqualifiers>\s*+
 						(?<typesandqualifiersmask>(\bvoid\b|\bint\b|\bchar\b|\bshort\b|\blong\b
@@ -123,7 +122,7 @@
 	(?(<compound>)((??{inc "extractfns","facet"})(?&abstdeclorallqualifsbasic)(??{dec "extractfns","facet"}))\g{compound}
 	|(?&abstdeclorallqualifs)\s*+;(?{call "endfulldecl"})\s*+)))
 
-(?<cprogram>((??{inc "extrnl_def"})(?&decl)(??{dec "extrnl_def"}))*+)
+(?<cprogram>((??{inc "declextrnl"})(?&decl)(??{dec "declextrnl"}))*+)
 
 (?<keywordlist>(?&typesandqualifiersmask)
 	|\b(typedef|struct|enum|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)\b)

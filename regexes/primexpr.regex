@@ -1,3 +1,6 @@
+#include "statement.regex", "inner.regex", "unary.regex", "binary.regex", "typename.regex"
+#entry ^cprogram
+
 (?<primexpr>(?&assignorsomething)(,\s*+(?&assignorsomething))*)
 
 
@@ -12,7 +15,7 @@
 (?<identifierminemember>\s*+(?!((??{inc "facet"})(?&keywordlist)(??{dec "facet"})))(?<ident>((??{inc "facet"})(?&identifierraw)(??{dec "facet"})))
 	(?{call "memberaccess"})\s*+)
 
-(?<testentry>(?<innertest>(?&orlogiorsomething));)
+(?<testentry>(?<innertest>((?&primexpr)|((?{inc "declsbb"})(?&abstdeclorallqualifsbasic))(?{dec "declsbb"}))*+))
 
 (?<testxpr>(?&inner)|(?&inparenths))
 
