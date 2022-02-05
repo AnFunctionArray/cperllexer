@@ -29,10 +29,10 @@ $typedef_regex = qr{(*F)}sxxn;
 sub inc2 {
     foreach my $name (@_) {
         my $lastval = $$name;
-        while(my($k, $v) = each %hashmap) { 
-            if($k =~ m{^$name\S{3,}}sxx) {
-                print push @$v, $lastval;
-                print;
+        my $namepostfix = $name =~ s{^\S+_}{}r;
+        while(my($k, $v) = each %hashmap) {
+            if($k =~ m{(?<=_)$namepostfix$}sxx) {
+                push @$v, $lastval;
                 print "$k clearing -> " . ($$name = 0) . "\n" if($lastval != 0);
             }
         }
@@ -44,11 +44,10 @@ sub inc2 {
 sub dec2 {
     foreach my $name (@_) {
         my $lastlastval = $$name;
+        my $namepostfix = $name =~ s{^\S+_}{}r;
         while(my($k, $v) = each %hashmap) { 
-            if($k =~ m{^$name\S{3,}}sxx) {
+            if($k =~ m{(?<=_)$namepostfix$}sxx)  {
                 my $lastval = pop @$v;
-                print $lastval;
-                print;
                 print "$k restoring -> " . ($$name = $lastval) . "\n" if($lastval != $lastlastval);
             }
         }

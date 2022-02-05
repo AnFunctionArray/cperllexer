@@ -11,7 +11,7 @@
 (?<align>\s*+\b__declspec[(]\s*+\balign[(]\s*+(?<align>(?&numberliteralraw))\s*+[)]\s*+[)]\s*+)
 
 (?<typename>\s*+[(](?=((??{inc "facet"})(?&typenamequalifs)(??{dec "facet"}))++(?{call "identifier_decl"})
-						(?<abstrdeclopt>((??{inc "abstdecloptoutter"})(?&abstdecl)(??{dec "abstdecloptoutter"}))?+)
+						(?<abstrdeclopt>((??{inc "optoutter_abstdecl"})(?&abstdecl)(??{dec "optoutter_abstdecl"}))?+)
 						(?{call "enddeclaration"}))
 						(?&typenamequalifs)++
 						\g{abstrdeclopt}[)](?{call "endqualifs"})\s*+)
@@ -20,12 +20,12 @@
 
 (?<allqualifsdecl>(?&allqualifsparam)|(?(?{$notypedef})(*F)|\s*+(\btypedef\b)\s*+))
 
-(?<abstrmostoutteropt>\s*+(?&callingconv)?+[(]((??{inc "abstdecloptoutter"})(?&abstdecl)(??{dec "abstdecloptoutter"}))[)]\s*+)
+(?<abstrmostoutteropt>\s*+(?&callingconv)?+[(]((??{inc "optoutter_abstdecl"})(?&abstdecl)(??{dec "optoutter_abstdecl"}))[)]\s*+)
 
-(?<abstrmostoutter>\s*+(?&callingconv)?+([(]((??{inc "abstdecloutter"})(?&abstdecl)(??{dec "abstdecloutter"}))[)]|(?&identifierminedecl))\s*+)
+(?<abstrmostoutter>\s*+(?&callingconv)?+([(]((??{inc "outter_abstdecl"})(?&abstdecl)(??{dec "outter_abstdecl"}))[)]|(?&identifierminedecl))\s*+)
 
 (?<abstrmostoutterparams>\s*+(?(?=(?{$facet++})(?&abstrsubs))(?{$facet--})(?{call "identifier_decl"})(?&abstrsubs)
-			|(?{$facet--})([(]((??{inc "abstdecloutterparams"})(?&abstdecl)(??{dec "abstdecloutterparams"}))[)]
+			|(?{$facet--})([(]((??{inc "outterparams_abstdecl"})(?&abstdecl)(??{dec "outterparams_abstdecl"}))[)]
 			|(?&identifierminedecl)
 			|(?{call "identifier_decl"})))\s*+)
 
@@ -35,21 +35,21 @@
 (?#<Tabstrrest, Tabstrrestalt, Tinside>)
 
 (?<Tabstrrest>
-	(?(?{$abstdecloutterparams})((??{inc "facet"})(?&abstrmostoutterparams)(??{dec "facet"}))((??{inc "facet"})(?&abstrsubs)(??{dec "facet"}))*+
-	|(?(?{$abstdecloutter})((??{inc "facet"})(?&abstrmostoutter)(??{dec "facet"}))((??{inc "facet"})(?&abstrsubs)(??{dec "facet"}))*+
-	|(?(?{$abstdecloptoutter})((??{inc "facet"})(?&abstrmostoutteropt)(??{dec "facet"}))?+((??{inc "facet"})(?&abstrsubs)(??{dec "facet"}))*+)))
+	(?(?{$outterparams_abstdecl})((??{inc "facet"})(?&abstrmostoutterparams)(??{dec "facet"}))((??{inc "facet"})(?&abstrsubs)(??{dec "facet"}))*+
+	|(?(?{$outter_abstdecl})((??{inc "facet"})(?&abstrmostoutter)(??{dec "facet"}))((??{inc "facet"})(?&abstrsubs)(??{dec "facet"}))*+
+	|(?(?{$optoutter_abstdecl})((??{inc "facet"})(?&abstrmostoutteropt)(??{dec "facet"}))?+((??{inc "facet"})(?&abstrsubs)(??{dec "facet"}))*+)))
 	)
 
 (?<Tabstrrestalt>
-	(?(?{$abstdecloutterparams})(?&abstrmostoutterparams)(?&abstrsubs)*+
-	|(?(?{$abstdecloutter})(?&abstrmostoutter)(?&abstrsubs)*+
-	|(?(?{$abstdecloptoutter})((?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++))))
+	(?(?{$outterparams_abstdecl})(?&abstrmostoutterparams)(?&abstrsubs)*+
+	|(?(?{$outter_abstdecl})(?&abstrmostoutter)(?&abstrsubs)*+
+	|(?(?{$optoutter_abstdecl})((?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++))))
 	)
 
 (?<Tinside>
-	(?(?{$abstdecloutterparams})(?&abstrmostoutterparams)
-	|(?(?{$abstdecloutter})(?&abstrmostoutter)
-	|(?(?{$abstdecloptoutter})(?&abstrmostoutteropt)?+))
+	(?(?{$outterparams_abstdecl})(?&abstrmostoutterparams)
+	|(?(?{$outter_abstdecl})(?&abstrmostoutter)
+	|(?(?{$optoutter_abstdecl})(?&abstrmostoutteropt)?+))
 	))
 
 (?<abstdecl>(?(?{isfacet})(?&abstrptr)(?&abstrptr)*+(?&Tabstrrest)
@@ -59,30 +59,30 @@
 						(?<abstrrest>(?&Tinside)(?<abstrsubs>\s*+(\[(?{call "beginconstantexpr"})(?&primexpr)\]
 						(?{call "addsubtotype"})(?{call "endconstantexpr"})
 						|[(](?{call "startfunctionparamdecl"})(\s*+\bvoid\b\s*+
-						|((((??{inc "typenameinsideparams"})(?&decl)(??{dec "typenameinsideparams"})))?+
-						(,((??{inc "typenameinsideparams"})(?&decl)(??{dec "typenameinsideparams"})))*(?<rest>,\s*+\.\.\.\s*+)?+))[)](?{call "endfunctionparamdecl"}))\s*+)*+
+						|((((??{inc "insideparams_typename"})(?&decl)(??{dec "insideparams_typename"})))?+
+						(,((??{inc "insideparams_typename"})(?&decl)(??{dec "insideparams_typename"})))*(?<rest>,\s*+\.\.\.\s*+)?+))[)](?{call "endfunctionparamdecl"}))\s*+)*+
 						(?{call "addptrtotype"}))|
 						(?&abstrptr))(?&abstrptr)*+(?&Tabstrrest))|(?&Tabstrrestalt))
 
 (?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
 
 (?<Tasbtdecloutter>
-	(?(?{$typenameinsideparams})((??{inc "abstdecloutterparams"})(?&abstdecl)(??{dec "abstdecloutterparams"}))|((??{inc "abstdecloutter"})(?&abstdecl)(??{dec "abstdecloutter"})))
+	(?(?{$insideparams_typename})((??{inc "outterparams_abstdecl"})(?&abstdecl)(??{dec "outterparams_abstdecl"}))|((??{inc "outter_abstdecl"})(?&abstdecl)(??{dec "outter_abstdecl"})))
 	)
 
 (?<Tabstinitorbitfl>
-	(?(?{$typenamebitfl})(?&abstrbitfield)|(?(?{$typenameinsideparams})(*F)|(?&abstrinitialization)))
+	(?(?{$bitfl_typename})(?&abstrbitfield)|(?(?{$insideparams_typename})(*F)|(?&abstrinitialization)))
 	)
 
 (?<Tdecl>(?&Tasbtdecloutter)
 			(?&Tabstinitorbitfl)?+)
 
 (?<Tabsqualifnonoptional>
-	(?(?{$typenameinsideparams})(?&allqualifsparam)|(?&allqualifsdecl))
+	(?(?{$insideparams_typename})(?&allqualifsparam)|(?&allqualifsdecl))
 )
 
 (?<Tabsqualifs>
-	(?(?{not $declsbb})
+	(?(?{not $bb_decls})
 	(?&allqualifsdecl)*+(?(?{$notpdfnm})|(?&identifierminetypedef)?+(?&allqualifsdecl)*+)
 	|(?&Tabsqualifnonoptional)*+((?(?{$notpdfnm})(*F)|(?&identifierminetypedef)(?&Tabsqualifnonoptional)*+)|(?&Tabsqualifnonoptional)++)
 	))
@@ -122,7 +122,7 @@
 	(?(<compound>)((??{inc "extractfns","facet"})(?&abstdeclorallqualifsbasic)(??{dec "extractfns","facet"}))\g{compound}
 	|(?&abstdeclorallqualifs)\s*+;(?{call "endfulldecl"})\s*+)))
 
-(?<cprogram>((??{inc "declextrnl"})(?&decl)(??{dec "declextrnl"}))*+)
+(?<cprogram>((??{inc "extrnl_decls"})(?&decl)(??{dec "extrnl_decls"}))*+)
 
 (?<keywordlist>(?&typesandqualifiersmask)
 	|\b(typedef|struct|enum|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)\b)
@@ -141,7 +141,7 @@
 	(?<enumerator>(?&add_ident_to_enum_def)
 	((=(?{call "beginconstantexpr"})(?&assignorsomething)(?{call "end_ass_to_enum_def"}))
 	|(?{call "end_without_ass_to_enum_def"})))?+(,(?&enumerator))*+,?+\s*+
-	|(?{call "struc_or_union_body"})\s*+(((??{inc "typenamebitfl"})(?&decl)(??{dec "typenamebitfl"}))\s*+;\s*+)*+)
+	|(?{call "struc_or_union_body"})\s*+(((??{inc "bitfl_typename"})(?&decl)(??{dec "bitfl_typename"}))\s*+;\s*+)*+)
 	[}]\s*+(?(<enum>)()|(?{call "endbuildingstructorunion"}))(?{call "add_tag"})\s*+)
 
 (?<structorunion>(?=(?<begin>\s*+\b(?<structorunionlast>struct|union|(?<enum>enum))\b(?&align)?+
