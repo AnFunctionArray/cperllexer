@@ -5,6 +5,8 @@ use re 'eval';
 BEGIN{push @INC, "./misc"};
 BEGIN{push @INC, "./regexes/supplement"};
 
+require "typename.regex.pl";
+
 #use re qw(Debug ALL);
 
 use experimental 'switch';
@@ -593,8 +595,6 @@ sub parseregexfile {
     }
 
     $mainregexfinal = $mainregexfinal . $regexfilecontent;
-
-    eval "use $filename.pl";
 
     return;
 
