@@ -30,10 +30,10 @@ sub inc2 {
     foreach my $name (@_) {
         my $lastval = $$name;
         while(my($k, $v) = each %hashmap) { 
-            if($v =~ m{^$name\S{3,}}sxx) {
-                print push @$v, $$k;
+            if($k =~ m{^$name\S{3,}}sxx) {
+                print push @$v, $lastval;
                 print;
-                print "$k clearing -> " . ($$k = 0) . "\n" if($$k != 0);
+                print "$k clearing -> " . ($$name = 0) . "\n" if($lastval != 0);
             }
         }
 
@@ -43,17 +43,17 @@ sub inc2 {
 
 sub dec2 {
     foreach my $name (@_) {
-        my $lastval = $$name;
+        my $lastlastval = $$name;
         while(my($k, $v) = each %hashmap) { 
-            if($v =~ m{^$name\S{3,}}sxx) {
+            if($k =~ m{^$name\S{3,}}sxx) {
                 my $lastval = pop @$v;
                 print $lastval;
                 print;
-                print "$k restoring -> " . ($$k = $lastval) . "\n" if($$k != $lastval);
+                print "$k restoring -> " . ($$name = $lastval) . "\n" if($lastval != $lastlastval);
             }
         }
 
-        $hashmap{$name} = $$name = --$lastval;
+        $hashmap{$name} = $$name = --$lastlastval;
     }
 }
 
