@@ -1,0 +1,3 @@
+[submodule "regularcbulk"]
+	path = regularcbulk
+	url = https://github.com/AnFunctionArray/regularcbulk.git
