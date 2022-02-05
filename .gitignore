@@ -15,6 +15,11 @@
 
 *.txt
 !CMakeLists.txt
+CMakeFiles
+Makefile
+*.cmake
+
+compile_commands.json
 
 # Build results
 [Dd]ebug/
