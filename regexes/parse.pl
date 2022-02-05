@@ -34,27 +34,27 @@ sub inc2 {
         my $namepostfix = $name =~ s{^\S+_}{}r;
         while(my($k, $v) = each %hashmap) {
             if($k =~ m{(?<=_)$namepostfix$}sxx) {
-                push @$v, $lastval;
-                print "$k clearing -> " . ($$name = 0) . "\n" if($lastval != 0);
+                push @$v, $$k;
+                print "$k clearing -> " . ($$k = 0) . "\n";
             }
         }
 
-        $hashmap{$name} = $$name = ++$lastval;
+        print "setting $name to -> " . ($hashmap{$name} = $$name = ++$lastval) . "\n";
     }
 }
 
 sub dec2 {
     foreach my $name (@_) {
-        my $lastlastval = $$name;
+        my $lastval = $$name;
         my $namepostfix = $name =~ s{^\S+_}{}r;
         while(my($k, $v) = each %hashmap) { 
             if($k =~ m{(?<=_)$namepostfix$}sxx)  {
-                my $lastval = pop @$v;
-                print "$k restoring -> " . ($$name = $lastval) . "\n" if($lastval != $lastlastval);
+                my $currval = pop @$v;
+                print "$k restoring -> " . ($$k = $currval) . "\n";
             }
         }
 
-        $hashmap{$name} = $$name = --$lastlastval;
+        print "setting $name to -> " . ($hashmap{$name} = $$name = --$lastval) . "\n";
     }
 }
 

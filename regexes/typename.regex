@@ -84,7 +84,8 @@
 (?<Tabsqualifs>
 	(?(?{not $bb_decls})
 	(?&allqualifsdecl)*+(?(?{$notpdfnm})|(?&identifierminetypedef)?+(?&allqualifsdecl)*+)
-	|(?&Tabsqualifnonoptional)*+((?(?{$notpdfnm})(*F)|(?&identifierminetypedef)(?&Tabsqualifnonoptional)*+)|(?&Tabsqualifnonoptional)++)
+	|(?&Tabsqualifnonoptional)*+(?(?{$notpdfnm})(?&Tabsqualifnonoptional)++|((?&identifierminetypedef)(?&Tabsqualifnonoptional)*+|
+	(?&Tabsqualifnonoptional)++))
 	))
 
 (?<identifierminetypedef>\s*+(?&typedefnmmatched)\s*+)
