@@ -15,7 +15,7 @@
 (?<identifierminemember>\s*+(?!((??{inc "facet"})(?&keywordlist)(??{dec "facet"})))(?<ident>((??{inc "facet"})(?&identifierraw)(??{dec "facet"})))
 	(?{call "memberaccess"})\s*+)
 
-(?<testentry>(?<innertest>((?&primexpr)|((?{inc "bb_decls"})(?&abstdeclorallqualifsbasic))(?{dec "bb_decls"}))*+))
+(?<testentry>(?<innertest>((?&primexpr)|((??{set {"decls" => "bb"}})(?&abstdeclorallqualifsbasic))(??{unset {"decls" => "bb"}}))*+))
 
 (?<testxpr>(?&inner)|(?&inparenths))
 

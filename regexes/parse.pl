@@ -9,9 +9,13 @@ require "typename.regex.pl";
 
 #use re qw(Debug ALL);
 
+use List::Util qw(max);
+
 use experimental 'switch';
 
 use File::Basename;
+
+use Data::Dumper;
 
 $oldfh = select(STDERR);
 
@@ -29,32 +33,35 @@ close $fh;
 $typedef_regex = qr{(*F)}sxxn;
 
 sub inc2 {
-    foreach my $name (@_) {
-        my $lastval = $$name;
-        my $namepostfix = $name =~ s{^\S+_}{}r;
-        while(my($k, $v) = each %hashmap) {
-            if($k =~ m{(?<=_)$namepostfix$}sxx) {
-                push @$v, $$k;
-                print "$k clearing -> " . ($$k = 0) . "\n";
-            }
-        }
 
-        print "setting $name to -> " . ($hashmap{$name} = $$name = ++$lastval) . "\n";
+    foreach my $name (@_) {
+        "setting $name to -> " . ($$name = ++$$name) . "\n";
     }
 }
 
 sub dec2 {
-    foreach my $name (@_) {
-        my $lastval = $$name;
-        my $namepostfix = $name =~ s{^\S+_}{}r;
-        while(my($k, $v) = each %hashmap) { 
-            if($k =~ m{(?<=_)$namepostfix$}sxx)  {
-                my $currval = pop @$v;
-                print "$k restoring -> " . ($$k = $currval) . "\n";
-            }
-        }
 
-        print "setting $name to -> " . ($hashmap{$name} = $$name = --$lastval) . "\n";
+    foreach my $name (@_) {
+
+        "setting $name to -> " . ($$name = --$$name) . "\n";
+    }
+}
+
+sub set2 {
+    #print Dumper(@_);
+    foreach my $pair (@_) {
+        my ($key, $value) = %$pair;
+        #print Dumper($pair);
+        push @$key, $value;
+        #print "pushing $value to $key\n"
+    }
+}
+
+sub unset2 {
+
+    foreach my $bulk (@_) {
+        #print "popping $bulk\n";
+        pop @$bulk;
     }
 }
 
@@ -82,6 +89,26 @@ sub common {
 sub inc {
     my $vars = join(',', @_);
     return "((?{inc2 $vars})|(?{dec2 $vars}))"
+}
+
+sub set {
+    $Data::Dumper::Terse = 1;
+    my $vars = join(',', map {Dumper($_)} @_);
+    my $unset = join(',', map {(keys %$_)[0]} @_);
+
+    #print $vars . "\n";
+    $Data::Dumper::Terse = 0;
+    return "((?{set2 $vars})|(?{unset2 $unset}))"
+}
+
+sub unset {
+    $Data::Dumper::Terse = 1;
+    my $vars = join(',', map {Dumper($_)} @_);
+    my $unset = join(',', map {(keys %$_)[0]} @_);
+
+    #print $vars . "\n";
+    $Data::Dumper::Terse = 0;
+    return "((?{unset2 $unset})|(?{set2 $vars}))"
 }
 
 sub dec {
@@ -306,7 +333,7 @@ exit;
 
 sub isfacet {
     use Data::Dumper;
-    print "facet \tchecking -> " . $facet . "\n";
+    #print "facet \tchecking -> " . $facet . "\n";
     return $facet#ref $-{facet} ne ARRAY
 }
 
