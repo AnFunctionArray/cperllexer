@@ -24,4 +24,4 @@
 
 
 (?<orlogiorsomething>
-    (?&binopplusrest)*)
+    (?&binopplusrest)*+(?{call "end_binary"}))

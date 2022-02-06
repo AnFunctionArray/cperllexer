@@ -19,11 +19,14 @@
 
 (?<testxpr>(?&inner)|(?&inparenths))
 
-	(?<assignorsomething>(?(?=((?&unaryexpr)))\g{-1}
+(?<assignorsomething>
+	(?(?=(?{inc2 "facet"})(?&unaryexpr))
+	(?{dec2 "facet"})(?{call "begin_binary"})(?&unaryexpr)
 	((?<assignop>(?<binoplast>=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+)
-		(?&assignorsomething)|(?&ternaryorsomething))|(?&typenamerev)(?&ternaryorsomething)))
+		(?&assignorsomething)|(?&ternaryorsomething))
+		|(?{dec2 "facet"})(?&typenamerev)(?&ternaryorsomething)))
 
-	(?<ternaryorsomething>(?&orlogiorsomething)((?&ternaryrest)
+(?<ternaryorsomething>(?&orlogiorsomething)((?&ternaryrest)
 	(?&ternaryorsomething))?+)
 
-	(?<ternaryrest>\?(?&primexpr):)	
+(?<ternaryrest>\?(?&primexpr):)	
