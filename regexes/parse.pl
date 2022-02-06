@@ -53,7 +53,7 @@ sub set2 {
         my ($key, $value) = %$pair;
         #print Dumper($pair);
         push @$key, $value;
-        #print "pushing $value to $key\n"
+        print "pushing $key to $key->[-1]\n"
     }
 }
 
@@ -62,6 +62,7 @@ sub unset2 {
     foreach my $bulk (@_) {
         #print "popping $bulk\n";
         pop @$bulk;
+        print "$bulk => $bulk->[-1]\n";
     }
 }
 
@@ -86,6 +87,16 @@ sub common {
 }
 =cut
 
+sub evalval {
+    my $result = eval {
+        $_[0]()
+    };
+    warn $@ if $@; 
+    print "eval is $result\n";
+
+    return $result;
+}
+
 sub inc {
     my $vars = join(',', @_);
     return "((?{inc2 $vars})|(?{dec2 $vars}))"
@@ -94,7 +105,7 @@ sub inc {
 sub set {
     $Data::Dumper::Terse = 1;
     my $vars = join(',', map {Dumper($_)} @_);
-    my $unset = join(',', map {(keys %$_)[0]} @_);
+    my $unset = join(',', map {(keys %_)[0]} @_);
 
     #print $vars . "\n";
     $Data::Dumper::Terse = 0;
@@ -104,7 +115,7 @@ sub set {
 sub unset {
     $Data::Dumper::Terse = 1;
     my $vars = join(',', map {Dumper($_)} @_);
-    my $unset = join(',', map {(keys %$_)[0]} @_);
+    my $unset = join(',', map {(keys %_)[0]} @_);
 
     #print $vars . "\n";
     $Data::Dumper::Terse = 0;
