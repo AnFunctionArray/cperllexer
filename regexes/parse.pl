@@ -62,7 +62,7 @@ sub unset2 {
     foreach my $bulk (@_) {
         #print "popping $bulk\n";
         pop @$bulk;
-        print "$bulk => $bulk->[-1]\n";
+        print "unsetting $bulk => $bulk->[-1]\n";
     }
 }
 
@@ -99,32 +99,32 @@ sub evalval {
 
 sub inc {
     my $vars = join(',', @_);
-    return "((?{inc2 $vars})|(?{dec2 $vars}))"
+    return "((?{inc2 $vars})|(?{dec2 $vars})(*F))"
 }
 
 sub set {
     $Data::Dumper::Terse = 1;
     my $vars = join(',', map {Dumper($_)} @_);
-    my $unset = join(',', map {(keys %_)[0]} @_);
+    my $unset = join(',', map {(keys %$_)[0]} @_);
 
     #print $vars . "\n";
     $Data::Dumper::Terse = 0;
-    return "((?{set2 $vars})|(?{unset2 $unset}))"
+    return "((?{set2 $vars})|(?{unset2 $unset})(*F))"
 }
 
 sub unset {
     $Data::Dumper::Terse = 1;
     my $vars = join(',', map {Dumper($_)} @_);
-    my $unset = join(',', map {(keys %_)[0]} @_);
+    my $unset = join(',', map {(keys %$_)[0]} @_);
 
-    #print $vars . "\n";
+    print "un " . $unset . "\n";
     $Data::Dumper::Terse = 0;
-    return "((?{unset2 $unset})|(?{set2 $vars}))"
+    return "((?{unset2 $unset})|(?{set2 $vars})(*F))"
 }
 
 sub dec {
     my $vars = join(',', @_);
-    return "((?{dec2 $vars})|(?{inc2 $vars}))"
+    return "((?{dec2 $vars})|(?{inc2 $vars})(*F))"
 }
 
 #$filename = "output.txt";
