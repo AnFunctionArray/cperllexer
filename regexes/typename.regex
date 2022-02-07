@@ -68,8 +68,10 @@
 						(?<abstrrest>(?&Tinside)(?<abstrsubs>\s*+(\[(?{call "beginconstantexpr"})(?&primexpr)\]
 						(?{call "addsubtotype"})(?{call "endconstantexpr"})
 						|[(](?{call "startfunctionparamdecl"})(\s*+\bvoid\b\s*+
-						|((((?(?=(?<strc>(?&structorunion))))((??{set {"typename" => "insideparams"}})(?&abstdeclorallqualifsbasic)(??{unset {"typename" => "insideparams"}}))))?+
-						(,((?(?=(?<strc>(?&structorunion))))((??{set {"typename" => "insideparams"}})(?&abstdeclorallqualifsbasic)(??{unset {"typename" => "insideparams"}}))))*(?<rest>,\s*+\.\.\.\s*+)?+))[)](?{call "endfunctionparamdecl"}))\s*+)*+
+						|((((?(?=(?<strc>(?&structorunion))))
+						((??{set {"typename" => "insideparams"}, {"decls" => "bb"}})(?&abstdeclorallqualifsbasic)(??{unset {"typename" => "insideparams"}, {"decls" => "bb"}}))))?+
+						(,((?(?=(?<strc>(?&structorunion))))
+						((??{set {"typename" => "insideparams"}, {"decls" => "bb"}})(?&abstdeclorallqualifsbasic)(??{unset {"typename" => "insideparams"}, {"decls" => "bb"}}))))*(?<rest>,\s*+\.\.\.\s*+)?+))[)](?{call "endfunctionparamdecl"}))\s*+)*+
 						(?{call "addptrtotype"}))|
 						(?&abstrptr))(?&abstrptr)*+(?&Tabstrrest))|(?&Tabstrrestalt))
 
