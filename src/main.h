@@ -120,14 +120,9 @@ struct retgetnamevalue getnamevalue(const char* nametoget);
 #define DLL_EXPORT INTRANSIT __declspec(dllexport)
 #define DLL_LOCAL  INTRANSIT
 #else
-#if __GNUC__ >= 4
 #define DLL_IMPORT INTRANSIT __attribute__ ((visibility ("default")))
 #define DLL_EXPORT INTRANSIT __attribute__ ((visibility ("default")))
 #define DLL_LOCAL  INTRANSIT __attribute__ ((visibility ("hidden")))
-#else
-#define DLL_IMPORT
-#define DLL_EXPORT
-#define DLL_LOCAL
 #endif
 
 #define MAX_HASH_ENTRIES 0xFF
@@ -155,7 +150,6 @@ struct hashentry {
 
 #endif
 };
-#endif
 
 #ifdef __cplusplus
 #define STRING_TO_PTR_AND_SZ(str) str.c_str(), str.size()

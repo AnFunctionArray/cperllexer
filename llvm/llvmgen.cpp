@@ -66,9 +66,9 @@ extern "C" {
 #include "../src/main.h"
 }
 
-extern "C" void insertinttoimm(const char* str, size_t szstr, const char* suffix, size_t szstr1, int type);
+DLL_EXPORT void insertinttoimm(const char* str, size_t szstr, const char* suffix, size_t szstr1, int type);
 
-extern "C" void constructstring();
+DLL_EXPORT void constructstring();
 
 llvm::BranchInst* splitbb(const char* identifier, size_t szident);
 
@@ -151,7 +151,7 @@ int getnameloc3(const char* ntocompare, calloutinfo nametable, pcre2_callout_blo
 	return (int)getnameloc3((long long)ntocompare, nametable, pcurrblock, displ, opts);
 }
 
-extern "C" void startforloopcond();
+DLL_EXPORT void startforloopcond();
 
 struct bindings_payload {
 	int getnameloc(const char* ntocompare, calloutinfo nametable) {
@@ -318,7 +318,7 @@ struct bindings_payload {
 		return decl_begin_55();
 	}*/
 
-extern "C" unsigned constexpr stringhash(char const* input) {
+DLL_EXPORT unsigned constexpr stringhash(char const* input) {
 	return *input ? static_cast<unsigned int> (*input) +
 		33 * stringhash(input + 1)
 		: 5381;
@@ -487,7 +487,8 @@ struct bascitypespec : basic_type_origin {
 	}
 
 	bool istypedef() {
-		return basic == std::to_array( (std::string[]) { [3] = basic[3] }) && !basic[3].empty();
+		std::string array [] = { [3] = basic[3] };
+		return basic == std::to_array(array) && !basic[3].empty();
 	}
 };
 
@@ -1302,7 +1303,7 @@ struct basehndl /* : bindings_compiling*/ {
 		immidiates.push_back(ops[0]);
 	}
 
-	virtual void relatetwovalues(llvm::CmpInst::Predicate pred) {
+	virtual void relatetwovalues(llvm::CmpInst::Predicate pred, llvm::CmpInst::Predicate unsignedpred, llvm::CmpInst::Predicate fltpred) {
 		std::array ops = getops();
 
 		if (ops[0].type.back().spec.basicdeclspec.basic[0] != "unsigned")
@@ -1310,7 +1311,7 @@ struct basehndl /* : bindings_compiling*/ {
 			llvmbuilder.CreateICmp(pred, ops[0].value, ops[1].value);
 		else
 			ops[0].value =
-			llvmbuilder.CreateCmp(pred, ops[0].value, ops[1].value);
+			llvmbuilder.CreateICmp(unsignedpred, ops[0].value, ops[1].value);
 
 		ops[0].value =
 			CreateCastInst(ops[0].value, llvm::Type::getInt32Ty(llvmctx), false);
@@ -1678,11 +1679,11 @@ struct handlefpexpr : basehndl {
 		immidiates.push_back(ops[0]);
 	}
 
-	virtual void relatetwovalues(llvm::CmpInst::Predicate pred) override {
+	virtual void relatetwovalues(llvm::CmpInst::Predicate pred, llvm::CmpInst::Predicate unsignedpred, llvm::CmpInst::Predicate fltpred) override {
 		std::array ops = getops();
 
 		ops[0].value =
-			llvmbuilder.CreateFCmp(pred, ops[0].value, ops[1].value);
+			llvmbuilder.CreateFCmp(fltpred, ops[0].value, ops[1].value);
 
 		ops[0].value =
 			CreateCastInst(ops[0].value, llvm::Type::getInt32Ty(llvmctx), false);
@@ -1823,14 +1824,14 @@ struct handlecnstexpr : handlefpexpr {
 		immidiates.push_back(ops[0]);
 	}
 
-	virtual void relatetwovalues(llvm::CmpInst::Predicate pred) override {
+	virtual void relatetwovalues(llvm::CmpInst::Predicate pred, llvm::CmpInst::Predicate unsignedpred, llvm::CmpInst::Predicate fltpred) override {
 		std::array ops = getops();
 
 		if (ops[0].type.back().spec.basicdeclspec.basic[0] != "unsigned")
 			ops[0].constant =
 			llvm::ConstantExpr::getICmp(pred, ops[0].constant, ops[1].constant);
 		else
-			ops[0].constant = llvm::ConstantExpr::getCompare(pred, ops[0].constant,
+			ops[0].constant = llvm::ConstantExpr::getCompare(unsignedpred, ops[0].constant,
 				ops[1].constant);
 
 		ops[0].constant =
@@ -1993,7 +1994,7 @@ DLL_EXPORT void addescapesequencetostring(std::unordered_map<unsigned, std::stri
 	}
 }
 
-extern "C" void constructstring() {
+DLL_EXPORT void constructstring() {
 	std::list<::type> stirngtype{ 1, ::type::ARRAY };
 
 	stirngtype.back().spec.arraysz = currstring.size() + 1;
@@ -2003,7 +2004,7 @@ extern "C" void constructstring() {
 	stirngtype.back().spec.basicdeclspec.basic[1] = "char";
 
 	auto lvalue = llvmbuilder.CreateGlobalStringPtr(
-		currstring, "", 0, &nonconstructable.mainmodule);
+		currstring, "", 0);
 
 	immidiates.push_back(
 		{ llvmbuilder.CreateLoad(lvalue), stirngtype, {}, "[[stringliteral]]" });
@@ -2077,11 +2078,11 @@ DLL_EXPORT void endbuildingstructorunion() {
 		std::back_inserter(structtypes),
 		[](const var& elem) { return elem.pllvmtype; });*/
 
+	currtypevectorbeingbuild.pop_back();
+
 	assert(structvar.type.back().spec.basicdeclspec.basic[0] == "struct");
 
 	//dyn_cast<llvm::StructType> (structvar.pllvmtype)->setBody(structtypes);
-
-	currtypevectorbeingbuild.pop_back();
 
 	//currstruct.first = structvar.type.back().spec.basicdeclspec.basic[0];
 	//currstruct.second = structvar.type.back().spec.basicdeclspec.basic[3];
@@ -2343,7 +2344,7 @@ std::list<std::pair<std::array<llvm::BranchInst*, 2>, llvm::BasicBlock*>> ifstat
 
 llvm::BranchInst* splitbb(const char* identifier, size_t szident);
 
-extern "C" void insertinttoimm(const char* str, size_t szstr, const char* suffix, size_t szstr1, int type);
+DLL_EXPORT void insertinttoimm(const char* str, size_t szstr, const char* suffix, size_t szstr1, int type);
 
 DLL_EXPORT void startifstatement() {
 	startifstatement(true);
@@ -2392,7 +2393,7 @@ DLL_EXPORT void endifstatement() {
 	ifstatements.pop_back();
 }
 
-extern "C" void beginlogicalop(int blastorfirst) {
+DLL_EXPORT void beginlogicalop(int blastorfirst) {
 
 	/*if (!opsscopeinfo.back ().logicopswitches.empty ()) {
 
@@ -2503,7 +2504,7 @@ extern "C" void beginlogicalop(int blastorfirst) {
 	//opbbs.push_back (ifstatements.end());
 }
 
-extern "C" void beginbinary() {
+DLL_EXPORT void beginbinary() {
 
 	opsscopeinfo.push_back({ --immidiates.end(), {{type::BASIC}}, --ifstatements.end() });
 
@@ -2538,7 +2539,7 @@ extern "C" void beginbinary() {
 	//currlogicopval.back ().second = --immidiates.end ();
 }
 
-extern "C" void endbinarybeforerevlogicops() {
+DLL_EXPORT void endbinarybeforerevlogicops() {
 	if (opsscopeinfo.back().lastifs != --ifstatements.end())
 		beginlogicalop(2);
 	/*if (!opbbs.back ().first.empty ())
@@ -2546,7 +2547,7 @@ extern "C" void endbinarybeforerevlogicops() {
 		beginlogicalop (1);*/
 }
 
-extern "C" void endbinary() {
+DLL_EXPORT void endbinary() {
 
 	auto opscopinf = opsscopeinfo.back();
 
@@ -2586,7 +2587,7 @@ DLL_EXPORT void endsizeofexpr() {
 	pushsizeoftype(lastimmtype);
 }
 
-/*extern "C" void adddeclarationident(const char* str, size_t szstr,
+/*DLL_EXPORT void adddeclarationident(const char* str, size_t szstr,
 	bool bistypedef) {
 	std::string ident{ str, szstr };
 
@@ -2595,7 +2596,7 @@ DLL_EXPORT void endsizeofexpr() {
 	//currtypevectorbeingbuild.back().p->back().bistypedef = currtypevectorbeingbuild.back().p->back().type.back().spec.basicdeclspec.basic[2] == "typedef";
 }*/
 
-//extern "C" void finalizedeclaration() { endpriordecl(); }
+//DLL_EXPORT void finalizedeclaration() { endpriordecl(); }
 
 void fixupstructype(std::list<::var>* var) {
 	for (auto& a : *var | ranges::views::drop(1))
@@ -3127,7 +3128,7 @@ DLL_EXPORT void endfunctionparamdecl(std::unordered_map<unsigned, std::string>&&
 	functype.spec.func.bisvariadic = !hashes["rest"_h].empty();
 }
 
-/*extern "C" void continuedeclaration() {
+/*DLL_EXPORT void continuedeclaration() {
 
 	auto lastvar = currtypevectorbeingbuild.back().p->back();
 
@@ -3219,7 +3220,7 @@ DLL_EXPORT void addptrtotype(std::unordered_map<unsigned, std::string>&& hashes)
 	currtypevectorbeingbuild.back().p->back().type.push_back(ptrtype);
 }
 
-extern "C" void insertinttoimm(const char* str, size_t szstr, const char* suffix, size_t szstr1, int type) {
+DLL_EXPORT void insertinttoimm(const char* str, size_t szstr, const char* suffix, size_t szstr1, int type) {
 	phndl->insertinttoimm(str, szstr, suffix, szstr1, type);
 }
 
@@ -3253,7 +3254,7 @@ DLL_EXPORT void endconstantexpr() {
 		phndl = phpriorhndlfn_cnst_expr(phndl);
 }
 
-extern "C" void startmodule(const char* modulename, size_t szmodulename) {
+DLL_EXPORT void startmodule(const char* modulename, size_t szmodulename) {
 	new (&nonconstructable.mainmodule)
 		llvm::Module{ std::string{modulename, szmodulename}, llvmctx };
 
@@ -3262,7 +3263,7 @@ extern "C" void startmodule(const char* modulename, size_t szmodulename) {
 	//system("PAUSE");
 }
 
-extern "C" void endmodule() {
+DLL_EXPORT void endmodule() {
 	std::error_code code{};
 	llvm::raw_fd_ostream output{
 		std::string{nonconstructable.mainmodule.getName()} + ".bc", code },
@@ -3453,22 +3454,28 @@ DLL_EXPORT void binary(std::unordered_map<unsigned, std::string>&& hashes) {
 		phndl->shifttwovalues(true);
 		break;
 	case ">"_h:
-		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_SGT);
+		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_SGT,
+			 llvm::CmpInst::Predicate::ICMP_UGT, llvm::CmpInst::Predicate::FCMP_OGT);
 		break;
 	case "<"_h:
-		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_SLT);
+		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_SLT,
+			 llvm::CmpInst::Predicate::ICMP_ULT, llvm::CmpInst::Predicate::FCMP_OLT);
 		break;
 	case "<="_h:
-		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_SLE);
+		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_SLE,
+			 llvm::CmpInst::Predicate::ICMP_ULE, llvm::CmpInst::Predicate::FCMP_OLE);
 		break;
 	case ">="_h:
-		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_SGE);
+		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_SGE,
+			 llvm::CmpInst::Predicate::ICMP_UGE, llvm::CmpInst::Predicate::FCMP_OGE);
 		break;
 	case "=="_h:
-		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_EQ);
+		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_EQ,
+			llvm::CmpInst::Predicate::ICMP_EQ, llvm::CmpInst::Predicate::FCMP_OEQ);
 		break;
 	case "!="_h:
-		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_NE);
+		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_NE,
+			llvm::CmpInst::Predicate::ICMP_NE, llvm::CmpInst::Predicate::FCMP_ONE);
 		break;
 	case "&"_h:
 		phndl->bitwisetwovalues(llvm::Instruction::And);
@@ -3592,7 +3599,7 @@ void do_print_layour() {
 
 //auto pcompiling = new (&unincompilingobj) bindings_compiling{};
 #if 0
-extern "C" const char* callout_test(const char** pargs, size_t * szargs) {
+DLL_EXPORT const char* callout_test(const char** pargs, size_t * szargs) {
 	bindings_payload paylod = { .pargs = pargs, .szargs = szargs }; //= { (calloutinfo*)b, a };
 	//struct calloutinfo* ptable = (calloutinfo*)b;
 
@@ -4179,9 +4186,9 @@ extern "C" {
 #include <XSUB.h>
 }
 
-extern "C" void docall(const char*, size_t, void*);
+DLL_EXPORT void docall(const char*, size_t, void*);
 
-extern "C" void do_callout(SV * in, HV * hash)
+DLL_EXPORT void do_callout(SV * in, HV * hash)
 {
 	char* key, * pinstr;
 	I32 key_length;

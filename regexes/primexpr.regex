@@ -23,7 +23,7 @@
 	(?(?=(?{inc2 "facet"})(?&unaryexpr))
 	(?{dec2 "facet"})(?{call "begin_binary"})(?&unaryexpr)
 	((?<assignop>(?<binoplast>=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+)
-		(?&assignorsomething)|(?&ternaryorsomething))
+		(?&assignorsomething)(?{call "binary"})|(?&ternaryorsomething))
 		|(?{dec2 "facet"})(?&typenamerev)(?&ternaryorsomething)))
 
 (?<ternaryorsomething>(?&orlogiorsomething)((?&ternaryrest)

@@ -339,10 +339,10 @@ void docall(const char *name, size_t szname, void *phashmap) {
 #include <dlfcn.h>
 void docall(const char *name, size_t szname, void *phashmap) {
 	char cProcName[USHRT_MAX];
-	sprintf(cProcName, "%.*s", szname, name);
+	sprintf(cProcName, "%.*s", (int)szname, name);
 	//if (!hCurrModule) hCurrModule = GetModuleHandle(0);
 
-	void *dlhndl = dlopen(0, 0);
+	void *dlhndl = dlopen(0, RTLD_LAZY);
 
 	//FARPROC pfunc = GetProcAddress(hCurrModule, cProcName);
 

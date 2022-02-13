@@ -93,7 +93,7 @@ sub common {
 
 sub evalval {
     $Data::Dumper::Deparse = 1;
-    #print Dumper $_[0];
+    print Dumper $_[0];
     my $result = eval {
         $_[0]()
     };
