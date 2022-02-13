@@ -52,8 +52,12 @@ sub set2 {
     foreach my $pair (@_) {
         my ($key, $value) = %$pair;
         #print Dumper($pair);
-        push @$key, $value;
-        print "pushing $key to $key->[-1]\n"
+        if(defined $$pair{$key}) {
+            push @$key, $value;
+            print "pushing $key to $key->[-1]\n"
+        } else {
+            warn "catastrophic bactracking\npast the scope of $key\n"
+        }
     }
 }
 
