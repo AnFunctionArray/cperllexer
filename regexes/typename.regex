@@ -10,7 +10,7 @@
 
 (?<align>\s*+\b__declspec[(]\s*+\balign[(]\s*+(?<align>(?&numberliteralraw))\s*+[)]\s*+[)]\s*+)
 
-(?<typename>\s*+[(](?(?=((??{inc "facet"})(??{set {"tpdf" => "nostrc"}})(?&Tabsqualifs)?(??{dec "facet"})(??{unset {"tpdf" =>""}}))\s*+(?<strc>(?&structorunion))))
+(?<typename>\s*+[(](?(?=((??{inc "facet"})((??{set {"tpdf" => "nostrc"}})(?&Tabsqualifs)?(??{unset {"tpdf" =>"nostrc"}}))(??{dec "facet"}))\s*+(?<strc>(?&structorunion))))
 						(?=((??{inc "facet"})(?&typenamequalifs)(??{dec "facet"}))(?{call "identifier_decl"})
 						(?<abstrdeclopt>((??{set {"abstdecl" => "optoutter"}})(?&abstdecl)(??{unset {"abstdecl" => "optoutter"}}))?+)
 						(?{call "enddeclaration"}))
@@ -25,8 +25,8 @@
 
 (?<abstrmostoutter>\s*+(?&callingconv)?+([(]((??{set {"abstdecl" => "outter"}})(?&abstdecl)(??{unset {"abstdecl" => "outter"}}))[)]|(?&identifierminedecl))\s*+)
 
-(?<abstrmostoutterparams>\s*+(?(?=(?<subs>(?&abstrsubs)))(?{call "identifier_decl"})\g{subs}
-			|([(]((??{set {"abstdecl" => "outterparams"}})(?&abstdecl)(??{unset {"abstdecl" => "outterparams"}}))[)]
+(?<abstrmostoutterparams>\s*+(?{set2 {"notpdf" => "subsparams"}})(?(?=(?<subs>(?&abstrsubs)))(?{unset2 "notpdf"})\g{subs}
+			|(?{unset2 "notpdf"})([(]((??{set {"abstdecl" => "outterparams"}})(?&abstdecl)(??{unset {"abstdecl" => "outterparams"}}))[)]
 			|(?&identifierminedecl)
 			|(?{call "identifier_decl"})))\s*+)
 
@@ -66,12 +66,15 @@
 						|(?<abstrptrrev>(?<abstrptr>\s*+[*]\s*+
 						(?<qualifptr>(?&qualifiers))*+)
 						(?!(?&abstrptrrev)(?{call "addptrtotype"}))
-						(?<abstrrest>(?&Tinside)(?<abstrsubs>\s*+(\[(?{call "beginconstantexpr"})(?&primexpr)\]
+						(?<abstrrest>(?&Tinside)(?<abstrsubs>\s*+(\[
+							(?(?{evalval sub {$notpdf[-1] eq "subsparams"}})(?{call "identifier_decl"}))
+						(?{call "beginconstantexpr"})(?&primexpr)\]
 						(?{call "addsubtotype"})(?{call "endconstantexpr"})
-						|[(]((?<param>
+						|[(](?(?{evalval sub {$notpdf[-1] eq "subsparams"}})(?{call "identifier_decl"}))
+						((??{set {"notpdf" => "firstparam"}})(?<param>
 						(??{set {"typename" => "insideparams"}, {"decls" => "bb"}})
-						(?(?=((??{inc "facet"})(??{set {"tpdf" => "nostrc"}})(?&Tabsqualifs)?(??{dec "facet"})(??{unset {"tpdf" =>""}}))\s*+(?<strc>(?&structorunion))))
-						(?&abstdeclorallqualifsbasic)(??{unset {"typename" => "insideparams"}, {"decls" => "bb"}}))
+						((?(?=((??{inc "facet"})((??{set {"tpdf" => "nostrc"}})(?&Tabsqualifs)?(??{unset {"tpdf" =>"nostrc"}}))(??{dec "facet"}))\s*+(?<strc>(?&structorunion))))
+						(?&abstdeclorallqualifsbasic))(??{unset {"typename" => "insideparams"}, {"decls" => "bb"}}))(??{unset {"notpdf" => "firstparam"}})
 						(,(?&param))*
 						(?<rest>,\s*+\.\.\.\s*+)?+)[)](?{call "endfunctionparamdecl"})
 						|[(]\s*+(\bvoid\b)?+\s*+[)](?{call "startfunctionparamdecl"})(?{call "endfunctionparamdecl"}))\s*+)*+
@@ -114,7 +117,7 @@
 	(?(?=(?{inc2 "facet"; set2 {"tpdf" => "notpdf"}})(?&Tabsqualifs)?\s*+(?<typedefkey>(\btypedef\b))\s*+))
 	(?{dec2 "facet"; unset2 "tpdf"})
 	(?=((??{inc "facet"})(?&Tabsqualifs)(??{dec "facet"}))
-			(?(?{evalval sub {$typename[-1] eq "insideparams"}})(?{call "startfunctionparamdecl"}))
+			(?(?{evalval sub {$notpdf[-1] eq "firstparam"}})(?{call "startfunctionparamdecl"}))
 			(?<restdeclbasic>(?&Tdecl))(?{call "enddeclaration"}))
 				(?&Tabsqualifs)\g{restdeclbasic}(?{call "endqualifs"}))
 )
@@ -143,7 +146,7 @@
 	(?(<compound>)((??{inc "extractfns","facet"})(?&abstdeclorallqualifsbasic)(??{dec "extractfns","facet"}))\g{compound}
 	|(?&abstdeclorallqualifs)\s*+;(?{call "endfulldecl"})\s*+)))
 
-(?<decl>(?(?=(?<strcfull>((??{inc "facet"})(??{set {"tpdf" => "nostrc"}})(?&Tabsqualifs)?(??{dec "facet"})(??{unset {"tpdf" =>""}}))\s*+(?<strc>(?&structorunion))(?<fill>\s*+;\s*+)?+)))
+(?<decl>(?(?=(?<strcfull>((??{inc "facet"})((??{set {"tpdf" => "nostrc"}})(?&Tabsqualifs)?(??{unset {"tpdf" =>"nostrc"}}))(??{dec "facet"}))\s*+(?<strc>(?&structorunion))(?<fill>\s*+;\s*+)?+)))
 	(?(<fill>)\g{strcfull}|
 	(?&abstdeclorallqualifs)(?{call "endfulldecl"})((?&compoundstatement)|\s*+;\s*+)))
 
@@ -168,7 +171,7 @@
 	|(?{call "end_without_ass_to_enum_def"})))?+(,(?&enumerator))*+,?+\s*+
 	|(?{call "struc_or_union_body"})\s*+((
 		(??{set {"typename" => "bitfl"}, {"decls" => "bb"}})
-		(?(?=((??{inc "facet"})(??{set {"tpdf" => "nostrc"}})(?&Tabsqualifs)?(??{dec "facet"})(??{unset {"tpdf" =>""}}))\s*+(?<strc>(?&structorunion))))
+		(?(?=((??{inc "facet"})((??{set {"tpdf" => "nostrc"}})(?&Tabsqualifs)?(??{unset {"tpdf" =>"nostrc"}}))(??{dec "facet"}))\s*+(?<strc>(?&structorunion))))
 		(?&decl)(??{unset {"typename" => "bitfl"}, {"decls" => "bb"}})))*+)
 	[}]\s*+(?(<enum>)()|(?{call "endbuildingstructorunion"}))\s*+)
 
@@ -176,4 +179,4 @@
 	(?<lasttag>(?&identifierminestruct))?+))(?(<strc>)\g{strc}(?{call "add_tag"})|
 	\g{begin}(?(<lasttag>)(?&structbody)?+|(?&structbody))))
 
-(?<identifierminestruct>\s*+(?!((??{inc "facet"})(?&keywordlist)(??{dec "facet"})))(((??{inc "facet"})(?&identifierraw)(??{dec "facet"})))\s*+)
+(?<identifierminestruct>(?!((??{inc "facet"})(?&keywordlist)(??{dec "facet"})))(((??{inc "facet"})(?&identifierraw)(??{dec "facet"}))))

@@ -11,12 +11,10 @@
 						|(?<identifier>\s*+(?!((??{inc "facet"})(?&keywordlist)(??{dec "facet"}))|(??{identifier_typedef})\b)
 						(?<ident>((??{inc "facet"})(?&identifierraw)(??{dec "facet"})))(?{call "obtainvalbyidentifier"})\s*+)))\s*+)
 
-(?<exponent>[eE][+-]?+\d++)
-(?<suffixflt>[flFL])
-(?<fractional>\d*+\.\d++|\d++\.)
 
-(?<floating>(?&fractional)(?&exponent)?+(?&suffixflt)?+
-	|\d++(?&exponent)(?&suffixflt)?+)
+(?<floating>(?<fractional>(?<wholeopt>\d*+)\.(?<fraction>\d++)|(?<whole>\d++)\.)(?<exponent>[eE](?<signexp>[+-])?+\d++)?+
+	(?<suffixflt>[flFL])?+(?{call collect_float_literal})
+	|(?<wholenodot>\d++)(?<exponent>[eE](?<signexp>[+-])?+(?<exp>\d++))(?<suffixflt>[flFL])?+(?{call collect_float_literal}))
 
 (?<quote>(?(<begincharliteral>)'|"))
 

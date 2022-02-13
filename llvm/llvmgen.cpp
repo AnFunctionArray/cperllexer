@@ -210,7 +210,7 @@ struct bindings_payload {
 	virtual std::string unused_36() { return ""; };
 	virtual std::string unused_37() { return ""; };
 	virtual std::string identifier_typedef_38() {
-		//std::string n = getnameloc3("typedefnmfacet", *ptable, a, 0, { .rev = 0, .last = 0, .dontsearchforclosest = 0, });
+		//std::string n = getnameloc3("typedefnm", *ptable, a, 0, { .rev = 0, .last = 0, .dontsearchforclosest = 0, });
 		std::string ret = "";
 		//auto ident = std::string{ (char*)GROUP_PTR_AND_SZ(n) };
 		//if (ident.empty()) throw ident;
@@ -3841,11 +3841,11 @@ DLL_EXPORT void identifier_decl(std::unordered_map<unsigned, std::string> && has
 
 	type basic{ type::BASIC };
 
-	basic.spec.basicdeclspec.basic[3] = hashes["typedefnmmatchedfacet"_h];;
+	basic.spec.basicdeclspec.basic[3] = hashes["typedefnmmatched"_h];;
 
-	//basic.spec.basicdeclspec.basic[0] = hashes["structorunionlastfacet"_h];
+	//basic.spec.basicdeclspec.basic[0] = hashes["structorunionlast"_h];
 
-	//basic.spec.basicdeclspec.basic[3] = hashes["identlasttagfacet"_h];
+	//basic.spec.basicdeclspec.basic[3] = hashes["identlasttag"_h];
 
 	//if (basic.spec.basicdeclspec.basic[3].empty())
 
@@ -3853,11 +3853,11 @@ DLL_EXPORT void identifier_decl(std::unordered_map<unsigned, std::string> && has
 
 	var.type = { basic };
 
-	var.linkage = hashes["typedefkeyfacet"_h];
+	var.linkage = hashes["typedefkey"_h];
 
 	var.firstintroduced = scopevar.size();
 
-	/*basic.spec.basicdeclspec.basic[3] = hashes["typedefnmmatchedfacet"_h];
+	/*basic.spec.basicdeclspec.basic[3] = hashes["typedefnmmatched"_h];
 
 	
 
@@ -3917,9 +3917,9 @@ DLL_EXPORT void add_type_or_qualifier(std::unordered_map<unsigned, std::string>&
 DLL_EXPORT void add_tag(std::unordered_map<unsigned, std::string>&hashes) {
 	auto& lastvar = currtypevectorbeingbuild.back().p->back();
 	lastvar.type.back().spec.basicdeclspec.basic[0] = hashes["structorunionlast"_h];
-	if (hashes["identlasttagfacet"_h].empty())
+	if (hashes["lasttag"_h].empty())
 		lastvar.type.back().spec.basicdeclspec.pexternaldata = &structorunionmembers.back().back();
-	else lastvar.type.back().spec.basicdeclspec.basic[3] = hashes["identlasttagfacet"_h];
+	else lastvar.type.back().spec.basicdeclspec.basic[3] = hashes["lasttag"_h];
 }
 
 DLL_EXPORT void enddeclaration(std::unordered_map<unsigned, std::string>&hashes) {
@@ -3987,14 +3987,14 @@ virtual void ident_struc_58() {
 }
 #endif
 DLL_EXPORT void struc_or_union_body(std::unordered_map<unsigned, std::string> &hashes) {
-	auto& lastvar = currtypevectorbeingbuild.back().p->back();
+	//auto& lastvar = currtypevectorbeingbuild.back().p->back();
 
 	var tmp;
 	type typestruct{ type::BASIC };
-	typestruct.spec.basicdeclspec.basic[3] = hashes["identlasttagfacet"_h];
+	typestruct.spec.basicdeclspec.basic[3] = hashes["lasttag"_h];
 	typestruct.spec.basicdeclspec.basic[0] = hashes["structorunionlast"_h];
 	tmp.type.push_back(typestruct);
-	tmp.identifier = hashes["identlasttagfacet"_h];
+	tmp.identifier = hashes["lasttag"_h];
 	tmp.pllvmtype = llvm::StructType::create(llvmctx);
 	structorunionmembers.back().push_back({ tmp });
 	currtypevectorbeingbuild.push_back(
@@ -4045,7 +4045,7 @@ rest:
 	if (fractionpart.empty())
 		fractionpart = ntoclear;
 
-	ntoclear = hashes["sign"_h];
+	ntoclear = hashes["signexp"_h];
 
 	if (exponent_sign.empty())
 		exponent_sign = ntoclear;
@@ -4058,7 +4058,7 @@ rest:
 
 	llvm::Type* pllvmtype;
 
-	std::string postfix = hashes["flt"_h];
+	std::string postfix = hashes["suffixflt"_h];
 
 	const llvm::fltSemantics& floatsem = postfix.empty() ? currtype.back().spec.basicdeclspec.basic[1] = "double",
 		pllvmtype = llvm::Type::getDoubleTy(llvmctx),
@@ -4128,7 +4128,7 @@ DLL_EXPORT void add_ident_to_enum_def(std::unordered_map<unsigned, std::string> 
 
 	//int n = getnameloc3("identlast", *ptable, a, 1, { .dontsearchforclosest = 0 }) + 1;
 
-	tmp.identifier = hashes["identlasttagfacet"_h];//(char*)GROUP_PTR_AND_SZ(n) };
+	tmp.identifier = hashes["identlasttag"_h];//(char*)GROUP_PTR_AND_SZ(n) };
 
 	scopevar.back().push_back(tmp);
 
@@ -4136,7 +4136,7 @@ DLL_EXPORT void add_ident_to_enum_def(std::unordered_map<unsigned, std::string> 
 }
 DLL_EXPORT void begin_enumerator_def(std::unordered_map<unsigned, std::string> && hashes) {
 	//begin_enumerator_decl(pargs, szargs);
-	enums.back().push_back({ hashes["identlasttagfacet"_h], {} });
+	enums.back().push_back({ hashes["identlasttag"_h], {} });
 	//add_tag(hashes);
 }
 /*DLL_EXPORT void begin_enumerator_decl(const char** pargs, size_t* szargs) {

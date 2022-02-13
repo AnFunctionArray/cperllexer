@@ -6,14 +6,9 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #define PCRE2_STATIC
 
-#if !defined(_WIN32) & !defined(_WIN64)
-//#include <pcre2.h>
-#else
-#include <pcre2/pcre2.h>
-#endif
-#include "main.h"
+#include "src/main.h"
 
-MODULE = _6a4h8
+MODULE = AnFunctionArray
 
 PROTOTYPES: ENABLE
 
@@ -55,7 +50,7 @@ CODE:
     #RETVAL
 =cut
 
-void callout(SV *in, HV *hash)
+extern void callout(SV *in, HV *hash)
 CODE:
     {
         extern void do_callout(SV* in, HV* hash);
@@ -63,7 +58,7 @@ CODE:
         do_callout(in, hash);
     }
 
-void startmodule(SV *in)
+extern void startmodule(SV *in)
 PREINIT:
     STRLEN len;
     char* s;
