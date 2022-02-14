@@ -26,11 +26,11 @@ string(STRIP ${llvm_includes} llvm_includes)
 
 string(STRIP ${llvm_libdir} llvm_libdir)
 
-target_link_directories(regularc PRIVATE ${llvm_libdir} ${PERL_LIBRARY})
+target_link_directories(regularc PRIVATE ${llvm_libdir})
 
 find_package(range-v3 CONFIG REQUIRED)
 
-target_link_libraries(regularc PRIVATE ${llvm_libraries} -rdynamic -fsanitize=address,undefined -lperl -lpthread range-v3 range-v3-meta range-v3::meta range-v3-concepts -lz -lcurses -ldl)
+target_link_libraries(regularc PRIVATE ${llvm_libraries} -rdynamic -fsanitize=address,undefined ${PERL_LIBRARY} -lpthread range-v3 range-v3-meta range-v3::meta range-v3-concepts -lz -lcurses -ldl)
 
 target_compile_options(regularc PRIVATE -rdynamic -Ofast -g -fsanitize=address,undefined)
 
