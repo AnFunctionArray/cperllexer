@@ -23,10 +23,17 @@ my $inpar = qr{(?<inpar>\((?<inner>(([^][()\\]|\\.)++|(?&inpar)
                         |(?<insquare>\[\^?+(.|\\.)(([^]\\]|\\.)++
                         |(?&insquare))*\]))*)\))}xxs;
 
-$filename = $ARGV[0];
+$filename = $ARGV[1];
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
 my $subject = do { local $/; <$fh> };
+
+close $fh;
+
+$filename = $ARGV[0];
+open my $fh, '<', $filename or die "error opening $filename: $!";
+
+my $proxy = do { local $/; <$fh> };
 
 close $fh;
 
@@ -93,12 +100,15 @@ sub common {
 
 sub evalval {
     $Data::Dumper::Deparse = 1;
-    print Dumper $_[0];
+    (Dumper $_[0]) =~ m{\$(?!VAR\d)\w++\b};
+    print "reading from " . $&;
     my $result = eval {
         $_[0]()
     };
-    warn $@ if $@; 
-    print "eval is $result\n";
+    #warn $@ if $@; 
+    #print "eval is $result\n";
+
+    print " with $result\n";
 
     return $result;
 }
@@ -139,7 +149,6 @@ sub dec {
 #select fhoutput;
 
 #sub loadregex {
-my $isnested = $_[0];
 
 $filename = "regexes/primexpr.regex";
 open my $fh, '<', $filename or die "error opening $filename: $!";
@@ -304,19 +313,59 @@ print "$mainregexdefs\n";
 
 startmatching($subject, $mainregexfinal, basename($ARGV[0], @suffixlist)) if(not $matchinperl);
 
-exit if(not $matchinperl);
+#exit if(not $matchinperl);
 
 startmodule(basename($ARGV[0], @suffixlist)) if(defined &startmodule and not $nested);
 
+my $matchprototype = qr{(?(DEFINE)$mainregexdefs)(?&strcelem)}sxxn;
+my $matchtype = qr{(?(DEFINE)$mainregexdefs)(?&abstdeclorallqualifs)}sxxn;
+
+sub obtainvalbyidentifier {
+    my $fnnamr = $_[0]{"ident"};
+    if(open my $fh, '<', "$fnnamr.c") {
+
+        my $subject = do { local $/; <$fh> };
+
+        close $fh;
+
+        $subject =~ $matchprototype;
+    }
+
+    #use re qw(Debug EXECUTE); 
+
+    $proxy =~ qr{
+        \b$fnnamr:.*?\b(?<type>\S++)\s++([0-9a-fA-F]++h|\?\?)[^\S\r\n]++\n
+    }sxxn;
+
+    print "$+{type}\n";
+
+    if($+{type}) {
+        my $declextrnl = "extern $+{type} $fnnamr;";
+        $declextrnl =~ $matchtype
+    }
+}
+
 if(not $isnested)
 {
-    require "extractfns.pm";
-
-    use if $ARGV[1], re => qw(Debug EXECUTE); 
+    my $i = 2;
+    use if $ENV{'DEBUG'}, re => qw(Debug EXECUTE); 
 
     my $entry = qr{(?(DEFINE)$mainregexdefs)(?&$entryregex)}sxx;
+    while(1) {
+        require "extractfns.pm";
 
-    $subject =~ $entry
+        $subject =~ $entry;
+
+        $filename = $ARGV[$i];
+
+        open my $fh, '<', $filename or die "error opening $i: $!";
+
+        $subject = do { local $/; <$fh> };
+
+        close $fh;
+
+        ++$i
+    }
 }
 
 #}
@@ -346,28 +395,43 @@ sub recovery_mode() {
 
 #print $&;
 
-exit;
-
 sub isfacet {
     use Data::Dumper;
-    #print "facet \tchecking -> " . $facet . "\n";
+    print "facet \tchecking -> " . $facet . "\n";
     return $facet#ref $-{facet} ne ARRAY
 }
 
-sub checkpoint {
-    undef %matches;
+sub replay {
+    my @trace = @{$_[0]};
+    if(not @trace) {
+        return;
+    }
+    foreach my $event (@trace) {
+        my $evntnm = (keys %$event)[0];
+        call($evntnm, $$event{$evntnm});
+    }
 }
 
 sub call {
     #print Dumper(\%+);
+    my $funcnm = shift;
     my $captures = { %+ };
     my $facet = isfacet;
-    return if $facet;
-    print $_[0] . "\n";
+    if($facet) {
+        eval {
+            print "pushing to " . scalar @savedcallouts . "\n";
+            push @{$savedcallouts[-1]}, {$funcnm => $captures};
+            print "success\n";
+        };
+        return
+    }
+    print $funcnm . "\n";
 
-    my $funcnm = $_[0] =~ s{facet$}{}r;
+    my $argsin = shift;
 
-    @$captures{keys %matches} = values %matches;
+    #print Dumper $argsin;
+
+    @$captures{keys %$argsin} = values %$argsin;
 
     #print "facet -> $facet\n";
     
@@ -806,3 +870,5 @@ sub parseregexfile {
     #$mainregexfinal =~s/\(\?\?C&(\S++)\)/(?C&$1)/g if(not $matchinperl);
     $mainregexfinal =~s/\(\?C(\d++)\)//g;
 }
+
+1

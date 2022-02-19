@@ -9,13 +9,17 @@ add_custom_command(
 
 find_package(PerlLibs 5.30)
 
-execute_process(COMMAND llvm-config --libs all
+if(NOT DEFINED ${LLVM_CONFIG})
+    set(LLVM_CONFIG, "llvm-config")
+endif()
+
+execute_process(COMMAND ${LLVM_CONFIG} --libs all
                 OUTPUT_VARIABLE llvm_libraries)
 
-execute_process(COMMAND llvm-config --includedir
+execute_process(COMMAND ${LLVM_CONFIG} --includedir
                 OUTPUT_VARIABLE llvm_includes)
 
-execute_process(COMMAND llvm-config --libdir
+execute_process(COMMAND ${LLVM_CONFIG} --libdir
                 OUTPUT_VARIABLE llvm_libdir)
 
 add_executable(regularc llvm/llvmgen.cpp src/main.c perltoc.c)
@@ -30,9 +34,9 @@ target_link_directories(regularc PRIVATE ${llvm_libdir})
 
 find_package(range-v3 CONFIG REQUIRED)
 
-target_link_libraries(regularc PRIVATE ${llvm_libraries} -rdynamic -fsanitize=address,undefined ${PERL_LIBRARY} -lpthread range-v3 range-v3-meta range-v3::meta range-v3-concepts -lz -lcurses -ldl)
+target_link_libraries(regularc PRIVATE ${llvm_libraries} -rdynamic ${PERL_LIBRARY} -lpthread range-v3 range-v3-meta range-v3::meta range-v3-concepts -lz -lcurses -ldl)
 
-target_compile_options(regularc PRIVATE -rdynamic -Ofast -g -fsanitize=address,undefined)
+target_compile_options(regularc PRIVATE -rdynamic -Ofast -g)
 
 target_include_directories(regularc PRIVATE ${PERL_INCLUDE_PATH} ${llvm_includes} src)
 

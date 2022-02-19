@@ -643,9 +643,15 @@ struct val : valandtype {
 	std::string originident = "[[immidiate]]";
 };
 
-llvm::Type* createllvmtype(std::list<type> decltypevector,
+llvm::Type* createllvmtype(std::list<type> &decltypevector,
 	std::list<::var>* last_struct = nullptr,
 	std::list<type> *refdecltypevector = nullptr);
+
+llvm::Type* createllvmtype(const std::list<type> &decltypevector,
+	std::list<::var>* last_struct = nullptr,
+	std::list<type> *refdecltypevector = nullptr) {
+		return createllvmtype(decltypevector, last_struct, refdecltypevector);
+}
 
 void addvar(var& lastvar, llvm::Constant* pInitializer = nullptr);
 
@@ -709,7 +715,7 @@ operator=(T p)
 
 static std::list<std::list<::val>::iterator> callees{};
 
-llvm::Type* createllvmtype(std::list<type> decltypevector,
+llvm::Type* createllvmtype(std::list<type> &decltypevector,
 	std::list<::var>* last_struct,
 	std::list<type> *refdecltypevector);
 
@@ -2021,7 +2027,11 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 		for (lastvar.pValue = nullptr /*(llvm::Value *)lastvar.pllvmtype*/;;)
 			return;
 
+	if(lastvar.type.front().uniontype == type::FUNCTION || !lastvar.linkage.empty())
+		goto extrnl_decl;
+
 	switch (lastvar.firstintroduced) {
+	extrnl_decl:
 	case 1:
 		llvm::GlobalValue::LinkageTypes linkagetype;
 
@@ -2038,12 +2048,13 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 		case type::POINTER:
 		case type::ARRAY:
 		case type::BASIC:
-			if (lastvar.firstintroduced == 1)
-				lastvar.pValue = new llvm::GlobalVariable(
-					nonconstructable.mainmodule, lastvar.requestType(), false,
-					linkagetype,
-					pInitializer ? pInitializer : llvm::Constant::getNullValue(lastvar.requestType()),
-					lastvar.identifier);
+			lastvar.pValue = new llvm::GlobalVariable(
+				nonconstructable.mainmodule, lastvar.requestType(), false,
+				linkagetype,
+				lastvar.firstintroduced == 1 ? 
+				pInitializer ? pInitializer : llvm::Constant::getNullValue(lastvar.requestType())
+				: nullptr,
+				lastvar.identifier);
 			// scopevar.front ().push_back (lastvar);
 			break;
 		case type::FUNCTION:
@@ -2640,15 +2651,17 @@ const std::list<::var>* getstructorunion(bascitypespec& basic, std::list<::var>*
 	return var;
 }
 
-llvm::Type* createllvmtype(std::list<type> decltypevector, std::list<::var>* last_struct, std::list<type> * refdecltypevector) {
+llvm::Type* createllvmtype(std::list<type> &refdecltypevector, std::list<::var>* last_struct, std::list<type> * ptrdecltypevector) {
 	llvm::Type* pcurrtype;
+
+	auto decltypevector = refdecltypevector;
 
 	//refdecltypevector.clear();
 
 	//bool bjastypedef = false;
 
 	std::array lambdas = {
-		std::function{[&](type& type) {
+		std::function{[&](type& type, std::list<::type>::iterator &iter) {
 			switch (stringhash(type.spec.basicdeclspec.basic[1].c_str())) {
 			case "short"_h:
 				pcurrtype =
@@ -2666,11 +2679,31 @@ llvm::Type* createllvmtype(std::list<type> decltypevector, std::list<::var>* las
 				break;
 				break;
 			addvoid:
-			case "void"_h:
+			case "void"_h: {
 				/*pcurrtype =
 					dyn_cast<llvm::Type> (llvm::Type::getVoidTy(llvmctx));
 				break;
 				break;*/
+				/*pcurrtype = dyn_cast<llvm::Type> (llvm::Type::getInt32Ty(llvmctx));
+				pcurrtype = dyn_cast<llvm::Type> (llvm::FunctionType::get(pcurrtype, {}, true));
+				pcurrtype = dyn_cast<llvm::Type> (pcurrtype->getPointerTo());
+				{
+					::type typ{ ::type::BASIC};
+					typ.spec.basicdeclspec.basic[0] = "int";
+					refdecltypevector.insert(iter, typ);
+				}
+				{
+					::type typ{ ::type::FUNCTION};
+					typ.spec.func.bisvariadic = true;
+					refdecltypevector.insert(iter, typ);
+				}
+				::type typ{ ::type::POINTER};
+				refdecltypevector.insert(iter, typ);
+				auto itertoerase = iter--;
+				----iter;
+				refdecltypevector.erase(itertoerase);*/
+			}
+			break;
 		addchar:
 		case "_Bool"_h:
 		case "char"_h:
@@ -2709,23 +2742,23 @@ llvm::Type* createllvmtype(std::list<type> decltypevector, std::list<::var>* las
 				break;
 			default: { // typedef
 				//bjastypedef = true;
-				pcurrtype = obtainvalbyidentifier(type.spec.basicdeclspec.basic[3], false, true)->requestType(refdecltypevector);
+				pcurrtype = obtainvalbyidentifier(type.spec.basicdeclspec.basic[3], false, true)->requestType(ptrdecltypevector);
 				return false;
 			}
 			}
 		}
 			return true;
 	}},
-	std::function{[&](type& type) {
+	std::function{[&](type& type, std::list<::type>::iterator &iter) {
 		pcurrtype = dyn_cast<llvm::Type> (pcurrtype->getPointerTo());
 		return true;
 	}},
-	std::function{[&](type& type) {
+	std::function{[&](type& type, std::list<::type>::iterator &iter) {
 		pcurrtype = dyn_cast<llvm::Type> (
 			llvm::ArrayType::get(pcurrtype, type.spec.arraysz));
 		return true;
 	}},
-	std::function{[&](type& type) {
+	std::function{[&](type& type, std::list<::type>::iterator &iter) {
 		std::vector<llvm::Type*> paramtype;
 		for (auto& a : type.spec.func.parametertypes_list.front())
 			paramtype.push_back(a.requestType());
@@ -2737,9 +2770,11 @@ llvm::Type* createllvmtype(std::list<type> decltypevector, std::list<::var>* las
 	std::reverse(decltypevector.begin(), decltypevector.end());
 
 	try {
+		auto iterref = refdecltypevector.end();
 		for (auto& type : decltypevector)
-			lambdas[type.uniontype](type) &&
-			refdecltypevector && (refdecltypevector->push_front(type), true);
+			lambdas[type.uniontype](type, iterref) &&
+			ptrdecltypevector && (ptrdecltypevector->push_front(type), true),
+			--iterref;
 	}
 	catch (std::nullptr_t exc) {
 		return exc;
@@ -3106,12 +3141,15 @@ DLL_EXPORT void endfunctioncall() {
 		val{ pval, calleevalntype.type });
 }
 
-DLL_EXPORT void endreturn() {
+DLL_EXPORT void endreturn(std::unordered_map<unsigned, std::string>&& hashes) {
 	//llvmbuilder.SetInsertPoint (pcurrblock.back ());
-	auto currfunctype = currfunc->type;
-	currfunctype.pop_front();
-	auto op = convertTo(immidiates.back(), currfunctype);
-	llvmbuilder.CreateRet(op.value);
+	if(!hashes["endreturn"_h].empty()) {
+		auto currfunctype = currfunc->type;
+		currfunctype.pop_front();
+		auto op = convertTo(immidiates.back(), currfunctype);
+		llvmbuilder.CreateRet(op.value);
+	}
+	else llvmbuilder.CreateRetVoid();
 }
 
 DLL_EXPORT void endfunctionparamdecl(std::unordered_map<unsigned, std::string>&& hashes) {
@@ -3917,7 +3955,9 @@ virtual void end_param_list_48() {
 #endif
 DLL_EXPORT void add_type_or_qualifier(std::unordered_map<unsigned, std::string>&hashes) {
 	auto& lastvar = currtypevectorbeingbuild.back().p->back();
-	if (hashes["typesandqualifiersmask"_h].size())
+	if(hashes["storageclass"_h].size())
+		lastvar.linkage = hashes["storageclass"_h];
+	else if (hashes["typesandqualifiersmask"_h].size())
 		parsebasictype({ hashes["typesandqualifiersmask"_h] }, lastvar.type.back().spec.basicdeclspec);
 }
 
