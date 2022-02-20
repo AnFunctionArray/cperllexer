@@ -1,4 +1,4 @@
-$isnested = 1;
+#$isnested = 1;
 
 use re 'eval';
 
@@ -8,17 +8,17 @@ use File::Basename;
 BEGIN{push @INC, "./misc"};
 BEGIN{push @INC, "./regexes/supplement"};
 
-$filename = $ARGV[0];
-open my $fh, '<', $filename or die "error opening $filename: $!";
-
-my $subject = do { local $/; <$fh> };
-
-close $fh;
-
 $filename = $ARGV[1];
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
-my $proxy = do { local $/; <$fh> };
+$subject = do { local $/; <$fh> };
+
+close $fh;
+
+$filename = $ARGV[0];
+open my $fh, '<', $filename or die "error opening $filename: $!";
+
+$proxy = do { local $/; <$fh> };
 
 close $fh;
 
@@ -92,8 +92,19 @@ $subject =~ s{\{}{\{$stackdecl}sxxn;
 
 if($lastvalid) {
 
-    $filename = $ARGV[0];
-    open my $out, '>', $filename or die "error opening $filename: $!";
+    #$filename = $ARGV[0];
+    #open my $out, '>', $filename or die "error opening $filename: $!";
 
-    print $out $subject;
+    #print $out $subject;
+    #print $subject;
+
+    #$subject =~ qr{(?(DEFINE)$mainregexdefs)(?&$entryregex)}sxxn
+
+    #require './regexes/parse.pl'
 }
+
+print $subject . "\n";
+
+#$subject =~ qr{(?(DEFINE)$mainregexdefs)(?&$entryregex)}sxxn
+
+require './regexes/parse.pl'

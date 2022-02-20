@@ -24,4 +24,8 @@
 
 
 (?<orlogiorsomething>
-    (?&binopplusrest)*+(?{call "end_binary"}))
+(??{use re 'eval'; $orlogiorsomethingregex //= qr{
+	(?(DEFINE)$mainregexdefs)
+    (?&binopplusrest)*+(?{call "end_binary"})
+}sxxn
+}))

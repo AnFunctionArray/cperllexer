@@ -16,4 +16,4 @@
 	(?<suffixflt>[flFL])?+(?{call collect_float_literal})
 	|(?<wholenodot>\d++)(?<exponent>[eE](?<signexp>[+-])?+(?<exp>\d++))(?<suffixflt>[flFL])?+(?{call collect_float_literal}))
 
-(?<identifierraw>\b(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9])*+)\b)
+(?<identifierraw>\b(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9])*+)\b(::(?&identifierraw))?+)

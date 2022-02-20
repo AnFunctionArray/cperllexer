@@ -11,15 +11,14 @@
 
 (?<typename>\s*+[(](??{use re 'eval'; $typenameregex //= qr{
 	(?(DEFINE)$mainregexdefs)
-	(?{inc2 "facet"; set2 {"savedcallouts" => []}})
-	(?(?=(?<Tqualifs>((?&qualifs)|\s*+((?(<strc>)(*F))
-		(?<strc>(??{set {"tpdf" => ""}})(??{dec "facet"})(?&structorunion)(??{inc "facet"})(??{unset {"tpdf" => ""}}))
-		|(?(<typedefkey>)(*F))(?<typedefkey>(\btypedef\b))
-		|(?(<typedefnmmatched>)(*F))(?<typedefnmmatched>\b(??{identifier_typedef})\b))?+\s*+)++))
-		|(?(?{evalval sub{$decls[-1] eq "extrnl"}})|(*F)))
+	(?{set2 {"savedcallouts" => []}})
+	(?=(?<Tqualifs>((?&qualifs)|\s*+((?(<strc>)(*F))(?(<typedefnmmatched>)(*F))
+		((?<strc>(??{set {"tpdf" => ""}})(?&structorunion)(??{unset {"tpdf" => ""}}))
+		|(?<typedefnmmatched>\b(??{identifier_typedef})\b))
+		|(?(<typedefkey>)(*F))(?<typedefkey>(\btypedef\b)))\s*+)++))
 		
-	(?{dec2 "facet"; set2 {"qualifstrace" => evalval sub{$savedcallouts[-1]}}; unset2 "savedcallouts"})
-		\g{Tqualifs}((??{set {"abstdecl" => "optoutter"}})(?&abstdecl)(??{unset {"abstdecl" => "optoutter"}}))
+	(?{set2 {"qualifstrace" => evalval sub{$savedcallouts[-1]}}; unset2 "savedcallouts"})
+		\g{Tqualifs}(?{call "identifier_decl"})((??{set {"abstdecl" => "optoutter"}})(?&abstdecl)(??{unset {"abstdecl" => "optoutter"}}))?+
 		(?{call "enddeclaration"})
 		(?{evalval sub{replay $qualifstrace[-1]}})
 		}sxxn})
@@ -77,8 +76,7 @@
 						(??{set {"typename" => "insideparams"}, {"decls" => "bb"}})
 						((?&abstdeclorallqualifs))(??{unset {"typename" => "insideparams"}, {"decls" => "bb"}}))
 
-(?<abstdecl>(?(?{isfacet})(?&abstrptr)(?&abstrptr)*+(?&Tabstrrest)
-						|(?<abstrptrrev>(?<abstrptr>\s*+[*]\s*+
+(?<abstdecl>(?<abstrptrrev>(?<abstrptr>\s*+[*]\s*+
 						(?<qualifptr>(?&qualifiers))*+)
 						(?!(?&abstrptrrev)(?{call "addptrtotype"}))
 						(?<abstrrest>(?&Tinside)(?<abstrsubs>\s*+(\[
@@ -92,7 +90,7 @@
 						|[(]\s*+(?<rest>\.\.\.)?+\s*+[)](?{call "startfunctionparamdecl"})
 						(?{call "endfunctionparamdecl"})))\s*+)*+
 						(?{call "addptrtotype"}))|
-						(?&abstrptr))(?&abstrptr)*+(?&Tabstrrest))|(?&Tabstrrestalt))
+						(?&abstrptr))(?&abstrptr)*+(?&Tabstrrest)|(?&Tabstrrestalt))
 
 (?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
 
@@ -141,7 +139,7 @@
 (?<keywordlist>(?&typesandqualifiersmask)
 	|\b(typedef|struct|enum|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)\b)
 
-(?<typenamerev>(?(?{isfacet})(*F))(((??{inc "facet"})(?&typename)(??{dec "facet"}))(?!(?&castexpr)))|(?&typename)(?{call "applycast"})((??{inc "facet"})(?&castexpr)(??{dec "facet"})))
+(?<typenamerev>(((??{inc "facet"})(?&typename)(??{dec "facet"}))(?!(?&castexpr)))|(?&typename)(?{call "applycast"})((??{inc "facet"})(?&castexpr)(??{dec "facet"})))
 
 
 (?<abstrbitfield>\s*+:\s*+(?{call "beginconstantexpr"})(?&assignorsomething)(?{call "endconstantexpr"}))

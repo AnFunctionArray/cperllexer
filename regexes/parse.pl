@@ -322,6 +322,8 @@ my $matchtype = qr{(?(DEFINE)$mainregexdefs)(?&abstdeclorallqualifs)}sxxn;
 
 sub obtainvalbyidentifier {
     my $fnnamr = $_[0]{"ident"};
+    #my $fnnm = $fnnamr =~ s{::}{//}gr;
+    #print $fnnm . "\n";
     if(open my $fh, '<', "$fnnamr.c") {
 
         my $subject = do { local $/; <$fh> };
@@ -330,11 +332,11 @@ sub obtainvalbyidentifier {
 
         $subject =~ $matchprototype;
     }
-
+    #warn $!; 
     #use re qw(Debug EXECUTE); 
 
     $proxy =~ qr{
-        \b$fnnamr:.*?\b(?<type>\S++)\s++([0-9a-fA-F]++h|\?\?)[^\S\r\n]++\n
+        \b$fnnamr:.*?\n\S+?:\S++.*?\s(?<type>\w\S++)[^\S\n\r]++((\?\?|[0-9a-fA-F]++h)[^\S\n\r]++)?+(;[^\n\r]++)?+\n
     }sxxn;
 
     print "$+{type}\n";
@@ -350,7 +352,7 @@ if(not $isnested)
     my $i = 2;
     use if $ENV{'DEBUG'}, re => qw(Debug EXECUTE); 
 
-    my $entry = qr{(?(DEFINE)$mainregexdefs)(?&$entryregex)}sxx;
+    my $entry = qr{(?(DEFINE)$mainregexdefs)(?&$entryregex)}sxxn;
     while(1) {
         require "extractfns.pm";
 
@@ -363,6 +365,41 @@ if(not $isnested)
         $subject = do { local $/; <$fh> };
 
         close $fh;
+
+        my $fnname = basename($ARGV[$i], ".c");
+
+        print $fnname . "\n";
+
+        #use if $ARGV[1], re => qw(Debug EXECUTE); 
+
+        my $init;
+
+        my $stackdecl;
+
+        $proxy =~ m{\b$fnname\b[^\n]++
+                    (\n\s++;(?<name>\S++)\s++(\S++)\s++(?<at>\S++)[^\n]++(?{
+                        $at = $+{at};
+                        my $name = $+{name};
+
+                        if($at =~ m{^[\-\+]?+([0-9a-fA-F]++)$}) {
+                            $at = $1;
+                            print "$name => $at\n";
+                            if($subject =~ s{\b$name\b}{(*$&)}sxxng) {
+                                $init = $init . "\n  $name = 1[&stack] - 0x$at;";
+                                $lastvalid = $at;
+                            }
+                        }
+                    }))*+}sxxn;
+
+        $stackdecl = "\n  unsigned char stack[0x$lastvalid];";
+
+        if($lastvalid) {
+
+            $subject =~ s{;\n\n}{;\n$init\n\n}sxxn;
+            $subject =~ s{\{}{\{$stackdecl}sxxn;
+        }
+
+        print $subject . "\n";
 
         ++$i
     }
