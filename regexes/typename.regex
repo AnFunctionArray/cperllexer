@@ -87,7 +87,7 @@
 						((??{set {"tpdf" => "firstparam"}})(?&param)(??{unset {"tpdf" => "firstparam"}})
 						(,(?&param))*
 						(?<rest>,\s*+\.\.\.\s*+)?+)[)](?{call "endfunctionparamdecl"})
-						|[(]\s*+(?<rest>\.\.\.)?+\s*+[)](?{call "startfunctionparamdecl"})
+						|[(]\s*+((?<rest>\.\.\.)|\bvoid\b)?+\s*+[)](?{call "startfunctionparamdecl"})
 						(?{call "endfunctionparamdecl"})))\s*+)*+
 						(?{call "addptrtotype"}))|
 						(?&abstrptr))(?&abstrptr)*+(?&Tabstrrest)|(?&Tabstrrestalt))

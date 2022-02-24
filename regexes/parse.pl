@@ -17,6 +17,8 @@ use File::Basename;
 
 use Data::Dumper;
 
+print Dumper @ARGV;
+
 $oldfh = select(STDERR);
 
 my $inpar = qr{(?<inpar>\((?<inner>(([^][()\\]|\\.)++|(?&inpar)
@@ -311,11 +313,11 @@ print $cached_instances{$entryregex};
 
 print "$mainregexdefs\n";
 
-startmatching($subject, $mainregexfinal, basename($ARGV[0], @suffixlist)) if(not $matchinperl);
+startmatching($subject, $mainregexfinal, basename($ARGV[0])) if(not $matchinperl);
 
 #exit if(not $matchinperl);
 
-startmodule(basename($ARGV[0], @suffixlist)) if(defined &startmodule and not $nested);
+startmodule(basename($ARGV[2])) if(defined &startmodule and not $nested);
 
 my $matchprototype = qr{(?(DEFINE)$mainregexdefs)(?&strcelem)}sxxn;
 my $matchtype = qr{(?(DEFINE)$mainregexdefs)(?&abstdeclorallqualifs)}sxxn;
@@ -335,14 +337,19 @@ sub obtainvalbyidentifier {
     #warn $!; 
     #use re qw(Debug EXECUTE); 
 
+    my $origid = $fnnamr;
+
+    $fnnamr =~ s{_}{[_:.]}g;
+
     $proxy =~ qr{
-        \b$fnnamr:.*?\n\S+?:\S++.*?\s(?<type>\w\S++)[^\S\n\r]++((\?\?|[0-9a-fA-F]++h)[^\S\n\r]++)?+(;[^\n\r]++)?+\n
+        \s$fnnamr:\s.*?\n[^\n\r]+?\s(?<type>\w++)\s
     }sxxn;
 
     print "$+{type}\n";
 
     if($+{type}) {
-        my $declextrnl = "extern $+{type} $fnnamr;";
+        my $declextrnl = "extern $+{type} $origid;";
+        print $declextrnl . "\n";
         $declextrnl =~ $matchtype
     }
 }
@@ -358,15 +365,15 @@ if(not $isnested)
 
         $subject =~ $entry;
 
-        $filename = $ARGV[$i];
+        my $fnname = basename($ARGV[$i], ".c");
+
+        $filename = $fnname . ".c";
 
         open my $fh, '<', $filename or die "error opening $i: $!";
 
         $subject = do { local $/; <$fh> };
 
         close $fh;
-
-        my $fnname = basename($ARGV[$i], ".c");
 
         print $fnname . "\n";
 

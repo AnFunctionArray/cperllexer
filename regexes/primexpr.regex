@@ -1,7 +1,7 @@
 #include "statement.regex", "inner.regex", "unary.regex", "binary.regex", "typename.regex"
 #entry ^cprogram
 
-(?<primexpr>(?&assignorsomething)(,\s*+(?&assignorsomething))*)
+(?<primexpr>(?&assignorsomething)(,(?&assignorsomething))*+)
 
 
 (?<castexpr>(?&typenamerev)|(?<unaryexpr>((?&inner)|(?<inparenths>\s*+[(](?&primexpr)[)]
@@ -18,11 +18,16 @@
 (?<testxpr>(?&inner)|(?&inparenths))
 
 (?<assignorsomething>
+(??{use re 'eval'; $assignorsomethingregex //= qr{
+	(?(DEFINE)$mainregexdefs)
 	(?(?=(?{inc2 "facet"})(?&unaryexpr))
 	(?{dec2 "facet"})(?{call "begin_binary"})(?&unaryexpr)
 	((?<assignop>(?<binoplast>=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+)
-		(?&assignorsomething)(?{call "binary"})|(?&ternaryorsomething))
-		|(?{dec2 "facet"})(?&typenamerev)(?&ternaryorsomething)))
+		(?&assignorsomething)(?{call "binary"})(?{call "end_binary"})|(?&ternaryorsomething)(?{call "end_binary"}))
+		|(?=(?&typename)(?{dec2 "facet"})(?{call "begin_binary"})|(?{dec2 "facet"})(*F))
+		(?&typenamerev)(?&ternaryorsomething)(?{call "end_binary"}))
+}sxxn})
+)
 
 (?<ternaryorsomething>(?&orlogiorsomething)((?&ternaryrest)
 	(?&ternaryorsomething))?+)

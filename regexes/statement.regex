@@ -1,8 +1,8 @@
 
 
-(?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?{call "addcontinue"});|break\s*+(?{call "addbreak"});|return\b(?<returnval>(?&primexpr))?;(?{call "endreturn"}))\s*+)
+(?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?{call "addcontinue"});|break\s*+(?{call "addbreak"});|return\b(?<returnval>(?&primexpr))?+;(?{call "endreturn"}))\s*+)
 (?<identifierminegoto>\s*+(?!((??{inc "facet"})(?&keywordlist)(??{dec "facet"})))(?<gtid>((??{inc "facet"})(?&identifierraw)(??{dec "facet"})))(?{call "gotolabel"})\s*+)
-(?<iterationstatement>\s*+(while\s*+[(](?{call "startforloopcond"})(?&primexpr)[)](?{call "endforloopcond"})(?{call "addforloopiter"})(?&statement)(?{call "endforloop"})|do\b(?{call "startdowhileloop"})(?&statement)while\s*+[(](?&primexpr)[)](?{call "enddowhileloop"})\s*+;
+(?<iterationstatement>\s*+\b(while\s*+[(](?{call "startforloopcond"})(?&primexpr)[)](?{call "endforloopcond"})(?{call "addforloopiter"})(?&statement)(?{call "endforloop"})|do\b(?{call "startdowhileloop"})(?&statement)\bwhile\s*+[(](?&primexpr)[)](?{call "enddowhileloop"})\s*+;
 	|for\s*+[(](((??{set {"decls" => "bb"}})(?&decl)(??{unset {"decls" => "bb"}}))|(?&exprstatement))?+(?{call "startforloopcond"})(?&primexpr)?;(?{call "endforloopcond"})\s*+(?&primexpr)?+(?{call "addforloopiter"})[)](?&statement)(?{call "endforloop"}))\s*+)
 (?<exprstatement>(?&primexpr)?;(?{call "endexpression"})\s*+)
 (?<compoundstatement>\s*+[{](?{call "beginscope"})(((??{set {"decls" => "bb"}})(?&decl)(??{unset {"decls" => "bb"}}))|(?&statement))*+\s*+[}](?{call "endscope"})\s*+)

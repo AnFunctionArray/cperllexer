@@ -439,8 +439,7 @@ typedef std::bitset<5> pointrtypequalifiers;
 0 - const
 1 - restrict
 2 - volatile
-3 - __ptr64
-4 - __ptr32
+3 - israwtype
 */
 
 struct basic_type_origin {
@@ -452,7 +451,7 @@ struct basic_type_origin {
 		3 - last typedef or struct/union/enum name
 	*/
 	size_t longspecsn{}; //amount of long qualifiers
-	std::bitset<3> qualifiers;
+	std::bitset<4> qualifiers;
 
 	void* pexternaldata = nullptr;
 
@@ -2671,7 +2670,7 @@ llvm::Type* createllvmtype(std::list<type> &refdecltypevector, std::list<::var>*
 			label_int:
 			case "int"_h:
 			case "long"_h:
-				if (type.spec.basicdeclspec.longspecsn > 1)
+				if (type.spec.basicdeclspec.longspecsn > (LONG_MAX == INT_MAX))
 				case "__int64"_h:
 					pcurrtype = dyn_cast<llvm::Type> (llvm::Type::getInt64Ty(llvmctx));
 				else
@@ -3143,7 +3142,7 @@ DLL_EXPORT void endfunctioncall() {
 
 DLL_EXPORT void endreturn(std::unordered_map<unsigned, std::string>&& hashes) {
 	//llvmbuilder.SetInsertPoint (pcurrblock.back ());
-	if(!hashes["endreturn"_h].empty()) {
+	if(!hashes["returnval"_h].empty()) {
 		auto currfunctype = currfunc->type;
 		currfunctype.pop_front();
 		auto op = convertTo(immidiates.back(), currfunctype);
@@ -3986,7 +3985,7 @@ DLL_EXPORT void enddeclaration(std::unordered_map<unsigned, std::string>&hashes)
 }
 //virtual void unused_50() { };
 DLL_EXPORT void add_literal(std::unordered_map<unsigned, std::string> &hashes) {
-	if (hashes["begincharliteral"_h].empty()) constructstring();
+	if (hashes["begincharliteral"_h] == "\"") constructstring();
 	else {
 		std::stringstream ssstream;
 		ssstream << (int)currstring[0];
