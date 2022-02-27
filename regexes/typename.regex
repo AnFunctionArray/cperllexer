@@ -1,10 +1,7 @@
 
 
 (?<qualifs>(?<typesandqualifiers>\s*+
-						(?<typesandqualifiersmask>(\bint\b|\bchar\b|\bshort\b|\blong\b
-						|\bsigned\b|\bunsigned\b|\bfloat\b|\bdouble\b)|
-						(?<qualifiers>\bconst\b|\brestrict\b|\bvolatile\b)
-						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b))
+						(?<typesandqualifiersmask>(?&typeorqualif))
 						(??{inc "facet"})(?{call "add_type_or_qualifier"})(??{dec "facet"})\s*+))
 
 (?<align>\s*+\b__declspec[(]\s*+\balign[(]\s*+(?<align>(?&numberliteralraw))\s*+[)]\s*+[)]\s*+)
@@ -14,7 +11,7 @@
 	(?{set2 {"savedcallouts" => []}})
 	(?=(?<Tqualifs>((?&qualifs)|\s*+((?(<strc>)(*F))(?(<typedefnmmatched>)(*F))
 		((?<strc>(??{set {"tpdf" => ""}})(?&structorunion)(??{unset {"tpdf" => ""}}))
-		|(?<typedefnmmatched>\b(??{identifier_typedef})\b))
+		|(?<typedefnmmatched>(?&identifier_typedef)))
 		|(?(<typedefkey>)(*F))(?<typedefkey>(\btypedef\b)))\s*+)++))
 		
 	(?{set2 {"qualifstrace" => evalval sub{$savedcallouts[-1]}}; unset2 "savedcallouts"})
@@ -40,7 +37,7 @@
 			|(?&identifierminedecl)
 			|(?{call "identifier_decl"})))\s*+)
 
-(?<identifierminedecl>\s*+(?!((??{inc "facet"})(?&keywordlist)(??{dec "facet"})))(?<ident>((??{inc "facet"})(?&identifierraw)(??{dec "facet"})))
+(?<identifierminedecl>\s*+(?<ident>((??{inc "facet"})(?&identifierraw_qualified)(??{dec "facet"})))
 	(?{call "identifier_decl"})\s*+)
 
 (?#<Tabstrrest, Tabstrrestalt, Tinside>)
@@ -77,7 +74,7 @@
 						((?&abstdeclorallqualifs))(??{unset {"typename" => "insideparams"}, {"decls" => "bb"}}))
 
 (?<abstdecl>(?<abstrptrrev>(?<abstrptr>\s*+[*]\s*+
-						(?<qualifptr>(?&qualifiers))*+)
+						(?<qualifptr>(?&typeorqualif))*+)
 						(?!(?&abstrptrrev)(?{call "addptrtotype"}))
 						(?<abstrrest>(?&Tinside)(?<abstrsubs>\s*+(\[
 							(?(?{evalval sub {$tpdf[-1] eq "subsparams"}})(?{call "identifier_decl"}))
@@ -120,7 +117,7 @@
 	(?{set2 {"savedcallouts" => []}})
 	((?=(?<Tqualifs>((?&qualifs)|\s*+((?(<strc>)(*F))(?(<typedefnmmatched>)(*F))
 		((?<strc>(??{set {"tpdf" => ""}})(?&structorunion)(??{unset {"tpdf" => ""}}))
-		|(?<typedefnmmatched>\b(??{identifier_typedef})\b))
+		|(?<typedefnmmatched>(?&identifier_typedef)))
 		|(?(<typedefkey>)(*F))(?<typedefkey>(\btypedef\b)))\s*+)++))
 		|(?(?{evalval sub{$decls[-1] eq "extrnl"}})|(*F)))
 		
@@ -136,9 +133,6 @@
 
 (?<cprogram>((??{set {"decls" => "extrnl"}})(?&decl)(??{unset {"decls" => "extrnl"}}))*+)
 
-(?<keywordlist>(?&typesandqualifiersmask)
-	|\b(typedef|struct|enum|sizeof|break|case|continue|default|do|else|for|goto|if|return|switch|while)\b)
-
 (?<typenamerev>(((??{inc "facet"})(?&typename)(??{dec "facet"}))(?!(?&castexpr)))|(?&typename)(?{call "applycast"})((??{inc "facet"})(?&castexpr)(??{dec "facet"})))
 
 
@@ -147,7 +141,7 @@
 (?<initializer>(?&assignorsomething)|\s*+[{]((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*+[}]\s*+)
 (?<abstrinitialization>=(?&initializer))
 
-(?<add_ident_to_enum_def>\s*+(?!((??{inc "facet"})(?&keywordlist)(??{dec "facet"})))(?<identlasttag>((??{inc "facet"})(?&identifierraw)(??{dec "facet"})))(?{call "add_ident_to_enum_def"})\s*+)
+(?<add_ident_to_enum_def>\s*+(?<identlasttag>((??{inc "facet"})(?&identifierraw_qualified)(??{dec "facet"})))(?{call "add_ident_to_enum_def"})\s*+)
 
 
 (?<strcelem>(
@@ -168,4 +162,4 @@
 	(??{unset {"tpdf" => ""}}))
 )
 
-(?<identifierminestruct>(?!((??{inc "facet"})(?&keywordlist)(??{dec "facet"})))(((??{inc "facet"})(?&identifierraw)(??{dec "facet"}))))
+(?<identifierminestruct>(((??{inc "facet"})(?&identifierraw_qualified)(??{dec "facet"}))))

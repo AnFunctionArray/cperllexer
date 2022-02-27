@@ -12,7 +12,7 @@
 						(?{call "unaryincdec"})))*+
 						|(?&unary)))
 
-(?<identifierminemember>\s*+(?!((??{inc "facet"})(?&keywordlist)(??{dec "facet"})))(?<ident>((??{inc "facet"})(?&identifierraw)(??{dec "facet"})))
+(?<identifierminemember>\s*+(?<ident>((??{inc "facet"})(?&identifierraw_qualified)(??{dec "facet"})))
 	(?{call "memberaccess"})\s*+)
 
 (?<testxpr>(?&inner)|(?&inparenths))

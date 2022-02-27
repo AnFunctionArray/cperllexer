@@ -8,7 +8,7 @@
 						|(?:(0)(?<oct>[0-7]++)|(?<dec>\d++))))(?<lng>[Uu](ll|LL|[lL])?+|(ll|LL|[lL])[Uu]?+)?+)
 						(?{call "num_lit"}))
 						|(?&floating)
-						|(?<identifier>\s*+(?!((??{inc "facet"})(?&keywordlist)(??{dec "facet"}))|(??{identifier_typedef})\b)
+						|(?<identifier>\s*+
 						(?<ident>((??{inc "facet"})(?&identifierraw)(??{dec "facet"})))(?{call "obtainvalbyidentifier"})\s*+)))\s*+)
 
 
@@ -16,4 +16,10 @@
 	(?<suffixflt>[flFL])?+(?{call collect_float_literal})
 	|(?<wholenodot>\d++)(?<exponent>[eE](?<signexp>[+-])?+(?<exp>\d++))(?<suffixflt>[flFL])?+(?{call collect_float_literal}))
 
-(?<identifierraw>\b(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9])*+)\b(::(?&identifierraw))?+)
+(?<identifierpure>(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9])*+)(::(?&identifierpure))?+)
+
+(?<identifierraw>\b(?<ident>(?&identifierpure))\b(??{checkident()}))
+(?<identifierraw_qualified>\b(?<ident>(?&identifierpure))\b(??{checkidentqualified()}))
+(?<identifier_typedef>\b(?<ident>(?&identifierpure))\b(??{checktypedef()}))
+
+(?<typeorqualif>\b(?<ident>(?&identifierpure))\b(??{checktypeorqualif()}))

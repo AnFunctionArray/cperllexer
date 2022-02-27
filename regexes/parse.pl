@@ -317,7 +317,7 @@ startmatching($subject, $mainregexfinal, basename($ARGV[0])) if(not $matchinperl
 
 #exit if(not $matchinperl);
 
-startmodule(basename($ARGV[2])) if(defined &startmodule and not $nested);
+startmodule(basename($ARGV[1])) if(defined &startmodule and not $nested);
 
 my $matchprototype = qr{(?(DEFINE)$mainregexdefs)(?&strcelem)}sxxn;
 my $matchtype = qr{(?(DEFINE)$mainregexdefs)(?&abstdeclorallqualifs)}sxxn;
