@@ -24,17 +24,30 @@ close $fh;
 
 #use re => qw(Debug EXECUTE);
 
-$subjectoutter =~ s{
-    [^{}]*\s++\b(?<fnname>(?<identifierraw>\b(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9])*+)\b(::(?&identifierraw))?+))(?=\s*+[(]).*?\n\}
-}{
+while($subjectoutter =~ m{
+    ([^{}]*\s++\b(?<fnname>(?<identifierraw>\b(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9])*+)\b(::(?&identifierraw))?+))(?=\s*+[(]).*?\n\})
+(?{
     
     #print $& . "\n";
-    my $subject = $&;
+    my $subject = $^N;
     my $fnname = $+{fnname};
-    #print $fnname . "\n";
-    #open my $target, '>', "$fnname.c" or die "error opening $fnname: $!";
+    print $fnname . "\n";
+    open my $target, '>', "$fnname.c" or die "error opening $fnname: $!";
 
-    #print $target $fndef;
+    print $target $subject;
+})}sxxg){}
+
+$filename = $ARGV[1];
+open my $fh, '>', $filename or die "error opening $filename: $!";
+
+print $fh $subjectoutter;
+
+close $fh;
+
+exit;
+
+=begin
+return;
 
     my $init;
 
@@ -57,7 +70,7 @@ $subjectoutter =~ s{
 
     $stackdecl = "\n  unsigned char stack[0x$lastvalid];";
 
-    print $init;x
+    print $init;
 
     if($lastvalid) {
 
@@ -69,13 +82,4 @@ $subjectoutter =~ s{
 
     #close $target
     $subject
-}sxxnge;
-
-$filename = $ARGV[1];
-open my $fh, '>', $filename or die "error opening $filename: $!";
-
-print $fh $subjectoutter;
-
-close $fh;
-
-exit;
+=cut

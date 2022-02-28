@@ -81,9 +81,10 @@
 						(?{call "beginconstantexpr"})(?&primexpr)\]
 						(?{call "addsubtotype"})(?{call "endconstantexpr"})
 						|([(](?(?{evalval sub {$tpdf[-1] eq "subsparams"}})(?{call "identifier_decl"}))
-						((??{set {"tpdf" => "firstparam"}})(?&param)(??{unset {"tpdf" => "firstparam"}})
+						((??{inc "nesteddecl"})(??{set {"tpdf" => "firstparam"}})
+						(?&param)(??{unset {"tpdf" => "firstparam"}})
 						(,(?&param))*
-						(?<rest>,\s*+\.\.\.\s*+)?+)[)](?{call "endfunctionparamdecl"})
+						(?<rest>,\s*+\.\.\.\s*+)?+(??{dec "nesteddecl"}))[)](?{call "endfunctionparamdecl"})
 						|[(]\s*+((?<rest>\.\.\.)|\bvoid\b)?+\s*+[)](?{call "startfunctionparamdecl"})
 						(?{call "endfunctionparamdecl"})))\s*+)*+
 						(?{call "addptrtotype"}))|
@@ -114,14 +115,13 @@
 (?<abstdeclorallqualifs>
 (??{use re 'eval'; $abstdeclorallqualifsregex //= qr{
 	(?(DEFINE)$mainregexdefs)
-	(?{set2 {"savedcallouts" => []}})
-	((?=(?<Tqualifs>((?&qualifs)|\s*+((?(<strc>)(*F))(?(<typedefnmmatched>)(*F))
+	(?{set2 {"savedcallouts" => [], "typefound"}})
+	(?=(?<Tqualifs>((?&qualifs)|\s*+((?(<strc>)(*F))(?(<typedefnmmatched>)(*F))
 		((?<strc>(??{set {"tpdf" => ""}})(?&structorunion)(??{unset {"tpdf" => ""}}))
-		|(?<typedefnmmatched>(?&identifier_typedef)))
-		|(?(<typedefkey>)(*F))(?<typedefkey>(\btypedef\b)))\s*+)++))
-		|(?(?{evalval sub{$decls[-1] eq "extrnl"}})|(*F)))
-		
-	(?{set2 {"qualifstrace" => evalval sub{$savedcallouts[-1]}}; unset2 "savedcallouts"})
+		|(?(?{evalval sub {$typefound[-1]}})(*F))(?<typedefnmmatched>(?&identifier_typedef)))
+		|(?(<typedefkey>)(*F))(?<typedefkey>(\btypedef\b)))\s*+)++
+		|(?(?{evalval sub{$decls[-1] eq "extrnl"}})|(?{unset2 "savedcallouts", "typefound"})(*F))))
+	(?{set2 {"qualifstrace" => evalval sub{$savedcallouts[-1]}}; unset2 "savedcallouts", "typefound"})
 	\g{Tqualifs}(?(?{evalval sub{$tpdf[-1] eq "firstparam"}})(?{call startfunctionparamdecl}))
 	((?<declinner>(?&Tdecl)(?{call "enddeclaration"})(?{evalval sub{replay $qualifstrace[-1]}})(?{call "endqualifs"}))
 	(?(?{evalval sub {$typename[-1] eq "insideparams"}})|(,(?&declinner))*+)
@@ -148,12 +148,12 @@
 		(??{set {"typename" => "bitfl"}, {"decls" => "bb"}})
 		(?&abstdeclorallqualifs)(??{unset {"typename" => "bitfl"}, {"decls" => "bb"}}))\s*+;\s*+)
 
-(?<structbody>\s*+[{](?(<enum>)(?{call "begin_enumerator_def"})
+(?<structbody>\s*+[{](??{inc "nesteddecl"})(?(<enum>)(?{call "begin_enumerator_def"})
 	(?<enumerator>(?&add_ident_to_enum_def)
 	((=(?{call "beginconstantexpr"})(?&assignorsomething)(?{call "end_ass_to_enum_def"}))
 	|(?{call "end_without_ass_to_enum_def"})))?+(,(?&enumerator))*+,?+\s*+
 	|(?{call "struc_or_union_body"})\s*+(?&strcelem)*+)\s*+
-	[}]\s*+(?(<enum>)()|(?{call "endbuildingstructorunion"}))\s*+)
+	[}](??{dec "nesteddecl"})\s*+(?(<enum>)()|(?{call "endbuildingstructorunion"}))\s*+)
 
 (?<structorunion>(?(?{evalval sub{$tpdf[-1] eq "notpdf"}})(*F)|
 	(??{set {"tpdf" => ""}})((?=(?<begin>\s*+\b(?<structorunionlast>struct|union|(?<enum>enum))\b\s*+(?&align)?+

@@ -15,8 +15,8 @@ my %typedefs;
 my $ok = qr{};
 my $notok = qr{(*F)};
 
-my %typeandqualifs;
-@typeandqualifs{
+my %types;
+@types{
     "int",
     "char",
     "short",
@@ -24,7 +24,12 @@ my %typeandqualifs;
     "signed",
     "unsigned",
     "float",
-    "double",
+    "double"
+} = ();
+
+my %qualifiers;
+
+@qualifiers{
     "const",
     "restrict",
     "volatile",
@@ -54,7 +59,11 @@ my %keywords;
     "while"
 } = ();
 
+%keywords = (%qualifiers, %types, %keywords);
 
+my %typeandqualifs = (%qualifiers, %types);
+
+=begin
 sub regenerate_typedef_regex {
     #my $ident = "(*F)";
     %typedefs = ();
@@ -62,7 +71,7 @@ sub regenerate_typedef_regex {
     my %disallowed;
     foreach my $typedefidentifier (reverse @typedefidentifiersvector) {
         foreach my $k (keys %$typedefidentifier) {
-            $typedefs{$k} = 1 if($typedefidentifier->{$k} and not exists $disallowed{$k});
+            $typedefs{$k} = undef if($typedefidentifier->{$k} and not exists $disallowed{$k});
             $disallowed{$k} = 1;
         }
     }
@@ -72,12 +81,21 @@ sub regenerate_typedef_regex {
     print Dumper %typedefs;
     $needregen = 0;
 }
+=cut
+
+sub checktypedef2 {
+    my $ident = $_[0];
+    foreach my $typedefidentifier (reverse @typedefidentifiersvector) {
+        return $typedefidentifier->{$ident} if(exists $typedefidentifier->{$ident})
+    }
+    return 0
+}
 
 sub checktypedef {
     #regenerate_typedef_regex() if($needregen);
     #print "$typedef_regex\n";
     #print "checking". $+{ident} . "\n";
-    if (exists $typedefs{$+{ident}}) {
+    if (checktypedef2 $+{ident}) {
         print "$+{ident} -> typedefname\n";
         return $ok 
     }
@@ -86,17 +104,17 @@ sub checktypedef {
 
 sub checkident {
     #print "checking" .$+{ident} . "\n";
-    if ((not exists $typedefs{$+{ident}}) and (not exists $keywords{$+{ident}}) and (not exists $typeandqualifs{$+{ident}})) {
+    if ((not checktypedef2 $+{ident}) and (not exists $keywords{$+{ident}})) {
         print "$+{ident} -> ident\n";
         return $ok 
     }
     return $notok;
 }
 
-sub checkidentqualified {
+sub checkidentpermissive {
     #print "checking" .$+{ident} . "\n";
-    if ((not exists $keywords{$+{ident}}) and (not exists $typeandqualifs{$+{ident}})) {
-        print "$+{ident} -> ident\n";
+    if ((not exists $keywords{$+{ident}})) {
+        print "$+{ident} -> ident-permissive\n";
         return $ok 
     }
     return $notok;
@@ -106,6 +124,9 @@ sub checktypeorqualif {
     #print "checking". $+{ident} . "\n";
     if (exists $typeandqualifs{$+{ident}}) {
         print "$+{ident} -> qualifortype\n";
+        if(exists $types{$+{ident}}) {
+            eval {$typefound[-1] = $+{ident}};
+        }
         return $ok 
     }
     return $notok;
@@ -118,12 +139,14 @@ sub endfulldecl {
 }
 
 sub identifier_decl {
+    return if($nesteddecl);
+    
     my $identifier = $_[0]{'ident'};
     return if not $identifier;
     #$last_object_identifier = $identifier;
     my $priorstate = exists ${$typedefidentifiersvector[-1]}{$identifier} ? ${$typedefidentifiersvector[-1]}{$identifier} : -1;
     my $currentstate = $_[0]{'typedefkey'};
-    ${$typedefidentifiersvector[-1]}{$identifier} = $currentstate;
+    ${$typedefidentifiersvector[-1]}{$identifier} = $currentstate ? 1 : 0;
     #print "$priorstate -> $currentstate\n";
     #$regenerate_needed = 1 
     if($priorstate ne $currentstate) { #and $currentstate ? 1 : $priorstate ne -1) {

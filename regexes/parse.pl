@@ -61,11 +61,9 @@ sub set2 {
     foreach my $pair (@_) {
         my ($key, $value) = %$pair;
         #print Dumper($pair);
-        if(defined $$pair{$key}) {
+        if(exists $$pair{$key}) {
             push @$key, $value;
             print "pushing $key to $key->[-1]\n"
-        } else {
-            warn "catastrophic bactracking\npast the scope of $key\n"
         }
     }
 }
@@ -317,7 +315,7 @@ startmatching($subject, $mainregexfinal, basename($ARGV[0])) if(not $matchinperl
 
 #exit if(not $matchinperl);
 
-startmodule(basename($ARGV[1])) if(defined &startmodule and not $nested);
+startmodule(basename($ARGV[-1])) if(defined &startmodule and not $nested);
 
 my $matchprototype = qr{(?(DEFINE)$mainregexdefs)(?&strcelem)}sxxn;
 my $matchtype = qr{(?(DEFINE)$mainregexdefs)(?&abstdeclorallqualifs)}sxxn;
@@ -336,7 +334,7 @@ sub obtainvalbyidentifier {
     }
     #warn $!; 
     #use re qw(Debug EXECUTE); 
-
+=begin
     my $origid = $fnnamr;
 
     $fnnamr =~ s{_}{[_:.]}g;
@@ -352,6 +350,7 @@ sub obtainvalbyidentifier {
         print $declextrnl . "\n";
         $declextrnl =~ $matchtype
     }
+=cut
 }
 
 if(not $isnested)

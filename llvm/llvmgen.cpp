@@ -668,9 +668,12 @@ struct var {
 	}
 	std::list<::type> requestRealType() {
 		if (type.back().spec.basicdeclspec.istypedef()) {
+			auto tmpident = identifier;
+			identifier.clear();
 			auto typedefval = obtainvalbyidentifier(type.back().spec.basicdeclspec.basic[3], false, true);
 			type.pop_back();
 			type.splice(type.end(), typedefval->requestRealType());
+			identifier = tmpident;
 		}
 		return type;
 	}
@@ -2022,9 +2025,9 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 
 	const char* lastvartypestoragespec = lastvar.linkage.c_str();
 
-	if (lastvartypestoragespec == "typedef")
-		for (lastvar.pValue = nullptr /*(llvm::Value *)lastvar.pllvmtype*/;;)
-			return;
+	//if (lastvar.linkage == "typedef")
+	//	for (lastvar.pValue = nullptr /*(llvm::Value *)lastvar.pllvmtype*/;;)
+	//		return;
 
 	if(lastvar.type.front().uniontype == type::FUNCTION || !lastvar.linkage.empty())
 		goto extrnl_decl;
