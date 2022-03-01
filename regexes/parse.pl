@@ -363,21 +363,30 @@ if(not $isnested)
 {
     my $i = 2;
     use if $ENV{'DEBUG'}, re => qw(Debug EXECUTE); 
-
-    my $entry = qr{(?(DEFINE)$mainregexdefs)\G(?&$entryregex)}sxxn;
+    #while(1) {
+    #require "extractfns.pm";
+    if($ENV{'REPLAY'}) {
+        @typedefidentifiersvector = eval { require "$ENV{REPLAY}.txt"}
+    }
     while(1) {
-        require "extractfns.pm";
-        while(1) {
-            while(eval {$subject =~ m{$entry}gc}){
-            }
-            if($@) {
-                warn $@;
-                undef $facet
-            } else {
-                last
-            }
+        while(eval {$subject =~ m{((*F)$mainregexdefs)|\G(?>(?&$entryregex))}sxxngc}){
         }
-        
+        if($@) {
+            warn $@;
+            undef $facet
+        } else {
+            last
+        }
+    }
+
+    if($ENV{'RECORD'}) {
+        open my $out, '>', "$ENV{RECORD}.txt" or die "error opening $filename: $!";
+        $Data::Dumper::Terse = 1;
+        print $out Dumper @typedefidentifiersvector;
+        close $out;
+    }
+
+=begin
         my $fnname = basename($ARGV[$i], ".c");
 
         $filename = $fnname . ".c";
@@ -426,7 +435,8 @@ if(not $isnested)
         print $subject . "\n";
 
         ++$i
-    }
+=cut
+   # }
 }
 
 #}

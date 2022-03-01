@@ -24,8 +24,8 @@
 
 
 (?<orlogiorsomething>
-(??{use re 'eval'; $orlogiorsomethingregex //= qr{
-	(?(DEFINE)$mainregexdefs)
+(??{use re 'eval'; qr{
+	((*F)$mainregexdefs)|
     (?&binopplusrest)*+
-}sxxn
+}sxxno
 }))

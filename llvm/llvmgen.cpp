@@ -48,6 +48,7 @@
 #include <vector>
 #include <variant>
 #include <unordered_map>
+#include <fstream>
 //#include <oniguruma.h>
 
 #ifdef _WIN32
@@ -3295,11 +3296,37 @@ DLL_EXPORT void endconstantexpr() {
 		phndl = phpriorhndlfn_cnst_expr(phndl);
 }
 
+DLL_EXPORT void docall(const char*, size_t, void*);
+
 DLL_EXPORT void startmodule(const char* modulename, size_t szmodulename) {
 	new (&nonconstructable.mainmodule)
 		llvm::Module{ std::string{modulename, szmodulename}, llvmctx };
 
 	pdatalayout = new llvm::DataLayout{ &nonconstructable.mainmodule };
+
+
+	if(const char *preplaypath = getenv("REPLAY")) {
+		std::ifstream replay{preplaypath, std::ifstream::binary};
+
+		unsigned int hash;
+
+		std::string value;
+
+		std::unordered_map<unsigned, std::string> map;
+
+		do {
+			std::getline(replay, value, '\0');
+
+			if(!value.empty()) {
+				replay.read((char*)&hash, 4);
+				map.insert({ hash, value });
+			}
+			else {
+				std::getline(replay, value, '\0');
+				docall(value.c_str(), value.length(), &map);
+			}
+		} while(!replay.eof());
+	}
 
 	//system("PAUSE");
 }
@@ -3315,19 +3342,23 @@ static bool endwork = false;
 
 extern "C" pthread_t thread;
 
+std::ofstream record{getenv("RECORD") ? getenv("RECORD") : "", std::ios::binary};
+
 DLL_EXPORT void endmodule() {
-	/*mutexwork.lock();
+	mutexwork.lock();
 	endwork = true;
 	mutexwork.unlock();
 	condwake.notify_one();
-	pthread_join(thread, nullptr);*/
+	pthread_join(thread, nullptr);
 	std::error_code code{};
 	llvm::raw_fd_ostream output{
 		std::string{nonconstructable.mainmodule.getName()} + ".bc", code },
 		outputll{ std::string{nonconstructable.mainmodule.getName()} + ".ll",
 				 code };
-	nonconstructable.mainmodule.print(outputll, nullptr);
-	llvm::WriteBitcodeToFile(nonconstructable.mainmodule, output);
+	if(!record.is_open()) {
+		nonconstructable.mainmodule.print(outputll, nullptr);
+		llvm::WriteBitcodeToFile(nonconstructable.mainmodule, output);
+	}
 	nonconstructable.mainmodule.~Module();
 	delete pdatalayout;
 }
@@ -4284,21 +4315,30 @@ DLL_EXPORT void do_callout(SV * in, HV * hash)
 	STRLEN inlen;
 	SV* value;
 	hv_iterinit(hash);
+	const char nill[1] = {'\0'};
 	std::unordered_map<unsigned, std::string> map;
 	while (value = hv_iternextsv(hash, &key, &key_length)) {
 		pinstr = SvPVutf8(value, inlen);
-		map.insert({ stringhash(std::string{key, (size_t)key_length}.c_str()), std::string{pinstr, inlen} });
+		if(record.is_open() && inlen) {
+			record.write(pinstr, inlen);
+			record.write(nill, 1);
+			record.write(reinterpret_cast<const char(&)[4]>(std::move(stringhash(std::string{key, (size_t)key_length}.c_str()))), 4);
+		} else {
+			map.insert({ stringhash(std::string{key, (size_t)key_length}.c_str()), std::string{pinstr, inlen} });
+		}
 	}
 
 	pinstr = SvPVutf8(in, inlen);
 
-	call(map, std::string{pinstr, inlen});
+	record.write(nill, 1);
+	record.write(pinstr, inlen);
+	record.write(nill, 1);
 
-	/*mutexwork.lock();
+	mutexwork.lock();
 
 	callstack.push({map, std::string{pinstr, inlen}});
 
 	mutexwork.unlock();
 
-	condwake.notify_one();*/
+	condwake.notify_one();
 }

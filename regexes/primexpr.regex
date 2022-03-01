@@ -18,15 +18,15 @@
 (?<testxpr>(?&inner)|(?&inparenths))
 
 (?<assignorsomething>
-(??{use re 'eval'; $assignorsomethingregex //= qr{
-	(?(DEFINE)$mainregexdefs)
+(??{use re 'eval'; qr{
+	((*F)$mainregexdefs)|
 	(?(?=(?{inc2 "facet"})(?&unaryexpr))
 	(?{dec2 "facet"})(?{call "begin_binary"})(?&unaryexpr)
 	((?<assignop>(?<binoplast>=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+)
 		(?&assignorsomething)(?{call "binary"})(?{call "end_binary"})|(?&ternaryorsomething)(?{call "end_binary"}))
 		|(?(?=(?&typename)(?{dec2 "facet"})(?{call "begin_binary"}))|(?{dec2 "facet"})(*F))
 		(?&typenamerev)(?&ternaryorsomething)(?{call "end_binary"}))
-}sxxn})
+}sxxno})
 )
 
 (?<ternaryorsomething>(?&orlogiorsomething)((?&ternaryrest)

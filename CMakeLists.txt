@@ -34,9 +34,9 @@ target_link_directories(regularc PRIVATE ${llvm_libdir})
 
 find_package(range-v3 CONFIG REQUIRED)
 
-target_link_libraries(regularc PRIVATE ${llvm_libraries} -rdynamic -fsanitize=undefined,thread ${PERL_LIBRARY} -lpthread range-v3 range-v3-meta range-v3::meta range-v3-concepts -lz -lcurses -ldl)
+target_link_libraries(regularc PRIVATE ${llvm_libraries} -rdynamic ${PERL_LIBRARY} -lpthread range-v3 range-v3-meta range-v3::meta range-v3-concepts -lz -lcurses -ldl)
 
-target_compile_options(regularc PRIVATE -rdynamic -Ofast -fsanitize=undefined,thread -g -DNDEBUG)
+target_compile_options(regularc PRIVATE -rdynamic -Ofast -g -DNDEBUG)
 
 target_include_directories(regularc PRIVATE ${PERL_INCLUDE_PATH} ${llvm_includes} src)
 

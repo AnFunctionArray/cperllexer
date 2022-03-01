@@ -6,8 +6,8 @@
 
 (?<align>\s*+\b__declspec[(]\s*+\balign[(]\s*+(?<align>(?&numberliteralraw))\s*+[)]\s*+[)]\s*+)
 
-(?<typename>\s*+[(](??{use re 'eval'; $typenameregex //= qr{
-	(?(DEFINE)$mainregexdefs)
+(?<typename>\s*+[(](??{use re 'eval'; qr{
+	((*F)$mainregexdefs)|
 	(??{set {"savedcallouts" => []}})
 	(?=(?<Tqualifs>((?&qualifs)|\s*+((?(<strc>)(*F))(?(<typedefnmmatched>)(*F))
 		((?<strc>(??{set {"tpdf" => ""}})(?&structorunion)(??{unset {"tpdf" => ""}}))
@@ -19,7 +19,7 @@
 		\g{Tqualifs}(?{call "identifier_decl"})((??{set {"abstdecl" => "optoutter"}})(?&abstdecl)(??{unset {"abstdecl" => "optoutter"}}))?+
 		(?{call "enddeclaration"})
 		(?{evalval sub{replay $qualifstrace[-1]}})
-		}sxxn})
+		}sxxno})
 
 		[)](??{unset "qualifstrace"})(?{call "endqualifs"})\s*+
 		
@@ -115,8 +115,8 @@
 
 (?#<Tabsqualifs, Tasbtdecloutter, Tabstinitorbitfl, Tidentifierminetypedef, Tidentifierminetypedeffwd, Tqualifwrapper>)
 (?<abstdeclorallqualifs>
-(??{use re 'eval'; $abstdeclorallqualifsregex //= qr{
-	(?(DEFINE)$mainregexdefs)
+(??{use re 'eval'; qr{
+	((*F)$mainregexdefs)|
 	(??{set {"savedcallouts" => [], "typefound"}})
 	(?=(?<Tqualifs>((?&qualifs)|\s*+((?(<strc>)(*F))(?(<typedefnmmatched>)(*F))
 		((?<strc>(??{set {"tpdf" => ""}})(?&structorunion)(??{unset {"tpdf" => ""}}))
@@ -125,11 +125,11 @@
 		|(?(?{evalval sub{$decls[-1] eq "extrnl"}})|(*F))))
 	((?{set2 {"qualifstrace" => evalval sub{$savedcallouts[-1]}}})(?{unset2 "savedcallouts", "typefound"})
 	|(?{unset2 "qualifstrace"; set2 {"savedcallouts" => [], "typefound"}}))
-	\g{Tqualifs}(?(?{evalval sub{$tpdf[-1] eq "firstparam"}})(?{call startfunctionparamdecl}))
+	\g{Tqualifs}(?(?{evalval sub{$tpdf[-1] eq "firstparam"}})(?{call "startfunctionparamdecl"}))
 	(?(?=(?<declinner>(?&Tdecl)(?{call "enddeclaration"})(?{evalval sub{replay $qualifstrace[-1]}})(?{call "endqualifs"})))\g{declinner}
 	(?(?{evalval sub {$typename[-1] eq "insideparams"}})|(,(?&declinner))*+)|(?(<strc>)|(*F)))
 	(?{unset2 "qualifstrace"})
-}sxxn})
+}sxxno})
 )
 
 (?<decl>(?&abstdeclorallqualifs)((?&compoundstatement)|\s*+;(?{call "endfulldecl"})\s*+))
