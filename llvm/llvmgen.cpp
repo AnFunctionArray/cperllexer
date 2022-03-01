@@ -28,6 +28,7 @@
 #include <llvm/Support/Error.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 #include <locale>
+#include <queue>
 #include <range/v3/algorithm/contains.hpp>
 #include <range/v3/algorithm/find.hpp>
 #include <range/v3/iterator/common_iterator.hpp>
@@ -3303,7 +3304,18 @@ DLL_EXPORT void startmodule(const char* modulename, size_t szmodulename) {
 	//system("PAUSE");
 }
 
+#include <condition_variable>
+#include <mutex>
+
+static std::condition_variable condwake;
+static std::mutex mutexwork;
+
+static bool endwork = false;
+
 DLL_EXPORT void endmodule() {
+	endwork = true;
+	condwake.notify_one();
+	mutexwork.lock();
 	std::error_code code{};
 	llvm::raw_fd_ostream output{
 		std::string{nonconstructable.mainmodule.getName()} + ".bc", code },
@@ -3313,6 +3325,7 @@ DLL_EXPORT void endmodule() {
 	llvm::WriteBitcodeToFile(nonconstructable.mainmodule, output);
 	nonconstructable.mainmodule.~Module();
 	delete pdatalayout;
+	mutexwork.unlock();
 }
 
 DLL_EXPORT void unary(std::unordered_map<unsigned, std::string>&& hashes) {
@@ -4230,9 +4243,39 @@ extern "C" {
 
 DLL_EXPORT void docall(const char*, size_t, void*);
 
+void call(std::unordered_map<unsigned, std::string> hash, std::string callname) {
+	//SvREFCNT_dec(hash);
+
+	docall(callname.c_str(), callname.length(), &hash);
+
+	//SvREFCNT_dec(hash);
+}
+
+std::queue<std::pair<std::unordered_map<unsigned, std::string>, std::string>> callstack;
+
+extern "C" PerlInterpreter* my_perl;
+
+extern "C" void *wait_for_call(void*) {
+	do {
+		std::unique_lock lock{mutexwork};
+		condwake.wait(lock, []{return !callstack.empty() || endwork;});
+
+		while(!callstack.empty()) {
+			auto callinfo = callstack.front();
+			callstack.pop();
+			lock.unlock();
+			call(callinfo.first, callinfo.second);
+			lock.lock();
+		}
+
+	} while(!endwork);
+	return nullptr;
+}
+
 DLL_EXPORT void do_callout(SV * in, HV * hash)
 {
-	char* key, * pinstr;
+
+	char* key, *pinstr;
 	I32 key_length;
 	STRLEN inlen;
 	SV* value;
@@ -4245,5 +4288,11 @@ DLL_EXPORT void do_callout(SV * in, HV * hash)
 
 	pinstr = SvPVutf8(in, inlen);
 
-	docall(pinstr, inlen, &map);
+	mutexwork.lock();
+
+	callstack.push({map, std::string{pinstr, inlen}});
+
+	condwake.notify_one();
+
+	mutexwork.unlock();
 }

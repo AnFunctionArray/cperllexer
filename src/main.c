@@ -254,7 +254,7 @@ xs_init(pTHX)
 	newXS("startmodule", XS__startmodule, __FILE__);
 }
 
-static PerlInterpreter* my_perl; /***    The Perl interpreter    ***/
+PerlInterpreter* my_perl; /***    The Perl interpreter    ***/
 #if 0
 #include <userenv.h>
 #include <wtsapi32.h>
@@ -277,6 +277,7 @@ secondmain(char* subject, size_t szsubject, char* pattern, size_t szpattern, cha
 	onig_search(preg, subject, subject + szsubject, subject, subject + szsubject, 0, 0);
 }
 #endif
+#include <pthread.h>
 int main(int argc, const char** argv, char** env)
 {
 	//onig_initialize((OnigEncoding[]){&OnigEncodingUTF8}, 1);
@@ -301,6 +302,9 @@ int main(int argc, const char** argv, char** env)
 	perl_parse(my_perl, xs_init, argc, argv, NULL);
 	//foutput = fopen("output.txt", "wt");
 	//foutput2 = fopen("output2.txt", "wt");
+	void *wait_for_call(void*);
+	pthread_t thread;
+	pthread_create(&thread, 0, wait_for_call, 0);
 	perl_run(my_perl);
 	//fflush(foutput);
 	//fflush(foutput2);

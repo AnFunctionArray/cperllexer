@@ -5,9 +5,9 @@ use re 'eval';
 BEGIN{push @INC, "./misc"};
 BEGIN{push @INC, "./regexes/supplement"};
 
-require "typename.regex.pl";
-
 #use re qw(Debug ALL);
+
+require "typename.regex.pl";
 
 use List::Util qw(max);
 
@@ -18,6 +18,8 @@ use File::Basename;
 use Data::Dumper;
 
 print Dumper @ARGV;
+
+#open my $fhnull, '>', "/dev/null" or die "error opening $filename: $!";
 
 $oldfh = select(STDERR);
 
@@ -317,9 +319,10 @@ startmatching($subject, $mainregexfinal, basename($ARGV[0])) if(not $matchinperl
 
 startmodule(basename($ARGV[-1])) if(defined &startmodule and not $nested);
 
-my $matchprototype = qr{(?(DEFINE)$mainregexdefs)(?&strcelem)}sxxn;
+my $matchprototype = qr{(?(DEFINE)$mainregexdefs)^((??{set {"decls" => "extrnl"}})(?&abstdeclorallqualifs)(??{unset {"decls" => "extrnl"}}))}sxxn;
 my $matchtype = qr{(?(DEFINE)$mainregexdefs)(?&abstdeclorallqualifs)}sxxn;
 
+=begin
 sub obtainvalbyidentifier {
     my $fnnamr = $_[0]{"ident"};
     #my $fnnm = $fnnamr =~ s{::}{//}gr;
@@ -334,7 +337,7 @@ sub obtainvalbyidentifier {
     }
     #warn $!; 
     #use re qw(Debug EXECUTE); 
-=begin
+
     my $origid = $fnnamr;
 
     $fnnamr =~ s{_}{[_:.]}g;
@@ -350,8 +353,9 @@ sub obtainvalbyidentifier {
         print $declextrnl . "\n";
         $declextrnl =~ $matchtype
     }
-=cut
+
 }
+=cut
 
 if(not $isnested)
 {
@@ -361,9 +365,20 @@ if(not $isnested)
     my $entry = qr{(?(DEFINE)$mainregexdefs)(?&$entryregex)}sxxn;
     while(1) {
         require "extractfns.pm";
-
-        $subject =~ $entry;
-
+        my $lastpos;
+        do {
+            while(eval {$subject=~ m{$entry}g}) { 
+                $lastpos = pos()
+            }
+            if($@) {
+                warn $@;
+                $subject = substr $subject, $lastpos;
+                undef $facet
+            } else {
+                goto next
+            }
+        }while(1);
+next:
         my $fnname = basename($ARGV[$i], ".c");
 
         $filename = $fnname . ".c";
@@ -373,6 +388,10 @@ if(not $isnested)
         $subject = do { local $/; <$fh> };
 
         close $fh;
+
+        $currentprint = $originalprint;
+
+        #$oldfh = select(STDERR);
 
         print $fnname . "\n";
 
