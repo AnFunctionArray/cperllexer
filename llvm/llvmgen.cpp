@@ -435,22 +435,22 @@ struct basic_type_origin : variant_origin_type
 	}
 };*/
 
-typedef std::bitset<5> pointrtypequalifiers;
 /*
 0 - const
 1 - restrict
 2 - volatile
 3 - israwtype
 */
+typedef std::bitset<5> pointrtypequalifiers;
 
 struct basic_type_origin {
-	std::array<std::string, 4> basic;
 	/*
 		0 - last signed/unsigned or struct/union/enum
 		1 - last basic type
 		2 - last storage specifier
 		3 - last typedef or struct/union/enum name
 	*/
+	std::array<std::string, 4> basic;
 	size_t longspecsn{}; //amount of long qualifiers
 	std::bitset<4> qualifiers;
 
@@ -487,7 +487,7 @@ struct bascitypespec : basic_type_origin {
 	}
 
 	bool istypedef() {
-		std::string array [] = { [3] = basic[3] };
+		std::string array [] = { [2] = basic[2], [3] = basic[3] };
 		return basic == std::to_array(array) && !basic[3].empty();
 	}
 };
@@ -667,13 +667,13 @@ struct var {
 		}
 		return pllvmtype;
 	}
-	std::list<::type> requestRealType() {
+	std::list<::type> fixupTypeIfNeeded() {
 		if (type.back().spec.basicdeclspec.istypedef()) {
 			auto tmpident = identifier;
 			identifier.clear();
 			auto typedefval = obtainvalbyidentifier(type.back().spec.basicdeclspec.basic[3], false, true);
 			type.pop_back();
-			type.splice(type.end(), typedefval->requestRealType());
+			type.splice(type.end(), typedefval->fixupTypeIfNeeded());
 			identifier = tmpident;
 		}
 		return type;
@@ -2026,7 +2026,7 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 
 	const char* lastvartypestoragespec = lastvar.linkage.c_str();
 
-	//if (lastvar.linkage == "typedef")
+	assert (lastvar.linkage != "typedef");
 	//	for (lastvar.pValue = nullptr /*(llvm::Value *)lastvar.pllvmtype*/;;)
 	//		return;
 
@@ -3211,7 +3211,7 @@ DLL_EXPORT void endqualifs(std::unordered_map<unsigned, std::string>&& hashes) {
 		}
 							  else;
 	else
-		lastvar.requestRealType();
+		lastvar.fixupTypeIfNeeded();
 		/*					  else
 		if (0) case "enum"_h:
 	{
@@ -3306,16 +3306,21 @@ DLL_EXPORT void startmodule(const char* modulename, size_t szmodulename) {
 
 #include <condition_variable>
 #include <mutex>
+#include <pthread.h>
 
 static std::condition_variable condwake;
 static std::mutex mutexwork;
 
 static bool endwork = false;
 
+extern "C" pthread_t thread;
+
 DLL_EXPORT void endmodule() {
+	/*mutexwork.lock();
 	endwork = true;
+	mutexwork.unlock();
 	condwake.notify_one();
-	mutexwork.lock();
+	pthread_join(thread, nullptr);*/
 	std::error_code code{};
 	llvm::raw_fd_ostream output{
 		std::string{nonconstructable.mainmodule.getName()} + ".bc", code },
@@ -3325,7 +3330,6 @@ DLL_EXPORT void endmodule() {
 	llvm::WriteBitcodeToFile(nonconstructable.mainmodule, output);
 	nonconstructable.mainmodule.~Module();
 	delete pdatalayout;
-	mutexwork.unlock();
 }
 
 DLL_EXPORT void unary(std::unordered_map<unsigned, std::string>&& hashes) {
@@ -4288,11 +4292,13 @@ DLL_EXPORT void do_callout(SV * in, HV * hash)
 
 	pinstr = SvPVutf8(in, inlen);
 
-	mutexwork.lock();
+	call(map, std::string{pinstr, inlen});
+
+	/*mutexwork.lock();
 
 	callstack.push({map, std::string{pinstr, inlen}});
 
-	condwake.notify_one();
-
 	mutexwork.unlock();
+
+	condwake.notify_one();*/
 }

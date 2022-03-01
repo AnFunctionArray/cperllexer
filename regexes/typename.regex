@@ -14,7 +14,8 @@
 		|(?<typedefnmmatched>(?&identifier_typedef)))
 		|(?(<typedefkey>)(*F))(?<typedefkey>(\btypedef\b)))\s*+)++))
 		
-	(??{set {"qualifstrace" => evalval sub{$savedcallouts[-1]}}})(??{unset "savedcallouts"})
+	((?{set2 {"qualifstrace" => evalval sub{$savedcallouts[-1]}}})(?{unset2 "savedcallouts"})
+	|(?{unset2 "qualifstrace"; set2 {"savedcallouts" => []}}))
 		\g{Tqualifs}(?{call "identifier_decl"})((??{set {"abstdecl" => "optoutter"}})(?&abstdecl)(??{unset {"abstdecl" => "optoutter"}}))?+
 		(?{call "enddeclaration"})
 		(?{evalval sub{replay $qualifstrace[-1]}})
@@ -86,10 +87,10 @@
 (?<abstdecl>
 		(?<abstrptrrev>(?<abstrptr>\s*+[*]\s*+
 						(?<qualifptr>(?&typeorqualif))*+)
-						(?!(?&abstrptrrev)(?{call "addptrtotype"}))
+						(?(?!(?<foundabstr>(?&abstrptrrev))(?{call "addptrtotype"}))
 						(?<abstrrest>(?&Tinside)(?&abstrsubs)*+
 						(?{call "addptrtotype"}))|
-						(?&abstrptr))(?&abstrptr)*+(?&Tabstrrest)|(?&Tabstrrestalt))
+						\g{foundabstr}))|(?&Tabstrrestalt))
 
 (?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
 
@@ -125,8 +126,9 @@
 	((?{set2 {"qualifstrace" => evalval sub{$savedcallouts[-1]}}})(?{unset2 "savedcallouts", "typefound"})
 	|(?{unset2 "qualifstrace"; set2 {"savedcallouts" => [], "typefound"}}))
 	\g{Tqualifs}(?(?{evalval sub{$tpdf[-1] eq "firstparam"}})(?{call startfunctionparamdecl}))
-	((?<declinner>(?&Tdecl)(?{call "enddeclaration"})(?{evalval sub{replay $qualifstrace[-1]}})(?{call "endqualifs"}))|(?(<strc>)|(*F)))
-	(?(?{evalval sub {$typename[-1] eq "insideparams"}})|(?(<declinner>)(,(?&declinner))*+))(?{unset2 "qualifstrace"})
+	(?(?=(?<declinner>(?&Tdecl)(?{call "enddeclaration"})(?{evalval sub{replay $qualifstrace[-1]}})(?{call "endqualifs"})))\g{declinner}
+	(?(?{evalval sub {$typename[-1] eq "insideparams"}})|(,(?&declinner))*+)|(?(<strc>)|(*F)))
+	(?{unset2 "qualifstrace"})
 }sxxn})
 )
 
@@ -158,7 +160,7 @@
 
 (?<structorunion>(?(?{evalval sub{$tpdf[-1] eq "notpdf"}})(*F)|
 	(??{set {"tpdf" => ""}})((?=(?<begin>\s*+\b(?<structorunionlast>struct|union|(?<enum>enum))\b\s*+(?&align)?+
-	(?<lasttag>(?&identifierminestruct))?+))\g{begin}(?(<lasttag>)(?&structbody)?+|(?&structbody)))
+	(?<lasttag>(?&identifierminestruct))?+))\g{begin}(?(?=(?<body>(?&structbody)))\g{body}|(?(<lasttag>)|(*F))))
 	(??{inc "facet"})(?{call "add_tag"})(??{dec "facet"})
 	(??{unset {"tpdf" => ""}}))
 )

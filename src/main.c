@@ -255,6 +255,7 @@ xs_init(pTHX)
 }
 
 PerlInterpreter* my_perl; /***    The Perl interpreter    ***/
+pthread_t thread;
 #if 0
 #include <userenv.h>
 #include <wtsapi32.h>
@@ -278,6 +279,14 @@ secondmain(char* subject, size_t szsubject, char* pattern, size_t szpattern, cha
 }
 #endif
 #include <pthread.h>
+#include <signal.h>
+#include <unistd.h>
+
+void handler1(int sig) {
+	endmodule();
+	exit(0);
+}
+
 int main(int argc, const char** argv, char** env)
 {
 	//onig_initialize((OnigEncoding[]){&OnigEncodingUTF8}, 1);
@@ -295,6 +304,9 @@ int main(int argc, const char** argv, char** env)
 		wcstombs(tmp = malloc(0xFFF), curr, 0xFFF), *pcurr++ = tmp;
 #endif
 	//onig_initialize();
+	signal(SIGTERM, handler1);
+	//void *wait_for_call(void*);
+	//pthread_create(&thread, 0, wait_for_call, 0);
 	PERL_SYS_INIT3(&argc, &argv, &env);
 	my_perl = perl_alloc();
 	perl_construct(my_perl);
@@ -302,9 +314,6 @@ int main(int argc, const char** argv, char** env)
 	perl_parse(my_perl, xs_init, argc, argv, NULL);
 	//foutput = fopen("output.txt", "wt");
 	//foutput2 = fopen("output2.txt", "wt");
-	void *wait_for_call(void*);
-	pthread_t thread;
-	pthread_create(&thread, 0, wait_for_call, 0);
 	perl_run(my_perl);
 	//fflush(foutput);
 	//fflush(foutput2);

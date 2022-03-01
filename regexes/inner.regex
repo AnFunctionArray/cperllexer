@@ -1,11 +1,11 @@
 (?<inner>\s*+(((?<stringlit>((?<begincharliteral>"|'))
-						(?#C4<begincharliteral>)((?<escape>(?<escaperaw>\\(?:(x)[0-9a-fA-F]++|(?:(0)[0-7]++
+						(?#C4<begincharliteral>)((?<escape>(?<escaperaw>\\(?(?=x)x[0-9a-fA-F]++|(?(?=0\d)0[0-7]++
 						|['"?\abfnrtv0]))))
 						(?{call "addescapesequencetostring"})|
 						(?<text>(?<textraw>((?!(?&escape)|(?&begincharliteral)).)++)(?{call "addplaintexttostring"})))*+(?&begincharliteral)
 						(?{call "add_literal"}))
-						|(?!((??{inc "facet"})(?&floating)(??{dec "facet"})))(?<numberliteral>(?<numberliteralraw>(?:(0x)(?<hex>[0-9a-fA-F]++)|(?:(0b)(?<bin>[01]++)
-						|(?:(0)(?<oct>[0-7]++)|(?<dec>\d++))))(?<lng>[Uu](ll|LL|[lL])?+|(ll|LL|[lL])[Uu]?+)?+)
+						|(?!((??{inc "facet"})(?&floating)(??{dec "facet"})))(?<numberliteral>(?<numberliteralraw>(?(?=0x)0x(?<hex>[0-9a-fA-F]++)|(?(?=0b)0b(?<bin>[01]++)
+						|(?(?=0\d)0(?<oct>[0-7]++)|(?<dec>\d++))))(?<lng>[Uu](ll|LL|[lL])?+|(ll|LL|[lL])[Uu]?+)?+)
 						(?{call "num_lit"}))
 						|(?&floating)
 						|(?<identifier>\s*+

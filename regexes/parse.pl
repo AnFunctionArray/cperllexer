@@ -357,28 +357,27 @@ sub obtainvalbyidentifier {
 }
 =cut
 
+use Term::ANSIColor qw(:constants);
+
 if(not $isnested)
 {
     my $i = 2;
     use if $ENV{'DEBUG'}, re => qw(Debug EXECUTE); 
 
-    my $entry = qr{(?(DEFINE)$mainregexdefs)(?&$entryregex)}sxxn;
+    my $entry = qr{(?(DEFINE)$mainregexdefs)\G(?&$entryregex)}sxxn;
     while(1) {
         require "extractfns.pm";
-        my $lastpos;
-        do {
-            while(eval {$subject=~ m{$entry}g}) { 
-                $lastpos = pos()
+        while(1) {
+            while(eval {$subject =~ m{$entry}gc}){
             }
             if($@) {
                 warn $@;
-                $subject = substr $subject, $lastpos;
                 undef $facet
             } else {
-                goto next
+                last
             }
-        }while(1);
-next:
+        }
+        
         my $fnname = basename($ARGV[$i], ".c");
 
         $filename = $fnname . ".c";
