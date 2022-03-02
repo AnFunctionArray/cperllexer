@@ -1,15 +1,15 @@
 
 
-(?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?{call "addcontinue"});|break\s*+(?{call "addbreak"});|return\b(?<returnval>(?&primexpr))?+;(?{call "endreturn"}))\s*+)
-(?<identifierminegoto>\s*+(?<gtid>((??{inc "facet"})(?&identifierraw_qualified)(??{dec "facet"})))(?{call "gotolabel"})\s*+)
-(?<iterationstatement>\s*+\b(while\s*+[(](?{call "startforloopcond"})(?&primexpr)[)](?{call "endforloopcond"})(?{call "addforloopiter"})(?&statement)(?{call "endforloop"})|do\b(?{call "startdowhileloop"})(?&statement)\bwhile\s*+[(](?&primexpr)[)](?{call "enddowhileloop"})\s*+;
-	|for\s*+[(](((??{set {"decls" => "bb"}})(?&decl)(??{unset {"decls" => "bb"}}))|(?&exprstatement))?+(?{call "startforloopcond"})(?&primexpr)?;(?{call "endforloopcond"})\s*+(?&primexpr)?+(?{call "addforloopiter"})[)](?&statement)(?{call "endforloop"}))\s*+)
-(?<exprstatement>(?&primexpr)?;(?{call "endexpression"})\s*+)
-(?<compoundstatement>\s*+[{](?{call "beginscope"})(((??{set {"decls" => "bb"}})(?&decl)(??{unset {"decls" => "bb"}}))|(?&statement))*+\s*+[}](?{call "endscope"})\s*+)
-(?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?{call "startifstatement"})(?&statement)(else\b(?{call "continueifstatement"})(?&statement))?+(?{call "endifstatement"})|switch\s*+[(](?&primexpr)[)](?{call "startswitch"})(?&statement)(?{call "endswitch"}))\s*+)
+(?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?addcontinue);|break\s*+(?addbreak);|return\b(?<returnval>(?&primexpr))?+;(?endreturn))\s*+)
+(?<identifierminegoto>\s*+(?<gtid>(?&identifierraw_qualified))(?gotolabel)\s*+)
+(?<iterationstatement>\s*+\b(while\s*+[(](?startforloopcond)(?&primexpr)[)](?endforloopcond)(?addforloopiter)(?&statement)(?endforloop)|do\b(?startdowhileloop)(?&statement)\bwhile\s*+[(](?&primexpr)[)](?enddowhileloop)\s*+;
+	|for\s*+[(]((?&decl(bb))|(?&exprstatement))?+(?startforloopcond)(?&primexpr)?;(?endforloopcond)\s*+(?&primexpr)?+(?addforloopiter)[)](?&statement)(?endforloop))\s*+)
+(?<exprstatement>(?&primexpr)?;(?endexpression)\s*+)
+(?<compoundstatement>\s*+[{](?beginscope)((?&decl(bb))|(?&statement))*+\s*+[}](?endscope)\s*+)
+(?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?startifstatement)(?&statement)(else\b(?continueifstatement)(?&statement))?+(?endifstatement)|switch\s*+[(](?&primexpr)[)](?startswitch)(?&statement)(?endswitch))\s*+)
 
-(?<statement>(?=((??{inc "facet"})(?&label)(??{dec "facet"}))++((??{inc "facet"})(?&statementinner)(??{dec "facet"})))(?&label)++(?&statementinner)|(?&statementinner))
+(?<statement>(?(?=(*RECORD)(?<labels>(?&label)++))\g{labels}(?&statementinner)|(?&statementinner)))
 (?<statementinner>(?&exprstatement)|(?&compoundstatement)|(?&selectionstatement)|(?&iterationstatement)|(?&jumpstatement))
 
-(?<label>(?&identifierminelabel)|\s*+(case\b(?{call "beginconstantexpr"})(?&primexpr):(?{call "addCase"})(?{call "endconstantexpr"})|default\s*+:(?{call "addDefaultCase"}))\s*+)
-(?<identifierminelabel>\s*+(?<lbl>((??{inc "facet"})(?&identifierraw_qualified)(??{dec "facet"})))\s*+:(?{call "splitbb"})\s*+)
+(?<label>(?&identifierminelabel)|\s*+\b(case\b(?beginconstantexpr)(?&primexpr):(?addCase)(?endconstantexpr)|default\s*+:(?addDefaultCase))\s*+)
+(?<identifierminelabel>\s*+(?<lbl>(?&identifierraw_qualified))\s*+:(?splitbb)\s*+)

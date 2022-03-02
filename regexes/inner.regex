@@ -1,25 +1,25 @@
 (?<inner>\s*+(((?<stringlit>((?<begincharliteral>"|'))
 						(?#C4<begincharliteral>)((?<escape>(?<escaperaw>\\(?(?=x)x[0-9a-fA-F]++|(?(?=0\d)0[0-7]++
 						|['"?\abfnrtv0]))))
-						(?{call "addescapesequencetostring"})|
-						(?<text>(?<textraw>((?!(?&escape)|(?&begincharliteral)).)++)(?{call "addplaintexttostring"})))*+(?&begincharliteral)
-						(?{call "add_literal"}))
-						|(?!((??{inc "facet"})(?&floating)(??{dec "facet"})))(?<numberliteral>(?<numberliteralraw>(?(?=0x)0x(?<hex>[0-9a-fA-F]++)|(?(?=0b)0b(?<bin>[01]++)
+						(?addescapesequencetostring)|
+						(?<text>(?<textraw>((?!(?&escape)|(?&begincharliteral)).)++)(?addplaintexttostring)))*+(?&begincharliteral)
+						(?add_literal))
+						|(?(?!(?&<floating>))(?<numberliteral>(?<numberliteralraw>(?(?=0x)0x(?<hex>[0-9a-fA-F]++)|(?(?=0b)0b(?<bin>[01]++)
 						|(?(?=0\d)0(?<oct>[0-7]++)|(?<dec>\d++))))(?<lng>[Uu](ll|LL|[lL])?+|(ll|LL|[lL])[Uu]?+)?+)
-						(?{call "num_lit"}))
-						|(?&floating)
+						(?num_lit))
+						|\g{floating})
 						|(?<identifier>\s*+
-						(?<ident>((??{inc "facet"})(?&identifierraw)(??{dec "facet"})))(?{call "obtainvalbyidentifier"})\s*+)))\s*+)
+						(?<ident>(?&identifierraw))(?obtainvalbyidentifier)\s*+)))\s*+)
 
 
 (?<floating>(?<fractional>(?<wholeopt>\d*+)\.(?<fraction>\d++)|(?<whole>\d++)\.)(?<exponent>[eE](?<signexp>[+-])?+\d++)?+
-	(?<suffixflt>[flFL])?+(?{call collect_float_literal})
-	|(?<wholenodot>\d++)(?<exponent>[eE](?<signexp>[+-])?+(?<exp>\d++))(?<suffixflt>[flFL])?+(?{call collect_float_literal}))
+	(?<suffixflt>[flFL])?+(?collect_float_literal)
+	|(?<wholenodot>\d++)(?<exponent>[eE](?<signexp>[+-])?+(?<exp>\d++))(?<suffixflt>[flFL])?+(?collect_float_literal))
 
 (?<identifierpure>(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9])*+)(::(?&identifierpure))?+)
 
-(?<identifierraw>\b(?<ident>(?&identifierpure))\b(??{checkident}))
-(?<identifierraw_qualified>\b(?<ident>(?&identifierpure))\b(??{checkidentpermissive}))
-(?<identifier_typedef>\b(?<ident>(?&identifierpure))\b(??{checktypedef}))
+(?<identifierraw>\b(?<ident>(?&identifierpure))\b(?checkident))
+(?<identifierraw_qualified>\b(?<ident>(?&identifierpure))\b(?checkidentpermissive))
+(?<identifier_typedef>\b(?<ident>(?&identifierpure))\b(?checktypedef))
 
-(?<typeorqualif>\b(?<ident>(?&identifierpure))\b(??{checktypeorqualif}))
+(?<typeorqualif>\b(?<ident>(?&identifierpure))\b(?checktypeorqualif))

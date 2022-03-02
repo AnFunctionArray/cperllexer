@@ -1,6 +1,6 @@
-(?<unary>(?<prefixarith>\s*+(?<prefixarithraw>[+][+]|--))(?&unaryexpr)(?{call "unaryincdec"})
-	|(((??{inc "facet"})(?&unaryop)(??{dec "facet"}))(?!(?&castexpr)))|(?&unaryop)((??{inc "facet"})(?&castexpr)(??{dec "facet"}))
-	|\s*+\bsizeof\b(?>(?&typename)(?{call "endsizeoftypename"})|(?&unaryexpr)(?{call "endsizeofexpr"})))
+(?<unary>(?<prefixarith>\s*+(?<prefixarithraw>[+][+]|--))(?&unaryexpr)(?unaryincdec)
+	|(*RECORD)(?&<unaryop>)(*STOP)(?(?!(?&<castexpr>))|\g{unaryop}(*REPLAY)\g{castexpr})
+	|\s*+\bsizeof\b(?>(?&typename)(?endsizeoftypename)|(?&unaryexpr)(?endsizeofexpr)))
 
 
-						(?<unaryop>\s*+(?<unop>[\&\*\+\-\~\!])(?{call "unary"}))
+						(?<unaryop>\s*+(?<unop>[\&\*\+\-\~\!])(?unary))

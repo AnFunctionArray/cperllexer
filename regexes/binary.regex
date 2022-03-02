@@ -9,8 +9,8 @@
     |(?(<oropraw>)(?&xoropraw)
     |(?(<andlogicopraw>)(?&oropraw)
     |(?(<orlogicopraw>)(?&andlogicopraw)
-    |(?<orlogicopraw>\|\|(?{call "begin_branch"})
-            |(?<andlogicopraw>&&(?{call "begin_branch"})
+    |(?<orlogicopraw>\|\|(?begin_branch)
+            |(?<andlogicopraw>&&(?begin_branch)
             |(?<oropraw>(?!\|\|)\|
             |(?<xoropraw>\^
             |(?<andopraw>(?!&&)&
@@ -20,12 +20,10 @@
             |(?<addopraw>[\+\-]
             |(?<mulopraw>[\*\/\%]))))))))))
             ))))))))))(?&castexpr)
-    (?&binopplusrest)*(?{call "binary"})))
+    (?&binopplusrest)*(?binary)))
 
 
-(?<orlogiorsomething>
-(??{use re 'eval'; qr{
+(?<[orlogiorsomething]>
 	((*F)$mainregexdefs)|
     (?&binopplusrest)*+
-}sxxno
 }))
