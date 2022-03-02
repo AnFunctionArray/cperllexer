@@ -1,5 +1,5 @@
 (?<inner>\s*+(((?<stringlit>((?<begincharliteral>"|'))
-						(?#C4<begincharliteral>)((?<escape>(?<escaperaw>\\(?(?=x)x[0-9a-fA-F]++|(?(?=0\d)0[0-7]++
+						((?<escape>(?<escaperaw>\\(?(?=x)x[0-9a-fA-F]++|(?(?=0\d)0[0-7]++
 						|['"?\abfnrtv0]))))
 						(?addescapesequencetostring)|
 						(?<text>(?<textraw>((?!(?&escape)|(?&begincharliteral)).)++)(?addplaintexttostring)))*+(?&begincharliteral)

@@ -1,4 +1,4 @@
-(?#<binoprest, binopraw>)
+
 (?<binopplusrest>(?<binop>(?<binoplast>
 (?(<addopraw>)(?&mulopraw)
     |(?(<shiftopraw>)(?&addopraw)
@@ -26,4 +26,4 @@
 (?<[orlogiorsomething]>
 	((*F)$mainregexdefs)|
     (?&binopplusrest)*+
-}))
+)

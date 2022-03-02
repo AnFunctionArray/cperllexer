@@ -32,27 +32,25 @@
 (?<identifierminedecl>\s*+(?<ident>(?&identifierraw_qualified))
 	(?identifier_decl)\s*+)
 
-(?#<Tabstrrest, Tabstrrestalt, Tinside>)
-
 (?<Tabstrrestalt>
-	(?(?<outterparams>)(?&abstrmostoutterparams)(?&abstrsubs)*+
-	|(?(?<outter>)(?&abstrmostoutter)(?&abstrsubs)*+
-	|(?(?<optoutter>)((?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++))))
+	(?(<outterparams>)(?&abstrmostoutterparams)(?&abstrsubs)*+
+	|(?(<outter>)(?&abstrmostoutter)(?&abstrsubs)*+
+	|(?(<optoutter>)((?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++))))
 	)
 
 (?<Tinside>
-	(?(?<outterparams>)(?&abstrmostoutterparams)
-	|(?(?<outter>)(?&abstrmostoutter)
-	|(?(?<optoutter>)(?&abstrmostoutteropt)?+))
+	(?(<outterparams>)(?&abstrmostoutterparams)
+	|(?(<outter>)(?&abstrmostoutter)
+	|(?(<optoutter>)(?&abstrmostoutteropt)?+))
 	))
 
 (?<param>(?&abstdeclorallqualifs(insideparams, bb)))
 
 (?<abstrsubs>\s*+(\[
-						(?(?<subsparams>)(?identifier_decl))
+						(?(<subsparams>)(?identifier_decl))
 						(?beginconstantexpr)(?&primexpr)\]
 						(?addsubtotype)(?endconstantexpr)
-						|[(](?(?<subsparams>)(?identifier_decl))
+						|[(](?(<subsparams>)(?identifier_decl))
 						((?&param(firstparam, nesteddecl))
 						(,(?&param(nesteddecl)))*|(?startfunctionparamdecl))
 						(?<rest>,?+\s*+\.\.\.\s*+)?+\s*+[)](?endfunctionparamdecl))\s*+)
@@ -68,12 +66,12 @@
 (?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
 
 (?<Tasbtdecloutter>
-	(?(?<insideparams>)(?&abstdecl(outterparams))
+	(?(<insideparams>)(?&abstdecl(outterparams))
 	|(?&abstdecl(outter)))
 	)
 
 (?<Tabstinitorbitfl>
-	(?(?<bitfl>)(?&abstrbitfield)|(?&abstrinitialization))
+	(?(<bitfl>)(?&abstrbitfield)|(?&abstrinitialization))
 	)
 
 (?<Tdecl>(?&Tasbtdecloutter)
@@ -82,7 +80,7 @@
 
 (?<declcomma>,(?&Tdecl))
 
-(?<[abstdeclorallqualifs]{
+(?<[abstdeclorallqualifs]>{
 	typefound,
 }>
 	(*RECORD)
