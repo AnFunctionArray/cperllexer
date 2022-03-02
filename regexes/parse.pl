@@ -177,7 +177,7 @@ my $defaultidentifiers = {};
 
 my $entryregex;
 
-my $matchinperl = 1;
+my $matchinperl = 0;
 
 chdir "regexes";
 
@@ -194,7 +194,7 @@ parseregexfile((substr $mainregexfilecontent, length $&), 1);
 
 $mainregexdefs = "$mainregexfinal";
 
-$mainregexdefs =~s/\s|\n//g if(not $matchinperl);
+$mainregexfinal =~s/\s|\n//g if(not $matchinperl);
 
 #$mainregexdefs = "$mainregexdefs|(?&&$entryregex)";
 
@@ -312,9 +312,14 @@ print $cached_instances{$entryregex};
 
 =cut
 
-print "$mainregexdefs\n";
+#print "$mainregexdefs\n";
 
-startmatching($subject, $mainregexfinal, basename($ARGV[0])) if(not $matchinperl);
+#$mainregexfinal = "((*F)$mainregexfinal)^(?&$entryregex)\$";
+
+#if(not $matchinperl) {
+#    startmatching($subject, $mainregexfinal, basename($ARGV[-1]));
+#    exit;
+#}
 
 #exit if(not $matchinperl);
 
@@ -359,6 +364,73 @@ sub obtainvalbyidentifier {
 =cut
 
 use Term::ANSIColor qw(:constants);
+
+while(1) {
+    while(eval {$mainregexfinal =~ m{
+    (?(DEFINE)
+    (?<members>)
+    (?<sub>[(]<(?<square>\[?+)\w++(?(?{$+{square}})\])>
+    ({(?<members>(\w++,)*+)})?+(?{call "regbeginsub"})(?&regex)*+[)]
+    (?{call "regfinish"}))
+
+    (?<group>[(](?{call "regbegingroup"})(?&regex)*+[)](?{call "regfinish"}))
+
+    (?<call>[(][?](?<ampersand>&?+)
+    (?<args>)
+    (?<angular><?+)(?<callee>\w++)(?({$+{angular}})>)
+    ([(](?<args>\w++(,\w++)*+)[)])?+(?{call "regcall"})[)])
+
+    (?<lookaround>[(][?](?<sign>[!=])
+    (?{call "regbeginlookaround"})(?&regex)*+[)](?{call "regfinish"}))
+
+    (?<escapechar>\\(?<char>.)(?{call "regescapechar"}))
+
+    (?<char>(?(?=\\)(?&escapechar)|(?<char>[^\[\]?*+{()}|])
+    (?{call "regchar"})))
+
+    (?<sequence>\[(?<not>\^?+)(?{cal regbeginseq})
+    (\\?+(?<char>.)(?<to>)(-(?<to>(?&seqchar)))?+
+    (?{call "regendseq"}))
+    ((?(?=\\)\\(?<char>.)|(?<char>[^]]))
+    (-(?(?=\\)\\(?<to>.)|(?<to>[^]])))?+(?{call "regendseq"}))*+\]
+    (?{call "regfinish"}))
+
+    (?<conditional>[(][?](?(?=(?<lookaround>(?&lookaround)))
+    \g{lookaround}(?{call "regbegincond"})
+    |(?<lookaround>)
+    [(]<(?<name>\w++)>[)](?{call "regbegincond"}))(?&regex)*+[)]
+    (?{call "regfinish"}))
+
+    (?<verb>[(][*](?<verb>[A-Z]++)[)](?{call "regverb"}))
+
+    (?<regexinner>(?(?=(?<match>(?&conditional)))
+    \g{match}|(?(?=(?<match>(?&lookaround))
+    \g{match}|(?(?=(?<match>(?&call)))
+    \g{match}|(?(?=(?<match>(?&sub)))
+    \g{match}|(?(?=(?<match>(?&verb)))
+    \g{match}|(?(?=(?<match>(?&sequence)))
+    \g{match}|(?(?=(?<match>(?&group)))
+    \g{match}|(?&char)
+    )))))))))
+
+    (?<regex>(?&regexinner)(?<qualif>([*+?][+?]?+)?+)
+    ([|](?{call "regbranch"})(?&regexinner))*+)
+    )
+    (?{call "regbegingroup"})
+    ^(?&regex)$
+    (?{call "regfinish"})
+    }sxx}){
+
+    }
+    if($@) {
+        warn $@;
+        undef $facet
+    } else {
+        last
+    }
+}
+
+exit;
 
 if(not $isnested)
 {

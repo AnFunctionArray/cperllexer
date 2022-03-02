@@ -9,8 +9,10 @@ add_custom_command(
 
 find_package(PerlLibs 5.35)
 
-if(NOT DEFINED ${LLVM_CONFIG})
+if(NOT DEFINED ENV{LLVM_CONFIG})
     set(LLVM_CONFIG "llvm-config")
+else()
+    set(LLVM_CONFIG $ENV{LLVM_CONFIG})
 endif()
 
 execute_process(COMMAND ${LLVM_CONFIG} --libs all
@@ -34,9 +36,9 @@ target_link_directories(regularc PRIVATE ${llvm_libdir})
 
 find_package(range-v3 CONFIG REQUIRED)
 
-target_link_libraries(regularc PRIVATE ${llvm_libraries} -rdynamic ${PERL_LIBRARY} -lpthread range-v3 range-v3-meta range-v3::meta range-v3-concepts -lz -lcurses -ldl)
+target_link_libraries(regularc PRIVATE ${llvm_libraries} -fsanitize=address,undefined -rdynamic ${PERL_LIBRARY} -lpthread range-v3 range-v3-meta range-v3::meta range-v3-concepts -lz -lcurses -ldl)
 
-target_compile_options(regularc PRIVATE -rdynamic -Ofast -g -DNDEBUG)
+target_compile_options(regularc PRIVATE -rdynamic -O0 -fsanitize=address,undefined -g -DNDEBUG)
 
 target_include_directories(regularc PRIVATE ${PERL_INCLUDE_PATH} ${llvm_includes} src)
 

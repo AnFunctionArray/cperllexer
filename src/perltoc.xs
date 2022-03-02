@@ -12,8 +12,8 @@ MODULE = AnFunctionArray
 
 PROTOTYPES: ENABLE
 
-=pod
-void startmatching(SV *in, SV *in1, SV *in2)
+
+extern void startmatching(SV *in, SV *in1, SV *in2)
 PREINIT:
     STRLEN len;
     STRLEN secondlen;
@@ -30,7 +30,7 @@ CODE:
         secondmain(s, len, s1, secondlen, s2, thirdlen);
     }
 
-
+=pod
 #SV *
 void callout(SV *in, ...)
 PREINIT:

@@ -29,6 +29,7 @@
 #include <llvm/Support/Error.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 #include <locale>
+#include <ostream>
 #include <queue>
 #include <range/v3/algorithm/contains.hpp>
 #include <range/v3/algorithm/find.hpp>
@@ -4274,6 +4275,21 @@ static std::list<val>& immidiates;
 std::list<val>& bindings_compiling::immidiates = ::immidiates;
 
 #endif
+
+extern "C" int secondmain(char *subject, size_t szsubject, char *pattern, size_t szpattern, char *modulename, size_t szmodulename) {
+	std::string strsubject{subject, szsubject};
+	std::string strpattern{pattern, szpattern};
+	std::string strmodule{modulename, szmodulename};
+
+	std::cout << strsubject << std::endl;
+	std::cout << strpattern << std::endl;
+	std::cout << strmodule << std::endl;
+
+
+
+	//startmodule(modulename, szmodulename);
+	return 0;
+}
 
 
 extern "C" {
