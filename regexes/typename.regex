@@ -1,8 +1,7 @@
 
 
 (?<qualifs>(?<typesandqualifiers>\s*+
-						(?<typesandqualifiersmask>(?&typeorqualif))
-						(??{inc "facet"})(?{call "add_type_or_qualifier"})(??{dec "facet"})\s*+))
+						(?<typesandqualifiersmask>(?&typeorqualif))\s*+))
 
 (?<align>\s*+\b__declspec[(]\s*+\balign[(]\s*+(?<align>(?&numberliteralraw))\s*+[)]\s*+[)]\s*+)
 

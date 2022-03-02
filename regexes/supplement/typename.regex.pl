@@ -122,13 +122,19 @@ sub checkidentpermissive {
 
 sub checktypeorqualif {
     #print "checking". $+{ident} . "\n";
+    inc2 "facet";
     if (exists $typeandqualifs{$+{ident}}) {
         print "$+{ident} -> qualifortype\n";
         if(exists $types{$+{ident}}) {
             eval {$typefound[-1] = $+{ident}};
+            call "add_type"
+        } else {
+            call "add_qualif"
         }
+        dec2 "facet";
         return $ok 
     }
+    dec2 "facet";
     return $notok;
 }
 

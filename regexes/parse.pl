@@ -27,19 +27,20 @@ my $inpar = qr{(?<inpar>\((?<inner>(([^][()\\]|\\.)++|(?&inpar)
                         |(?<insquare>\[\^?+(.|\\.)(([^]\\]|\\.)++
                         |(?&insquare))*\]))*)\))}xxs;
 
-$filename = $ARGV[1];
+$filename = $ARGV[0];
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
 my $subject = do { local $/; <$fh> };
 
 close $fh;
-
+=begin
 $filename = $ARGV[0];
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
 my $proxy = do { local $/; <$fh> };
 
 close $fh;
+=cut
 
 $typedef_regex = qr{(*F)}sxxn;
 
@@ -361,12 +362,12 @@ use Term::ANSIColor qw(:constants);
 
 if(not $isnested)
 {
-    my $i = 2;
+    #my $i = 2;
     use if $ENV{'DEBUG'}, re => qw(Debug EXECUTE); 
     #while(1) {
     #require "extractfns.pm";
     if($ENV{'REPLAY'}) {
-        @typedefidentifiersvector = eval { require "$ENV{REPLAY}.txt"}
+        @typedefidentifiersvector = eval { require $ENV{'REPLAY'} . ".txt"}
     }
     while(1) {
         while(eval {$subject =~ m{((*F)$mainregexdefs)|\G(?>(?&$entryregex))}sxxngc}){

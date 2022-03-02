@@ -1,6 +1,7 @@
 //#include "llvmgen.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Value.h"
+#include <cstdlib>
 #include <exception>
 #include <iterator>
 #include <array>
@@ -3324,6 +3325,7 @@ DLL_EXPORT void startmodule(const char* modulename, size_t szmodulename) {
 			else {
 				std::getline(replay, value, '\0');
 				docall(value.c_str(), value.length(), &map);
+				map.clear();
 			}
 		} while(!replay.eof());
 	}
@@ -3345,11 +3347,13 @@ extern "C" pthread_t thread;
 std::ofstream record{getenv("RECORD") ? getenv("RECORD") : "", std::ios::binary};
 
 DLL_EXPORT void endmodule() {
-	mutexwork.lock();
-	endwork = true;
-	mutexwork.unlock();
-	condwake.notify_one();
-	pthread_join(thread, nullptr);
+	if(getenv("THREADING")) {
+		mutexwork.lock();
+		endwork = true;
+		mutexwork.unlock();
+		condwake.notify_one();
+		pthread_join(thread, nullptr);
+	}
 	std::error_code code{};
 	llvm::raw_fd_ostream output{
 		std::string{nonconstructable.mainmodule.getName()} + ".bc", code },
@@ -4003,12 +4007,14 @@ virtual void end_param_list_48() {
 
 }
 #endif
-DLL_EXPORT void add_type_or_qualifier(std::unordered_map<unsigned, std::string>&hashes) {
+DLL_EXPORT void add_type(std::unordered_map<unsigned, std::string>&hashes) {
 	auto& lastvar = currtypevectorbeingbuild.back().p->back();
-	if(hashes["storageclass"_h].size())
-		lastvar.linkage = hashes["storageclass"_h];
-	else if (hashes["typesandqualifiersmask"_h].size())
-		parsebasictype({ hashes["typesandqualifiersmask"_h] }, lastvar.type.back().spec.basicdeclspec);
+	parsebasictype({ hashes["ident"_h] }, lastvar.type.back().spec.basicdeclspec);
+}
+
+DLL_EXPORT void add_qualif(std::unordered_map<unsigned, std::string>&hashes) {
+	auto& lastvar = currtypevectorbeingbuild.back().p->back();
+	lastvar.linkage = hashes["storageclass"_h];
 }
 
 DLL_EXPORT void add_tag(std::unordered_map<unsigned, std::string>&hashes) {
@@ -4330,15 +4336,22 @@ DLL_EXPORT void do_callout(SV * in, HV * hash)
 
 	pinstr = SvPVutf8(in, inlen);
 
-	record.write(nill, 1);
-	record.write(pinstr, inlen);
-	record.write(nill, 1);
+	if(record.is_open()) {
 
-	mutexwork.lock();
+		record.write(nill, 1);
+		record.write(pinstr, inlen);
+		record.write(nill, 1);
+	} else {
+		if(getenv("THREADING")) {
+			mutexwork.lock();
 
-	callstack.push({map, std::string{pinstr, inlen}});
+			callstack.push({map, std::string{pinstr, inlen}});
 
-	mutexwork.unlock();
+			mutexwork.unlock();
 
-	condwake.notify_one();
+			condwake.notify_one();
+		} else {
+			docall(pinstr, inlen, &map);
+		}
+	}
 }

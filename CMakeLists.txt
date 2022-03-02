@@ -10,7 +10,7 @@ add_custom_command(
 find_package(PerlLibs 5.35)
 
 if(NOT DEFINED ${LLVM_CONFIG})
-    set(LLVM_CONFIG, "llvm-config")
+    set(LLVM_CONFIG "llvm-config")
 endif()
 
 execute_process(COMMAND ${LLVM_CONFIG} --libs all

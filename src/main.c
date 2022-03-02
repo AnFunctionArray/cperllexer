@@ -305,8 +305,10 @@ int main(int argc, const char** argv, char** env)
 #endif
 	//onig_initialize();
 	signal(SIGTERM, handler1);
-	void *wait_for_call(void*);
-	pthread_create(&thread, 0, wait_for_call, 0);
+	if(getenv("THREADING")) {
+		void *wait_for_call(void*);
+		pthread_create(&thread, 0, wait_for_call, 0);
+	}
 	PERL_SYS_INIT3(&argc, &argv, &env);
 	my_perl = perl_alloc();
 	perl_construct(my_perl);
