@@ -160,10 +160,17 @@ my $mainregexfilecontent = do { local $/; <$fh> };
 
 close $fh;
 
-$filename = "./utility/regex.regex";
+$filename = "regexes/regexmeta.regex";
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
 my $metaregexfilecontent = do { local $/; <$fh> };
+
+close $fh;
+
+$filename = "./utility/regex.regex";
+open my $fh, '<', $filename or die "error opening $filename: $!";
+
+my $utilregexfilecontent = do { local $/; <$fh> };
 
 close $fh;
 
@@ -181,7 +188,7 @@ my $matchinperl = 0;
 
 chdir "regexes";
 
-$mainregexfilecontent =~/$metaregexfilecontent/;
+$mainregexfilecontent =~/$utilregexfilecontent/;
 
 chdir "..";
 
@@ -956,66 +963,8 @@ $subject = $mainregexfinal;
 
 while(1) {
     use if $ENV{'DEBUG'}, re => qw(Debug EXECUTE); 
-    if(eval {$mainregexfinal =~ m{
-    (?(DEFINE)
-    (?<members>)
-    (?<sub>[(][?]<(?<square>\[?+)\w++(?(?{$+{square}})\])>
-    ([{](?<members>(\w++,)*+)})?+(?{call "regbeginsub"})(?&regex)[)]
-    (?{call "regfinish"}))
-
-    (?<group>[(](?{call "regbegingroup"})(?&regex)[)](?{call "regfinish"}))
-
-    (?<call>[(][?]
-    (?<args>)(?<angular>)
-    (?<ampersand>(&(?<angular><?+))?+)
-    (?<callee>\w++)(?(?{$+{angular}})>)
-    (?(<ampersand>)([(](?<args>\w++(,\w++)*+)[)])?+)(?{call "regcall"})[)])
-
-    (?<lookaround>[(][?](?<sign>[!=])
-    (?{call "regbeginlookaround"})(?&regex)[)](?{call "regfinish"}))
-
-    (?<atomic>[(][?]>(?{call "regbeginatomic"})(?&regex)[)](?{call "regfinish"}))
-
-    (?<char>(?(?=\\)(?&escapechar)|(?<char>[^\[\]?*+{()}|])
-    (?{call "regchar"})))
-
-    (?<escapechar>\\(?<char>[^g])(?{call "regescapechar"}))
-
-    (?<backreference>\\g[{](?<name>\w++)[}](?{call "regbackref"}))
-
-    (?<sequence>\[(?<not>\^?+)(?{call "regbeginseq"})
-    (\\?+(?<char>.)(?<to>)(-(?<to>(?(?=\\)\\(?<to>.)|(?<to>[^]]))))?+
-    (?{call "regendseq"}))
-    ((?(?=\\)\\(?<char>.)|(?<char>[^]]))
-    (?<to>)(-(?(?=\\)\\(?<to>.)|(?<to>[^]])))?+(?{call "regendseq"}))*+\]
-    (?{call "regfinish"}))
-
-    (?<conditional>[(][?](?(?=(?<lookaround>(?&lookaround)))
-    \g{lookaround}(?{call "regbegincond"})
-    |(?<lookaround>)
-    [(]<(?<name>\w++)>[)](?{call "regbegincond"}))(?&regex)[)]
-    (?{call "regfinish"}))
-
-    (?<verb>[(][*](?<verb>[A-Z]++)[)](?{call "regverb"}))
-
-    (?<regexinner>(?(?=(?<match>(?&conditional)))
-    \g{match}|(?(?=(?<match>(?&lookaround)))
-    \g{match}|(?(?=(?<match>(?&call)))
-    \g{match}|(?(?=(?<match>(?&sub)))
-    \g{match}|(?(?=(?<match>(?&verb)))
-    \g{match}|(?(?=(?<match>(?&atomic)))
-    \g{match}|(?(?=(?<match>(?&sequence)))
-    \g{match}|(?(?=(?<match>(?&group)))
-    \g{match}|(?(?=(?<match>(?&backreference)))
-    \g{match}|(?(?=(?<match>(?&char)))
-    \g{match}|(?{call "regnothing"})
-    ))))))))))((?<qualif>[*+?][+?]?+)(?{call "regaddquantif"}))?+)
-
-    (?<regex>(?&regexinner)++([|](?{call "regbranch"})(?&regexinner)++)*+)
-    )
-    ^(?{call "regbegingroup"})
-    (?&regex)
-    (?{call "regfinish"})$
+    if(eval {$mainregexfinal =~ m{(?(DEFINE)$metaregexfilecontent)
+        ^(?&regex)$
     }sxx}){
         print "success\n"
     }

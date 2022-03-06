@@ -1,6 +1,7 @@
 //#include "llvmgen.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Value.h"
+#include "llvm/Support/Allocator.h"
 #include <cstdlib>
 #include <exception>
 #include <iterator>
@@ -4341,7 +4342,8 @@ DLL_EXPORT void do_callout(SV * in, HV * hash)
 	std::unordered_map<unsigned, std::string> map;
 	while (value = hv_iternextsv(hash, &key, &key_length)) {
 		pinstr = SvPVutf8(value, inlen);
-		if(record.is_open() && inlen) {
+		if(!inlen) continue;
+		if(record.is_open()) {
 			record.write(pinstr, inlen);
 			record.write(nill, 1);
 			record.write(reinterpret_cast<const char(&)[4]>(std::move(stringhash(std::string{key, (size_t)key_length}.c_str()))), 4);
@@ -4370,4 +4372,238 @@ DLL_EXPORT void do_callout(SV * in, HV * hash)
 			docall(pinstr, inlen, &map);
 		}
 	}
+}
+
+struct charinfotype {
+	struct singlechar {
+		char what;
+		bool isescape;
+	} what, to;
+	bool isrange;
+};
+
+struct operation {
+	enum TYPE {
+		CALL,
+		CALLBACK,
+		IFMATCH,
+		CHAR,
+		CONDITION,
+		VERB,
+		BRANCH,
+
+		NONE
+	} type;
+
+	union {
+		struct {
+			std::string callee;
+			std::list<std::string> args;
+		} infocalltype;
+		struct {
+			bool isnegative;
+		} infoifmatch;
+		struct {
+			bool isopposite;
+			std::list<charinfotype> constraints;
+		} infoconstraints;
+		std::string infogroupname;
+		std::string infoverb;
+	};
+
+	std::string quantifier;
+
+	template<class type>
+	operation& operator=(type &&src) requires (std::is_same_v<std::remove_reference_t<type>, operation>) {
+		assert(src.type == this->type);
+		switch(src.type)
+		if(0) case CALL: case CALLBACK:
+			infocalltype = src.infocalltype;
+		else if(0) case CHAR:
+			infoconstraints = src.infoconstraints;
+		else if(0) case CONDITION:
+			infogroupname = src.infogroupname;
+		else if(0) case VERB:
+			infoverb = src.infoverb;
+		this->type = src.type;
+		return *this;
+	}
+
+private:
+	static void construct_operation(TYPE type, operation &refthis) {
+		switch(type)
+		if(0) case CALL: case CALLBACK:
+			new (&refthis.infocalltype) decltype(refthis.infocalltype){};
+		else if(0) case CHAR:
+			new (&refthis.infoconstraints) decltype(refthis.infoconstraints){};
+		else if(0) case CONDITION:
+			new (&refthis.infogroupname) decltype(refthis.infogroupname){};
+		else if(0) case VERB:
+			new (&refthis.infoverb) decltype(refthis.infoverb){};
+		refthis.type = type;
+	}
+
+	static void destruct_operation(operation &refthis) {
+		switch(refthis.type)
+		if(0) case CALL: case CALLBACK:
+			(&refthis.infocalltype)->~decltype(refthis.infocalltype)();
+		else if(0) case CHAR:
+			(&refthis.infoconstraints)->~decltype(refthis.infoconstraints)();
+		else if(0) case CONDITION:
+			(&refthis.infogroupname)->~decltype(refthis.infogroupname)();
+		else if(0) case VERB:
+			(&refthis.infoverb)->~decltype(refthis.infoverb)();
+	}
+
+	friend struct reggroup;
+};
+
+struct reggroup {
+	void init(operation::TYPE type) {
+		operation::construct_operation(type, reinterpret_cast<operation&>(operationstorage));
+	}
+	reggroup() {
+		reinterpret_cast<operation&>(operationstorage).type = operation::NONE;
+	}
+	reggroup(operation::TYPE type) {
+		init(type);
+	}
+	template<class type>
+	reggroup(type &&src) {
+		init(src->type);
+		reinterpret_cast<operation&>(operationstorage) = *src.operator->();
+	}
+	~reggroup() {
+		operation::destruct_operation(reinterpret_cast<operation&>(operationstorage));
+	}
+	std::string name;
+	bool isisolated = false;
+	std::list<std::string> entitlementgroups;
+	bool isatomic = false;
+	operation *operator->() {
+		return &reinterpret_cast<operation&>(operationstorage);
+	}
+	std::aligned_storage_t<sizeof(operation)> operationstorage;
+	std::list<reggroup> ops;
+	reggroup *priorgroup{}, *nextgroup{};
+};
+
+static std::list<struct reggroup> groups(1);
+
+static reggroup *currgroup{&groups.back()};
+
+static std::list<std::list<reggroup>::iterator> namedgroups;
+
+struct regcommit : reggroup {
+	~regcommit() {
+		currgroup->ops.push_back(*this);
+
+		::reggroup *priorgroup = currgroup;
+
+		currgroup = &currgroup->ops.back();
+
+		priorgroup->nextgroup = currgroup;
+		
+		currgroup->priorgroup = priorgroup;
+	}
+};
+
+struct regcontinue : reggroup {
+	~regcontinue() {
+		currgroup->ops.push_back(*this);
+	}
+};
+
+DLL_EXPORT void regbeginsub(std::unordered_map<unsigned, std::string> && hashes) {
+	regcommit reggroup;
+
+	reggroup.name = hashes["name"_h];
+	reggroup.isisolated = !hashes["square"_h].empty();
+}
+
+DLL_EXPORT void regaddentitlement(std::unordered_map<unsigned, std::string> && hashes) {
+	currgroup->entitlementgroups.push_back(hashes["entitlement"_h]);
+}
+
+DLL_EXPORT void regbegingroup(std::unordered_map<unsigned, std::string> && hashes) {
+	regcommit reggroup;
+	reggroup.isatomic = !hashes["atomic"_h].empty();
+}
+
+DLL_EXPORT void regcall(std::unordered_map<unsigned, std::string> && hashes) {
+	regcontinue op({hashes["ampersand"_h].empty() ? operation::CALLBACK : operation::CALL});
+
+	op->infocalltype.callee = hashes["callee"_h];
+	if(!hashes["angular"_h].empty())
+		op.name = hashes["callee"_h];
+}
+
+DLL_EXPORT void regaddarg(std::unordered_map<unsigned, std::string> && hashes) {
+	currgroup->operator->()->infocalltype.args.push_back(hashes["arg"_h]);
+}
+
+DLL_EXPORT void regbeginlookaround(std::unordered_map<unsigned, std::string> && hashes) {
+
+	regcommit op({operation::IFMATCH});
+
+	op->infoifmatch.isnegative = hashes["sign"_h] == "!";
+}
+
+DLL_EXPORT void regbeginseq(std::unordered_map<unsigned, std::string> && hashes) {
+
+	regcommit newgroup{operation::CHAR};
+
+	newgroup->infoconstraints.isopposite = !hashes["not"_h].empty();
+}
+
+DLL_EXPORT void regcharseq(std::unordered_map<unsigned, std::string> && hashes) {
+	charinfotype constraint;
+
+	constraint.what.isescape = !hashes["escapechar"_h].empty();
+	constraint.what.what = hashes["char"_h][0];
+
+	if(!hashes["to"_h].empty()) {
+		constraint.what.isescape = !hashes["escapeto"_h].empty();
+		constraint.what.what = hashes["to"_h][0];
+		constraint.isrange = true;
+	}
+
+	currgroup->operator->()->infoconstraints.constraints.push_back(constraint);
+}
+DLL_EXPORT void regfinish() ;
+
+DLL_EXPORT void regchar(std::unordered_map<unsigned, std::string> && hashes) {
+	regcontinue op{operation::CHAR};
+	reggroup *priorcurrgroup=&currgroup->ops.back();
+	std::swap(priorcurrgroup, currgroup);
+	regcharseq(std::move(hashes));
+	std::swap(priorcurrgroup, currgroup);
+}
+
+DLL_EXPORT void regbegincond(std::unordered_map<unsigned, std::string> && hashes) {
+	regcommit newgroup;
+
+	newgroup.init(operation::CONDITION);
+
+	newgroup->infogroupname = std::string{hashes["name"_h]};
+}
+
+DLL_EXPORT void regverb(std::unordered_map<unsigned, std::string> && hashes) {
+	regcontinue newgroup;
+
+	newgroup.init(operation::VERB);
+
+	newgroup->infoverb = hashes["verb"_h];
+}
+
+DLL_EXPORT void regbranch() {
+	(void)regcontinue{operation::BRANCH};
+}
+
+DLL_EXPORT void regaddquantif(std::unordered_map<unsigned, std::string> && hashes) {
+	currgroup->operator->()->quantifier = hashes["quantifiers"_h];
+}
+
+DLL_EXPORT void regfinish() {
+	currgroup = ::currgroup->priorgroup;
 }
