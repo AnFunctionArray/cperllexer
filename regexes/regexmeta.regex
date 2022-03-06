@@ -1,0 +1,49 @@
+
+    (?<sub>[(][?]<(?<square>\[?+)(?<name>\w++)(?(?{$+{square}})\])>(?{call "regbeginsub"})
+    ([{]((?<entitlement>\w++),(?{call "regaddentitlement"}))*+})?+(?&regex)[)]
+    (?{call "regfinish"}))
+
+    (?<group>[(](?<atomic>([?][>])?+)(?{call "regbegingroup"})(?&regex)[)](?{call "regfinish"}))
+
+    (?<call>[(][?]
+    (?<args>)(?<angular>)
+    (?<ampersand>(&(?<angular><?+))?+)
+    (?<callee>\w++)(?(?{$+{angular}})>)(?{call "regcall"})
+    (?(?{$+{ampersand}})([(](?<arg>\w++)(?{call "regaddarg"})(,(?<arg>\w++)(?{call "regaddarg"}))*+[)])?+)[)])
+
+    (?<lookaround>[(][?](?<sign>[!=])
+    (?{call "regbeginlookaround"})(?&regex)[)](?{call "regfinish"}))
+
+    (?<char>(?(?=(?<escapechar>\\))\\(?<char>[^g])(?{call "regchar"})|(?<escapechar>)(?<char>[^\[\]?*+{()}|])
+    (?{call "regchar"})))
+
+    (?<backreference>\\g[{](?<name>\w++)[}](?{call "regbackref"}))
+
+    (?<escapetooptional>(?<to>)(-(?(?=\\)(?<escapeto>\\)(?<to>.)|(?<escapeto>)(?<to>[^]])))?+
+    (?{call "regcharseq"}))
+
+    (?<sequence>\[(?<not>\^?+)(?{call "regbeginseq"})
+    (?<escapechar>\\?+)(?<char>.)(?&escapetooptional)
+    ((?(?=\\)(?<escapechar>\\)(?<char>.)|(?<escapechar>)(?<char>[^]]))(?&escapetooptional))*+\]
+    (?{call "regfinish"}))
+
+    (?<conditional>[(][?](?(?=(?<lookaround>(?&lookaround)))
+    \g{lookaround}(?<name>)(?{call "regbegincond"})
+    |[(]<(?<name>\w++)>[)](?{call "regbegincond"}))(?&regex)[)]
+    (?{call "regfinish"}))
+
+    (?<verb>[(][*](?<verb>[A-Z]++)[)](?{call "regverb"}))
+
+    (?<regexinner>(?(?=(?<match>(?&conditional)))
+    \g{match}|(?(?=(?<match>(?&lookaround)))
+    \g{match}|(?(?=(?<match>(?&call)))
+    \g{match}|(?(?=(?<match>(?&sub)))
+    \g{match}|(?(?=(?<match>(?&verb)))
+    \g{match}|(?(?=(?<match>(?&sequence)))
+    \g{match}|(?(?=(?<match>(?&group)))
+    \g{match}|(?(?=(?<match>(?&backreference)))
+    \g{match}|(?(?=(?<match>(?&char)))
+    \g{match}|
+    )))))))))((?<quantifiers>[*+?][+?]?+)(?{call "regaddquantif"}))?+)
+
+    (?<regex>(?&regexinner)++([|](?{call "regbranch"})(?&regexinner)++)*+)
