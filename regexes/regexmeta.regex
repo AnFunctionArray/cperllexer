@@ -27,9 +27,9 @@
     ((?(?=\\)(?<escapechar>\\)(?<char>.)|(?<char>[^]]))(?&escapetooptional)(?<escapechar>))*+\]
     (?{call "regfinish"}))
 
-    (?<conditional>[(][?](?(?=(?<lookaround>(?&lookaround)))
-    \g{lookaround}(?<name>)(?{call "regbegincond"})
-    |[(]<(?<name>\w++)>[)](?{call "regbegincond"}))(?&regex)[)]
+    (?<conditional>[(][?](??{startrecord})(?(?=(?<lookaround>(?&lookaround)))
+    \g{lookaround}(?{call2 "regchecklookaround"})
+    |[(]<(?<name>\w++)>[)](??{stoprecord})(?{call "regcheckname"}))(?&regex)[)]
     (?{call "regfinish"}))
 
     (?<verb>[(][*](?<verb>[A-Z]++)[)](?{call "regverb"}))

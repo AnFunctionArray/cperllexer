@@ -508,7 +508,7 @@ sub call {
             print "pushing to " . scalar @savedcallouts . "\n";
             push @{$savedcallouts[-1]}, {$funcnm => $captures};
             print "success\n";
-        } if($isrecord);
+        };
         return
     }
     return callcommon($funcnm, $captures, $facet)
@@ -984,7 +984,22 @@ sub regendinner {
 
     pop @savedcallouts;
 
-    push @{$savedcallouts[-1]}, {"regaddquantif" => {%+}} if($+{quantifiers});
+    #push @{$savedcallouts[-1]}, {"regaddquantif" => {%+}} 
+    $reginner[0]->{"regquantif"} = $+{quantifiers} if($+{quantifiers});
+
+    @{$savedcallouts[-1]} = (@{$savedcallouts[-1]}, @reginner);
+}
+
+sub regchecklookaround {
+    my @reginner = @{$savedcallouts[-1]};
+
+    #print Dumper @savedcallouts;
+
+    pop @savedcallouts;
+
+    $reginner[0]->{"regcondlookaround"} = undef;
+
+    #push @{$savedcallouts[-1]}, {"regcondlookaround" => {%+}};
 
     @{$savedcallouts[-1]} = (@{$savedcallouts[-1]}, @reginner);
 }
@@ -1016,7 +1031,11 @@ sub regend {
 }
 
 sub startrecord {
-    return qr{((?{set2 {'savedcallouts' => []}; inc2 'isrecord'})|(?{unset2 'savedcallouts'; dec2 'isrecord'})(*F))}
+    return qr{((?{set2 {'savedcallouts' => []}})|(?{unset2 'savedcallouts'})(*F))}
+}
+
+sub stoprecord {
+    return qr{((?{unset2 'savedcallouts'})|(?{set2 {'savedcallouts' => []}})(*F))}
 }
 
 $subject = $mainregexfinal;
@@ -1113,11 +1132,12 @@ for(;1;++$currindex) {
 
             @entitlements = (@entitlements, @newentitlements);
         }
-        when("regbegincond") {
-            
-        }
         
     }
+
+    #check quantifs
+
+    
 }
 
 
