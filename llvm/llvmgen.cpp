@@ -1940,7 +1940,7 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 
 	std::list<::var>::reverse_iterator var{};
 
-	std::find_if(scopevar.rbegin(), scopevar.rend(),
+	(void)std::find_if(scopevar.rbegin(), scopevar.rend(),
 		[&](std::list<::var>& scope) {
 			auto iter =
 				std::find_if(scope.rbegin(), scope.rend(),
@@ -4277,21 +4277,6 @@ std::list<val>& bindings_compiling::immidiates = ::immidiates;
 
 #endif
 
-extern "C" int secondmain(char *subject, size_t szsubject, char *pattern, size_t szpattern, char *modulename, size_t szmodulename) {
-	std::string strsubject{subject, szsubject};
-	std::string strpattern{pattern, szpattern};
-	std::string strmodule{modulename, szmodulename};
-
-	std::cout << strsubject << std::endl;
-	std::cout << strpattern << std::endl;
-	std::cout << strmodule << std::endl;
-
-
-
-	//startmodule(modulename, szmodulename);
-	return 0;
-}
-
 
 extern "C" {
 #include <EXTERN.h> /* from the Perl distribution     */
@@ -4330,6 +4315,8 @@ extern "C" void *wait_for_call(void*) {
 	return nullptr;
 }
 
+static std::list<std::pair<std::unordered_map<unsigned, std::string>, std::string>> recordstack;
+
 DLL_EXPORT void do_callout(SV * in, HV * hash)
 {
 
@@ -4343,7 +4330,7 @@ DLL_EXPORT void do_callout(SV * in, HV * hash)
 	while (value = hv_iternextsv(hash, &key, &key_length)) {
 		pinstr = SvPVutf8(value, inlen);
 		if(!inlen) continue;
-		if(record.is_open()) {
+		if(record.is_open() && recordstack.empty()) {
 			record.write(pinstr, inlen);
 			record.write(nill, 1);
 			record.write(reinterpret_cast<const char(&)[4]>(std::move(stringhash(std::string{key, (size_t)key_length}.c_str()))), 4);
@@ -4354,7 +4341,9 @@ DLL_EXPORT void do_callout(SV * in, HV * hash)
 
 	pinstr = SvPVutf8(in, inlen);
 
-	if(record.is_open()) {
+	if(!recordstack.empty()) {
+		recordstack.push_back({map, std::string{pinstr, inlen}});
+	} else if(record.is_open()) {
 
 		record.write(nill, 1);
 		record.write(pinstr, inlen);
@@ -4374,236 +4363,38 @@ DLL_EXPORT void do_callout(SV * in, HV * hash)
 	}
 }
 
-struct charinfotype {
-	struct singlechar {
-		char what;
-		bool isescape;
-	} what, to;
-	bool isrange;
-};
+DLL_EXPORT void startrecording() {
+	recordstack.push_back({});
+}
 
-struct operation {
-	enum TYPE {
-		CALL,
-		CALLBACK,
-		IFMATCH,
-		CHAR,
-		CONDITION,
-		VERB,
-		BRANCH,
-
-		NONE
-	} type;
-
-	union {
-		struct {
-			std::string callee;
-			std::list<std::string> args;
-		} infocalltype;
-		struct {
-			bool isnegative;
-		} infoifmatch;
-		struct {
-			bool isopposite;
-			std::list<charinfotype> constraints;
-		} infoconstraints;
-		std::string infogroupname;
-		std::string infoverb;
-	};
-
-	std::string quantifier;
-
-	template<class type>
-	operation& operator=(type &&src) requires (std::is_same_v<std::remove_reference_t<type>, operation>) {
-		assert(src.type == this->type);
-		switch(src.type)
-		if(0) case CALL: case CALLBACK:
-			infocalltype = src.infocalltype;
-		else if(0) case CHAR:
-			infoconstraints = src.infoconstraints;
-		else if(0) case CONDITION:
-			infogroupname = src.infogroupname;
-		else if(0) case VERB:
-			infoverb = src.infoverb;
-		this->type = src.type;
-		return *this;
-	}
-
-private:
-	static void construct_operation(TYPE type, operation &refthis) {
-		switch(type)
-		if(0) case CALL: case CALLBACK:
-			new (&refthis.infocalltype) decltype(refthis.infocalltype){};
-		else if(0) case CHAR:
-			new (&refthis.infoconstraints) decltype(refthis.infoconstraints){};
-		else if(0) case CONDITION:
-			new (&refthis.infogroupname) decltype(refthis.infogroupname){};
-		else if(0) case VERB:
-			new (&refthis.infoverb) decltype(refthis.infoverb){};
-		refthis.type = type;
-	}
-
-	static void destruct_operation(operation &refthis) {
-		switch(refthis.type)
-		if(0) case CALL: case CALLBACK:
-			(&refthis.infocalltype)->~decltype(refthis.infocalltype)();
-		else if(0) case CHAR:
-			(&refthis.infoconstraints)->~decltype(refthis.infoconstraints)();
-		else if(0) case CONDITION:
-			(&refthis.infogroupname)->~decltype(refthis.infogroupname)();
-		else if(0) case VERB:
-			(&refthis.infoverb)->~decltype(refthis.infoverb)();
-	}
-
-	friend struct reggroup;
-};
+DLL_EXPORT void stoprecording() {
+	recordstack.pop_back();
+}
 
 struct reggroup {
-	void init(operation::TYPE type) {
-		operation::construct_operation(type, reinterpret_cast<operation&>(operationstorage));
-	}
-	reggroup() {
-		reinterpret_cast<operation&>(operationstorage).type = operation::NONE;
-	}
-	reggroup(operation::TYPE type) {
-		init(type);
-	}
-	template<class type>
-	reggroup(type &&src) {
-		init(src->type);
-		reinterpret_cast<operation&>(operationstorage) = *src.operator->();
-	}
-	~reggroup() {
-		operation::destruct_operation(reinterpret_cast<operation&>(operationstorage));
-	}
 	std::string name;
-	bool isisolated = false;
-	std::list<std::string> entitlementgroups;
-	bool isatomic = false;
-	operation *operator->() {
-		return &reinterpret_cast<operation&>(operationstorage);
-	}
-	std::aligned_storage_t<sizeof(operation)> operationstorage;
-	std::list<reggroup> ops;
-	reggroup *priorgroup{}, *nextgroup{};
 };
 
-static std::list<struct reggroup> groups(1);
+static std::list<reggroup> groups;
 
-static reggroup *currgroup{&groups.back()};
-
-static std::list<std::list<reggroup>::iterator> namedgroups;
-
-struct regcommit : reggroup {
-	~regcommit() {
-		currgroup->ops.push_back(*this);
-
-		::reggroup *priorgroup = currgroup;
-
-		currgroup = &currgroup->ops.back();
-
-		priorgroup->nextgroup = currgroup;
-		
-		currgroup->priorgroup = priorgroup;
-	}
-};
-
-struct regcontinue : reggroup {
-	~regcontinue() {
-		currgroup->ops.push_back(*this);
-	}
-};
-
-DLL_EXPORT void regbeginsub(std::unordered_map<unsigned, std::string> && hashes) {
-	regcommit reggroup;
-
-	reggroup.name = hashes["name"_h];
-	reggroup.isisolated = !hashes["square"_h].empty();
+static void parsegroup(decltype(recordstack.front()) groupbegin) {
+	groups.push_back({});
 }
 
-DLL_EXPORT void regaddentitlement(std::unordered_map<unsigned, std::string> && hashes) {
-	currgroup->entitlementgroups.push_back(hashes["entitlement"_h]);
-}
+extern "C" int secondmain(char *subject, size_t szsubject, char *pattern,
+	 size_t szpattern, char *modulename, size_t szmodulename,
+	 char *entrypoint, size_t szentrypoint) {
+	
+	std::string entry{entrypoint, szentrypoint};
 
-DLL_EXPORT void regbegingroup(std::unordered_map<unsigned, std::string> && hashes) {
-	regcommit reggroup;
-	reggroup.isatomic = !hashes["atomic"_h].empty();
-}
+	auto iterentry = std::find_if(recordstack.begin(), recordstack.end(), [&](decltype(recordstack.back()) &elem) {
+		return elem.second == entry;
+	});
 
-DLL_EXPORT void regcall(std::unordered_map<unsigned, std::string> && hashes) {
-	regcontinue op({hashes["ampersand"_h].empty() ? operation::CALLBACK : operation::CALL});
 
-	op->infocalltype.callee = hashes["callee"_h];
-	if(!hashes["angular"_h].empty())
-		op.name = hashes["callee"_h];
-}
+	
 
-DLL_EXPORT void regaddarg(std::unordered_map<unsigned, std::string> && hashes) {
-	currgroup->operator->()->infocalltype.args.push_back(hashes["arg"_h]);
-}
 
-DLL_EXPORT void regbeginlookaround(std::unordered_map<unsigned, std::string> && hashes) {
-
-	regcommit op({operation::IFMATCH});
-
-	op->infoifmatch.isnegative = hashes["sign"_h] == "!";
-}
-
-DLL_EXPORT void regbeginseq(std::unordered_map<unsigned, std::string> && hashes) {
-
-	regcommit newgroup{operation::CHAR};
-
-	newgroup->infoconstraints.isopposite = !hashes["not"_h].empty();
-}
-
-DLL_EXPORT void regcharseq(std::unordered_map<unsigned, std::string> && hashes) {
-	charinfotype constraint;
-
-	constraint.what.isescape = !hashes["escapechar"_h].empty();
-	constraint.what.what = hashes["char"_h][0];
-
-	if(!hashes["to"_h].empty()) {
-		constraint.what.isescape = !hashes["escapeto"_h].empty();
-		constraint.what.what = hashes["to"_h][0];
-		constraint.isrange = true;
-	}
-
-	currgroup->operator->()->infoconstraints.constraints.push_back(constraint);
-}
-DLL_EXPORT void regfinish() ;
-
-DLL_EXPORT void regchar(std::unordered_map<unsigned, std::string> && hashes) {
-	regcontinue op{operation::CHAR};
-	reggroup *priorcurrgroup=&currgroup->ops.back();
-	std::swap(priorcurrgroup, currgroup);
-	regcharseq(std::move(hashes));
-	std::swap(priorcurrgroup, currgroup);
-}
-
-DLL_EXPORT void regbegincond(std::unordered_map<unsigned, std::string> && hashes) {
-	regcommit newgroup;
-
-	newgroup.init(operation::CONDITION);
-
-	newgroup->infogroupname = std::string{hashes["name"_h]};
-}
-
-DLL_EXPORT void regverb(std::unordered_map<unsigned, std::string> && hashes) {
-	regcontinue newgroup;
-
-	newgroup.init(operation::VERB);
-
-	newgroup->infoverb = hashes["verb"_h];
-}
-
-DLL_EXPORT void regbranch() {
-	(void)regcontinue{operation::BRANCH};
-}
-
-DLL_EXPORT void regaddquantif(std::unordered_map<unsigned, std::string> && hashes) {
-	currgroup->operator->()->quantifier = hashes["quantifiers"_h];
-}
-
-DLL_EXPORT void regfinish() {
-	currgroup = ::currgroup->priorgroup;
+	//startmodule(modulename, szmodulename);
+	return 0;
 }

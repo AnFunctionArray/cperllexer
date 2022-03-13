@@ -1,15 +1,15 @@
 
     (?<sub>[(][?]<(?<square>\[?+)(?<name>\w++)(?(?{$+{square}})\])>(?{call "regbeginsub"})
-    ([{]((?<entitlement>\w++),(?{call "regaddentitlement"}))*+})?+(?&regex)[)]
-    (?{call "regfinish"}))
+    ([{]((?<entitlement>\w++),(??{dec "facet"})(?{call "recordappend"})(??{inc "facet"}))*+})?+(?&regex)[)]
+    (?{call "regfinishsub"}))
 
     (?<group>[(](?<atomic>([?][>])?+)(?{call "regbegingroup"})(?&regex)[)](?{call "regfinish"}))
 
     (?<call>[(][?]
-    (?<args>)(?<angular>)
-    (?<ampersand>(&(?<angular><?+))?+)
-    (?<callee>\w++)(?(?{$+{angular}})>)(?{call "regcall"})
-    (?(?{$+{ampersand}})([(](?<arg>\w++)(?{call "regaddarg"})(,(?<arg>\w++)(?{call "regaddarg"}))*+[)])?+)[)])
+    (?<ampersand>(&(?<angular><)?+)?+)
+    (?<callee>\w++)(?(?{$+{angular}})>)
+    (?(?{$+{ampersand}})([(](?<arg>\w++)(??{dec "facet"})(?{call "recordappend"})(??{inc "facet"})
+    (,(?<arg>\w++)(??{dec "facet"})(?{call "recordappend"})(??{inc "facet"}))*+[)])?+)(?{call "regcall"})[)](?<angular>))
 
     (?<lookaround>[(][?](?<sign>[!=])
     (?{call "regbeginlookaround"})(?&regex)[)](?{call "regfinish"}))
@@ -19,12 +19,12 @@
 
     (?<backreference>\\g[{](?<name>\w++)[}](?{call "regbackref"}))
 
-    (?<escapetooptional>(?<to>)(-(?(?=\\)(?<escapeto>\\)(?<to>.)|(?<escapeto>)(?<to>[^]])))?+
-    (?{call "regcharseq"}))
+    (?<escapetooptional>(-(?(?=\\)(?<escapeto>\\)(?<to>.)|(?<escapeto>)(?<to>[^]])))?+
+    (??{dec "facet"})(?{call "recordappend"})(??{inc "facet"})(?<to>))
 
     (?<sequence>\[(?<not>\^?+)(?{call "regbeginseq"})
-    (?<escapechar>\\?+)(?<char>.)(?&escapetooptional)
-    ((?(?=\\)(?<escapechar>\\)(?<char>.)|(?<escapechar>)(?<char>[^]]))(?&escapetooptional))*+\]
+    (\\(?<escapechar>.)|(?<char>.))(?&escapetooptional)(?<escapechar>)
+    ((?(?=\\)(?<escapechar>\\)(?<char>.)|(?<char>[^]]))(?&escapetooptional)(?<escapechar>))*+\]
     (?{call "regfinish"}))
 
     (?<conditional>[(][?](?(?=(?<lookaround>(?&lookaround)))
@@ -34,7 +34,7 @@
 
     (?<verb>[(][*](?<verb>[A-Z]++)[)](?{call "regverb"}))
 
-    (?<regexinner>(?(?=(?<match>(?&conditional)))
+    (?<regexinner>(??{set {"savedcallouts" => []}})(??{inc "facet"})(?(?=(?<match>(?&conditional)))
     \g{match}|(?(?=(?<match>(?&lookaround)))
     \g{match}|(?(?=(?<match>(?&call)))
     \g{match}|(?(?=(?<match>(?&sub)))
@@ -43,7 +43,9 @@
     \g{match}|(?(?=(?<match>(?&group)))
     \g{match}|(?(?=(?<match>(?&backreference)))
     \g{match}|(?(?=(?<match>(?&char)))
-    \g{match}|
-    )))))))))((?<quantifiers>[*+?][+?]?+)(?{call "regaddquantif"}))?+)
+    \g{match}|(*F)
+    )))))))))(??{dec "facet"})(?<quantifiers>([*+?][+?]?+)?+)(?{call "regendinner"}))
 
-    (?<regex>(?&regexinner)++([|](?{call "regbranch"})(?&regexinner)++)*+)
+    (?<regexpart>(??{set {"savedcallouts" => []}})((?&regexinner)++|(?{call "regnothing"})))
+
+    (?<regex>(?&regexpart)([|](?&regexpart)(?{call "regbranch"}))*+(?{call "regend"}))

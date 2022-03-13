@@ -957,23 +957,155 @@ sub parseregexfile {
     $mainregexfinal =~s/\(\?C(\d++)\)//g;
 }
 
+sub recordappend {
+    my %matches = %+;
+
+    push @{$savedcallouts[-1][-1]->{undef}}, {%matches}
+}
+
+sub regendinner {
+    my %quantifiers = {%+};
+
+    my @reginner = @{$savedcallouts[-1]};
+
+    print Dumper @savedcallouts;
+
+    pop @savedcallouts;
+
+    push @{$savedcallouts[-1]}, {"regaddquantif" => %quantifiers} if($quantifiers{"quantifiers"});
+
+    @{$savedcallouts[-1]} = (@{$savedcallouts[-1]}, @reginner);
+}
+
+sub regbranch {
+
+    my @reglast = @{$savedcallouts[-1]};
+
+    my @reglastlast = @{$savedcallouts[-2]};
+
+    splice @savedcallouts, -2, 1;
+
+    print Dumper \@reglast;
+    print Dumper \@reglastlast;
+
+    push @{$savedcallouts[-2]}, {"regbranch" => \$reglast[0]};
+
+    @{$savedcallouts[-2]} = (@{$savedcallouts[-2]}, @reglastlast);
+}
+
+sub regend {
+    my @reglast = @{$savedcallouts[-1]};
+
+    pop @savedcallouts;
+
+    print Dumper \@reglast;
+
+    @{$savedcallouts[-1]} = (@{$savedcallouts[-1]}, @reglast);
+}
+
 $subject = $mainregexfinal;
 
-#print  $mainregexfinal;
+print  $mainregexfinal;
 
-while(1) {
-    use if $ENV{'DEBUG'}, re => qw(Debug EXECUTE); 
-    if(eval {$mainregexfinal =~ m{(?(DEFINE)$metaregexfilecontent)
-        ^(?&regex)$
-    }sxx}){
-        print "success\n"
+use if $ENV{'DEBUG'}, re => qw(Debug EXECUTE);
+#call "startrecording";
+push @savedcallouts, [];
+#++$facet;
+if(eval {$mainregexfinal =~ m{(?(DEFINE)$metaregexfilecontent)
+    ^(?&regex)$
+}sxx}){
+    print "success\n"
+}
+if($@) {
+    warn $@;
+    undef $facet
+}
+#undef $facet;
+my @regexbindings = @{$savedcallouts[-1]};
+pop @savedcallouts;
+
+print Dumper \@regexbindings;
+
+exit;
+
+my $entryindex;
+
+sub findgroup {
+    my $nametofind = $_[0];
+    while (my ($index) = each @regexbindings) {
+        #print $index . "\n";
+        my %elem = %{$regexbindings[$index]};
+        my $elemname = (keys %elem)[0];
+        my %elembody = %{$elem->{$elemname}};
+        #print Dumper $elembody{"name"};
+        if($elemname eq "regbeginsub" and $elembody{"name"} eq $nametofind) {
+            last
+        }
     }
-    if($@) {
-        warn $@;
-        undef $facet
-    } else {
-        last
+    return $index;
+}
+
+$entryindex = findgroup $entryregex;
+
+print $entryindex . "\n";
+#call "stoprecording";
+
+#opnumber => stringpos
+
+my @stackoperations = [];
+
+my $currindex = $entryindex;
+
+my $currposatsubject;
+
+#\stackoperations
+
+my @groupsstack = [];
+
+#matches
+#callop
+
+my @callstack = [];
+
+my $entitlements;
+
+sub fillforindex {
+    my %elem = %{$regexbindings[$_[0]]};
+    my $elemname = (keys %elem)[0];
+    my %elembody = %{$elem->{$elemname}};
+
+    return ({%elem}, $elemname, {%elembody})
+}
+
+for(;1;++$currindex) {
+    my (%elem, $elemname, %elembody) = fillforindex $currindex;
+    push @stackoperations, {$currindex => $currposatsubject};
+    given($elemname){
+        when(["regbeginsub", "regbegingroup"]) {
+            push @groupsstack, \$stackoperations[-1];
+        }
+        when("regcall") {
+            push @callstack, {\$stackoperations[-1] => {%matches}};
+
+            $currindex = findgroup($elembody{"callee"});
+
+            @matches{@entitlements} = @matches{@entitlements} if($elembody{"square"});
+
+            (%elem, $elemname, %elembody) = fillforindex $currindex;
+
+            my @newentitlements = map {$_->{entitlement}} @{$elembody{undef}};
+
+            @entitlements = (@entitlements, @newentitlements);
+        }
+        when("regbegincond") {
+            
+        }
+        
     }
 }
+
+
+#startmatching($subject, $mainregexfinal, basename($ARGV[-1]), $entryregex);
+#exit;
 
 1
