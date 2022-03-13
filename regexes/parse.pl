@@ -508,9 +508,22 @@ sub call {
             print "pushing to " . scalar @savedcallouts . "\n";
             push @{$savedcallouts[-1]}, {$funcnm => $captures};
             print "success\n";
-        };
+        } if($isrecord);
         return
     }
+    return callcommon($funcnm, $captures, $facet)
+}
+
+sub call2 {
+    return callcommon(shift, { %+ }, 0)
+}
+
+sub callcommon {
+    #print Dumper(\%+);
+    my $funcnm = shift;
+    my $captures = shift;
+    my $facet = shift;
+
     print $funcnm . "\n";
 
     my $argsin = shift;
@@ -964,15 +977,14 @@ sub recordappend {
 }
 
 sub regendinner {
-    my %quantifiers = {%+};
 
     my @reginner = @{$savedcallouts[-1]};
 
-    print Dumper @savedcallouts;
+    #print Dumper @savedcallouts;
 
     pop @savedcallouts;
 
-    push @{$savedcallouts[-1]}, {"regaddquantif" => %quantifiers} if($quantifiers{"quantifiers"});
+    push @{$savedcallouts[-1]}, {"regaddquantif" => {%+}} if($+{quantifiers});
 
     @{$savedcallouts[-1]} = (@{$savedcallouts[-1]}, @reginner);
 }
@@ -985,8 +997,8 @@ sub regbranch {
 
     splice @savedcallouts, -2, 1;
 
-    print Dumper \@reglast;
-    print Dumper \@reglastlast;
+    #print Dumper \@reglast;
+    #print Dumper \@reglastlast;
 
     push @{$savedcallouts[-2]}, {"regbranch" => \$reglast[0]};
 
@@ -998,9 +1010,13 @@ sub regend {
 
     pop @savedcallouts;
 
-    print Dumper \@reglast;
+    #print Dumper \@reglast;
 
     @{$savedcallouts[-1]} = (@{$savedcallouts[-1]}, @reglast);
+}
+
+sub startrecord {
+    return qr{((?{set2 {'savedcallouts' => []}; inc2 'isrecord'})|(?{unset2 'savedcallouts'; dec2 'isrecord'})(*F))}
 }
 
 $subject = $mainregexfinal;
@@ -1010,7 +1026,7 @@ print  $mainregexfinal;
 use if $ENV{'DEBUG'}, re => qw(Debug EXECUTE);
 #call "startrecording";
 push @savedcallouts, [];
-#++$facet;
+++$facet;
 if(eval {$mainregexfinal =~ m{(?(DEFINE)$metaregexfilecontent)
     ^(?&regex)$
 }sxx}){
@@ -1020,7 +1036,7 @@ if($@) {
     warn $@;
     undef $facet
 }
-#undef $facet;
+undef $facet;
 my @regexbindings = @{$savedcallouts[-1]};
 pop @savedcallouts;
 

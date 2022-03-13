@@ -1,6 +1,6 @@
 
     (?<sub>[(][?]<(?<square>\[?+)(?<name>\w++)(?(?{$+{square}})\])>(?{call "regbeginsub"})
-    ([{]((?<entitlement>\w++),(??{dec "facet"})(?{call "recordappend"})(??{inc "facet"}))*+})?+(?&regex)[)]
+    ([{]((?<entitlement>\w++),(?{call2 "recordappend"}))*+})?+(?&regex)[)]
     (?{call "regfinishsub"}))
 
     (?<group>[(](?<atomic>([?][>])?+)(?{call "regbegingroup"})(?&regex)[)](?{call "regfinish"}))
@@ -8,8 +8,8 @@
     (?<call>[(][?]
     (?<ampersand>(&(?<angular><)?+)?+)
     (?<callee>\w++)(?(?{$+{angular}})>)
-    (?(?{$+{ampersand}})([(](?<arg>\w++)(??{dec "facet"})(?{call "recordappend"})(??{inc "facet"})
-    (,(?<arg>\w++)(??{dec "facet"})(?{call "recordappend"})(??{inc "facet"}))*+[)])?+)(?{call "regcall"})[)](?<angular>))
+    (?(?{$+{ampersand}})([(](?<arg>\w++)(?{call2 "recordappend"})
+    (,(?<arg>\w++)(?{call2 "recordappend"}))*+[)])?+)(?{call "regcall"})[)](?<angular>))
 
     (?<lookaround>[(][?](?<sign>[!=])
     (?{call "regbeginlookaround"})(?&regex)[)](?{call "regfinish"}))
@@ -20,7 +20,7 @@
     (?<backreference>\\g[{](?<name>\w++)[}](?{call "regbackref"}))
 
     (?<escapetooptional>(-(?(?=\\)(?<escapeto>\\)(?<to>.)|(?<escapeto>)(?<to>[^]])))?+
-    (??{dec "facet"})(?{call "recordappend"})(??{inc "facet"})(?<to>))
+    (?{call2 "recordappend"})(?<to>))
 
     (?<sequence>\[(?<not>\^?+)(?{call "regbeginseq"})
     (\\(?<escapechar>.)|(?<char>.))(?&escapetooptional)(?<escapechar>)
@@ -34,7 +34,7 @@
 
     (?<verb>[(][*](?<verb>[A-Z]++)[)](?{call "regverb"}))
 
-    (?<regexinner>(??{set {"savedcallouts" => []}})(??{inc "facet"})(?(?=(?<match>(?&conditional)))
+    (?<regexinner>(??{startrecord})(?(?=(?<match>(?&conditional)))
     \g{match}|(?(?=(?<match>(?&lookaround)))
     \g{match}|(?(?=(?<match>(?&call)))
     \g{match}|(?(?=(?<match>(?&sub)))
@@ -44,8 +44,8 @@
     \g{match}|(?(?=(?<match>(?&backreference)))
     \g{match}|(?(?=(?<match>(?&char)))
     \g{match}|(*F)
-    )))))))))(??{dec "facet"})(?<quantifiers>([*+?][+?]?+)?+)(?{call "regendinner"}))
+    )))))))))(?<quantifiers>([*+?][+?]?+)?+)(?{call2 "regendinner"}))
 
     (?<regexpart>(??{set {"savedcallouts" => []}})((?&regexinner)++|(?{call "regnothing"})))
 
-    (?<regex>(?&regexpart)([|](?&regexpart)(?{call "regbranch"}))*+(?{call "regend"}))
+    (?<regex>(?&regexpart)([|](?&regexpart)(?{call2 "regbranch"}))*+(?{call2 "regend"}))
