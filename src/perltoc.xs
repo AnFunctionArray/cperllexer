@@ -62,6 +62,14 @@ CODE:
         do_callout(in, hash);
     }
 
+extern void startmetaregex(SV *in, AV *hashes)
+CODE:
+    {
+        extern void dostartmetaregex(SV* in, AV* hashes);
+
+        dostartmetaregex(in, hashes);
+    }
+
 extern void startmodule(SV *in)
 PREINIT:
     STRLEN len;

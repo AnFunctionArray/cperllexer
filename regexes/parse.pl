@@ -330,7 +330,7 @@ print $cached_instances{$entryregex};
 
 #exit if(not $matchinperl);
 
-startmodule(basename($ARGV[-1])) if(defined &startmodule and not $nested);
+#startmodule(basename($ARGV[-1])) if(defined &startmodule and not $nested);
 
 #my $matchprototype = qr{(?(DEFINE)$mainregexdefs)^((??{set {"decls" => "extrnl"}})(?&abstdeclorallqualifs)(??{unset {"decls" => "extrnl"}}))}sxxn;
 #my $matchtype = qr{(?(DEFINE)$mainregexdefs)(?&abstdeclorallqualifs)}sxxn;
@@ -985,7 +985,7 @@ sub regendinner {
     pop @savedcallouts;
 
     #push @{$savedcallouts[-1]}, {"regaddquantif" => {%+}} 
-    $reginner[0]->{"regquantif"} = $+{quantifiers} if($+{quantifiers});
+    (values %{$reginner[0]})[0]->{"regquantif"} = $+{quantifiers} if($+{quantifiers});
 
     @{$savedcallouts[-1]} = (@{$savedcallouts[-1]}, @reginner);
 }
@@ -1010,16 +1010,24 @@ sub regbranch {
 
     my @reglastlast = @{$savedcallouts[-2]};
 
-    splice @savedcallouts, -2, 1;
+    #splice @savedcallouts, -2, 1;
+
+    pop @savedcallouts;
+    print scalar @savedcallouts . "\n";
+    #exit;
+    #pop @savedcallouts;
 
     #print Dumper \@reglast;
     #print Dumper \@reglastlast;
 
-    push @{$savedcallouts[-2]}, {"regbranch" => \$reglast[0]};
+    #push @reglastlast, {"regbranch" => \$reglast[0]};
 
-    @{$savedcallouts[-2]} = (@{$savedcallouts[-2]}, @reglastlast);
+    #@{$savedcallouts[-1]} = (@reglastlast, @reglastlast);
+
+    @{$savedcallouts[-1]} = ([{"regbranch" => \$reglast[0]}], @reglastlast, @reglast)
 }
 
+=begin
 sub regend {
     my @reglast = @{$savedcallouts[-1]};
 
@@ -1029,6 +1037,7 @@ sub regend {
 
     @{$savedcallouts[-1]} = (@{$savedcallouts[-1]}, @reglast);
 }
+=cut
 
 sub startrecord {
     return qr{((?{set2 {'savedcallouts' => []}})|(?{unset2 'savedcallouts'})(*F))}
@@ -1061,8 +1070,6 @@ pop @savedcallouts;
 
 print Dumper \@regexbindings;
 
-exit;
-
 my $entryindex;
 
 sub findgroup {
@@ -1084,7 +1091,7 @@ $entryindex = findgroup $entryregex;
 
 print $entryindex . "\n";
 #call "stoprecording";
-
+=begin
 #opnumber => stringpos
 
 my @stackoperations = [];
@@ -1140,7 +1147,9 @@ for(;1;++$currindex) {
     
 }
 
+=cut
 
+startmetaregex(basename($ARGV[-1]), \@regexbindings) if(defined &startmetaregex and not $nested);
 #startmatching($subject, $mainregexfinal, basename($ARGV[-1]), $entryregex);
 #exit;
 

@@ -47,7 +47,9 @@
 #include <stdint.h>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <type_traits>
+#include <unordered_set>
 #include <vector>
 #include <variant>
 #include <unordered_map>
@@ -4361,6 +4363,46 @@ DLL_EXPORT void do_callout(SV * in, HV * hash)
 		} else {
 			docall(pinstr, inlen, &map);
 		}
+	}
+}
+
+std::list<std::pair<unsigned, std::unordered_map<unsigned, std::string>>> regexmeta;
+
+DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes) {
+	STRLEN inlen;
+	const char *pmodulenmae = SvPVutf8(in, inlen);
+	startmodule(pmodulenmae, inlen);
+	HV *pavelem;
+
+	size_t arraycount = av_len(hashes);
+
+	for(size_t i : ranges::views::iota(0uz, arraycount)) {
+		hv_iterinit(pavelem = (HV*)SvRV(*av_fetch(hashes, i, 1)));
+		SV* value;
+		char* key;
+		I32 key_length;
+		const char*pinstr;
+
+		decltype(regexmeta)::value_type val;
+
+		value = (pavelem, &key, &key_length);
+
+		val.first = stringhash(std::string{key, (size_t)key_length}.c_str());
+
+		decltype(val)::second_type valmap;
+
+		SV* valueinner;
+
+		hv_iterinit(pavelem = (HV*)SvRV(value));
+
+		while(valueinner = hv_iternextsv(pavelem, &key, &key_length)) {
+			pinstr = SvPVutf8(valueinner, inlen);
+			valmap.insert({stringhash(std::string{key, (size_t)key_length}.c_str()), std::string{pinstr, inlen}});
+		}
+
+		val.second = valmap;
+
+		regexmeta.push_back(val);
 	}
 }
 

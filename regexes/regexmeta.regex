@@ -46,6 +46,6 @@
     \g{match}|(*F)
     )))))))))(?<quantifiers>([*+?][+?]?+)?+)(?{call2 "regendinner"}))
 
-    (?<regexpart>(??{set {"savedcallouts" => []}})((?&regexinner)++|(?{call "regnothing"})))
+    (?<regexpart>(?(?=(?<reinner>(?&regexinner)++))\g{reinner}|(?{call "regnothing"})))
 
-    (?<regex>(?&regexpart)([|](?&regexpart)(?{call2 "regbranch"}))*+(?{call2 "regend"}))
+    (?<regex>(?&regexpart)([|](??{set {"savedcallouts" => []}})(?&regexpart)(?{call2 "regbranch"}))*+(?{call2 "regend"}))
