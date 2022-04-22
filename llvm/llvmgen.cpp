@@ -1,7 +1,7 @@
 //#include "llvmgen.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/Value.h"
-#include "llvm/Support/Allocator.h"
+//#include "llvm/IR/Instructions.h"
+//#include "llvm/IR/Value.h"
+//#include "llvm/Support/Allocator.h"
 #include <cstdlib>
 #include <exception>
 #include <iterator>
@@ -819,7 +819,8 @@ struct basehndl /* : bindings_compiling*/ {
 		/*if (normalflow) {
 			normalflow->setSuccessor(0, pcurrblock.back());*/
 		if (!nbranches.back().second.empty()) {
-			ordinary_imm.value = llvmbuilder.CreateLoad(ordinary.requestValue());
+			auto ordinaryval = ordinary.requestValue();
+			ordinary_imm.value = llvmbuilder.CreateLoad(ordinaryval->getType()->getPointerElementType(), ordinaryval);
 
 			immidiates.pop_back();
 
@@ -1287,7 +1288,7 @@ struct basehndl /* : bindings_compiling*/ {
 			ops[1].value->getType()->isPointerTy()) {
 			assert(bminus);
 			ops[0].value =
-				llvmbuilder.CreatePtrDiff(ops[0].value, ops[1].value);
+				llvmbuilder.CreatePtrDiff(ops[0].value->getType()->getPointerElementType(), ops[0].value, ops[1].value);
 			type ptr_diff{ type::BASIC };
 			ptr_diff.spec.basicdeclspec.basic[1] = "int";
 			ops[0].type = { ptr_diff };
@@ -1490,12 +1491,12 @@ struct basehndl /* : bindings_compiling*/ {
 					ops[!i].value = !bminus
 						? ops[!i].value
 						: llvmbuilder.CreateNeg(ops[!i].value);
-					llvm::Value* lvalue = llvmbuilder.CreateGEP(ops[i].value,
+					llvm::Value* lvalue = llvmbuilder.CreateGEP(ops[i].value->getType()->getPointerElementType(), ops[i].value,
 
 						ops[!i].value);
 					immidiates.push_back(
 						{ ops[i].type.front().uniontype != type::FUNCTION && ops[i].type.front().uniontype != type::ARRAY
-							 ? llvmbuilder.CreateLoad(lvalue)
+							 ? llvmbuilder.CreateLoad(lvalue->getType()->getPointerElementType(), lvalue)
 							 : lvalue,
 						 ops[i].type, ops[i].lvalues, ops[i].originident });
 					immidiates.back().lvalues.push_back(
@@ -1984,7 +1985,7 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 	printvaltype(immidiate);
 
 	if (immidiate.value && !immidiate.value->getType()->getPointerElementType()->isFunctionTy())
-		immidiate.value = llvmbuilder.CreateLoad(immidiate.value);
+		immidiate.value = llvmbuilder.CreateLoad(immidiate.value->getType()->getPointerElementType(), immidiate.value);
 
 	phndl->immidiates.push_back(immidiate);
 
@@ -2020,7 +2021,7 @@ DLL_EXPORT void constructstring() {
 		currstring, "", 0);
 
 	immidiates.push_back(
-		{ llvmbuilder.CreateLoad(lvalue), stirngtype, {}, "[[stringliteral]]" });
+		{ llvmbuilder.CreateLoad(lvalue->getType()->getPointerElementType(), lvalue), stirngtype, {}, "[[stringliteral]]" });
 	immidiates.back().lvalues.push_back(immidiates.back());
 	immidiates.back().lvalues.back().value = lvalue;
 	currstring = "";
@@ -2332,7 +2333,7 @@ DLL_EXPORT void memberaccess(std::unordered_map<unsigned, std::string>&& hashent
 	printtype(lvalue->getType(),
 		lastvar.originident + " " + std::to_string(imember));
 
-	llvm::Value* rvalue = llvmbuilder.CreateLoad(lvalue);
+	llvm::Value* rvalue = llvmbuilder.CreateLoad(lvalue->getType()->getPointerElementType(), lvalue);
 
 	lastvar.type = member.type;
 
@@ -2441,7 +2442,7 @@ DLL_EXPORT void beginlogicalop(int blastorfirst) {
 
 	if (opsscopeinfo.back().lastifs != --ifstatements.end()) {
 
-		imm.value = llvmbuilder.CreateLoad(imm.value);
+		imm.value = llvmbuilder.CreateLoad(imm.value->getType()->getPointerElementType(), imm.value);
 
 		imm.lvalues.clear();
 
@@ -2468,7 +2469,7 @@ DLL_EXPORT void beginlogicalop(int blastorfirst) {
 	else {
 		continueifstatement();
 
-		imm.value = llvmbuilder.CreateLoad(imm.value);
+		imm.value = llvmbuilder.CreateLoad(imm.value->getType()->getPointerElementType(), imm.value);
 
 		imm.lvalues.clear();
 
@@ -2976,7 +2977,7 @@ val decay(val lvalue) {
 		lvalue.lvalues.pop_back();
 
 		if (lvalue.value->getType()->getPointerElementType()->isArrayTy())
-			lvalue.value = llvmbuilder.CreateGEP(
+			lvalue.value = llvmbuilder.CreateGEP(lvalue.value->getType()->getPointerElementType(),
 				lvalue.value,
 				{ llvmbuilder.getInt64(0), llvmbuilder.getInt64(0) });
 	}
@@ -2990,7 +2991,7 @@ valandtype getrvalue(valandtype lvalue) {
 			return lvalue;
 		std::cout << "rvalue" << std::endl;
 		basehndl::val ret = {
-			llvmbuilder.CreateLoad(
+			llvmbuilder.CreateLoad(lvalue.value->getType()->getPointerElementType(),
 				/*gen_pointer_to_elem_if_ptr_to_array*/ (lvalue.value)),
 			currtype };
 		printvaltype(ret);

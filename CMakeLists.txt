@@ -7,7 +7,7 @@ add_custom_command(
     COMMAND xsubpp ${CMAKE_SOURCE_DIR}/src/perltoc.xs > ${CMAKE_SOURCE_DIR}/perltoc.c
 )
 
-find_package(PerlLibs 5.35)
+find_package(PerlLibs 5.30)
 
 if(NOT DEFINED ENV{LLVM_CONFIG})
     set(LLVM_CONFIG "llvm-config")
@@ -42,6 +42,6 @@ target_compile_options(regularc PRIVATE -rdynamic -O0 -fsanitize=address,undefin
 
 target_include_directories(regularc PRIVATE ${PERL_INCLUDE_PATH} ${llvm_includes} src)
 
-set_property(TARGET regularc PROPERTY CXX_STANDARD 20)
+set_property(TARGET regularc PROPERTY CXX_STANDARD 23)
 
 set(CMAKE_CXX_VISIBILITY_PRESET default)
