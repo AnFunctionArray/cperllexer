@@ -1024,7 +1024,8 @@ sub regbranch {
 
     #@{$savedcallouts[-1]} = (@reglastlast, @reglastlast);
 
-    @{$savedcallouts[-1]} = ([{"regbranch" => \$reglast[0]}], @reglastlast, @reglast)
+    @{$savedcallouts[-1]} = ({"regbranch" => scalar @reglastlast - 1 + scalar @{$savedcallouts[-1]} - 1 + 1}, @reglastlast, @reglast)
+    #\$reglast[0]}], @reglastlast, @reglast)
 }
 
 =begin

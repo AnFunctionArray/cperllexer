@@ -4366,7 +4366,11 @@ DLL_EXPORT void do_callout(SV * in, HV * hash)
 	}
 }
 
-std::list<std::pair<unsigned, std::unordered_map<unsigned, std::string>>> regexmeta;
+using keys = std::unordered_map<unsigned, std::string>;
+
+std::list<std::pair<unsigned, std::variant<keys, struct metatypeiter>>> regexmeta(1);
+
+struct metatypeiter : decltype(regexmeta)::iterator {};
 
 DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes) {
 	STRLEN inlen;
@@ -4375,6 +4379,8 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes) {
 	HV *pavelem;
 
 	size_t arraycount = av_len(hashes);
+
+	auto iterregexmeta = regexmeta.begin();
 
 	for(size_t i : ranges::views::iota(0uz, arraycount)) {
 		hv_iterinit(pavelem = (HV*)SvRV(*av_fetch(hashes, i, 1)));
@@ -4385,24 +4391,42 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes) {
 
 		decltype(regexmeta)::value_type val;
 
-		value = (pavelem, &key, &key_length);
+		value = hv_iternextsv(pavelem, &key, &key_length);
 
 		val.first = stringhash(std::string{key, (size_t)key_length}.c_str());
 
 		decltype(val)::second_type valmap;
 
-		SV* valueinner;
+		if(std::string{sv_reftype(value, 0)} != "HASH") {
+			pinstr = SvPVutf8(value, inlen);
+			long index = atoll(std::string{pinstr, inlen}.c_str());
 
-		hv_iterinit(pavelem = (HV*)SvRV(value));
+			regexmeta.resize(index + 1);
 
-		while(valueinner = hv_iternextsv(pavelem, &key, &key_length)) {
-			pinstr = SvPVutf8(valueinner, inlen);
-			valmap.insert({stringhash(std::string{key, (size_t)key_length}.c_str()), std::string{pinstr, inlen}});
+			valmap = metatypeiter{regexmeta.begin()};
+
+			std::advance(std::get<metatypeiter>(valmap), index);
+			
+		} else {
+
+			SV* valueinner;
+
+			hv_iterinit(pavelem = (HV*)SvRV(value));
+
+			valmap = keys{};
+
+			while(valueinner = hv_iternextsv(pavelem, &key, &key_length)) {
+				pinstr = SvPVutf8(valueinner, inlen);
+				std::get<keys>(valmap).insert({stringhash(std::string{key, (size_t)key_length}.c_str()), std::string{pinstr, inlen}});
+			}
 		}
 
 		val.second = valmap;
 
-		regexmeta.push_back(val);
+		if(regexmeta.size() < i + 1)
+			regexmeta.resize(i + 2);
+
+		*iterregexmeta++ = val;
 	}
 }
 
