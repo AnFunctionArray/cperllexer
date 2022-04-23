@@ -330,7 +330,7 @@ print $cached_instances{$entryregex};
 
 #exit if(not $matchinperl);
 
-#startmodule(basename($ARGV[-1])) if(defined &startmodule and not $nested);
+startmodule(basename($ARGV[-1])) if(defined &startmodule and not $nested);
 
 #my $matchprototype = qr{(?(DEFINE)$mainregexdefs)^((??{set {"decls" => "extrnl"}})(?&abstdeclorallqualifs)(??{unset {"decls" => "extrnl"}}))}sxxn;
 #my $matchtype = qr{(?(DEFINE)$mainregexdefs)(?&abstdeclorallqualifs)}sxxn;
@@ -1153,7 +1153,7 @@ for(;1;++$currindex) {
 
 =cut
 
-startmetaregex(basename($ARGV[-1]), \@regexbindings) if(defined &startmetaregex and not $nested);
+startmetaregex($entryregex, \@regexbindings) if(defined &startmetaregex and not $nested);
 #startmatching($subject, $mainregexfinal, basename($ARGV[-1]), $entryregex);
 #exit;
 

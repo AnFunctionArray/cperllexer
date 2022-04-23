@@ -4374,8 +4374,8 @@ struct metatypeiter : decltype(regexmeta)::iterator {};
 
 DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes) {
 	STRLEN inlen;
-	const char *pmodulenmae = SvPVutf8(in, inlen);
-	startmodule(pmodulenmae, inlen);
+	const char *pentrygroup = SvPVutf8(in, inlen);
+	//startmodule(pmodulenmae, inlen);
 	HV *pavelem, *pavelemoriginal, *paveleminner;
 
 	std::unordered_map<SV*, metatypeiter> reftmp;
@@ -4447,7 +4447,18 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes) {
 		*iterregexmeta++ = val;
 	}
 
-	volatile auto probe = *std::get<metatypeiter>((++++regexmeta.begin())->second);
+	//volatile auto probe = *std::get<metatypeiter>((++++regexmeta.begin())->second);
+
+	metatypeiter iterentry;
+
+	for(auto iter = regexmeta.begin(); iter != regexmeta.end(); ++iter) {
+		if(iter->first == stringhash("regbeginsub") && std::get<keys>(iter->second)["name"_h] == pentrygroup) {
+			iterentry = metatypeiter{iter};
+			break;
+		}
+	}
+
+	volatile auto probe = *iterentry;
 }
 
 DLL_EXPORT void startrecording() {
