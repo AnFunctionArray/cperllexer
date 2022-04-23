@@ -20,7 +20,7 @@
     (?<backreference>\\g[{](?<name>\w++)[}](?{call "regbackref"}))
 
     (?<escapetooptional>(-(?(?=\\)(?<escapeto>\\)(?<to>.)|(?<escapeto>)(?<to>[^]])))?+
-    (?{call2 "recordappend"})(?<to>))
+    (?{call "regchar"})(?<to>))
 
     (?<sequence>\[(?<not>\^?+)(?{call "regbeginseq"})
     (\\(?<escapechar>.)|(?<char>.))(?&escapetooptional)(?<escapechar>)

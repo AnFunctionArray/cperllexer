@@ -4376,11 +4376,13 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes) {
 	STRLEN inlen;
 	const char *pmodulenmae = SvPVutf8(in, inlen);
 	startmodule(pmodulenmae, inlen);
-	HV *pavelem;
+	HV *pavelem, *pavelemoriginal, *paveleminner;
+
+	std::unordered_map<SV*, metatypeiter> reftmp;
 
 	size_t arraycount = av_len(hashes);
 
-	auto iterregexmeta = regexmeta.begin();
+	metatypeiter iterregexmeta = metatypeiter{regexmeta.begin()};
 
 	for(size_t i : ranges::views::iota(0uz, arraycount)) {
 		hv_iterinit(pavelem = (HV*)SvRV(*av_fetch(hashes, i, 1)));
@@ -4391,43 +4393,61 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes) {
 
 		decltype(regexmeta)::value_type val;
 
-		value = hv_iternextsv(pavelem, &key, &key_length);
+		value = (hv_iternextsv(pavelem, &key, &key_length));
 
 		val.first = stringhash(std::string{key, (size_t)key_length}.c_str());
 
 		decltype(val)::second_type valmap;
 
-		if(std::string{sv_reftype(value, 0)} != "HASH") {
-			pinstr = SvPVutf8(value, inlen);
+		std::cout << std::string{key, (size_t)key_length} << std::endl;
+
+
+		pavelemoriginal = (HV*)SvRV(value);
+
+		//if(std::string{sv_reftype((SV*)pavelem, 0)} == "REF") {
+			/*pinstr = SvPVutf8(value, inlen);
 			long index = atoll(std::string{pinstr, inlen}.c_str());
 
-			regexmeta.resize(index + 1);
+			if(regexmeta.size() < index + 2)
+				regexmeta.resize(index + 2);
 
 			valmap = metatypeiter{regexmeta.begin()};
 
-			std::advance(std::get<metatypeiter>(valmap), index);
+			std::advance(std::get<metatypeiter>(valmap), index);*/
+
+			//reftmp.insert({})
 			
-		} else {
+		//} /*else*/ {
 
-			SV* valueinner;
+		SV* valueinner;
 
-			hv_iterinit(pavelem = (HV*)SvRV(value));
+		bool isrefref = std::string{sv_reftype((SV*)pavelemoriginal, 0)} == "REF";
 
-			valmap = keys{};
+		hv_iterinit(isrefref ? paveleminner = (HV*)SvRV(pavelemoriginal) : paveleminner = (HV*)pavelemoriginal);
 
-			while(valueinner = hv_iternextsv(pavelem, &key, &key_length)) {
-				pinstr = SvPVutf8(valueinner, inlen);
-				std::get<keys>(valmap).insert({stringhash(std::string{key, (size_t)key_length}.c_str()), std::string{pinstr, inlen}});
-			}
+		if(isrefref)
+			reftmp.insert({(SV*)paveleminner, iterregexmeta});
+		else if(reftmp.contains((SV*)pavelem)) {
+			reftmp.at((SV*)pavelem)->second = iterregexmeta;
 		}
+
+		valmap = keys{};
+
+		while(valueinner = hv_iternextsv(paveleminner, &key, &key_length)) {
+			pinstr = SvPVutf8(valueinner, inlen);
+			std::get<keys>(valmap).insert({stringhash(std::string{key, (size_t)key_length}.c_str()), std::string{pinstr, inlen}});
+		}
+		//}
 
 		val.second = valmap;
 
-		if(regexmeta.size() < i + 1)
+		if(regexmeta.size() < i + 2)
 			regexmeta.resize(i + 2);
 
 		*iterregexmeta++ = val;
 	}
+
+	volatile auto probe = *std::get<metatypeiter>((++++regexmeta.begin())->second);
 }
 
 DLL_EXPORT void startrecording() {

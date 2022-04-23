@@ -970,11 +970,13 @@ sub parseregexfile {
     $mainregexfinal =~s/\(\?C(\d++)\)//g;
 }
 
+=begin
 sub recordappend {
     my %matches = %+;
 
-    push @{$savedcallouts[-1][-1]->{undef}}, {%matches}
+    push @{(values %{$savedcallouts[-1][-1]})[0]->{'options'}}, {%matches}
 }
+=cut
 
 sub regendinner {
 
@@ -997,7 +999,7 @@ sub regchecklookaround {
 
     pop @savedcallouts;
 
-    $reginner[0]->{"regcondlookaround"} = undef;
+    (values %{$reginner[0]})[0]->{"conditional"} = "1";
 
     #push @{$savedcallouts[-1]}, {"regcondlookaround" => {%+}};
 
@@ -1024,7 +1026,7 @@ sub regbranch {
 
     #@{$savedcallouts[-1]} = (@reglastlast, @reglastlast);
 
-    @{$savedcallouts[-1]} = ({"regbranch" => scalar @reglastlast - 1 + scalar @{$savedcallouts[-1]} - 1 + 1}, @reglastlast, @reglast)
+    @{$savedcallouts[-1]} = ({"regbranch" => \$reglast[0]}, @reglastlast, @reglast)
     #\$reglast[0]}], @reglastlast, @reglast)
 }
 
@@ -1091,6 +1093,7 @@ sub findgroup {
 $entryindex = findgroup $entryregex;
 
 print $entryindex . "\n";
+
 #call "stoprecording";
 =begin
 #opnumber => stringpos
