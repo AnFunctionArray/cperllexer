@@ -2,6 +2,7 @@
 //#include "llvm/IR/Instructions.h"
 //#include "llvm/IR/Value.h"
 //#include "llvm/Support/Allocator.h"
+#include <cctype>
 #include <cstdlib>
 #include <exception>
 #include <iterator>
@@ -54,6 +55,7 @@
 #include <variant>
 #include <unordered_map>
 #include <fstream>
+#include <deque>
 //#include <oniguruma.h>
 
 #ifdef _WIN32
@@ -4372,6 +4374,26 @@ std::list<std::pair<unsigned, std::variant<keys, struct metatypeiter>>> regexmet
 
 struct metatypeiter : decltype(regexmeta)::iterator {};
 
+bool checkeq(char chsrc, bool isescap, std::string::iterator &chtrg) {
+	bool result = false;
+	if(isescap)
+		switch(chsrc) if(0) case 's':
+			result =	std::isspace(*chtrg);
+		else if(0) case 'd':
+			result =	std::isdigit(*chtrg);
+		else if(0) case 'b':
+			result =	std::isalnum(*--chtrg) != std::isalnum(*chtrg);
+		else if(0) default: {
+			assert(!std::isalnum(chsrc));
+			goto plaincmp;
+		}
+	else plaincmp:
+		return *chtrg == chsrc;
+
+	if(chsrc != 'b' || !isescap) ++chtrg;
+	return result;
+}
+
 DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes) {
 	STRLEN inlen;
 	const char *pentrygroup = SvPVutf8(in, inlen);
@@ -4458,7 +4480,27 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes) {
 		}
 	}
 
-	volatile auto probe = *iterentry;
+	//volatile auto probe = *iterentry;
+	struct stack {
+		
+	};
+
+	std::deque<stack> workin;
+	metatypeiter itercurr = iterentry;
+	enum STATE {
+		NONE,
+		INASEQ
+	} state;
+	std::deque<std::string::iterator> positions;
+	for(;;) {
+		switch(itercurr->first) if(0)
+			case "regchar"_h: {
+				bool isescape = !std::get<keys>(itercurr->second)["escapechar"_h].empty();
+				std::string tocmp = std::get<keys>(itercurr->second)[isescape ? "escapechar"_h : "char"_h];
+				if(!checkeq(tocmp[0], isescape, positions.back()));
+			}
+			else if(0);
+	}
 }
 
 DLL_EXPORT void startrecording() {
