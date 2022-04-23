@@ -4382,7 +4382,7 @@ bool checkeq(char chsrc, bool isescap, std::string::iterator &chtrg) {
 		else if(0) case 'd':
 			result =	std::isdigit(*chtrg);
 		else if(0) case 'b':
-			result =	std::isalnum(*--chtrg) != std::isalnum(*chtrg);
+			result =	std::isalnum(*--std::string::iterator{chtrg}) != std::isalnum(*chtrg);
 		else if(0) default: {
 			assert(!std::isalnum(chsrc));
 			goto plaincmp;
