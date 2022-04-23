@@ -62,12 +62,12 @@ CODE:
         do_callout(in, hash);
     }
 
-extern void startmetaregex(SV *in, AV *hashes)
+extern void startmetaregex(SV *in, AV *hashes, SV *out)
 CODE:
     {
-        extern void dostartmetaregex(SV* in, AV* hashes);
+        extern void dostartmetaregex(SV* in, AV* hashes, SV*);
 
-        dostartmetaregex(in, hashes);
+        dostartmetaregex(in, hashes, out);
     }
 
 extern void startmodule(SV *in)

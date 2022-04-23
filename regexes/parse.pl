@@ -1153,7 +1153,7 @@ for(;1;++$currindex) {
 
 =cut
 
-startmetaregex($entryregex, \@regexbindings) if(defined &startmetaregex and not $nested);
+startmetaregex($entryregex, \@regexbindings, $subject) if(defined &startmetaregex and not $nested);
 #startmatching($subject, $mainregexfinal, basename($ARGV[-1]), $entryregex);
 #exit;
 

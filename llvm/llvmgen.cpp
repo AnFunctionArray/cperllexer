@@ -4386,17 +4386,20 @@ bool checkeq(char chsrc, bool isescap, std::string::iterator &chtrg) {
 		else if(0) default: {
 			assert(!std::isalnum(chsrc));
 			goto plaincmp;
-		}
+		} else;
 	else plaincmp:
-		return *chtrg == chsrc;
+		result = *chtrg == chsrc;
 
 	if(chsrc != 'b' || !isescap) ++chtrg;
 	return result;
 }
 
-DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes) {
+DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes, SV *out) {
 	STRLEN inlen;
-	const char *pentrygroup = SvPVutf8(in, inlen);
+	const char *pinstr; = SvPVutf8(in, inlen);
+	std::string entrygroup = std::string{pinstr, inlen};
+	pinstr = SvPVutf8(out, inlen);
+	std::string targetstr = std::string{pinstr, inlen};
 	//startmodule(pmodulenmae, inlen);
 	HV *pavelem, *pavelemoriginal, *paveleminner;
 
@@ -4411,7 +4414,6 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes) {
 		SV* value;
 		char* key;
 		I32 key_length;
-		const char*pinstr;
 
 		decltype(regexmeta)::value_type val;
 
@@ -4474,32 +4476,41 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes) {
 	metatypeiter iterentry;
 
 	for(auto iter = regexmeta.begin(); iter != regexmeta.end(); ++iter) {
-		if(iter->first == stringhash("regbeginsub") && std::get<keys>(iter->second)["name"_h] == pentrygroup) {
+		if(iter->first == stringhash("regbeginsub") && std::get<keys>(iter->second)["name"_h] == entrygroup) {
 			iterentry = metatypeiter{iter};
 			break;
 		}
 	}
 
 	//volatile auto probe = *iterentry;
-	struct stack {
-		
-	};
-
-	std::deque<stack> workin;
-	metatypeiter itercurr = iterentry;
 	enum STATE {
 		NONE,
 		INASEQ
-	} state;
-	std::deque<std::string::iterator> positions;
+	};
+	struct info {
+		STATE state;
+		std::string::iterator striter;
+		metatypeiter iter;
+	};
+
+	std::deque<info> workin{{NONE, targetstr.begin(), iterentry}};
 	for(;;) {
-		switch(itercurr->first) if(0)
+		switch(workin.back().iter->first) if(0)
 			case "regchar"_h: {
-				bool isescape = !std::get<keys>(itercurr->second)["escapechar"_h].empty();
-				std::string tocmp = std::get<keys>(itercurr->second)[isescape ? "escapechar"_h : "char"_h];
-				if(!checkeq(tocmp[0], isescape, positions.back()));
+				bool isescape = !std::get<keys>(workin.back().iter->second)["escapechar"_h].empty();
+				std::string tocmp = std::get<keys>(workin.back().iter->second)[isescape ? "escapechar"_h : "char"_h];
+				if(!checkeq(tocmp[0], isescape, workin.back().striter) && workin.back().state != INASEQ) goto fail;
 			}
-			else if(0);
+			else if(0) case "regbeginseq"_h: {
+				workin.push_back(workin.back());
+				workin.back().state = INASEQ;
+			}
+			else if(0) case "regfinish"_h: {
+				workin.pop_back();
+			}
+		continue;
+fail:
+		;
 	}
 }
 
