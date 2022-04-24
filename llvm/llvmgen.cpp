@@ -4394,6 +4394,12 @@ bool checkeq(char chsrc, bool isescap, std::string::iterator &chtrg) {
 	return result;
 }
 
+bool checkequntil(char chsrc, char chsrc1, bool isescap, bool isescap1, std::string::iterator &chtrg) {
+	assert(!isescap); assert(!isescap1);
+	while(chsrc != chsrc1 + 1) if(checkeq(chsrc++, false, chtrg)) return true;
+	return false;
+}
+
 DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes, SV *out) {
 	STRLEN inlen;
 	const char *pinstr; = SvPVutf8(in, inlen);
@@ -4485,28 +4491,61 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes, SV *out) {
 	//volatile auto probe = *iterentry;
 	enum STATE {
 		NONE,
-		INASEQ
+		INASEQ,
+		INASEQMATCHED,
+		LOOKAROUND
 	};
 	struct info {
 		STATE state;
 		std::string::iterator striter;
 		metatypeiter iter;
+		union {
+			bool negate;
+		} addinfo;
 	};
 
-	std::deque<info> workin{{NONE, targetstr.begin(), iterentry}};
+	std::list<std::deque<info>> workin{{{NONE, targetstr.begin(), iterentry}}};
 	for(;;) {
-		switch(workin.back().iter->first) if(0)
+		auto *pcurrent = &workin.back().back();
+		auto *pcurrdeq = &workin.back();
+		switch(pcurrent->iter->first) 
+			if(0)
 			case "regchar"_h: {
-				bool isescape = !std::get<keys>(workin.back().iter->second)["escapechar"_h].empty();
-				std::string tocmp = std::get<keys>(workin.back().iter->second)[isescape ? "escapechar"_h : "char"_h];
-				if(!checkeq(tocmp[0], isescape, workin.back().striter) && workin.back().state != INASEQ) goto fail;
+				bool isescape = !std::get<keys>(pcurrent->iter->second)["escapechar"_h].empty();
+				std::string tocmp = std::get<keys>(pcurrent->iter->second)[isescape ? "escapechar"_h : "char"_h];
+
+				bool isescapeto = !std::get<keys>(pcurrent->iter->second)["escapeto"_h].empty();
+				std::string tocmpuntil = std::get<keys>(pcurrent->iter->second)[isescapeto ? "escapeto"_h : "to"_h];
+
+
+				if(!checkequntil(tocmp[0], tocmpuntil[0], isescape, isescapeto, pcurrent->striter) && pcurrent->state != INASEQ) goto fail;
+				else if(!pcurrent->addinfo.negate)
+					pcurrent->state = INASEQMATCHED;
 			}
 			else if(0) case "regbeginseq"_h: {
-				workin.push_back(workin.back());
-				workin.back().state = INASEQ;
+				pcurrdeq->push_back(*pcurrent);
+				pcurrent = &pcurrdeq->back();
+				pcurrent->state = INASEQ;
+				pcurrent->addinfo.negate = !std::get<keys>(pcurrent->iter->second)["not"_h].empty();
 			}
 			else if(0) case "regfinish"_h: {
-				workin.pop_back();
+				auto lastinfo = *pcurrent;
+				pcurrdeq->pop_back();
+
+				pcurrent = &pcurrdeq->back();
+
+				switch(lastinfo.state) 
+				if(0) case INASEQ:
+					if(!lastinfo.addinfo.negate) goto fail;
+					else ++pcurrent->striter;
+				else if(0) case INASEQMATCHED:
+					pcurrent->striter = lastinfo.striter;
+			} 
+			else if(0) case "regbeginlookaround"_h: {
+				pcurrdeq->push_back(*pcurrent);
+				pcurrent = &pcurrdeq->back();
+
+				pcurrent->state = LOOKAROUND;
 			}
 		continue;
 fail:
