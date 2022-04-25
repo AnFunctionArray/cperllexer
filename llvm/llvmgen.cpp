@@ -4522,7 +4522,8 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes, SV *out) {
 		INASEQ,
 		INASEQMATCHED,
 		LOOKAROUND,
-		CONDITIONAL_LOOKAROUND
+		CONDITIONAL_LOOKAROUND,
+		REGCALL
 	};
 	struct info {
 		STATE state;
@@ -4533,10 +4534,10 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes, SV *out) {
 		} addinfo;
 	};
 
-	std::list<std::deque<info>> workin{{{NONE, targetstr.begin(), iterentry}}};
+	std::deque<info> workin{{{NONE, targetstr.begin(), iterentry}}};
 	for(;;) {
-		auto *pcurrent = &workin.back().back();
-		auto *pcurrdeq = &workin.back();
+		auto *pcurrent = &workin.back();
+		auto *pcurrdeq = &workin;
 		switch(pcurrent->iter->first) 
 			if(0)
 			case "regchar"_h: {
@@ -4579,8 +4580,15 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes, SV *out) {
 
 				pcurrent->addinfo.negate = std::get<keys>(pcurrent->iter->second)["sign"_h] == "!";
 			}
-			else if(0) case "recordbegin"_h: {
-				
+			else if(0) case "regcall"_h: if(!std::get<keys>(pcurrent->iter->second)["ampersand"_h].empty()) {
+				info reginfo;
+
+				reginfo.iter = subs[stringhash(std::get<keys>(pcurrent->iter->second)["callee"_h].c_str())];
+				reginfo.state = REGCALL;
+
+				pcurrdeq->push_back(reginfo);
+			} else {
+
 			}
 		continue;
 fail:
