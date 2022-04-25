@@ -4493,7 +4493,8 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes, SV *out) {
 		NONE,
 		INASEQ,
 		INASEQMATCHED,
-		LOOKAROUND
+		LOOKAROUND,
+		CONDITIONAL_LOOKAROUND
 	};
 	struct info {
 		STATE state;
@@ -4545,7 +4546,9 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes, SV *out) {
 				pcurrdeq->push_back(*pcurrent);
 				pcurrent = &pcurrdeq->back();
 
-				pcurrent->state = LOOKAROUND;
+				pcurrent->state = std::get<keys>(pcurrent->iter->second)["conditional"_h].empty() ? LOOKAROUND : CONDITIONAL_LOOKAROUND;
+
+				pcurrent->addinfo.negate = std::get<keys>(pcurrent->iter->second)["sign"_h] == "!";
 			}
 		continue;
 fail:
