@@ -7,9 +7,9 @@
 
     (?<call>[(][?]
     (?<ampersand>(&(?<angular><)?+)?+)
-    (?<callee>\w++)(?(?{$+{angular}})>)(?{call2 "recordbegin"})
+    (?<callee>\w++)(?(?{$+{angular}})>)(?{call "regcall"})(?{call2 "recordbegin"})
     (?(?{$+{ampersand}})([(](?<arg>\w++)(?{call2 "recordappend"})
-    (,(?<arg>\w++)(?{call2 "recordappend"}))*+[)])?+)(?{call "regcall"})[)](?<angular>))
+    (,(?<arg>\w++)(?{call2 "recordappend"}))*+[)])?+)[)](?<angular>))
 
     (?<lookaround>[(][?](?<sign>[!=])
     (?{call "regbeginlookaround"})(?&regex)[)](?{call "regfinish"}))
@@ -48,4 +48,4 @@
 
     (?<regexpart>(?(?=(?<reinner>(?&regexinner)++))\g{reinner}|(?{call "regnothing"})))
 
-    (?<regex>(?&regexpart)([|](??{set {"savedcallouts" => []}})(?&regexpart)(?{call2 "regbranch"}))*+(?{call2 "regend"}))
+    (?<regex>(??{set {"savedcallouts" => []}})(?&regexpart)([|](??{set {"savedcallouts" => []}})(?&regexpart)(?{call2 "regbranch"}))*+(?{call2 "regend"}))

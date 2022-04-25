@@ -1032,7 +1032,6 @@ sub regbranch {
     #\$reglast[0]}], @reglastlast, @reglast)
 }
 
-=begin
 sub regend {
     my @reglast = @{$savedcallouts[-1]};
 
@@ -1042,7 +1041,6 @@ sub regend {
 
     @{$savedcallouts[-1]} = (@{$savedcallouts[-1]}, @reglast);
 }
-=cut
 
 sub startrecord {
     return qr{((?{set2 {'savedcallouts' => []}})|(?{unset2 'savedcallouts'})(*F))}

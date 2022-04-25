@@ -4579,6 +4579,9 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes, SV *out) {
 
 				pcurrent->addinfo.negate = std::get<keys>(pcurrent->iter->second)["sign"_h] == "!";
 			}
+			else if(0) case "recordbegin"_h: {
+				
+			}
 		continue;
 fail:
 		;
