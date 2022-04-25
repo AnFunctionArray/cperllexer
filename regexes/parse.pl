@@ -970,13 +970,15 @@ sub parseregexfile {
     $mainregexfinal =~s/\(\?C(\d++)\)//g;
 }
 
-=begin
 sub recordappend {
     my %matches = %+;
 
-    push @{(values %{$savedcallouts[-1][-1]})[0]->{'options'}}, {%matches}
+    push @{(values %{$savedcallouts[-1][-1]})[0]->{'argument' . $argcounter++}}, {%matches}
 }
-=cut
+
+sub recordbegin {
+    $argcounter = 0;
+}
 
 sub regendinner {
 

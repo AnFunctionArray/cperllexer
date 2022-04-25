@@ -4289,6 +4289,8 @@ extern "C" {
 #include <XSUB.h>
 }
 
+#include <cassert>
+
 DLL_EXPORT void docall(const char*, size_t, void*);
 
 void call(std::unordered_map<unsigned, std::string> hash, std::string callname) {
@@ -4370,11 +4372,33 @@ DLL_EXPORT void do_callout(SV * in, HV * hash)
 
 using keys = std::unordered_map<unsigned, std::string>;
 
-std::list<std::pair<unsigned, std::variant<keys, struct metatypeiter>>> regexmeta(1);
+static std::list<std::pair<unsigned, std::variant<keys, struct metatypeiter>>> regexmeta(1);
 
 struct metatypeiter : decltype(regexmeta)::iterator {};
 
-bool checkeq(char chsrc, bool isescap, std::string::iterator &chtrg) {
+static std::unordered_map<unsigned, metatypeiter> subs;
+
+static void registersubs() {
+	for(auto iter = regexmeta.begin(); iter != regexmeta.end(); ++iter) {
+		if(iter->first == "regsub"_h) {
+			auto subname = std::get<keys>(iter->second)["name"_h];
+			auto subnamehash = stringhash(subname.c_str());
+			try {
+				subs.at(subnamehash);
+			}
+			catch(std::out_of_range) {
+				subs.insert({subnamehash, metatypeiter{iter}});
+				goto skipwarning;
+			}
+
+			std::cout << "warning " << "dup sub " << subname << std::endl;
+
+			skipwarning:;
+		}
+	}
+}
+
+static bool checkeq(char chsrc, bool isescap, std::string::iterator &chtrg) {
 	bool result = false;
 	if(isescap)
 		switch(chsrc) if(0) case 's':
@@ -4394,7 +4418,7 @@ bool checkeq(char chsrc, bool isescap, std::string::iterator &chtrg) {
 	return result;
 }
 
-bool checkequntil(char chsrc, char chsrc1, bool isescap, bool isescap1, std::string::iterator &chtrg) {
+static bool checkequntil(char chsrc, char chsrc1, bool isescap, bool isescap1, std::string::iterator &chtrg) {
 	assert(!isescap); assert(!isescap1);
 	while(chsrc != chsrc1 + 1) if(checkeq(chsrc++, false, chtrg)) return true;
 	return false;
@@ -4402,7 +4426,7 @@ bool checkequntil(char chsrc, char chsrc1, bool isescap, bool isescap1, std::str
 
 DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes, SV *out) {
 	STRLEN inlen;
-	const char *pinstr; = SvPVutf8(in, inlen);
+	const char *pinstr = SvPVutf8(in, inlen);
 	std::string entrygroup = std::string{pinstr, inlen};
 	pinstr = SvPVutf8(out, inlen);
 	std::string targetstr = std::string{pinstr, inlen};
@@ -4479,14 +4503,18 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes, SV *out) {
 
 	//volatile auto probe = *std::get<metatypeiter>((++++regexmeta.begin())->second);
 
-	metatypeiter iterentry;
+	/*metatypeiter iterentry;
 
 	for(auto iter = regexmeta.begin(); iter != regexmeta.end(); ++iter) {
 		if(iter->first == stringhash("regbeginsub") && std::get<keys>(iter->second)["name"_h] == entrygroup) {
 			iterentry = metatypeiter{iter};
 			break;
 		}
-	}
+	}*/
+
+	registersubs();
+
+	metatypeiter iterentry = subs[stringhash(entrygroup.c_str())];
 
 	//volatile auto probe = *iterentry;
 	enum STATE {
@@ -4519,7 +4547,8 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes, SV *out) {
 				std::string tocmpuntil = std::get<keys>(pcurrent->iter->second)[isescapeto ? "escapeto"_h : "to"_h];
 
 
-				if(!checkequntil(tocmp[0], tocmpuntil[0], isescape, isescapeto, pcurrent->striter) && pcurrent->state != INASEQ) goto fail;
+				if((isescapeto ? !checkequntil(tocmp[0], tocmpuntil[0], isescape, isescapeto, pcurrent->striter) 
+					: checkeq(tocmp[0], isescape, pcurrent->striter)) && pcurrent->state != INASEQ) goto fail;
 				else if(!pcurrent->addinfo.negate)
 					pcurrent->state = INASEQMATCHED;
 			}

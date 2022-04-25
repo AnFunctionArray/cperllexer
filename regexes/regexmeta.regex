@@ -1,5 +1,5 @@
 
-    (?<sub>[(][?]<(?<square>\[?+)(?<name>\w++)(?(?{$+{square}})\])>(?{call "regbeginsub"})
+    (?<sub>[(][?]<(?<square>\[?+)(?<name>\w++)(?(?{$+{square}})\])>(?{call "regbeginsub"})(?{call2 "recordbegin"})
     ([{]((?<entitlement>\w++),(?{call2 "recordappend"}))*+})?+(?&regex)[)]
     (?{call "regfinishsub"}))
 
@@ -7,7 +7,7 @@
 
     (?<call>[(][?]
     (?<ampersand>(&(?<angular><)?+)?+)
-    (?<callee>\w++)(?(?{$+{angular}})>)
+    (?<callee>\w++)(?(?{$+{angular}})>)(?{call2 "recordbegin"})
     (?(?{$+{ampersand}})([(](?<arg>\w++)(?{call2 "recordappend"})
     (,(?<arg>\w++)(?{call2 "recordappend"}))*+[)])?+)(?{call "regcall"})[)](?<angular>))
 
