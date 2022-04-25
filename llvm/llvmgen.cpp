@@ -4424,6 +4424,101 @@ static bool checkequntil(char chsrc, char chsrc1, bool isescap, bool isescap1, s
 	return false;
 }
 
+enum STATE {
+	NONE,
+	INASEQ,
+	INASEQMATCHED,
+	LOOKAROUND,
+	CONDITIONAL_LOOKAROUND,
+	REGCALL,
+	REGGROUP
+};
+
+struct info {
+	STATE state;
+	std::string::iterator striter;
+	metatypeiter iter;
+	union {
+		bool negate;
+		bool atomic;
+	} addinfo;
+};
+
+static void handle_single_reg_state(info *pcurrent, std::deque<info> *pcurrdeq) {
+	switch(pcurrent->iter->first)
+		if(0)
+		case "regbegingroup"_h: {
+			pcurrdeq->push_back(*pcurrent);
+			pcurrent = &pcurrdeq->back();
+			pcurrent->state = REGGROUP;
+			pcurrent->addinfo.atomic = !std::get<keys>(pcurrent->iter->second)["atomic"_h].empty();
+		}
+		else if(0):
+		case "regchar"_h: {
+			bool isescape = !std::get<keys>(pcurrent->iter->second)["escapechar"_h].empty();
+			std::string tocmp = std::get<keys>(pcurrent->iter->second)[isescape ? "escapechar"_h : "char"_h];
+
+			bool isescapeto = !std::get<keys>(pcurrent->iter->second)["escapeto"_h].empty();
+			std::string tocmpuntil = std::get<keys>(pcurrent->iter->second)[isescapeto ? "escapeto"_h : "to"_h];
+
+
+			if((isescapeto ? !checkequntil(tocmp[0], tocmpuntil[0], isescape, isescapeto, pcurrent->striter) 
+				: checkeq(tocmp[0], isescape, pcurrent->striter)) && pcurrent->state != INASEQ) goto fail;
+			else if(!pcurrent->addinfo.negate)
+				pcurrent->state = INASEQMATCHED;
+		}
+		else if(0) case "regbeginseq"_h: {
+			pcurrdeq->push_back(*pcurrent);
+			pcurrent = &pcurrdeq->back();
+			pcurrent->state = INASEQ;
+			pcurrent->addinfo.negate = !std::get<keys>(pcurrent->iter->second)["not"_h].empty();
+		}
+		else if(0) case "regfinish"_h: {
+			auto lastinfo = *pcurrent;
+			pcurrdeq->pop_back();
+
+			pcurrent = &pcurrdeq->back();
+
+			switch(lastinfo.state) 
+			if(0) case INASEQ:
+				if(!lastinfo.addinfo.negate) goto fail;
+				else ++pcurrent->striter;
+			else if(0) case INASEQMATCHED:
+				pcurrent->striter = lastinfo.striter;
+		} 
+		else if(0) case "regbeginlookaround"_h: {
+
+			if(!std::get<keys>(pcurrent->iter->second)["conditional"_h].empty()) {
+				unsigned firstorig = pcurrent->first;
+				pcurrent->iter->first = stringhash("regbegingroup");
+				pcurrent->iter->second.
+				handle_single_reg_state(pcurrent, pcurrdeq);
+				pcurrent->first = firstorig;
+			}
+
+			pcurrdeq->push_back(*pcurrent);
+			pcurrent = &pcurrdeq->back();
+		
+
+			pcurrent->state = LOOKAROUND;
+
+			pcurrent->addinfo.negate = std::get<keys>(pcurrent->iter->second)["sign"_h] == "!";
+		}
+		else if(0) case "regcall"_h: if(!std::get<keys>(pcurrent->iter->second)["ampersand"_h].empty()) {
+			info reginfo;
+
+			reginfo.iter = subs[stringhash(std::get<keys>(pcurrent->iter->second)["callee"_h].c_str())];
+			reginfo.state = REGCALL;
+
+			pcurrdeq->push_back(reginfo);
+		} else {
+
+		}
+	return;
+fail:
+	;
+}
+
 DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes, SV *out) {
 	STRLEN inlen;
 	const char *pinstr = SvPVutf8(in, inlen);
@@ -4516,83 +4611,13 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes, SV *out) {
 
 	metatypeiter iterentry = subs[stringhash(entrygroup.c_str())];
 
-	//volatile auto probe = *iterentry;
-	enum STATE {
-		NONE,
-		INASEQ,
-		INASEQMATCHED,
-		LOOKAROUND,
-		CONDITIONAL_LOOKAROUND,
-		REGCALL
-	};
-	struct info {
-		STATE state;
-		std::string::iterator striter;
-		metatypeiter iter;
-		union {
-			bool negate;
-		} addinfo;
-	};
+	//volatile auto probe = *iterentry
 
 	std::deque<info> workin{{{NONE, targetstr.begin(), iterentry}}};
 	for(;;) {
 		auto *pcurrent = &workin.back();
 		auto *pcurrdeq = &workin;
-		switch(pcurrent->iter->first) 
-			if(0)
-			case "regchar"_h: {
-				bool isescape = !std::get<keys>(pcurrent->iter->second)["escapechar"_h].empty();
-				std::string tocmp = std::get<keys>(pcurrent->iter->second)[isescape ? "escapechar"_h : "char"_h];
-
-				bool isescapeto = !std::get<keys>(pcurrent->iter->second)["escapeto"_h].empty();
-				std::string tocmpuntil = std::get<keys>(pcurrent->iter->second)[isescapeto ? "escapeto"_h : "to"_h];
-
-
-				if((isescapeto ? !checkequntil(tocmp[0], tocmpuntil[0], isescape, isescapeto, pcurrent->striter) 
-					: checkeq(tocmp[0], isescape, pcurrent->striter)) && pcurrent->state != INASEQ) goto fail;
-				else if(!pcurrent->addinfo.negate)
-					pcurrent->state = INASEQMATCHED;
-			}
-			else if(0) case "regbeginseq"_h: {
-				pcurrdeq->push_back(*pcurrent);
-				pcurrent = &pcurrdeq->back();
-				pcurrent->state = INASEQ;
-				pcurrent->addinfo.negate = !std::get<keys>(pcurrent->iter->second)["not"_h].empty();
-			}
-			else if(0) case "regfinish"_h: {
-				auto lastinfo = *pcurrent;
-				pcurrdeq->pop_back();
-
-				pcurrent = &pcurrdeq->back();
-
-				switch(lastinfo.state) 
-				if(0) case INASEQ:
-					if(!lastinfo.addinfo.negate) goto fail;
-					else ++pcurrent->striter;
-				else if(0) case INASEQMATCHED:
-					pcurrent->striter = lastinfo.striter;
-			} 
-			else if(0) case "regbeginlookaround"_h: {
-				pcurrdeq->push_back(*pcurrent);
-				pcurrent = &pcurrdeq->back();
-
-				pcurrent->state = std::get<keys>(pcurrent->iter->second)["conditional"_h].empty() ? LOOKAROUND : CONDITIONAL_LOOKAROUND;
-
-				pcurrent->addinfo.negate = std::get<keys>(pcurrent->iter->second)["sign"_h] == "!";
-			}
-			else if(0) case "regcall"_h: if(!std::get<keys>(pcurrent->iter->second)["ampersand"_h].empty()) {
-				info reginfo;
-
-				reginfo.iter = subs[stringhash(std::get<keys>(pcurrent->iter->second)["callee"_h].c_str())];
-				reginfo.state = REGCALL;
-
-				pcurrdeq->push_back(reginfo);
-			} else {
-
-			}
-		continue;
-fail:
-		;
+		
 	}
 }
 
