@@ -4418,7 +4418,7 @@ enum STATE {
 	INASEQ,
 	INASEQMATCHED,
 	LOOKAROUND,
-	CONDITIONAL_LOOKAROUND,
+	IN_A_CONDITIONAL,
 	REGCALL,
 	REGGROUP
 };
@@ -4476,10 +4476,14 @@ static void handle_single_reg_state(info *pcurrent, std::deque<info> *pcurrdeq) 
 				pcurrent->striter = lastinfo.striter;
 		} 
 		else if(0) case "regbeginlookaround"_h: {
-
 			pcurrent->state = LOOKAROUND;
 
 			pcurrent->addinfo.negate = std::get<keys>(pcurrent->iter->second)["sign"_h] == "!";
+		}
+		else if(0) case "regbeginconditional"_h: {
+			pcurrdeq->push_back(*pcurrent);
+			pcurrent = &pcurrdeq->back();
+			pcurrent->state = IN_A_CONDITIONAL;
 		}
 		else if(0) case "regcall"_h: if(!std::get<keys>(pcurrent->iter->second)["ampersand"_h].empty()) {
 			info reginfo;

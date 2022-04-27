@@ -30,7 +30,7 @@
     (?{call "regfinish"}))
 
     (?<conditional>[(][?](?(?=(?&openpar)[^<])
-    (?{call "regbegingroup"})(?&lookaround)
+    (?{call "regbegingroup"})(?{call "regbeginconditional"})(?&lookaround)
     |[(]<(?<name>\w++)>[)](?{call "regcheckname"}))(?&regex)[)]
     (?{call "regfinish"}))
 
