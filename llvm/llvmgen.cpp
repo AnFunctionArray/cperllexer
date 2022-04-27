@@ -493,11 +493,6 @@ struct bascitypespec : basic_type_origin {
 			ranges::contains(std::array{ "", "signed" }, basic[0]) ||
 			comparer.basic[0] == basic[0];
 	}
-
-	bool istypedef() {
-		std::string array [] = { [2] = basic[2], [3] = basic[3] };
-		return basic == std::to_array(array) && !basic[3].empty();
-	}
 };
 
 pointrtypequalifiers parsequalifiers(const std::string& qualifs) {
@@ -676,10 +671,11 @@ struct var {
 		return pllvmtype;
 	}
 	std::list<::type> fixupTypeIfNeeded() {
-		if (type.back().spec.basicdeclspec.istypedef()) {
+		auto &basicdeclspecarr = type.back().spec.basicdeclspec.basic;
+		if (basicdeclspecarr[0].empty() && basicdeclspecarr[1].empty() && !basicdeclspecarr[3].empty()) {
 			auto tmpident = identifier;
 			identifier.clear();
-			auto typedefval = obtainvalbyidentifier(type.back().spec.basicdeclspec.basic[3], false, true);
+			auto typedefval = obtainvalbyidentifier(basicdeclspecarr[3], false, true);
 			type.pop_back();
 			type.splice(type.end(), typedefval->fixupTypeIfNeeded());
 			identifier = tmpident;
@@ -3923,13 +3919,6 @@ virtual void identifier_typedef_38() {
 	//handledeclident({ (char*)GROUP_PTR_AND_SZ(n) });
 }
 #endif
-void expandtype(std::list<::type> typein, std::list<::type> &typeout) {
-	if (typein.back().spec.basicdeclspec.istypedef()) {
-		auto var = obtainvalbyidentifier(typein.back().spec.basicdeclspec.basic[3], false, true);
-		expandtype(var->type, typeout);
-		typeout.insert(typeout.begin(), typein.begin(), --typein.end());
-	} else typeout.insert(typeout.begin(), typein.begin(), typein.end());
-}
 
 /*DLL_EXPORT void add_typedef_to_decl(std::unordered_map<unsigned, std::string>&& hashes) {
 	currtypevectorbeingbuild.back().p->back().type.front().spec.basicdeclspec.basic[3] = hashes["typedefnmmatched"_h];
@@ -4453,7 +4442,7 @@ static void handle_single_reg_state(info *pcurrent, std::deque<info> *pcurrdeq) 
 			pcurrent->state = REGGROUP;
 			pcurrent->addinfo.atomic = !std::get<keys>(pcurrent->iter->second)["atomic"_h].empty();
 		}
-		else if(0):
+		else if(0)
 		case "regchar"_h: {
 			bool isescape = !std::get<keys>(pcurrent->iter->second)["escapechar"_h].empty();
 			std::string tocmp = std::get<keys>(pcurrent->iter->second)[isescape ? "escapechar"_h : "char"_h];
@@ -4491,7 +4480,7 @@ static void handle_single_reg_state(info *pcurrent, std::deque<info> *pcurrdeq) 
 			if(!std::get<keys>(pcurrent->iter->second)["conditional"_h].empty()) {
 				unsigned firstorig = pcurrent->first;
 				pcurrent->iter->first = stringhash("regbegingroup");
-				pcurrent->iter->second.
+				pcurrent->iter->second
 				handle_single_reg_state(pcurrent, pcurrdeq);
 				pcurrent->first = firstorig;
 			}

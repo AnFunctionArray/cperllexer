@@ -1,17 +1,8 @@
 {
     "configurations": [
         {
-            "name": "Linux",
-            "includePath": [
-                "~/localperl/lib/5.32.0/x86_64-linux/CORE",
-                "/usr/include/llvm-11",
-                "/usr/include/llvm-c-11"
-            ],
-            "defines": [],
-            "compilerPath": "/usr/bin/clang++-11",
-            "cStandard": "c17",
-            "cppStandard": "c++20",
-            "intelliSenseMode": "clang-x64"
+            "compilerPath": "/opt/local/bin/clang-mp-14",
+            "compileCommands": "${workspaceFolder}/compile_commands.json"
         }
     ],
     "version": 4
