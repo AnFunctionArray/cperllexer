@@ -970,13 +970,13 @@ sub parseregexfile {
     $mainregexfinal =~s/\(\?C(\d++)\)//g;
 }
 
-sub recordappend {
+sub argsappend {
     my %matches = %+;
 
     push @{(values %{$savedcallouts[-1][-1]})[0]->{'argument' . $argcounter++}}, {%matches}
 }
 
-sub recordbegin {
+sub argsreset {
     $argcounter = 0;
 }
 
@@ -994,6 +994,8 @@ sub regendinner {
     @{$savedcallouts[-1]} = (@{$savedcallouts[-1]}, @reginner);
 }
 
+=begin
+
 sub regchecklookaround {
     my @reginner = @{$savedcallouts[-1]};
 
@@ -1007,6 +1009,7 @@ sub regchecklookaround {
 
     @{$savedcallouts[-1]} = (@{$savedcallouts[-1]}, @reginner);
 }
+=cut
 
 sub regbranch {
 

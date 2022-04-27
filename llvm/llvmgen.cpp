@@ -4477,18 +4477,6 @@ static void handle_single_reg_state(info *pcurrent, std::deque<info> *pcurrdeq) 
 		} 
 		else if(0) case "regbeginlookaround"_h: {
 
-			if(!std::get<keys>(pcurrent->iter->second)["conditional"_h].empty()) {
-				unsigned firstorig = pcurrent->first;
-				pcurrent->iter->first = stringhash("regbegingroup");
-				pcurrent->iter->second
-				handle_single_reg_state(pcurrent, pcurrdeq);
-				pcurrent->first = firstorig;
-			}
-
-			pcurrdeq->push_back(*pcurrent);
-			pcurrent = &pcurrdeq->back();
-		
-
 			pcurrent->state = LOOKAROUND;
 
 			pcurrent->addinfo.negate = std::get<keys>(pcurrent->iter->second)["sign"_h] == "!";

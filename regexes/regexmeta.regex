@@ -1,15 +1,17 @@
 
-    (?<sub>[(][?]<(?<square>\[?+)(?<name>\w++)(?(?{$+{square}})\])>(?{call "regbeginsub"})(?{call2 "recordbegin"})
-    ([{]((?<entitlement>\w++),(?{call2 "recordappend"}))*+})?+(?&regex)[)]
+    (?<openpar>[(](?<![)])) (?# for ease with VSCode bracket calculations)
+    
+    (?<sub>[(][?]<(?<square>\[?+)(?<name>\w++)(?(?{$+{square}})\])>(?{call "regbeginsub"})(?{call2 "argsreset"})
+    ([{]((?<entitlement>\w++),(?{call2 "argsappend"}))*+})?+(?&regex)[)]
     (?{call "regfinishsub"}))
 
-    (?<group>[(](?<atomic>([?][>])?+)(?{call "regbegingroup"})(?&regex)[)](?{call "regfinish"}))
+    (?<group>[(](?![&*])(?![?][^>])(?<atomic>([?][>])?+)(?{call "regbegingroup"})(?&regex)[)](?{call "regfinish"}))
 
     (?<call>[(][?]
     (?<ampersand>(&(?<angular><)?+)?+)
-    (?<callee>\w++)(?(?{$+{angular}})>)(?{call "regcall"})(?{call2 "recordbegin"})
-    (?(?{$+{ampersand}})([(](?<arg>\w++)(?{call2 "recordappend"})
-    (,(?<arg>\w++)(?{call2 "recordappend"}))*+[)])?+)[)](?<angular>))
+    (?<callee>\w++)(?(?{$+{angular}})>)(?{call "regcall"})(?{call2 "argsreset"})
+    (?(?{$+{ampersand}})([(](?<arg>\w++)(?{call2 "argsappend"})
+    (,(?<arg>\w++)(?{call2 "argsappend"}))*+[)])?+)[)](?<angular>))
 
     (?<lookaround>[(][?](?<sign>[!=])
     (?{call "regbeginlookaround"})(?&regex)[)](?{call "regfinish"}))
@@ -27,9 +29,9 @@
     ((?(?=\\)(?<escapechar>\\)(?<char>.)|(?<char>[^]]))(?&escapetooptional)(?<escapechar>))*+\]
     (?{call "regfinish"}))
 
-    (?<conditional>[(][?](??{startrecord})(?(?=(?<lookaround>(?&lookaround)))
-    \g{lookaround}(?{call2 "regchecklookaround"})
-    |[(]<(?<name>\w++)>[)](??{stoprecord})(?{call "regcheckname"}))(?&regex)[)]
+    (?<conditional>[(][?](?(?=(?&openpar)[^<])
+    (?{call "regbegingroup"})(?&lookaround)
+    |[(]<(?<name>\w++)>[)](?{call "regcheckname"}))(?&regex)[)]
     (?{call "regfinish"}))
 
     (?<verb>[(][*](?<verb>[A-Z]++)[)](?{call "regverb"}))
