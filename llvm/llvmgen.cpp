@@ -4420,7 +4420,8 @@ enum STATE {
 	LOOKAROUND,
 	IN_A_CONDITIONAL,
 	REGCALL,
-	REGGROUP
+	REGGROUP,
+	REGNAMED
 };
 
 struct info {
@@ -4435,9 +4436,21 @@ struct info {
 
 using matches_type = std::unordered_map<unsigned, std::list<std::string>>;
 
-using frames_type = std::list<std::pair<std::deque<info>, matches_type>>;
+using entitlements_type = std::list<std::string>;
 
-static void handle_single_reg_state(info *pcurrent, std::deque<info> *pcurrdeq, frames_type *pcurrentframes, matches_type *pcurrentmatches) {
+struct frame {
+	std::deque<info> state;
+	matches_type matches;
+	std::optional<std::array<entitlements_type::iterator, 2>> entitlement;
+
+	bool isolated;
+};
+
+using frames_type = std::list<frame>;
+
+static void handle_single_reg_state(info *pcurrent, std::deque<info> *pcurrdeq,
+	 frames_type *pcurrentframes, matches_type *pcurrentmatches,
+	 entitlements_type *pentitlements_stack, frame *pcurrentframe) {
 	switch(pcurrent->iter->first)
 		if(0)
 		case "regbegingroup"_h: {
@@ -4497,16 +4510,33 @@ static void handle_single_reg_state(info *pcurrent, std::deque<info> *pcurrdeq, 
 			std::string argument;
 
 			for(unsigned argn = 0; argument = std::get<keys>(pcurrent->iter->second)[stringhash((std::stringstream{"argument"} << argn).str().c_str())], !argument.empty(); argn++)
-				newframe.second[stringhash(argument.c_str())].push_back("");
+				newframe.matches[stringhash(argument.c_str())].push_back("");
 
-			/*info reginfo;
+			newframe.state = {{{NONE, pcurrent->striter, subs[stringhash(std::get<keys>(pcurrent->iter->second)["callee"_h].c_str())]}}};
 
-			reginfo.iter = subs[stringhash(std::get<keys>(pcurrent->iter->second)["callee"_h].c_str())];
-			reginfo.state = REGCALL;
-
-			pcurrdeq->push_back(reginfo);*/
 		} else {
 
+		}
+		else if(0) case "regsub"_h: {
+			pcurrdeq->push_back(*pcurrent);
+			pcurrent = &pcurrdeq->back();
+			pcurrent->state = REGNAMED;
+
+			if(pcurrdeq->size() == 2) { //if just entered 
+				std::string argument;
+
+				entitlements_type entitlements;
+
+				for(unsigned argn = 0; argument = std::get<keys>(pcurrent->iter->second)[stringhash((std::stringstream{"argument"} << argn).str().c_str())], !argument.empty(); argn++)
+					entitlements.push_back(argument);
+			
+				if(!entitlements.empty()) {
+					pcurrentframe->entitlement = std::array{entitlements.begin(), --entitlements.end()};
+					pentitlements_stack->splice(pentitlements_stack->end(), entitlements);
+				}
+
+				pcurrentframe->isolated = !std::get<keys>(pcurrent->iter->second)["square"_h].empty();
+			}
 		}
 
 	++pcurrent->iter;
@@ -4610,10 +4640,12 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes, SV *out) {
 
 	frames_type frames{{{{{NONE, targetstr.begin(), iterentry}}}, {}}};
 
+	entitlements_type entitlements_stack{};
+
 	//volatile auto probe = *iterentry
 
 	for(;;) try {
-		handle_single_reg_state(&frames.back().first.back(),&frames.back().first, &frames, &frames.back().second);
+		handle_single_reg_state(&frames.back().state.back(),&frames.back().state, &frames, &frames.back().matches, &entitlements_stack, &frames.back());
 	} catch(STATE state) {
 		assert(state == NONE);
 	}

@@ -84,7 +84,7 @@
 	typefound,
 }>
 	(*RECORD)
-	(?=(?<Tqualifs>((?&qualifs)|\s*+((?(<strc>)(*F))(?(<typedefnmmatched>)(*F))
+	(?=(?<Tqualifs>((?<typefound>(?&qualifs))|\s*+((?(<strc>)(*F))(?(<typedefnmmatched>)(*F))
 		((?<strc>(?&structorunion))
 		|(?(<typefound>)(*F))(?<typedefnmmatched>(?&identifier_typedef)))
 		|(?(<typedefkey>)(*F))(?<typedefkey>(\btypedef\b)))\s*+)++
