@@ -649,7 +649,6 @@ sub getnext {
     return $+{arg};
 }
 
-
 sub substitutetemplateinstances {
     my $backup = $&;
     my $regexcontent = $_[0];
@@ -1010,6 +1009,12 @@ sub regchecklookaround {
     @{$savedcallouts[-1]} = (@{$savedcallouts[-1]}, @reginner);
 }
 =cut
+
+sub regbeginsubcall {
+    push @{$savedcallouts[-1]}, {regbeginsubcall => {
+        "name" => $+{callee}
+    }};
+}
 
 sub regbranch {
 

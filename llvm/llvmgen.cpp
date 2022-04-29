@@ -4433,7 +4433,11 @@ struct info {
 	} addinfo;
 };
 
-static void handle_single_reg_state(info *pcurrent, std::deque<info> *pcurrdeq) {
+using matches_type = std::unordered_map<unsigned, std::list<std::string>>;
+
+using frames_type = std::list<std::pair<std::deque<info>, matches_type>>;
+
+static void handle_single_reg_state(info *pcurrent, std::deque<info> *pcurrdeq, frames_type *pcurrentframes, matches_type *pcurrentmatches) {
 	switch(pcurrent->iter->first)
 		if(0)
 		case "regbegingroup"_h: {
@@ -4486,15 +4490,27 @@ static void handle_single_reg_state(info *pcurrent, std::deque<info> *pcurrdeq) 
 			pcurrent->state = IN_A_CONDITIONAL;
 		}
 		else if(0) case "regcall"_h: if(!std::get<keys>(pcurrent->iter->second)["ampersand"_h].empty()) {
-			info reginfo;
+			pcurrentframes->push_back({});
+
+			auto &newframe = pcurrentframes->back();
+
+			std::string argument;
+
+			for(unsigned argn = 0; argument = std::get<keys>(pcurrent->iter->second)[stringhash((std::stringstream{"argument"} << argn).str().c_str())], !argument.empty(); argn++)
+				newframe.second[stringhash(argument.c_str())].push_back("");
+
+			/*info reginfo;
 
 			reginfo.iter = subs[stringhash(std::get<keys>(pcurrent->iter->second)["callee"_h].c_str())];
 			reginfo.state = REGCALL;
 
-			pcurrdeq->push_back(reginfo);
+			pcurrdeq->push_back(reginfo);*/
 		} else {
 
 		}
+
+	++pcurrent->iter;
+
 	return;
 fail:
 	;
@@ -4592,13 +4608,14 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes, SV *out) {
 
 	metatypeiter iterentry = subs[stringhash(entrygroup.c_str())];
 
+	frames_type frames{{{{{NONE, targetstr.begin(), iterentry}}}, {}}};
+
 	//volatile auto probe = *iterentry
 
-	std::deque<info> workin{{{NONE, targetstr.begin(), iterentry}}};
-	for(;;) {
-		auto *pcurrent = &workin.back();
-		auto *pcurrdeq = &workin;
-		
+	for(;;) try {
+		handle_single_reg_state(&frames.back().first.back(),&frames.back().first, &frames, &frames.back().second);
+	} catch(STATE state) {
+		assert(state == NONE);
 	}
 }
 

@@ -3,15 +3,15 @@
     
     (?<sub>[(][?]<(?<square>\[?+)(?<name>\w++)(?(?{$+{square}})\])>(?{call "regbeginsub"})(?{call2 "argsreset"})
     ([{]((?<entitlement>\w++),(?{call2 "argsappend"}))*+})?+(?&regex)[)]
-    (?{call "regfinishsub"}))
+    (?{call "regfinishsub"})(?<square>))
 
     (?<group>[(](?![&*])(?![?][^>])(?<atomic>([?][>])?+)(?{call "regbegingroup"})(?&regex)[)](?{call "regfinish"}))
 
     (?<call>[(][?]
     (?<ampersand>(&(?<angular><)?+)?+)
-    (?<callee>\w++)(?(?{$+{angular}})>)(?{call "regcall"})(?{call2 "argsreset"})
+    (?<callee>\w++)(?(?{$+{angular}})>(?{call2 "regbeginsubcall"}))(?{call "regcall"})(?{call2 "argsreset"})
     (?(?{$+{ampersand}})([(](?<arg>\w++)(?{call2 "argsappend"})
-    (,(?<arg>\w++)(?{call2 "argsappend"}))*+[)])?+)[)](?<angular>))
+    (,(?<arg>\w++)(?{call2 "argsappend"}))*+[)])?+)[)](?(?{$+{angular}})(?{call "regfinishsub"}))(?<angular>))
 
     (?<lookaround>[(][?](?<sign>[!=])
     (?{call "regbeginlookaround"})(?&regex)[)](?{call "regfinish"}))
