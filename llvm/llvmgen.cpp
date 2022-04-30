@@ -4417,6 +4417,7 @@ enum STATE {
 	NONE,
 	INASEQ,
 	INASEQMATCHED,
+	CHARMATCHED,
 	LOOKAROUND,
 	IN_A_CONDITIONAL,
 	REGCALL,
@@ -4448,14 +4449,22 @@ struct frame {
 
 using frames_type = std::list<frame>;
 
+using backtrack_locations_type = std::list<std::pair<std::deque<info>::iterator, frames_type::iterator>>;
+
 static void handle_single_reg_state(info *pcurrent, std::deque<info> *pcurrdeq,
 	 frames_type *pcurrentframes, matches_type *pcurrentmatches,
-	 entitlements_type *pentitlements_stack, frame *pcurrentframe) {
+	 entitlements_type *pentitlements_stack, frame *pcurrentframe,
+	 backtrack_locations_type *plocationstobacktrackto) {
+
+	auto push_state = [&]() {
+		pcurrdeq->push_back(*pcurrent);
+		pcurrent = &pcurrdeq->back();
+	};
+
 	switch(pcurrent->iter->first)
 		if(0)
 		case "regbegingroup"_h: {
-			pcurrdeq->push_back(*pcurrent);
-			pcurrent = &pcurrdeq->back();
+			push_state();
 			pcurrent->state = REGGROUP;
 			pcurrent->addinfo.atomic = !std::get<keys>(pcurrent->iter->second)["atomic"_h].empty();
 		}
@@ -4470,37 +4479,34 @@ static void handle_single_reg_state(info *pcurrent, std::deque<info> *pcurrdeq,
 
 			if((isescapeto ? !checkequntil(tocmp[0], tocmpuntil[0], isescape, isescapeto, pcurrent->striter) 
 				: checkeq(tocmp[0], isescape, pcurrent->striter)) && pcurrent->state != INASEQ) goto fail;
-			else if(!pcurrent->addinfo.negate)
-				pcurrent->state = INASEQMATCHED;
+			else if(!pcurrent->addinfo.negate) {
+				push_state();
+				pcurrent->state = pcurrent->state == INASEQ ? INASEQMATCHED : CHARMATCHED;
+				pcurrent->striter++;
+			}
 		}
 		else if(0) case "regbeginseq"_h: {
-			pcurrdeq->push_back(*pcurrent);
-			pcurrent = &pcurrdeq->back();
+			push_state();
 			pcurrent->state = INASEQ;
 			pcurrent->addinfo.negate = !std::get<keys>(pcurrent->iter->second)["not"_h].empty();
 		}
-		else if(0) case "regfinish"_h: {
-			auto lastinfo = *pcurrent;
-			pcurrdeq->pop_back();
-
-			pcurrent = &pcurrdeq->back();
-
-			switch(lastinfo.state) 
-			if(0) case INASEQ:
-				if(!lastinfo.addinfo.negate) goto fail;
-				else ++pcurrent->striter;
-			else if(0) case INASEQMATCHED:
-				pcurrent->striter = lastinfo.striter;
+		else if(0) case "regfinishseq"_h: {
+			if(pcurrent->state != INASEQMATCHED)
+			{
+				assert(pcurrent->state == INASEQ);
+				if(!pcurrent->addinfo.negate)
+					goto fail;
+			}
 		} 
 		else if(0) case "regbeginlookaround"_h: {
 			pcurrent->state = LOOKAROUND;
 
 			pcurrent->addinfo.negate = std::get<keys>(pcurrent->iter->second)["sign"_h] == "!";
 		}
-		else if(0) case "regbeginconditional"_h: {
-			pcurrdeq->push_back(*pcurrent);
-			pcurrent = &pcurrdeq->back();
+		else if(0) case "regconditional"_h: {
+			push_state();
 			pcurrent->state = IN_A_CONDITIONAL;
+			plocationstobacktrackto->push_back({--pcurrentframes->back().state.end(), --pcurrentframes->end()})
 		}
 		else if(0) case "regcall"_h: if(!std::get<keys>(pcurrent->iter->second)["ampersand"_h].empty()) {
 			pcurrentframes->push_back({});
@@ -4642,10 +4648,12 @@ DLL_EXPORT void dostartmetaregex(SV* in, AV* hashes, SV *out) {
 
 	entitlements_type entitlements_stack{};
 
+	backtrack_locations_type locationstobacktracto;
+
 	//volatile auto probe = *iterentry
 
 	for(;;) try {
-		handle_single_reg_state(&frames.back().state.back(),&frames.back().state, &frames, &frames.back().matches, &entitlements_stack, &frames.back());
+		handle_single_reg_state(&frames.back().state.back(),&frames.back().state, &frames, &frames.back().matches, &entitlements_stack, &frames.back(), &locationstobacktracto);
 	} catch(STATE state) {
 		assert(state == NONE);
 	}

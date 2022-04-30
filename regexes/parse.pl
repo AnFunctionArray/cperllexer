@@ -501,17 +501,17 @@ sub replay {
 sub call {
     #print Dumper(\%+);
     my $funcnm = shift;
-    my $captures = { %+ };
+    my %captures = %+;
     my $facet = isfacet;
     if($facet) {
         eval {
             print "pushing to " . scalar @savedcallouts . "\n";
-            push @{$savedcallouts[-1]}, {$funcnm => $captures};
+            push @{$savedcallouts[-1]}, {$funcnm => {%captures}};
             print "success\n";
         };
         return
     }
-    return callcommon($funcnm, $captures, $facet)
+    return callcommon($funcnm, { %captures }, $facet)
 }
 
 sub call2 {

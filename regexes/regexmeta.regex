@@ -1,11 +1,11 @@
 
     (?<openpar>[(](?<![)])) (?# for ease with VSCode bracket calculations)
     
-    (?<sub>[(][?]<(?<square>\[?+)(?<name>\w++)(?(?{$+{square}})\])>(?{call "regbeginsub"})(?{call2 "argsreset"})
+    (?<sub>[(][?]<(?<square>\[?+)(?<namesub>\w++)(?(?{$+{square}})\])>(?{call "regbeginsub"})(?{call2 "argsreset"})
     ([{]((?<entitlement>\w++),(?{call2 "argsappend"}))*+})?+(?&regex)[)]
     (?{call "regfinishsub"})(?<square>))
 
-    (?<group>[(](?![&*])(?![?][^>])(?<atomic>([?][>])?+)(?{call "regbegingroup"})(?&regex)[)](?{call "regfinish"}))
+    (?<group>[(](?![&*])(?![?][^>])(?<atomic>([?][>])?+)(?{call "regbegingroup"})(?&regex)[)](?{call "regfinishgroup"}))
 
     (?<call>[(][?]
     (?<ampersand>(&(?<angular><)?+)?+)
@@ -14,25 +14,21 @@
     (,(?<arg>\w++)(?{call2 "argsappend"}))*+[)])?+)[)](?(?{$+{angular}})(?{call "regfinishsub"}))(?<angular>))
 
     (?<lookaround>[(][?](?<sign>[!=])
-    (?{call "regbeginlookaround"})(?&regex)[)](?{call "regfinish"}))
+    (?{call "regbeginlookaround"})(?&regex)[)](?{call "regfinishlookaround"}))
 
-    (?<char>(?(?=(?<escapechar>\\))\\(?<char>[^g])(?{call "regchar"})|(?<escapechar>)(?<char>[^\[\]?*+{()}|])
-    (?{call "regchar"})))
+    (?<char>(?(?=\\)\\(?<escape>[^g])(?{call "regescape"})|(?<character>[^\[\]?*+{()}|])(?{call "regchar"})))
 
-    (?<backreference>\\g[{](?<name>\w++)[}](?{call "regbackref"}))
-
-    (?<escapetooptional>(-(?(?=\\)(?<escapeto>\\)(?<to>.)|(?<escapeto>)(?<to>[^]])))?+
-    (?{call "regchar"})(?<to>))
+    (?<backreference>\\g[{](?<namebackref>\w++)[}](?{call "regbackref"}))
 
     (?<sequence>\[(?<not>\^?+)(?{call "regbeginseq"})
-    (\\(?<escapechar>.)|(?<char>.))(?&escapetooptional)(?<escapechar>)
-    ((?(?=\\)(?<escapechar>\\)(?<char>.)|(?<char>[^]]))(?&escapetooptional)(?<escapechar>))*+\]
-    (?{call "regfinish"}))
+    (\\(?<escapecharinitial>.)(?{call "regcharescapeinitial"})|(?<charinitial>.)(-(?<to>[^]])(?{call "regchartoinitial"})|(?{call "regcharinitial"})))
+    (?(?=\\)\\(?<escapecharnext>.)(?{call "regcharescapenext"})|(?<charnext>[^]])(-(?<to>[^]])(?{call "regchartonext"})|(?{call "regcharnext"})))*+\]
+    (?{call "regfinishseq"}))
 
     (?<conditional>[(][?](?(?=(?&openpar)[^<])
-    (?{call "regbegingroup"})(?{call "regbeginconditional"})(?&lookaround)
-    |[(]<(?<name>\w++)>[)](?{call "regcheckname"}))(?&regex)[)]
-    (?{call "regfinish"}))
+    (??{set {"savedcallouts" => []}})(?&lookaround)
+    |(??{set {"savedcallouts" => []}})[(]<(?<nameconditioinal>\w++)>[)](?{call "regcheckname"}))
+    (??{set {"savedcallouts" => []}})(?&regexpart)(?{call2 "regbranch"})(?&regexor)[)](?{call2 "regend"}))
 
     (?<verb>[(][*](?<verb>[A-Z]++)[)](?{call "regverb"}))
 
@@ -50,4 +46,6 @@
 
     (?<regexpart>(?(?=(?<reinner>(?&regexinner)++))\g{reinner}|(?{call "regnothing"})))
 
-    (?<regex>(??{set {"savedcallouts" => []}})(?&regexpart)([|](??{set {"savedcallouts" => []}})(?&regexpart)(?{call2 "regbranch"}))*+(?{call2 "regend"}))
+    (?<regexor>([|](??{set {"savedcallouts" => []}})(?&regexpart)(?{call2 "regbranch"}))*+)
+
+    (?<regex>(??{set {"savedcallouts" => []}})(?&regexpart)(?&regexor)(?{call2 "regend"}))
