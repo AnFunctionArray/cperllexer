@@ -4407,8 +4407,7 @@ static bool checkeq(char chsrc, bool isescap, std::string::iterator &chtrg) {
 	return result;
 }
 
-static bool checkequntil(char chsrc, char chsrc1, bool isescap, bool isescap1, std::string::iterator &chtrg) {
-	assert(!isescap); assert(!isescap1);
+static bool checkequntil(char chsrc, char chsrc1, std::string::iterator &chtrg) {
 	while(chsrc != chsrc1 + 1) if(checkeq(chsrc++, false, chtrg)) return true;
 	return false;
 }
@@ -4461,6 +4460,15 @@ static void handle_single_reg_state(info *pcurrent, std::deque<info> *pcurrdeq,
 		pcurrent = &pcurrdeq->back();
 	};
 
+	static const std::unordered_map<unsigned, std::deque<unsigned>> dict={
+		{"regescape"_h, {"escape"_h}},
+		{"regchar"_h, {"character"_h}},
+		{"regcharescapeinitial"_h, {"escapecharinitial"_h}},
+		{"regcharescapenext"_h, {"escapecharnext"_h}},
+		{"regchartoinitial"_h, {"charinitial"_h, "toinitial"_h}},
+		{"regchartonext"_h, {"charnext"_h, "tonext"_h}},
+	};
+
 	switch(pcurrent->iter->first)
 		if(0)
 		case "regbegingroup"_h: {
@@ -4468,17 +4476,29 @@ static void handle_single_reg_state(info *pcurrent, std::deque<info> *pcurrdeq,
 			pcurrent->state = REGGROUP;
 			pcurrent->addinfo.atomic = !std::get<keys>(pcurrent->iter->second)["atomic"_h].empty();
 		}
-		else if(0)
-		case "regchar"_h: {
-			bool isescape = !std::get<keys>(pcurrent->iter->second)["escapechar"_h].empty();
-			std::string tocmp = std::get<keys>(pcurrent->iter->second)[isescape ? "escapechar"_h : "char"_h];
+		else if(0) 
+		case "regescape"_h:
+		case "regcharescapeinitial"_h:
+		case "regcharescapenext"_h:
+		{
+			bool isescape;
+			
+			isescape = true;
 
-			bool isescapeto = !std::get<keys>(pcurrent->iter->second)["escapeto"_h].empty();
-			std::string tocmpuntil = std::get<keys>(pcurrent->iter->second)[isescapeto ? "escapeto"_h : "to"_h];
+			if(0) {
+				case "regchartoinitial"_h:
+				case "regchartonext"_h:
+				case "regchar"_h:
+				isescape = false;
+			}
 
+			const std::deque<unsigned> &fields = dict.at(pcurrent->iter->first);
 
-			if((isescapeto ? !checkequntil(tocmp[0], tocmpuntil[0], isescape, isescapeto, pcurrent->striter) 
-				: checkeq(tocmp[0], isescape, pcurrent->striter)) && pcurrent->state != INASEQ) goto fail;
+			if((fields.size() > 1 ? !checkequntil(
+				std::get<keys>(pcurrent->iter->second)[fields[0]][0],
+				 std::get<keys>(pcurrent->iter->second)[fields[1]][0], pcurrent->striter) 
+				: checkeq(std::get<keys>(pcurrent->iter->second)[fields[0]][0],
+				 isescape, pcurrent->striter)) && pcurrent->state != INASEQ) goto fail;
 			else if(!pcurrent->addinfo.negate) {
 				push_state();
 				pcurrent->state = pcurrent->state == INASEQ ? INASEQMATCHED : CHARMATCHED;

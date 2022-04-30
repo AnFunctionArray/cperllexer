@@ -21,8 +21,8 @@
     (?<backreference>\\g[{](?<namebackref>\w++)[}](?{call "regbackref"}))
 
     (?<sequence>\[(?<not>\^?+)(?{call "regbeginseq"})
-    (\\(?<escapecharinitial>.)(?{call "regcharescapeinitial"})|(?<charinitial>.)(-(?<to>[^]])(?{call "regchartoinitial"})|(?{call "regcharinitial"})))
-    (?(?=\\)\\(?<escapecharnext>.)(?{call "regcharescapenext"})|(?<charnext>[^]])(-(?<to>[^]])(?{call "regchartonext"})|(?{call "regcharnext"})))*+\]
+    (\\(?<escapecharinitial>.)(?{call "regcharescapeinitial"})|(?<charinitial>.)(-(?<toinitial>[^]])(?{call "regchartoinitial"})|(?{call "regcharinitial"})))
+    (?(?=\\)\\(?<escapecharnext>.)(?{call "regcharescapenext"})|(?<charnext>[^]])(-(?<tonext>[^]])(?{call "regchartonext"})|(?{call "regcharnext"})))*+\]
     (?{call "regfinishseq"}))
 
     (?<conditional>[(][?](?(?=(?&openpar)[^<])
