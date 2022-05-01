@@ -1,6 +1,6 @@
-(?<unary>(?<prefixarith>\s*+(?<prefixarithraw>[+][+]|--))(?&unaryexpr)(?unaryincdec)
+(?<unary>(?<prefixarith>\s*+(?<prefixarithraw>[+][+]|--))(?&unaryexpr)(?{call 'unaryincdec'})
 	|(*RECORD)(?&<unaryop>)(*STOP)(?(?!(?&<castexpr>))|\g{unaryop}(*REPLAY)\g{castexpr})
-	|\s*+\bsizeof\b(?>(?&typename)(?endsizeoftypename)|(?&unaryexpr)(?endsizeofexpr)))
+	|\s*+\bsizeof\b(?>(?&typename)(?{call 'endsizeoftypename'})|(?&unaryexpr)(?{call 'endsizeofexpr'})))
 
 
-						(?<unaryop>\s*+(?<unop>[\&\*\+\-\~\!])(?unary))
+						(?<unaryop>\s*+(?<unop>[\&\*\+\-\~\!])(?{call 'unary'}))

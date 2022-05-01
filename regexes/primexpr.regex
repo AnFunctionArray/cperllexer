@@ -5,25 +5,25 @@
 
 
 (?<castexpr>(?&typenamerev)|(?<unaryexpr>((?&inner)|(?<inparenths>\s*+[(](?&primexpr)[)]
-						\s*+))(((\[(?&primexpr)\](?subscript)|[(](?startfunctioncall)(?&primexpr)?[)]
-						(?endfunctioncall))\s*+
+						\s*+))(((\[(?&primexpr)\](?{call 'subscript'})|[(](?{call 'startfunctioncall'})(?&primexpr)?[)]
+						(?{call 'endfunctioncall'}))\s*+
 						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?&identifierminemember)
 						|(?<postfixarith>(?<postfixarithraw>[+][+]|--)\s*+)
-						(?unaryincdec)))*+
+						(?{call 'unaryincdec'})))*+
 						|(?&unary)))
 
 (?<identifierminemember>\s*+(?<ident>(?&identifierraw_qualified))
-	(?memberaccess)\s*+)
+	(?{call 'memberaccess'})\s*+)
 
 (?<testxpr>(?&inner)|(?&inparenths))
 
 (?<[assignorsomething]>
 	(?(?=(*RECORD)(?&<unaryexpr>))
-	(?begin_binary)(*REPLAY)\g{unaryexpr}
+	(?{call 'begin_binary'})(*REPLAY)\g{unaryexpr}
 	((?<assignop>(?<binoplast>=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+)
-		(?&assignorsomething)(?binary)(?end_binary)|(?&ternaryorsomething)(?end_binary))
-		|(*RESET)(?(?=(?&<typename>)(?begin_binary))|(*F))
-		(*STOP)\g{typename}(?&typenamerev)(*REPLAY)(?&ternaryorsomething)(?end_binary))
+		(?&assignorsomething)(?{call 'binary'})(?{call 'end_binary'})|(?&ternaryorsomething)(?{call 'end_binary'}))
+		|(*RESET)(?(?=(?&<typename>)(?{call 'begin_binary'}))|(*F))
+		(*STOP)\g{typename}(?&typenamerev)(*REPLAY)(?&ternaryorsomething)(?{call 'end_binary'}))
 )
 
 (?<ternaryorsomething>(?&orlogiorsomething)((?&ternaryrest)

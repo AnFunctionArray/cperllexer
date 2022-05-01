@@ -508,9 +508,11 @@ sub replay {
 sub call {
     #print Dumper(\%+);
     my $funcnm = shift;
-    my %captures = %{$matches[-1]};
-    my $facet = isfacet;
-    if($facet) {
+    my %captures = {%+};
+
+    eval {@captures{keys %{$matches[-1]}} = values %{$matches[-1]}};
+    
+    if($recording) {
         eval {
             print "pushing to " . scalar @savedcallouts . "\n";
             push @{$savedcallouts[-1]}, {$funcnm => {%captures}};
@@ -518,7 +520,7 @@ sub call {
         };
         return
     }
-    return callcommon($funcnm, { %captures }, $facet)
+    return callcommon($funcnm, { %captures }, $recording)
 }
 
 sub call2 {
@@ -533,15 +535,15 @@ sub callcommon {
 
     print $funcnm . "\n";
 
-    my $argsin = shift;
+    #my $argsin = shift;
 
     #print Dumper $argsin;
 
-    @$captures{keys %$argsin} = values %$argsin;
+    #@$captures{keys %$argsin} = values %$argsin;
 
     #print "facet -> $facet\n";
     
-    my $cond = ($entryregex =~ m{facet$} or not $facet);
+    #my $cond = ($entryregex =~ m{facet$} or not $facet);
     #return unless($entryregex =~ m{facet$} or not $facet);
     #require re;
     #re->import('debug') if($_[1] eq "Ptr64ToPtr");
@@ -551,7 +553,7 @@ sub callcommon {
 
     $subslice =~ s{\R}{ }g;
 
-    if ($cond) {
+    if (not $facet) {
         use Data::Dumper;
         use POSIX;
     
@@ -565,12 +567,12 @@ sub callcommon {
     #}
     my $res;
     eval {
-        if($cond) {
+        if(not $facet) {
             $res = $funcnm->($captures) 
         }
     };
 
-    callout($funcnm, $captures) if(defined &callout and $cond);
+    callout($funcnm, $captures) if(defined &callout and not $facet);
     return $res;
 }
 
@@ -1171,5 +1173,16 @@ for(;1;++$currindex) {
 startmetaregex($entryregex, \@regexbindings, $subject) if(defined &startmetaregex and not $nested);
 #startmatching($subject, $mainregexfinal, basename($ARGV[-1]), $entryregex);
 #exit;
+
+
+sub replayrecord {
+    foreach my $hash @{$savedcallouts[-1]}  {
+        if(not $recording) {
+            callcommon((keys %$hash)[0], (values %$hash)[0], 0)
+        } else {
+            @{$savedcallouts[-2]} = (@{$savedcallouts[-2]}, @{$savedcallouts[-1]})
+        }
+    }
+}
 
 1

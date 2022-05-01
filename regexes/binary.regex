@@ -9,8 +9,8 @@
     |(?(<oropraw>)(?&xoropraw)
     |(?(<andlogicopraw>)(?&oropraw)
     |(?(<orlogicopraw>)(?&andlogicopraw)
-    |(?<orlogicopraw>\|\|(?begin_branch)
-            |(?<andlogicopraw>&&(?begin_branch)
+    |(?<orlogicopraw>\|\|(?{call 'begin_branch'})
+            |(?<andlogicopraw>&&(?{call 'begin_branch'})
             |(?<oropraw>(?!\|\|)\|
             |(?<xoropraw>\^
             |(?<andopraw>(?!&&)&
@@ -20,7 +20,7 @@
             |(?<addopraw>[\+\-]
             |(?<mulopraw>[\*\/\%]))))))))))
             ))))))))))(?&castexpr)
-    (?&binopplusrest)*(?binary)))
+    (?&binopplusrest)*(?{call 'binary'})))
 
 
 (?<[orlogiorsomething]>
