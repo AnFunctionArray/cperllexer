@@ -59,18 +59,6 @@ sub dec2 {
     }
 }
 
-sub set2 {
-    #print Dumper(@_);
-    foreach my $pair (@_) {
-        my ($key, $value) = %$pair;
-        #print Dumper($pair);
-        if(exists $$pair{$key}) {
-            push @$key, $value;
-            print "pushing $key to $key->[-1]\n"
-        }
-    }
-}
-
 sub unset2 {
 
     foreach my $bulk (@_) {
@@ -80,24 +68,15 @@ sub unset2 {
     }
 }
 
-
-sub set2origin {
+sub set2 {
     #print Dumper(@_);
     foreach my $pair (@_) {
         my ($key, $value) = %$pair;
         #print Dumper($pair);
-        $matches[-1]->{$key} = $value;
-        print "setting match $key to $key->[-1]\n"
-    }
-}
-
-sub unset2origin {
-
-    foreach my $bulk (@_) {
-        #print "popping $bulk\n";
-        print Dumper $bulk;
-        $matches[-1]->{$bulk} = "";
-        print "deleting match $bulk\n";
+        if(exists $$pair{$key}) {
+            push @$key, $value;
+            print "pushing $key to $key->[-1]\n"
+        }
     }
 }
 
@@ -124,8 +103,8 @@ sub common {
 
 sub evalval {
     $Data::Dumper::Deparse = 1;
-    (Dumper $_[0]) =~ m{\$(?!VAR\d)\w++\b};
-    print "reading from " . $&;
+    (Dumper $_[0]) =~ m{$(?!VAR\d)\S++\\b};
+    print "reading from " . Dumper $_[0];
     my $result = eval {
         $_[0]()
     };
@@ -159,30 +138,14 @@ sub unset {
 
     print "un " . $args . "\n";
     $Data::Dumper::Terse = 0;
+
+    #print Dumper @matches;
+
     return "(*COMMIT)(?{unset2 $args})"
 }
 
 sub setmatch {
-    $Data::Dumper::Terse = 1;
-    my $vars = join(',', map {Dumper($_)} @_);
-    my $unset = join(',', map {(keys %$_)[0]} @_);
-
-    #print $vars . "\n";
-    $Data::Dumper::Terse = 0;
-    print "setmatch $unset\n";
-    print Dumper @_;
-
-    return "((?{set2origin $vars})|(?{unset2origin $unset})(*F))"
-}
-
-sub unsetmatch {
-    $Data::Dumper::Terse = 1;
-
-    my $args = join(',', @_);
-
-    print "un " . $args . "\n";
-    $Data::Dumper::Terse = 0;
-    return "(*COMMIT)(?{unset2origin $args})"
+    return "((?{eval {\$matches[-1]->{$_[0]}=\'$^N\'}})|(?{eval {delete \$matches[-1]->{$_[0]}}})(*F))"
 }
 
 sub dec {
