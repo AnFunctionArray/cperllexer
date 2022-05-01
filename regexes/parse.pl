@@ -1086,7 +1086,7 @@ undef $facet;
 my @regexbindings = @{$savedcallouts[-1]};
 pop @savedcallouts;
 
-print Dumper \@regexbindings;
+print Dumper \@savedcallouts;
 
 my $entryindex;
 
