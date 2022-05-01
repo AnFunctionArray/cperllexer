@@ -80,6 +80,27 @@ sub unset2 {
     }
 }
 
+
+sub set2origin {
+    #print Dumper(@_);
+    foreach my $pair (@_) {
+        my ($key, $value) = %$pair;
+        #print Dumper($pair);
+        $matches[-1]->{$key} = $value;
+        print "setting match $key to $key->[-1]\n"
+    }
+}
+
+sub unset2origin {
+
+    foreach my $bulk (@_) {
+        #print "popping $bulk\n";
+        print Dumper $bulk;
+        $matches[-1]->{$bulk} = "";
+        print "deleting match $bulk\n";
+    }
+}
+
 =begin
 sub common {
     my @currvalsaltarr = ();
@@ -133,12 +154,35 @@ sub set {
 
 sub unset {
     $Data::Dumper::Terse = 1;
+
+    my $args = join(',', @_);
+
+    print "un " . $args . "\n";
+    $Data::Dumper::Terse = 0;
+    return "(*COMMIT)(?{unset2 $args})"
+}
+
+sub setmatch {
+    $Data::Dumper::Terse = 1;
     my $vars = join(',', map {Dumper($_)} @_);
     my $unset = join(',', map {(keys %$_)[0]} @_);
 
-    print "un " . $unset . "\n";
+    #print $vars . "\n";
     $Data::Dumper::Terse = 0;
-    return "((?{unset2 $unset})|(?{set2 $vars})(*F))"
+    print "setmatch $unset\n";
+    print Dumper @_;
+
+    return "((?{set2origin $vars})|(?{unset2origin $unset})(*F))"
+}
+
+sub unsetmatch {
+    $Data::Dumper::Terse = 1;
+
+    my $args = join(',', @_);
+
+    print "un " . $args . "\n";
+    $Data::Dumper::Terse = 0;
+    return "(*COMMIT)(?{unset2origin $args})"
 }
 
 sub dec {
@@ -501,7 +545,7 @@ sub replay {
 sub call {
     #print Dumper(\%+);
     my $funcnm = shift;
-    my %captures = %+;
+    my %captures = %{$matches[-1]};
     my $facet = isfacet;
     if($facet) {
         eval {
@@ -515,7 +559,7 @@ sub call {
 }
 
 sub call2 {
-    return callcommon(shift, { %+ }, 0)
+    return callcommon(shift, {%{$matches[-1]}}, 0)
 }
 
 sub callcommon {
@@ -970,9 +1014,9 @@ sub parseregexfile {
 }
 
 sub argsappend {
-    my %matches = %+;
+    #my %matches = %+;
 
-    push @{(values %{$savedcallouts[-1][-1]})[0]->{'argument' . $argcounter++}}, {%matches}
+    (values %{$savedcallouts[-1][-1]})[0]->{'argument' . $argcounter++} = $^N
 }
 
 sub argsreset {

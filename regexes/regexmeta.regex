@@ -1,33 +1,39 @@
 
     (?<openpar>[(](?<![)])) (?# for ease with VSCode bracket calculations)
     
-    (?<sub>[(][?]<(?<square>\[?+)(?<namesub>\w++)(?(?{$+{square}})\])>(?{call "regbeginsub"})(?{call2 "argsreset"})
-    ([{]((?<entitlement>\w++),(?{call2 "argsappend"}))*+})?+(?&regex)[)]
-    (?{call "regfinishsub"})(?<square>))
+    (?<sub>[(][?]<(??{set {"matches" => {}}})(\[?+)(??{setmatch {"square" => $^N}})(?<namesub>\w++)(?(?{evalval sub{$matches[-1]->{square}}})\])>
+        (?{call "regbeginsub"})(?{call2 "argsreset"})
+        ([{]((\w++),(?{call2 "argsappend"}))*+})?+(?&regex)[)]
+    (?{call "regfinishsub"})(??{unset "matches"}))
 
-    (?<group>[(](?![&*])(?![?][^>])(?<atomic>([?][>])?+)(?{call "regbegingroup"})(?&regex)[)](?{call "regfinishgroup"}))
+    (?<group>[(](?![&*])(?![?][^>])(??{set {"matches" => {}}})(([?][>])?+)
+        (??{setmatch {"atomic" => $^N}})(?{call "regbegingroup"})(?&regex)[)]
+    (?{call "regfinishgroup"})(??{unset "matches"}))
 
-    (?<call>[(][?]
-    (?<ampersand>(&(?<angular><)?+)?+)
-    (?<callee>\w++)(?(?{$+{angular}})>(?{call2 "regbeginsubcall"}))(?{call "regcall"})(?{call2 "argsreset"})
-    (?(?{$+{ampersand}})([(](?<arg>\w++)(?{call2 "argsappend"})
-    (,(?<arg>\w++)(?{call2 "argsappend"}))*+[)])?+)[)](?(?{$+{angular}})(?{call "regfinishsub"}))(?<angular>))
+    (?<call>[(][?](??{set {"matches" => {}}})
+        ((&(<)?+(??{setmatch {"angular" => $^N}}))?+)(??{setmatch {"ampersand" => $^N}})
+        (?<callee>\w++)(?(?{evalval sub{$matches[-1]->{angular}}})>(?{call2 "regbeginsubcall"}))(?{call "regcall"})(?{call2 "argsreset"})
+        (?(?{evalval sub{$matches[-1]->{ampersand}}})([(](\w++)(?{call2 "argsappend"})
+        (,(\w++)(?{call2 "argsappend"}))*+[)])?+)[)]
+    (?(?{evalval sub{$matches[-1]->{angular}}})(?{call "regfinishsub"}))(??{unset "matches"}))
 
-    (?<lookaround>[(][?](?<sign>[!=])
-    (?{call "regbeginlookaround"})(?&regex)[)](?{call "regfinishlookaround"}))
+    (?<lookaround>[(][?](??{set {"matches" => {}}})([!=])(??{setmatch {"sign" => $^N}})
+        (?{call "regbeginlookaround"})(?&regex)[)]
+        (?{call "regfinishlookaround"})(??{unset "matches"}))
 
-    (?<char>(?(?=\\)\\(?<escape>[^g])(?{call "regescape"})|(?<character>[^\[\]?*+{()}|])(?{call "regchar"})))
+    (?<char>(??{set {"matches" => {}}})(?(?=\\)\\([^g])(??{setmatch {"escape" => $^N}})
+        |([^\[\]?*+{()}|])(??{setmatch {"raw" => $^N}}))(?{call "regchar"})(??{unset "matches"}))
 
-    (?<backreference>\\g[{](?<namebackref>\w++)[}](?{call "regbackref"}))
+    (?<backreference>\\g[{](??{set {"matches" => {}}})(?<namebackref>\w++)[}](?{call "regbackref"})(??{unset "matches"}))
 
-    (?<sequence>\[(?<not>\^?+)(?{call "regbeginseq"})
-    (\\(?<escapecharinitial>.)(?{call "regcharescapeinitial"})|(?<charinitial>.)(-(?<toinitial>[^]])(?{call "regchartoinitial"})|(?{call "regcharinitial"})))
-    (?(?=\\)\\(?<escapecharnext>.)(?{call "regcharescapenext"})|(?<charnext>[^]])(-(?<tonext>[^]])(?{call "regchartonext"})|(?{call "regcharnext"})))*+\]
-    (?{call "regfinishseq"}))
+    (?<sequence>\[(??{set {"matches" => {}}})(^?+)(??{setmatch {"not" => $^N}})(?{call "regbeginseq"})
+    (\\(.)(??{setmatch {"escape" => $^N}})|(.)(??{setmatch {"raw" => $^N}})(-([^]])(??{setmatch {"to" => $^N}})))(?{call "regchar"})
+    (?(?=\\)\\(.)(??{setmatch {"escape" => $^N}})|([^]])(??{setmatch {"raw" => $^N}})(-([^]])(??{setmatch {"to" => $^N}}))(?{call "regchar"}))*+\]
+    (?{call "regfinishseq"})(??{unset "matches"}))
 
     (?<conditional>[(][?](?(?=(?&openpar)[^<])
     (??{set {"savedcallouts" => []}})(?&lookaround)
-    |(??{set {"savedcallouts" => []}})[(]<(?<nameconditioinal>\w++)>[)](?{call "regcheckname"}))
+    |(??{set {"savedcallouts" => [], "matches" => {}}})[(]<(\w++)>[)](??{setmatch {"nametocheck" => $^N}})(?{call "regcheckname"}))(??{unset "matches"})
     (??{set {"savedcallouts" => []}})(?&regexpart)(?{call2 "regbranch"})(?&regexor)[)](?{call2 "regend"}))
 
     (?<verb>[(][*](?<verb>[A-Z]++)[)](?{call "regverb"}))
@@ -42,7 +48,7 @@
     \g{match}|(?(?=(?<match>(?&backreference)))
     \g{match}|(?(?=(?<match>(?&char)))
     \g{match}|(*F)
-    )))))))))(?<quantifiers>([*+?][+?]?+)?+)(?{call2 "regendinner"}))
+    )))))))))(??{set {"matches" => {}}})(([*+?][+?]?+)?+)(??{setmatch {"quantifiers" => $^N}})(?{call2 "regendinner"})(??{unset "matches"}))
 
     (?<regexpart>(?(?=(?<reinner>(?&regexinner)++))\g{reinner}|(?{call "regnothing"})))
 
