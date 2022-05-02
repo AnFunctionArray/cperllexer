@@ -23,7 +23,6 @@
     (?&binopplusrest)*(?{call 'binary'})))
 
 
-(?<orlogiorsomething>
-	((*F)$mainregexdefs)|
+(?<orlogiorsomething>(??{use re 'eval'; $orlogiorsomethingreg //= qr{(?(DEFINE)$mainregexdefs)
     (?&binopplusrest)*+
-)
+}sxx}))

@@ -391,7 +391,7 @@ if(not $isnested)
         @typedefidentifiersvector = eval { require $ENV{'REPLAY'} . ".txt"}
     }
     while(1) {
-        eval {$subject =~ m{(?(DEFINE)$mainregexdefs)^(?&$entryregex)$}sxx};
+        eval {$subject =~ m{(?(DEFINE)$mainregexdefs)^(?&$entryregex)*+$}sxx};
         if($@) {
             warn $@;
             undef $facet

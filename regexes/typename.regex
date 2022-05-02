@@ -5,22 +5,20 @@
 
 (?<align>\s*+\b__declspec[(]\s*+\balign[(]\s*+(?<alignnum>(?&numberliteralraw))\s*+[)]\s*+[)]\s*+)
 
-(?<typename>(??{use re 'eval'; $typenamereg //= qr{(?(DEFINE)$mainregexdefs)\s*+[(]
+(?<typename>\s*+[(]
 
-	(?(<strc>)(?{die "strc"}))
-	(?(<typedefnmmatched>)(?{die "typedefnmmatched"}))
-	(?(<typedefkey>)(?{die "typedefkey"}))
+	(?{push @matches, {}})
 
 	(?(?=
 		(?{push @savedcallouts, []})
 		(?{++$recording})
 
-		(((?&qualifs)|\s*+((?(<strc>)(*F))(?(<typedefnmmatched>)(*F))
-		((?<strc>(?&structorunion))
-		|(?<typedefnmmatched>(?&identifier_typedef))))
-		|(?(<typedefkey>)(*F))(?<typedefkey>(\btypedef\b))\s*+)++))
+		(((?&qualifs)|\s*+((?(?{exists $matches[-1]{strc}})(*F))(?(?{exists $matches[-1]{typedefnmmatched}})(*F))
+		(((?&structorunion))(?{$matches[-1]{strc}=$^N})
+		|((?&identifier_typedef))(?{$matches[-1]{typedefnmmatched}=$^N})))
+		|(?(?{exists $matches[-1]{typedefkey}})(*F))((\btypedef\b))(?{$matches[-1]{typedefkey}=$^N})\s*+)++))
 
-		|(?{pop @savedcallouts})(?{--$recording})(*F))
+		|(?{pop @savedcallouts})(?{--$recording})(?{pop @matches})(*F))
 		
 	(?{--$recording})(?{push @flags, {"optoutter"}})
 	
@@ -30,10 +28,11 @@
 		(?{pop @flags})
 		(?{replayrecord})
 		(?{pop @savedcallouts})
+		(?{pop @matches})
 
 		[)](?{call 'endqualifs'})\s*+
 		
-}sxx}))
+)
 
 (?<abstrmostoutteropt>\s*+(?&callingconv)?+[(](?(?=(?{push @flags, {"optoutter"}})((?&abstdecl)))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F))[)]\s*+)
 
@@ -70,7 +69,7 @@
 						(?{call 'addsubtotype'})(?{call 'endconstantexpr'})
 						|[(](?(?{exists $flags[-1]{subsparams}})(?{call 'identifier_decl'}))
 						((?(?=(?{push @flags, ["firstparam", "nesteddecl"]})((?&param))(?{pop @flags}))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F))
-						(,(?(?=(?{push @flags, {"nesteddecl"}})((?&param))(?{pop @flags}))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F)))*|(?{call 'startfunctionparamdecl'}))
+						(,(?(?=(?{push @flags, {"nesteddecl"}})((?&param))(?{pop @flags}))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F)))*|(?{call 'startfunctionparamdecl'}))?+
 						(?<rest>,?+\s*+\.\.\.\s*+)?+\s*+[)](?{call 'endfunctionparamdecl'}))\s*+)
 
 (?<abstdecl>
@@ -84,10 +83,9 @@
 
 (?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
 
-(?<Tasbtdecloutter>(??{use re 'eval'; $Tasbtdecloutterreg //= qr{(?(DEFINE)$mainregexdefs)
+(?<Tasbtdecloutter>
 	(?(?{exists $flags[-1]{insideparams}})(?(?=(?{push @flags, {"outterparams"}})((?&abstdecl)))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F))
 	|(?(?=(?{push @flags, {"outter"}})((?&abstdecl)))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F)))
-}sxx})
 )
 
 (?<Tabstinitorbitfl>
@@ -100,28 +98,32 @@
 
 (?<declcomma>,(?&Tdecl))
 
-(?<abstdeclorallqualifs>(??{use re 'eval'; $abstdeclorallqualifsreg //= qr{(?(DEFINE)$mainregexdefs)
+(?<abstdeclorallqualifs>
+
+	(?{push @matches, {}})
 
 	(?(?=(?{push @savedcallouts, []})
 		(?{++$recording})
 
-		(?<Tqualifs>((?<typefound>(?&qualifs))|\s*+((?(<strc>)(*F))(?(<typedefnmmatched>)(*F))
-		((?<strc>(?&structorunion))
-		|(?(<typefound>)(*F))(?<typedefnmmatched>(?&identifier_typedef)))
-		|(?(<typedefkey>)(*F))(?<typedefkey>(\btypedef\b)))\s*+)++))
+		((((?&qualifs))(?{$matches[-1]{typefound}=$^N})|\s*+((?(?{exists $matches[-1]{strc}})(*F))
+		(?(?{exists $matches[-1]{typedefnmmatched}})(*F))
+		(((?&structorunion))(?{$matches[-1]{strc}=$^N})
+		|(?(?{exists $matches[-1]{typefound}})(*F))((?&identifier_typedef))(?{$matches[-1]{typedefnmmatched}=$^N}))
+		|(?(?{exists $matches[-1]{typedefkey}})(*F))((\btypedef\b))(?{$matches[-1]{typedefkey}=$^N}))\s*+)++))
 
-		|(?{pop @savedcallouts})(?{--$recording})(*F))
+		|(?{pop @savedcallouts})(?{--$recording})(?{pop @matches})(*F))
 	(?{--$recording})
-	\g{Tqualifs}(?(?{exists $flags[-1]{firstparam}})(?{call 'startfunctionparamdecl'}))
+	(??{qr{\Q$^N\E}})(?(?{exists $flags[-1]{firstparam}})(?{call 'startfunctionparamdecl'}))
 	(?(?=(?<declinner>(?&Tdecl)(?{call 'enddeclaration'})(?{replayrecord})(?{call 'endqualifs'})))\g{declinner}
-	(?(?{exists $flags[-1]{insideparams}})|(,(?&declinner))*+)|(?(<strc>)|(*F)))
+	(?(?{exists $flags[-1]{insideparams}})|(,(?&declinner))*+)|(?(?{exists $matches[-1]{strc}})|(*F)))
 
 	(?{pop @savedcallouts})
-}sxx}))
+	(?{pop @matches})
+)
 
-(?<decl>(?&abstdeclorallqualifs)((?&compoundstatement)|\s*+;(?{call 'endfulldecl'})\s*+))
+(?<decl>(?&abstdeclorallqualifs)(?(?!\s*+;)(?&compoundstatement)|\s*+;(?{call 'endfulldecl'})\s*+))
 
-(?<cprogram>(?(?=(?{push @flags, {"extrnl"}})((?&decl)))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F))*+)
+(?<cprogram>(?(?=(?{push @flags, {"extrnl"}})((?&decl)))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F)))
 
 (?<typenamerev>(?(?=(?{push @savedcallouts, []})
 		(?{++$recording})(?<typenamerev1>(?&typename)))
