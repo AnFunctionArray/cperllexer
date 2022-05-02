@@ -3,12 +3,12 @@
 						|['"?\\abfnrtv0]))))
 						(?{call 'addescapesequencetostring'})|
 						(?<text>(?<textraw>((?!(?&escape)|(?{$matches[-1]->{begincharliteral}})).)++)(?{call 'addplaintexttostring'})))*+
-						(?{$matches[-1]->{begincharliteral}})))(??{'\Q$^N\E'})|(?{pop @matches})(*F))
+						(?{$matches[-1]->{begincharliteral}})))(??{qr{\Q$^N\E}})|(?{pop @matches})(*F))
 						(?{call 'add_literal'})(?{pop @matches}))
 						|(?(?!((?&floating)))(?<numberliteral>(?<numberliteralraw>(?(?=0x)0x(?<hex>[0-9a-fA-F]++)|(?(?=0b)0b(?<bin>[01]++)
 						|(?(?=0\d)0(?<oct>[0-7]++)|(?<dec>\d++))))(?<lng>[Uu](ll|LL|[lL])?+|(ll|LL|[lL])[Uu]?+)?+)
 						(?{call 'num_lit'}))
-						|(??{'\Q$^N\E'}))
+						|(??{qr{\Q$^N\E}}))
 						|(?<identifier>\s*+
 						(?<ident>(?&identifierraw))(?{call 'obtainvalbyidentifier'})\s*+)))\s*+)
 

@@ -3,10 +3,10 @@
 (?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?{call 'addcontinue'});|break\s*+(?{call 'addbreak'});|return\b(?<returnval>(?&primexpr))?+;(?{call 'endreturn'}))\s*+)
 (?<identifierminegoto>\s*+(?<gtid>(?&identifierraw_qualified))(?{call 'gotolabel'})\s*+)
 (?<iterationstatement>\s*+\b(while\s*+[(](?{call 'startforloopcond'})(?&primexpr)[)](?{call 'endforloopcond'})(?{call 'addforloopiter'})(?&statement)(?{call 'endforloop'})|do\b(?{call 'startdowhileloop'})(?&statement)\bwhile\s*+[(](?&primexpr)[)](?{call 'enddowhileloop'})\s*+;
-	|for\s*+[(]((?(?=((?{push @flags, ["bb"]})(?&decl))(?{pop @flags}))(??{'\Q$^N\E'})|(?{pop @flags})(*F))|(?&exprstatement))?+(?{call 'startforloopcond'})(?&primexpr)?;(?{call 'endforloopcond'})\s*+(?&primexpr)?+(?{call 'addforloopiter'})[)](?&statement)(?{call 'endforloop'}))\s*+)
+	|for\s*+[(]((?(?=((?{push @flags, {"bb"}})(?&decl))(?{pop @flags}))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F))|(?&exprstatement))?+(?{call 'startforloopcond'})(?&primexpr)?;(?{call 'endforloopcond'})\s*+(?&primexpr)?+(?{call 'addforloopiter'})[)](?&statement)(?{call 'endforloop'}))\s*+)
 (?<exprstatement>(?&primexpr)?;(?{call 'endexpression'})\s*+)
 (?<compoundstatement>\s*+[{](?{call 'beginscope'})
-((?(?=((?{push @flags, ["bb"]})(?&decl))(?{pop @flags}))(??{'\Q$^N\E'})|(?{pop @flags})(*F))|(?&statement))*+\s*+[}](?{call 'endscope'})\s*+)
+((?(?=((?{push @flags, {"bb"}})(?&decl))(?{pop @flags}))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F))|(?&statement))*+\s*+[}](?{call 'endscope'})\s*+)
 (?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?{call 'startifstatement'})(?&statement)(else\b(?{call 'continueifstatement'})(?&statement))?+(?{call 'endifstatement'})|switch\s*+[(](?&primexpr)[)](?{call 'startswitch'})(?&statement)(?{call 'endswitch'}))\s*+)
 
 (?<statement>(?(?=(?{push @savedcallouts, []})

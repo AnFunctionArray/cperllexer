@@ -19,12 +19,12 @@
 
 (?<assignorsomething>
 	(?(?=(?{push @savedcallouts, []})
-		(?{++$recording})((?&unaryexpr)))(??{'\Q$^N\E'})
+		(?{++$recording})((?&unaryexpr)))(??{qr{\Q$^N\E}})
 	(?{--$recording})(?{call 'begin_binary'})(?{replayrecord})
 	((?<assignop>(?<binoplast>=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+)
 		(?&assignorsomething)(?{call 'binary'})(?{call 'end_binary'})|(?&ternaryorsomething)(?{call 'end_binary'}))
 		|(?{$savedcallouts[-1] = []})(?(?=((?&typename))(?{call 'begin_binary'}))|(?{--$recording})(?{pop @savedcallouts})(*F))
-		(??{'\Q$^N\E'})(?{--$recording})(?&typenamerev)(?{replayrecord})(?&ternaryorsomething)(?{call 'end_binary'}))
+		(??{qr{\Q$^N\E}})(?{--$recording})(?&typenamerev)(?{replayrecord})(?&ternaryorsomething)(?{call 'end_binary'}))
 
 	(?{pop @savedcallouts})
 )
