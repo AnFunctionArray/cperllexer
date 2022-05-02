@@ -94,39 +94,39 @@ sub checktypedef2 {
 sub checktypedef {
     #regenerate_typedef_regex() if($needregen);
     #print "$typedef_regex\n";
-    #print "checking". $+{ident} . "\n";
-    if (checktypedef2 $+{ident}) {
-        print "$+{ident} -> typedefname\n";
+    #print "checking". $^N . "\n";
+    if (checktypedef2 $^N) {
+        print "$^N -> typedefname\n";
         return $ok 
     }
     return $notok;
 }
 
 sub checkident {
-    #print "checking" .$+{ident} . "\n";
-    if ((not checktypedef2 $+{ident}) and (not exists $keywords{$+{ident}})) {
-        print "$+{ident} -> ident\n";
+    #print "checking" .$^N . "\n";
+    if ((not checktypedef2 $^N) and (not exists $keywords{$^N})) {
+        print "$^N -> ident\n";
         return $ok 
     }
     return $notok;
 }
 
 sub checkidentpermissive {
-    #print "checking" .$+{ident} . "\n";
-    if ((not exists $keywords{$+{ident}})) {
-        print "$+{ident} -> ident-permissive\n";
+    #print "checking" .$^N . "\n";
+    if ((not exists $keywords{$^N})) {
+        print "$^N -> ident-permissive\n";
         return $ok 
     }
     return $notok;
 }
 
 sub checktypeorqualif {
-    #print "checking". $+{ident} . "\n";
+    #print "checking". $^N . "\n";
     inc2 "facet";
-    if (exists $typeandqualifs{$+{ident}}) {
-        print "$+{ident} -> qualifortype\n";
-        if(exists $types{$+{ident}}) {
-            eval {$typefound[-1] = $+{ident}};
+    if (exists $typeandqualifs{$^N}) {
+        print "$^N -> qualifortype\n";
+        if(exists $types{$^N}) {
+            eval {$typefound[-1] = $^N};
             call "add_type"
         } else {
             call "add_qualif"

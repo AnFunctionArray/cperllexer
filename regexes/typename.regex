@@ -51,24 +51,24 @@
 
 (?<Tabstrrestalt>
 	(?{print Dumper @flags})
-	(?(?{exists $flags[-1]->{outterparams}})(?&abstrmostoutterparams)(?&abstrsubs)*+
-	|(?(?{exists $flags[-1]->{outter}})(?&abstrmostoutter)(?&abstrsubs)*+
-	|(?(?{exists $flags[-1]->{optoutter}})((?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++))))
+	(?(?{exists $flags[-1]{outterparams}})(?&abstrmostoutterparams)(?&abstrsubs)*+
+	|(?(?{exists $flags[-1]{outter}})(?&abstrmostoutter)(?&abstrsubs)*+
+	|(?(?{exists $flags[-1]{optoutter}})((?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++))))
 	)
 
 (?<Tinside>
-	(?(?{exists $flags[-1]->{outterparams}})(?&abstrmostoutterparams)
-	|(?(?{exists $flags[-1]->{outter}})(?&abstrmostoutter)
-	|(?(?{exists $flags[-1]->{optoutter}}))(?&abstrmostoutteropt)?+))
+	(?(?{exists $flags[-1]{outterparams}})(?&abstrmostoutterparams)
+	|(?(?{exists $flags[-1]{outter}})(?&abstrmostoutter)
+	|(?(?{exists $flags[-1]{optoutter}}))(?&abstrmostoutteropt)?+))
 	)
 
 (?<param>(?(?=((?{push @flags, ["insideparams", "bb"]})(?&abstdeclorallqualifs))(?{pop @flags}))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F)))
 
 (?<abstrsubs>\s*+(\[
-						(?(?{exists $flags[-1]->{subsparams}})(?{call 'identifier_decl'}))
+						(?(?{exists $flags[-1]{subsparams}})(?{call 'identifier_decl'}))
 						(?{call 'beginconstantexpr'})(?&primexpr)\]
 						(?{call 'addsubtotype'})(?{call 'endconstantexpr'})
-						|[(](?(?{exists $flags[-1]->{subsparams}})(?{call 'identifier_decl'}))
+						|[(](?(?{exists $flags[-1]{subsparams}})(?{call 'identifier_decl'}))
 						((?(?=(?{push @flags, ["firstparam", "nesteddecl"]})((?&param))(?{pop @flags}))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F))
 						(,(?(?=(?{push @flags, {"nesteddecl"}})((?&param))(?{pop @flags}))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F)))*|(?{call 'startfunctionparamdecl'}))
 						(?<rest>,?+\s*+\.\.\.\s*+)?+\s*+[)](?{call 'endfunctionparamdecl'}))\s*+)
@@ -85,13 +85,13 @@
 (?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
 
 (?<Tasbtdecloutter>(??{use re 'eval'; $Tasbtdecloutterreg //= qr{(?(DEFINE)$mainregexdefs)
-	(?(?{exists $flags[-1]->{insideparams}})(?(?=(?{push @flags, {"outterparams"}})((?&abstdecl)))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F))
+	(?(?{exists $flags[-1]{insideparams}})(?(?=(?{push @flags, {"outterparams"}})((?&abstdecl)))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F))
 	|(?(?=(?{push @flags, {"outter"}})((?&abstdecl)))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F)))
 }sxx})
 )
 
 (?<Tabstinitorbitfl>
-	(?(?{exists $flags[-1]->{bitfl}})(?&abstrbitfield)|(?&abstrinitialization))
+	(?(?{exists $flags[-1]{bitfl}})(?&abstrbitfield)|(?&abstrinitialization))
 	)
 
 (?<Tdecl>(?&Tasbtdecloutter)
@@ -112,9 +112,9 @@
 
 		|(?{pop @savedcallouts})(?{--$recording})(*F))
 	(?{--$recording})
-	\g{Tqualifs}(?(?{exists $flags[-1]->{firstparam}})(?{call 'startfunctionparamdecl'}))
+	\g{Tqualifs}(?(?{exists $flags[-1]{firstparam}})(?{call 'startfunctionparamdecl'}))
 	(?(?=(?<declinner>(?&Tdecl)(?{call 'enddeclaration'})(?{replayrecord})(?{call 'endqualifs'})))\g{declinner}
-	(?(?{exists $flags[-1]->{insideparams}})|(,(?&declinner))*+)|(?(<strc>)|(*F)))
+	(?(?{exists $flags[-1]{insideparams}})|(,(?&declinner))*+)|(?(<strc>)|(*F)))
 
 	(?{pop @savedcallouts})
 }sxx}))

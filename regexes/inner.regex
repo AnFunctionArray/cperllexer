@@ -19,8 +19,8 @@
 
 (?<identifierpure>(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9])*+)(::(?&identifierpure))?+)
 
-(?<identifierraw>\b(?<ident>(?&identifierpure))\b(?{call 'checkident'}))
-(?<identifierraw_qualified>\b(?<ident>(?&identifierpure))\b(?{call 'checkidentpermissive'}))
-(?<identifier_typedef>\b(?<ident>(?&identifierpure))\b(?{call 'checktypedef'}))
+(?<identifierraw>\b((?&identifierpure))\b(??{checkident}))
+(?<identifierraw_qualified>\b((?&identifierpure))\b(??{checkidentpermissive}))
+(?<identifier_typedef>\b((?&identifierpure))\b(??{checktypedef}))
 
-(?<typeorqualif>\b(?<ident>(?&identifierpure))\b(?{call 'checktypeorqualif'}))
+(?<typeorqualif>\b((?&identifierpure))\b(??{checktypeorqualif}))
