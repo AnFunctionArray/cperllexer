@@ -1,13 +1,14 @@
-(?<inner>\s*+(((?<stringlit>((?<begincharliteral>"|'))
-						((?<escape>(?<escaperaw>\\(?(?=x)x[0-9a-fA-F]++|(?(?=0\d)0[0-7]++
+(?<inner>\s*+(((?<stringlit>("|')(?{push @matches, {"begincharliteral" => $^N}})
+						(?(?=(((?<escape>(?<escaperaw>\\(?(?=x)x[0-9a-fA-F]++|(?(?=0\d)0[0-7]++
 						|['"?\\abfnrtv0]))))
 						(?{call 'addescapesequencetostring'})|
-						(?<text>(?<textraw>((?!(?&escape)|(?&begincharliteral)).)++)(?{call 'addplaintexttostring'})))*+(?&begincharliteral)
-						(?{call 'add_literal'}))
-						|(?(?!(?&<floating>))(?<numberliteral>(?<numberliteralraw>(?(?=0x)0x(?<hex>[0-9a-fA-F]++)|(?(?=0b)0b(?<bin>[01]++)
+						(?<text>(?<textraw>((?!(?&escape)|(?{$matches[-1]->{begincharliteral}})).)++)(?{call 'addplaintexttostring'})))*+
+						(?{$matches[-1]->{begincharliteral}})))(??{'\Q$^N\E'})|(?{pop @matches})(*F))
+						(?{call 'add_literal'})(?{pop @matches}))
+						|(?(?!((?&floating)))(?<numberliteral>(?<numberliteralraw>(?(?=0x)0x(?<hex>[0-9a-fA-F]++)|(?(?=0b)0b(?<bin>[01]++)
 						|(?(?=0\d)0(?<oct>[0-7]++)|(?<dec>\d++))))(?<lng>[Uu](ll|LL|[lL])?+|(ll|LL|[lL])[Uu]?+)?+)
 						(?{call 'num_lit'}))
-						|\g{floating})
+						|(??{'\Q$^N\E'}))
 						|(?<identifier>\s*+
 						(?<ident>(?&identifierraw))(?{call 'obtainvalbyidentifier'})\s*+)))\s*+)
 

@@ -17,13 +17,16 @@
 
 (?<testxpr>(?&inner)|(?&inparenths))
 
-(?<[assignorsomething]>
-	(?(?=(*RECORD)(?&<unaryexpr>))
-	(?{call 'begin_binary'})(*REPLAY)\g{unaryexpr}
+(?<assignorsomething>
+	(?(?=(?{push @savedcallouts, []})
+		(?{++$recording})((?&unaryexpr)))(??{'\Q$^N\E'})
+	(?{--$recording})(?{call 'begin_binary'})(?{replayrecord})
 	((?<assignop>(?<binoplast>=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+)
 		(?&assignorsomething)(?{call 'binary'})(?{call 'end_binary'})|(?&ternaryorsomething)(?{call 'end_binary'}))
-		|(*RESET)(?(?=(?&<typename>)(?{call 'begin_binary'}))|(*F))
-		(*STOP)\g{typename}(?&typenamerev)(*REPLAY)(?&ternaryorsomething)(?{call 'end_binary'}))
+		|(?{$savedcallouts[-1] = []})(?(?=((?&typename))(?{call 'begin_binary'}))|(?{--$recording})(?{pop @savedcallouts})(*F))
+		(??{'\Q$^N\E'})(?{--$recording})(?&typenamerev)(?{replayrecord})(?&ternaryorsomething)(?{call 'end_binary'}))
+
+	(?{pop @savedcallouts})
 )
 
 (?<ternaryorsomething>(?&orlogiorsomething)((?&ternaryrest)

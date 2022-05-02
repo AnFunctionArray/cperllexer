@@ -121,9 +121,13 @@
 
 (?<cprogram>(?&decl(extrnl))*+)
 
-(?<typenamerev>(?=(?{push @savedcallouts, []})
-		(?{++$recording})(?<typenamerev1>(?&typename))
-		|(?{pop @savedcallouts})(?{--$recording})(*F))(?{--$recording})(?(?!((?&castexpr)))|\g{typenamerev1}(?{replayrecord})(?{call 'applycast'})(??{'\Q$^N\E'})))
+(?<typenamerev>(?(?=(?{push @savedcallouts, []})
+		(?{++$recording})(?<typenamerev1>(?&typename)))
+		(?{--$recording})(?(?!((?&castexpr)))|\g{typenamerev1}(??{'\Q$^N\E'})
+		(?{replayrecord})(?{pop @savedcallouts})
+		(?{call 'applycast'}))
+		
+		|(?{pop @savedcallouts})(?{--$recording})(*F)))
 
 
 (?<abstrbitfield>\s*+:\s*+(?{call 'beginconstantexpr'})(?&assignorsomething)(?{call 'endconstantexpr'}))
