@@ -379,7 +379,7 @@ sub obtainvalbyidentifier {
 
 use Term::ANSIColor qw(:constants);
 
-$isnested = 1;
+#$isnested = 1;
 
 if(not $isnested)
 {
@@ -391,8 +391,7 @@ if(not $isnested)
         @typedefidentifiersvector = eval { require $ENV{'REPLAY'} . ".txt"}
     }
     while(1) {
-        while(eval {$subject =~ m{((*F)$mainregexdefs)|\G(?>(?&$entryregex))}sxxngc}){
-        }
+        eval {$subject =~ m{(?(DEFINE)$mainregexdefs)^(?&$entryregex)$}sxx};
         if($@) {
             warn $@;
             undef $facet
@@ -461,6 +460,8 @@ if(not $isnested)
    # }
 }
 
+exit;
+
 #}
 
 =for comment
@@ -508,19 +509,19 @@ sub replay {
 sub call {
     #print Dumper(\%+);
     my $funcnm = shift;
-    my %captures = {%+};
+    my $captures = {%+};
 
-    eval {@captures{keys %{$matches[-1]}} = values %{$matches[-1]}};
+    eval {@$captures{keys %{$matches[-1]}} = values %{$matches[-1]}} if (scalar @matches);
     
     if($recording) {
         eval {
             print "pushing to " . scalar @savedcallouts . "\n";
-            push @{$savedcallouts[-1]}, {$funcnm => {%captures}};
+            push @{$savedcallouts[-1]}, {$funcnm => {%$captures}};
             print "success\n";
         };
         return
     }
-    return callcommon($funcnm, { %captures }, $recording)
+    return callcommon($funcnm, { %$captures }, $recording)
 }
 
 sub call2 {
@@ -1176,7 +1177,7 @@ startmetaregex($entryregex, \@regexbindings, $subject) if(defined &startmetarege
 
 
 sub replayrecord {
-    foreach my $hash @{$savedcallouts[-1]}  {
+    foreach my $hash (@{$savedcallouts[-1]})  {
         if(not $recording) {
             callcommon((keys %$hash)[0], (values %$hash)[0], 0)
         } else {

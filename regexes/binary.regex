@@ -23,7 +23,7 @@
     (?&binopplusrest)*(?{call 'binary'})))
 
 
-(?<[orlogiorsomething]>
+(?<orlogiorsomething>
 	((*F)$mainregexdefs)|
     (?&binopplusrest)*+
 )

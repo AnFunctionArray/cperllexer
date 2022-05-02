@@ -5,7 +5,7 @@
 
 (?<align>\s*+\b__declspec[(]\s*+\balign[(]\s*+(?<alignnum>(?&numberliteralraw))\s*+[)]\s*+[)]\s*+)
 
-(?<typename>\s*+[(]
+(?<typename>(??{use re 'eval'; $typenamereg //= qr{(?(DEFINE)$mainregexdefs)\s*+[(]
 
 	(?(<strc>)(?{die "strc"}))
 	(?(<typedefnmmatched>)(?{die "typedefnmmatched"}))
@@ -33,11 +33,11 @@
 
 		[)](?{call 'endqualifs'})\s*+
 		
-)
+}sxx}))
 
-(?<abstrmostoutteropt>\s*+(?&callingconv)?+[(](?&abstdecl(optoutter))[)]\s*+)
+(?<abstrmostoutteropt>\s*+(?&callingconv)?+[(](?(?=(?{push @flags, ["optoutter"]})((?&abstdecl)))(??{'\Q$^N\E'})|(?{pop @flags})(*F))[)]\s*+)
 
-(?<abstrmostoutter>\s*+(?&callingconv)?+([(](?&abstdecl(outter))[)]|(?&identifierminedecl))\s*+)
+(?<abstrmostoutter>\s*+(?&callingconv)?+([(](?(?=(?{push @flags, ["outter"]})((?&abstdecl)))(??{'\Q$^N\E'})|(?{pop @flags})(*F))[)]|(?&identifierminedecl))\s*+)
 
 (?<abstrmostoutterparams>\s*+(?(?=(?{push @flags, ["subsparams"]})
 			(?<subs>(?&abstrsubs)))(?{pop @flags})\g{subs}
@@ -59,7 +59,7 @@
 	(?(?{$flags[-1]->[outterparams]})(?&abstrmostoutterparams)
 	|(?(?{$flags[-1]->[outter]})(?&abstrmostoutter)
 	|(?(?{$flags[-1]->[optoutter]}))(?&abstrmostoutteropt)?+))
-	))
+	)
 
 (?<param>(?(?=((?{push @flags, ["insideparams", "bb"]})(?&abstdeclorallqualifs))(?{pop @flags}))(??{'\Q$^N\E'})|(?{pop @flags})(*F)))
 
@@ -84,7 +84,7 @@
 
 (?<Tasbtdecloutter>
 	(?(?{$flags[-1]->[insideparams]})(?(?=(?{push @flags, ["outterparams"]})((?&abstdecl)))(??{'\Q$^N\E'})|(?{pop @flags})(*F))
-	|(?&abstdecl(outter)))
+	|(?(?=(?{push @flags, ["outter"]})((?&abstdecl)))(??{'\Q$^N\E'})|(?{pop @flags})(*F)))
 	)
 
 (?<Tabstinitorbitfl>
@@ -97,7 +97,7 @@
 
 (?<declcomma>,(?&Tdecl))
 
-(?<abstdeclorallqualifs>
+(?<abstdeclorallqualifs>(??{use re 'eval'; $abstdeclorallqualifsreg //= qr{(?(DEFINE)$mainregexdefs)
 
 	(?(?=(?{push @savedcallouts, []})
 		(?{++$recording})
@@ -105,8 +105,7 @@
 		(?<Tqualifs>((?<typefound>(?&qualifs))|\s*+((?(<strc>)(*F))(?(<typedefnmmatched>)(*F))
 		((?<strc>(?&structorunion))
 		|(?(<typefound>)(*F))(?<typedefnmmatched>(?&identifier_typedef)))
-		|(?(<typedefkey>)(*F))(?<typedefkey>(\btypedef\b)))\s*+)++
-		|(?(<extnrl>)|(*F))))
+		|(?(<typedefkey>)(*F))(?<typedefkey>(\btypedef\b)))\s*+)++))
 
 		|(?{pop @savedcallouts})(?{--$recording})(*F))
 	(?{--$recording})
@@ -115,11 +114,11 @@
 	(?(?{$flags[-1]->[insideparams]})|(,(?&declinner))*+)|(?(<strc>)|(*F)))
 
 	(?{pop @savedcallouts})
-)
+}sxx}))
 
 (?<decl>(?&abstdeclorallqualifs)((?&compoundstatement)|\s*+;(?{call 'endfulldecl'})\s*+))
 
-(?<cprogram>(?&decl(extrnl))*+)
+(?<cprogram>(?(?=(?{push @flags, ["extrnl"]})((?&decl)))(??{'\Q$^N\E'})|(?{pop @flags})(*F))*+)
 
 (?<typenamerev>(?(?=(?{push @savedcallouts, []})
 		(?{++$recording})(?<typenamerev1>(?&typename)))
