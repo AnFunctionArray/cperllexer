@@ -10,7 +10,7 @@
 (?<selectionstatement>\s*+(if\s*+[(](?&primexpr)[)](?{call 'startifstatement'})(?&statement)(else\b(?{call 'continueifstatement'})(?&statement))?+(?{call 'endifstatement'})|switch\s*+[(](?&primexpr)[)](?{call 'startswitch'})(?&statement)(?{call 'endswitch'}))\s*+)
 
 (?<statement>(?(?=(?{push @savedcallouts, []})
-		(?{++$recording})(?<labels>(?&label)++))(?{$recording--})(?{replayrecord})(?{pop @savedcallouts})\g{labels}(?&statementinner)
+		(?{++$recording; print "recording statement labels\n"})(?<labels>(?&label)++))(?{$recording--})(?{replayrecord})(?{pop @savedcallouts})\g{labels}(?&statementinner)
 		|(?{$recording--})(?{pop @savedcallouts})(?&statementinner)))
 (?<statementinner>(?&exprstatement)|(?&compoundstatement)|(?&selectionstatement)|(?&iterationstatement)|(?&jumpstatement))
 

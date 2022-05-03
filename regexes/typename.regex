@@ -11,14 +11,14 @@
 
 	(?(?=
 		(?{push @savedcallouts, []})
-		(?{++$recording})
+		(?{++$recording; print "recording typename\n"})
 
 		(((?&qualifs)|\s*+((?(?{exists $matches[-1]{strc}})(*F))(?(?{exists $matches[-1]{typedefnmmatched}})(*F))
 		(((?&structorunion))(?{$matches[-1]{strc}=$^N})
 		|((?&identifier_typedef))(?{$matches[-1]{typedefnmmatched}=$^N})))
 		|(?(?{exists $matches[-1]{typedefkey}})(*F))((\btypedef\b))(?{$matches[-1]{typedefkey}=$^N})\s*+)++))
 
-		|(?{pop @savedcallouts})(?{--$recording})(?{pop @matches})(*F))
+		|(?{pop @savedcallouts})(?{--$recording; print "minus minus typename $recording\n"})(?{pop @matches})(*F))
 		
 	(?{--$recording})(?{push @flags, {"optoutter"}})
 	
@@ -103,7 +103,7 @@
 	(?{push @matches, {}})
 
 	(?(?=(?{push @savedcallouts, []})
-		(?{++$recording})
+		(?{++$recording; print "recording abstdeclorallqualifs\n"})
 
 		((((?&qualifs))(?{$matches[-1]{typefound}=$^N})|\s*+((?(?{exists $matches[-1]{strc}})(*F))
 		(?(?{exists $matches[-1]{typedefnmmatched}})(*F))
@@ -126,7 +126,7 @@
 (?<cprogram>(?(?=(?{push @flags, {"extrnl"}})((?&decl)))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F)))
 
 (?<typenamerev>(?(?=(?{push @savedcallouts, []})
-		(?{++$recording})(?<typenamerev1>(?&typename)))
+		(?{++$recording; print "recording typenamerev\n"})(?<typenamerev1>(?&typename)))
 		(?{--$recording})(?(?!((?&castexpr)))|\g{typenamerev1}(??{qr{\Q$^N\E}})
 		(?{replayrecord})(?{pop @savedcallouts})
 		(?{call 'applycast'}))

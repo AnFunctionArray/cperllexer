@@ -512,13 +512,24 @@ sub call {
     my $captures = {%+};
 
     eval {@$captures{keys %{$matches[-1]}} = values %{$matches[-1]}} if (scalar @matches);
+
+    my $subslice = substr $subject, pos(), 10;
+
+    $subslice =~ s{\R}{ }g;
+
+    use Data::Dumper;
+    use POSIX;
+
+    print strftime ("%F %T", localtime time) . " capture: " . $subslice . "\n";
+    print $recording . " " . $funcnm . "\n";
+    print Dumper(\$captures);
     
     if($recording) {
-        eval {
+        #eval {
             print "$recording pushing to " . scalar @savedcallouts . "\n";
             push @{$savedcallouts[-1]}, {$funcnm => {%$captures}};
             print "success\n";
-        };
+        #};
         return
     }
     return callcommon($funcnm, { %$captures }, $recording)
@@ -534,7 +545,7 @@ sub callcommon {
     my $captures = shift;
     my $facet = shift;
 
-    print $funcnm . "\n";
+    #print "instancing " . $funcnm . "\n";
 
     #my $argsin = shift;
 
@@ -550,18 +561,6 @@ sub callcommon {
     #re->import('debug') if($_[1] eq "Ptr64ToPtr");
     #select($oldfh) if($_[1] eq "Ptr64ToPtr");
     #my @arr = @_;
-    my $subslice = substr $subject, pos(), 10;
-
-    $subslice =~ s{\R}{ }g;
-
-    if (not $facet) {
-        use Data::Dumper;
-        use POSIX;
-    
-        print strftime ("%F %T", localtime time) . " capture: " . $subslice . "\n";
-        print $funcnm . "\n";
-        print Dumper(\$captures)
-    }
     
     #foreach my $i (@arr) {
     #    print $i . "\n";
@@ -1179,8 +1178,13 @@ startmetaregex($entryregex, \@regexbindings, $subject) if(defined &startmetarege
 sub replayrecord {
     foreach my $hash (@{$savedcallouts[-1]})  {
         if(not $recording) {
+            my $funcnm = (keys %$hash)[0];
+            print "$funcnm replaying \n";
+            print Dumper $hash;
             callcommon((keys %$hash)[0], (values %$hash)[0], 0)
         } else {
+            #print "replay merging\n";
+            #print Dumper $hash;
             @{$savedcallouts[-2]} = (@{$savedcallouts[-2]}, @{$savedcallouts[-1]})
         }
     }
