@@ -17,6 +17,33 @@ use File::Basename;
 
 use Data::Dumper;
 
+sub push2 {
+    if(@{$_[0]} eq @flags) {
+        print "pushing to flags\n";
+        print Dumper $_[1];
+        print Dumper \@flags;
+    }
+    push @{$_[0]}, $_[1]
+}
+
+sub pop2 {
+    if(@{$_[0]} eq @flags) {
+        print "popping from flags\n";
+        print Dumper $flags[-1];
+        print Dumper \@flags;
+        print Dumper $_[1];
+
+        scalar keys %{$flags[-1]} eq scalar keys %{$_[1]} or exit;
+
+        #print "size equal\n";
+
+        foreach my $key (keys %{$flags[-1]}) {
+            exit unless (exists $_[1]->{$key});
+        }
+    }
+    pop @{$_[0]}
+}
+
 print Dumper @ARGV;
 
 #open my $fhnull, '>', "/dev/null" or die "error opening $filename: $!";
@@ -377,7 +404,7 @@ sub obtainvalbyidentifier {
 }
 =cut
 
-use Term::ANSIColor qw(:constants);
+#use Term::ANSIColor qw(:constants);
 
 #$isnested = 1;
 

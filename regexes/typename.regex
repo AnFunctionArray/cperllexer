@@ -7,69 +7,70 @@
 
 (?<typename>\s*+[(]
 
-	(?{push @matches, {}})
+	(?{push2 \@matches, {}})
 
 	(?(?=
-		(?{push @savedcallouts, []})
+		(?{push2 \@savedcallouts, []})
 		(?{++$recording; print "recording typename\n"})
 
-		(((?&qualifs)|\s*+((?(?{exists $matches[-1]{strc}})(*F))(?(?{exists $matches[-1]{typedefnmmatched}})(*F))
+		(((?&qualifs)|\s*+((?(?{eval {exists $matches[-1]{strc}} or 0})(*F))(?(?{eval {exists $matches[-1]{typedefnmmatched}} or 0})(*F))
 		(((?&structorunion))(?{$matches[-1]{strc}=$^N})
 		|((?&identifier_typedef))(?{$matches[-1]{typedefnmmatched}=$^N})))
-		|(?(?{exists $matches[-1]{typedefkey}})(*F))((\btypedef\b))(?{$matches[-1]{typedefkey}=$^N})\s*+)++))
+		|(?(?{eval {exists $matches[-1]{typedefkey}} or 0})(*F))((\btypedef\b))(?{$matches[-1]{typedefkey}=$^N})\s*+)++))
 
-		|(?{pop @savedcallouts})(?{--$recording; print "minus minus typename $recording\n"})(?{pop @matches})(*F))
+		|(?{pop2 \@savedcallouts})(?{--$recording; print "minus minus typename $recording\n"})(?{pop2 \@matches})(*F))
 		
-	(?{--$recording})(?{push @flags, {"optoutter"}})
+	(?{--$recording})(?{push2 \@flags, {"optoutter"}})
 	
 		(??{qr{\Q$^N\E}})(?{call 'identifier_decl'})(?&abstdecl)?+
 		(?{call 'enddeclaration'})
 
-		(?{pop @flags})
+		(?{pop2 \@flags, {"optoutter"}})
 		(?{replayrecord})
-		(?{pop @savedcallouts})
-		(?{pop @matches})
+		(?{pop2 \@savedcallouts})
+		(?{pop2 \@matches})
 
 		[)](?{call 'endqualifs'})\s*+
 		
 )
 
-(?<abstrmostoutteropt>\s*+(?&callingconv)?+[(](?(?=(?{push @flags, {"optoutter"}})((?&abstdecl)))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F))[)]\s*+)
+(?<abstrmostoutteropt>\s*+(?&callingconv)?+[(](?(?=(?{push2 \@flags, {"optoutter"}})((?&abstdecl))(?{pop2 \@flags, {"optoutter"}}))(??{qr{\Q$^N\E}})|(?{pop2 \@flags, {"optoutter"}})(*F))[)]\s*+)
 
-(?<abstrmostoutter>\s*+(?&callingconv)?+([(](?(?=(?{push @flags, {"outter"}})((?&abstdecl)))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F))[)]|(?&identifierminedecl))\s*+)
+(?<abstrmostoutter>\s*+(?&callingconv)?+([(](?(?=(?{push2 \@flags, {"outter"}})((?&abstdecl))(?{pop2 \@flags, {"outter"}}))(??{qr{\Q$^N\E}})|(?{pop2 \@flags, {"outter"}})(*F))[)]|(?&identifierminedecl))\s*+)
 
-(?<abstrmostoutterparams>\s*+(?(?=(?{push @flags, {"subsparams"}})
-			(?<subs>(?&abstrsubs)))(?{pop @flags})\g{subs}
-			|(?{pop @flags})((?(?=([(](?{push @flags, {"outterparams"}})(?&abstdecl)[)](?{pop @flags})))
-			(??{qr{\Q$^N\E}})|(?{pop @flags})(*F))
-			|(?&identifierminedecl)
-			|(?{call 'identifier_decl'})))\s*+)
+(?<abstrmostoutterparams>\s*+(?(?=(?{push2 \@flags, {"subsparams"}})
+			(?<subs>(?&abstrsubs)))(?{pop2 \@flags, {"subsparams"}})\g{subs}
+			|(?{pop2 \@flags, {"subsparams"}})(?(?=(?{push2 \@flags, {"outterparams"}})([(](?&abstdecl)[)](?{pop2 \@flags, {"outterparams"}})))
+			(??{qr{\Q$^N\E}})|(?{pop2 \@flags, {"outterparams"}})(?(?=((?&identifierminedecl)))(??{qr{\Q$^N\E}})|(?{call 'identifier_decl'})))
+)\s*+)
 
 (?<identifierminedecl>\s*+(?<ident>(?&identifierraw_qualified))
 	(?{call 'identifier_decl'})\s*+)
 
 (?<Tabstrrestalt>
-	(?{print Dumper @flags})
-	(?(?{exists $flags[-1]{outterparams}})(?&abstrmostoutterparams)(?&abstrsubs)*+
-	|(?(?{exists $flags[-1]{outter}})(?&abstrmostoutter)(?&abstrsubs)*+
-	|(?(?{exists $flags[-1]{optoutter}})((?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++))))
+	(?(?{eval {exists $flags[-1]{outterparams}} or 0})(?&abstrmostoutterparams)(?&abstrsubs)*+
+	|(?(?{eval {exists $flags[-1]{outter}} or 0})(?&abstrmostoutter)(?&abstrsubs)*+
+	|(?(?{eval {exists $flags[-1]{optoutter}} or 0})((?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++))))
 	)
 
 (?<Tinside>
-	(?(?{exists $flags[-1]{outterparams}})(?&abstrmostoutterparams)
-	|(?(?{exists $flags[-1]{outter}})(?&abstrmostoutter)
-	|(?(?{exists $flags[-1]{optoutter}}))(?&abstrmostoutteropt)?+))
+	(?(?{eval {exists $flags[-1]{outterparams}} or 0})(?&abstrmostoutterparams)
+	|(?(?{eval {exists $flags[-1]{outter}} or 0})(?&abstrmostoutter)
+	|(?(?{eval {exists $flags[-1]{optoutter}} or 0}))(?&abstrmostoutteropt)?+))
 	)
 
-(?<param>(?(?=((?{push @flags, ["insideparams", "bb"]})(?&abstdeclorallqualifs))(?{pop @flags}))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F)))
+(?<param>(?(?=((?{push2 \@flags, {"insideparams"=>undef, "bb"=>undef}})(?&abstdeclorallqualifs))(?{pop2 \@flags, {"insideparams"=>undef, "bb"=>undef}}))
+	(??{qr{\Q$^N\E}})|(?{pop2 \@flags, {"insideparams"=>undef, "bb"=>undef}})(*F)))
 
 (?<abstrsubs>\s*+(\[
-						(?(?{exists $flags[-1]{subsparams}})(?{call 'identifier_decl'}))
+						(?(?{eval {exists $flags[-1]{subsparams}} or 0})(?{call 'identifier_decl'}))
 						(?{call 'beginconstantexpr'})(?&primexpr)\]
 						(?{call 'addsubtotype'})(?{call 'endconstantexpr'})
-						|[(](?(?{exists $flags[-1]{subsparams}})(?{call 'identifier_decl'}))
-						((?(?=(?{push @flags, ["firstparam", "nesteddecl"]})((?&param))(?{pop @flags}))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F))
-						(,(?(?=(?{push @flags, {"nesteddecl"}})((?&param))(?{pop @flags}))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F)))*|(?{call 'startfunctionparamdecl'}))?+
+						|[(](?(?{eval {exists $flags[-1]{subsparams}} or 0})(?{call 'identifier_decl'}))
+						(?=(((?(?=(?{push2 \@flags, {"firstparam"=>undef, "nesteddecl"=>undef}})((?&param))
+						(?{pop2 \@flags, {"firstparam"=>undef, "nesteddecl"=>undef}}))(??{qr{\Q$^N\E}})|(?{pop2 \@flags, {"firstparam"=>undef, "nesteddecl"=>undef}})(*F))
+						(,(?(?=(?{push2 \@flags, {"nesteddecl"}})((?&param))(?{pop2 \@flags, {"nesteddecl"}}))(??{qr{\Q$^N\E}})|(?{pop2 \@flags, {"nesteddecl"}})(*F)))*))
+						(??{qr{\Q$^N\E}})|(?{call 'startfunctionparamdecl'}))
 						(?<rest>,?+\s*+\.\.\.\s*+)?+\s*+[)](?{call 'endfunctionparamdecl'}))\s*+)
 
 (?<abstdecl>
@@ -84,12 +85,12 @@
 (?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
 
 (?<Tasbtdecloutter>
-	(?(?{exists $flags[-1]{insideparams}})(?(?=(?{push @flags, {"outterparams"}})((?&abstdecl)))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F))
-	|(?(?=(?{push @flags, {"outter"}})((?&abstdecl)))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F)))
+	(?(?{eval {exists $flags[-1]{insideparams}} or 0})(?(?=(?{push2 \@flags, {"outterparams"}})((?&abstdecl))(?{pop2 \@flags, {"outterparams"}}))(??{qr{\Q$^N\E}})|(?{pop2 \@flags, {"outterparams"}})(*F))
+	|(?(?=(?{push2 \@flags, {"outter"}})((?&abstdecl))(?{pop2 \@flags, {"outter"}}))(??{qr{\Q$^N\E}})|(?{pop2 \@flags, {"outter"}})(*F)))
 )
 
 (?<Tabstinitorbitfl>
-	(?(?{exists $flags[-1]{bitfl}})(?&abstrbitfield)|(?&abstrinitialization))
+	(?(?{eval {exists $flags[-1]{bitfl}} or 0})(?&abstrbitfield)|(?&abstrinitialization))
 	)
 
 (?<Tdecl>(?&Tasbtdecloutter)
@@ -99,39 +100,39 @@
 (?<declcomma>,(?&Tdecl))
 
 (?<abstdeclorallqualifs>
+	
+	(?{push2 \@matches, {}})
 
-	(?{push @matches, {}})
-
-	(?(?=(?{push @savedcallouts, []})
+	(?(?=(?{push2 \@savedcallouts, []})
 		(?{++$recording; print "recording abstdeclorallqualifs\n"})
 
-		((((?&qualifs))(?{$matches[-1]{typefound}=$^N})|\s*+((?(?{exists $matches[-1]{strc}})(*F))
-		(?(?{exists $matches[-1]{typedefnmmatched}})(*F))
+		((((?&qualifs))(?{$matches[-1]{typefound}=$^N})|\s*+((?(?{eval {exists $matches[-1]{strc}} or 0})(*F))
+		(?(?{eval {exists $matches[-1]{typedefnmmatched}} or 0})(*F))
 		(((?&structorunion))(?{$matches[-1]{strc}=$^N})
-		|(?(?{exists $matches[-1]{typefound}})(*F))((?&identifier_typedef))(?{$matches[-1]{typedefnmmatched}=$^N}))
-		|(?(?{exists $matches[-1]{typedefkey}})(*F))((\btypedef\b))(?{$matches[-1]{typedefkey}=$^N}))\s*+)++))
+		|(?(?{eval {exists $matches[-1]{typefound}} or 0})(*F))((?&identifier_typedef))(?{$matches[-1]{typedefnmmatched}=$^N}))
+		|(?(?{eval {exists $matches[-1]{typedefkey}} or 0})(*F))((\btypedef\b))(?{$matches[-1]{typedefkey}=$^N}))\s*+)++))
 
-		|(?{pop @savedcallouts})(?{--$recording})(?{pop @matches})(*F))
+		|(?{pop2 \@savedcallouts})(?{--$recording})(?{pop2 \@matches})(*F))
 	(?{--$recording})
-	(??{qr{\Q$^N\E}})(?(?{exists $flags[-1]{firstparam}})(?{call 'startfunctionparamdecl'}))
+	(??{qr{\Q$^N\E}})(?(?{eval {exists $flags[-1]{firstparam}} or 0})(?{call 'startfunctionparamdecl'}))
 	(?(?=(?<declinner>(?&Tdecl)(?{call 'enddeclaration'})(?{replayrecord})(?{call 'endqualifs'})))\g{declinner}
-	(?(?{exists $flags[-1]{insideparams}})|(,(?&declinner))*+)|(?(?{exists $matches[-1]{strc}})|(*F)))
+	(?(?{eval {print "dumpingflags\n"; print Dumper \@flags; exists $flags[-1]{insideparams}} or 0})|(,(?&declinner))*+)|(?(?{eval {exists $matches[-1]{strc}} or 0})|(*F)))
 
-	(?{pop @savedcallouts})
-	(?{pop @matches})
+	(?{pop2 \@savedcallouts})
+	(?{pop2 \@matches})
 )
 
 (?<decl>(?&abstdeclorallqualifs)(?(?!\s*+;)(?&compoundstatement)|\s*+;(?{call 'endfulldecl'})\s*+))
 
-(?<cprogram>(?(?=(?{push @flags, {"extrnl"}})((?&decl)))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F)))
+(?<cprogram>(?(?=(?{push2 \@flags, {"extrnl"}})((?&decl)))(?{pop2 \@flags, {"extrnl"}})(??{qr{\Q$^N\E}})|(?{pop2 \@flags, {"extrnl"}})(*F)))
 
-(?<typenamerev>(?(?=(?{push @savedcallouts, []})
+(?<typenamerev>(?(?=(?{push2 \@savedcallouts, []})
 		(?{++$recording; print "recording typenamerev\n"})(?<typenamerev1>(?&typename)))
 		(?{--$recording})(?(?!((?&castexpr)))|\g{typenamerev1}(??{qr{\Q$^N\E}})
-		(?{replayrecord})(?{pop @savedcallouts})
+		(?{replayrecord})(?{pop2 \@savedcallouts})
 		(?{call 'applycast'}))
 		
-		|(?{pop @savedcallouts})(?{--$recording})(*F)))
+		|(?{pop2 \@savedcallouts})(?{--$recording})(*F)))
 
 
 (?<abstrbitfield>\s*+:\s*+(?{call 'beginconstantexpr'})(?&assignorsomething)(?{call 'endconstantexpr'}))
@@ -142,13 +143,13 @@
 (?<add_ident_to_enum_def>\s*+(?<identlasttag>(?&identifierraw_qualified))(?{call 'add_ident_to_enum_def'})\s*+)
 
 
-(?<strcelem>(?(?=((?{push @flags, ["bitfl", "bb"]})(?&abstdeclorallqualifs))(?{pop @flags}))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F))\s*+;\s*+)
+(?<strcelem>(?(?=((?{push2 \@flags, {"bitfl", "bb"}})(?&abstdeclorallqualifs))(?{pop2 \@flags, {"bitfl", "bb"}}))(??{qr{\Q$^N\E}})|(?{pop2 \@flags, {"bitfl", "bb"}})(*F))\s*+;\s*+)
 
 (?<structbody>\s*+[{](?(<enum>)(?{call 'begin_enumerator_def'})
 	(?<enumerator>(?&add_ident_to_enum_def)
 	((=(?{call 'beginconstantexpr'})(?&assignorsomething)(?{call 'end_ass_to_enum_def'}))
 	|(?{call 'end_without_ass_to_enum_def'})))?+(,(?&enumerator))*+,?+\s*+
-	|(?{call 'struc_or_union_body'})\s*+(?(?=((?{push @flags, {"nesteddecl"}})(?&strcelem))(?{pop @flags}))(??{qr{\Q$^N\E}})|(?{pop @flags})(*F))*+)\s*+
+	|(?{call 'struc_or_union_body'})\s*+(?(?=((?{push2 \@flags, {"nesteddecl"}})(?&strcelem))(?{pop2 \@flags, {"nesteddecl"}}))(??{qr{\Q$^N\E}})|(?{pop2 \@flags, {"nesteddecl"}})(*F))*+)\s*+
 	[}]\s*+(?(<enum>)()|(?{call 'endbuildingstructorunion'}))\s*+)
 
 (?<structorunion>
