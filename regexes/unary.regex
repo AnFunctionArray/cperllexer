@@ -1,9 +1,3 @@
 (?<unary>(?<prefixarith>\s*+(?<prefixarithraw>[+][+]|--))(?&unaryexpr)(?{call 'unaryincdec'})
-	|(?{push2 \@savedcallouts, []})
-		(?{++$recording; print "recording unary\n"})(?(?=(?<unaryopexpr1>(?&unaryop)))(?{--$recording; print "minus minus unary $recording\n"})
-		|(?{--$recording; print "minus minus unary $recording\n"})(?{pop2 \@savedcallouts})(*F))
-		(?(?!((?&castexpr)))|\g{unaryopexpr1}(??{qr{\Q$^N\E}})(?{replayrecord}))(?{pop2 \@savedcallouts})
+	|\s*+(?=(?<unop>[\&\*\+\-\~\!]))\g{unop}(?&castexpr)(?{call 'unary'})
 	|\s*+\bsizeof\b(?>(?&typename)(?{call 'endsizeoftypename'})|(?{call 'beginsizeofexpr'})(?&unaryexpr)(?{call 'endsizeofexpr'})))
-
-
-						(?<unaryop>\s*+(?<unop>[\&\*\+\-\~\!])(?{call 'unary'}))

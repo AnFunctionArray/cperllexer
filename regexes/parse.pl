@@ -18,30 +18,46 @@ use File::Basename;
 use Data::Dumper;
 
 sub push2 {
-    if(@{$_[0]} eq @flags) {
+    my @args = @_;
+    if(@{$args[0]} ~~ @flags) {
         print "pushing to flags\n";
-        print Dumper $_[1];
+        print Dumper $args[1];
         print Dumper \@flags;
     }
-    push @{$_[0]}, $_[1]
+    push @{$args[0]}, $args[1]
 }
 
 sub pop2 {
-    if(@{$_[0]} eq @flags) {
+    my @args = @_;
+    if(@{$args[0]} ~~ @flags) {
         print "popping from flags\n";
         print Dumper $flags[-1];
         print Dumper \@flags;
-        print Dumper $_[1];
+        print Dumper \$args[1];
 
-        scalar keys %{$flags[-1]} eq scalar keys %{$_[1]} or exit;
+        scalar keys %{$flags[-1]} eq scalar keys %{$args[1]} or exit;
 
         #print "size equal\n";
 
         foreach my $key (keys %{$flags[-1]}) {
-            exit unless (exists $_[1]->{$key});
+            exit unless (exists $args[1]->{$key});
         }
     }
     pop @{$_[0]}
+}
+
+sub existsflag {
+    my $flag = $_[0];
+    my $exclusions = $_[1];
+    foreach my $val (reverse @flags) {
+        return 1 if(exists $val->{$flag});
+
+        foreach my $key (keys %{$exclusions}) {
+            return 0 if (exists $val->{$key});
+        }
+    }
+
+    return 0
 }
 
 print Dumper @ARGV;
