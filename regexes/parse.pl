@@ -17,6 +17,8 @@ use File::Basename;
 
 use Data::Dumper;
 
+#my sub print {1}
+
 sub push2 {
     my @args = @_;
     if(@{$args[0]} ~~ @flags) {
@@ -35,12 +37,14 @@ sub pop2 {
         print Dumper \@flags;
         print Dumper \$args[1];
 
-        scalar keys %{$flags[-1]} eq scalar keys %{$args[1]} or exit;
+        if(defined $args[1]) {
+            scalar keys %{$flags[-1]} eq scalar keys %{$args[1]} or exit;
 
-        #print "size equal\n";
+            #print "size equal\n";
 
-        foreach my $key (keys %{$flags[-1]}) {
-            exit unless (exists $args[1]->{$key});
+            foreach my $key (keys %{$flags[-1]}) {
+                exit unless (exists $args[1]->{$key});
+            }
         }
     }
     pop @{$_[0]}
@@ -434,7 +438,8 @@ if(not $isnested)
         @typedefidentifiersvector = eval { require $ENV{'REPLAY'} . ".txt"}
     }
     while(1) {
-        eval {$subject =~ m{(?(DEFINE)$mainregexdefs)^(?&$entryregex)*+$}sxx};
+        $regexfinal = qr{(?(DEFINE)$mainregexdefs)^(*COMMIT)(?&$entryregex)*+$}sxx;
+        eval {$subject =~ m{$regexfinal}sxx};
         if($@) {
             warn $@;
             undef $facet
@@ -446,7 +451,7 @@ if(not $isnested)
     if($ENV{'RECORD'}) {
         open my $out, '>', "$ENV{RECORD}.txt" or die "error opening $filename: $!";
         $Data::Dumper::Terse = 1;
-        print $out Dumper @typedefidentifiersvector;
+        CORE::print $out Dumper @typedefidentifiersvector;
         close $out;
     }
 

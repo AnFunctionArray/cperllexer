@@ -17,10 +17,21 @@
 	(?<suffixflt>[flFL])?+(?{call 'collect_float_literal'})
 	|(?<wholenodot>\d++)(?<exponent>[eE](?<signexp>[+-])?+(?<exp>\d++))(?<suffixflt>[flFL])?+(?{call 'collect_float_literal'}))
 
-(?<identifierpure>(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9])*+)(::(?&identifierpure))?+)
+(?<templateelem>(?{push2 \@flags, {"template"}})(?(?=((?&typenameinner)|(?&inner)))
+	(?{pop2 \@flags, {"template"}})(??{qr{\Q$^N\E}})|(?{pop2 \@flags, {"template"}})(*F)))
 
-(?<identifierraw>\b((?&identifierpure))\b(??{checkident}))
-(?<identifierraw_qualified>\b((?&identifierpure))\b(??{checkidentpermissive}))
-(?<identifier_typedef>\b((?&identifierpure))\b(??{checktypedef}))
+(?<template>(?{push2 \@savedcallouts, []})
+		(?{++$recording; print "recording template\n"})(?(?=(<(?&templateelem)(,(?&templateelem))*+>))(??{qr{\Q$^N\E}})
+		|(?{$recording--; pop2 \@savedcallouts})(*F))
+		(?{$recording--; pop2 \@savedcallouts})
+)
 
-(?<typeorqualif>\b((?&identifierpure))\b(??{checktypeorqualif}))
+(?<identext>(?&template)?+((::|[.@])(?&identifierpure))?+)
+
+(?<identifierpure>(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9])*+)(?(?<=\boperator\b)(?&identext)\S*+\s*+|(?&identext)))
+
+(?<identifierraw>((\b|~)(?&identifierpure))(??{checkident}))
+(?<identifierraw_qualified>((\b|~)(?&identifierpure))(??{checkidentpermissive}))
+(?<identifier_typedef>((\b|~)(?&identifierpure))(??{checktypedef}))
+
+(?<typeorqualif>((\b|~)(?&identifierpure))\b(??{checktypeorqualif}))
