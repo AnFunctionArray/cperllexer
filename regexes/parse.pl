@@ -572,7 +572,7 @@ sub call {
     use Data::Dumper;
     use POSIX;
 
-    my $printer = $recording ? \&print : \&print2;
+    my $printer = $recording ? sub {1} : \&print2;
 
     $printer->(strftime ("%F %T", localtime time) . " capture: " . $subslice . "\n");
     $printer->($recording . " " . $funcnm . "\n");

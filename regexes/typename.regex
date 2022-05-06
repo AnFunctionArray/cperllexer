@@ -21,9 +21,9 @@
 		|(?{pop2 \@savedcallouts})(?{--$recording; print "minus minus typename $recording\n"})(?{pop2 \@matches})(*F))
 		
 	(?{--$recording})(?{push2 \@flags, {"optoutter"}})
+	(?{push2 \@typenamequalifs, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
 	
 		(??{qr{\Q$^N\E}})(?{call 'identifier_decl'})
-		(?{push2 \@typenamequalifs, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
 		(?&abstdecl)?+
 		(?{call 'enddeclaration'})
 
@@ -160,7 +160,7 @@
 		(?{replayrecord \@typenamecurrrecord})(?{pop2 \@typenamecurrrecord})
 		(?{call 'applycast'})
 		
-		|(?{pop2 \@typenamecurrrecord})(?{--$recording})(*F))
+		|(?{pop2 \@savedcallouts})(?{--$recording})(*F))
 )
 
 
