@@ -445,7 +445,8 @@ if(not $isnested)
         eval {$subject =~ m{$regexfinal}sxx};
         if($@) {
             warn $@;
-            undef $facet
+            undef $facet;
+            exit
         } else {
             last
         }

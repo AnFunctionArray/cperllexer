@@ -4,13 +4,14 @@
 (?<primexpr>(?&assignorsomething)(,(?&assignorsomething))*+)
 
 
-(?<castexpr>(?&typenamerev)|(?<unaryexpr>((?&inner)|(?<inparenths>\s*+[(](?&primexpr)[)]
+(?<castexpr>(?(?=((?&typenamerev)))(??{qr{\Q$^N\E}})|(?<unaryexpr>(?(?=((?&inner)))(??{qr{\Q$^N\E}})
+						|(?<inparenths>\s*+[(](?&primexpr)[)]
 						\s*+))(((\[(?&primexpr)\](?{call 'subscript'})|[(](?{call 'startfunctioncall'})(?&primexpr)?[)]
 						(?{call 'endfunctioncall'}))\s*+
 						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?&identifierminemember)
 						|(?<postfixarith>(?<postfixarithraw>[+][+]|--)\s*+)
 						(?{call 'unaryincdec'})))*+
-						|(?&unary)))
+						|(?&unary))))
 
 (?<identifierminemember>\s*+(?<ident>(?&identifierraw_qualified))
 	(?{call 'memberaccess'})\s*+)
