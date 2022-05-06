@@ -126,7 +126,6 @@ sub checkidentpermissive {
 
 sub checktypeorqualif {
     #print "checking". $^N . "\n";
-    return $ok if (existsflag "template");
 
     inc2 "facet";
     if (exists $typeandqualifs{$^N}) {

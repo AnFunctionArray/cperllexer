@@ -81,7 +81,7 @@
 						)\s*+)
 
 (?<abstdecl>
-		(?(?=(?<abstrptrrev>(?<abstrptr>\s*+(?(?{eval {existsflag "template"} or 0})[*&]|[*])\s*+
+		(?(?=(?<abstrptrrev>(?<abstrptr>\s*+[*]\s*+
 						(?<qualifptr>(?&typeorqualif))*+)
 						(?(?!(?<foundabstr>(?&abstrptrrev))(?{call 'addptrtotype'}))
 						(?<abstrrest>(?&Tinside)(?&abstrsubs)*+
