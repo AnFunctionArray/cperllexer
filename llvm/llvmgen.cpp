@@ -1,6 +1,8 @@
 //#include "llvmgen.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/Value.h"
+//#include "llvm/IR/Instructions.h"
+//#include "llvm/IR/Value.h"
+//#include "llvm/Support/Allocator.h"
+#include <cctype>
 #include <cstdlib>
 #include <exception>
 #include <iterator>
@@ -29,6 +31,7 @@
 #include <llvm/Support/Error.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 #include <locale>
+#include <ostream>
 #include <queue>
 #include <range/v3/algorithm/contains.hpp>
 #include <range/v3/algorithm/find.hpp>
@@ -45,11 +48,14 @@
 #include <stdint.h>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <type_traits>
+#include <unordered_set>
 #include <vector>
 #include <variant>
 #include <unordered_map>
 #include <fstream>
+#include <deque>
 //#include <oniguruma.h>
 
 #ifdef _WIN32
@@ -487,11 +493,6 @@ struct bascitypespec : basic_type_origin {
 			ranges::contains(std::array{ "", "signed" }, basic[0]) ||
 			comparer.basic[0] == basic[0];
 	}
-
-	bool istypedef() {
-		std::string array [] = { [2] = basic[2], [3] = basic[3] };
-		return basic == std::to_array(array) && !basic[3].empty();
-	}
 };
 
 pointrtypequalifiers parsequalifiers(const std::string& qualifs) {
@@ -670,10 +671,11 @@ struct var {
 		return pllvmtype;
 	}
 	std::list<::type> fixupTypeIfNeeded() {
-		if (type.back().spec.basicdeclspec.istypedef()) {
+		auto &basicdeclspecarr = type.back().spec.basicdeclspec.basic;
+		if (basicdeclspecarr[0].empty() && basicdeclspecarr[1].empty() && !basicdeclspecarr[3].empty()) {
 			auto tmpident = identifier;
 			identifier.clear();
-			auto typedefval = obtainvalbyidentifier(type.back().spec.basicdeclspec.basic[3], false, true);
+			auto typedefval = obtainvalbyidentifier(basicdeclspecarr[3], false, true);
 			type.pop_back();
 			type.splice(type.end(), typedefval->fixupTypeIfNeeded());
 			identifier = tmpident;
@@ -817,7 +819,8 @@ struct basehndl /* : bindings_compiling*/ {
 		/*if (normalflow) {
 			normalflow->setSuccessor(0, pcurrblock.back());*/
 		if (!nbranches.back().second.empty()) {
-			ordinary_imm.value = llvmbuilder.CreateLoad(ordinary.requestValue());
+			auto ordinaryval = ordinary.requestValue();
+			ordinary_imm.value = llvmbuilder.CreateLoad(ordinaryval->getType()->getPointerElementType(), ordinaryval);
 
 			immidiates.pop_back();
 
@@ -1285,7 +1288,7 @@ struct basehndl /* : bindings_compiling*/ {
 			ops[1].value->getType()->isPointerTy()) {
 			assert(bminus);
 			ops[0].value =
-				llvmbuilder.CreatePtrDiff(ops[0].value, ops[1].value);
+				llvmbuilder.CreatePtrDiff(ops[0].value->getType()->getPointerElementType(), ops[0].value, ops[1].value);
 			type ptr_diff{ type::BASIC };
 			ptr_diff.spec.basicdeclspec.basic[1] = "int";
 			ops[0].type = { ptr_diff };
@@ -1488,12 +1491,12 @@ struct basehndl /* : bindings_compiling*/ {
 					ops[!i].value = !bminus
 						? ops[!i].value
 						: llvmbuilder.CreateNeg(ops[!i].value);
-					llvm::Value* lvalue = llvmbuilder.CreateGEP(ops[i].value,
+					llvm::Value* lvalue = llvmbuilder.CreateGEP(ops[i].value->getType()->getPointerElementType(), ops[i].value,
 
 						ops[!i].value);
 					immidiates.push_back(
 						{ ops[i].type.front().uniontype != type::FUNCTION && ops[i].type.front().uniontype != type::ARRAY
-							 ? llvmbuilder.CreateLoad(lvalue)
+							 ? llvmbuilder.CreateLoad(lvalue->getType()->getPointerElementType(), lvalue)
 							 : lvalue,
 						 ops[i].type, ops[i].lvalues, ops[i].originident });
 					immidiates.back().lvalues.push_back(
@@ -1938,7 +1941,7 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 
 	std::list<::var>::reverse_iterator var{};
 
-	std::find_if(scopevar.rbegin(), scopevar.rend(),
+	(void)std::find_if(scopevar.rbegin(), scopevar.rend(),
 		[&](std::list<::var>& scope) {
 			auto iter =
 				std::find_if(scope.rbegin(), scope.rend(),
@@ -1982,7 +1985,7 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 	printvaltype(immidiate);
 
 	if (immidiate.value && !immidiate.value->getType()->getPointerElementType()->isFunctionTy())
-		immidiate.value = llvmbuilder.CreateLoad(immidiate.value);
+		immidiate.value = llvmbuilder.CreateLoad(immidiate.value->getType()->getPointerElementType(), immidiate.value);
 
 	phndl->immidiates.push_back(immidiate);
 
@@ -2018,7 +2021,7 @@ DLL_EXPORT void constructstring() {
 		currstring, "", 0);
 
 	immidiates.push_back(
-		{ llvmbuilder.CreateLoad(lvalue), stirngtype, {}, "[[stringliteral]]" });
+		{ llvmbuilder.CreateLoad(lvalue->getType()->getPointerElementType(), lvalue), stirngtype, {}, "[[stringliteral]]" });
 	immidiates.back().lvalues.push_back(immidiates.back());
 	immidiates.back().lvalues.back().value = lvalue;
 	currstring = "";
@@ -2330,7 +2333,7 @@ DLL_EXPORT void memberaccess(std::unordered_map<unsigned, std::string>&& hashent
 	printtype(lvalue->getType(),
 		lastvar.originident + " " + std::to_string(imember));
 
-	llvm::Value* rvalue = llvmbuilder.CreateLoad(lvalue);
+	llvm::Value* rvalue = llvmbuilder.CreateLoad(lvalue->getType()->getPointerElementType(), lvalue);
 
 	lastvar.type = member.type;
 
@@ -2439,7 +2442,7 @@ DLL_EXPORT void beginlogicalop(int blastorfirst) {
 
 	if (opsscopeinfo.back().lastifs != --ifstatements.end()) {
 
-		imm.value = llvmbuilder.CreateLoad(imm.value);
+		imm.value = llvmbuilder.CreateLoad(imm.value->getType()->getPointerElementType(), imm.value);
 
 		imm.lvalues.clear();
 
@@ -2466,7 +2469,7 @@ DLL_EXPORT void beginlogicalop(int blastorfirst) {
 	else {
 		continueifstatement();
 
-		imm.value = llvmbuilder.CreateLoad(imm.value);
+		imm.value = llvmbuilder.CreateLoad(imm.value->getType()->getPointerElementType(), imm.value);
 
 		imm.lvalues.clear();
 
@@ -2974,7 +2977,7 @@ val decay(val lvalue) {
 		lvalue.lvalues.pop_back();
 
 		if (lvalue.value->getType()->getPointerElementType()->isArrayTy())
-			lvalue.value = llvmbuilder.CreateGEP(
+			lvalue.value = llvmbuilder.CreateGEP(lvalue.value->getType()->getPointerElementType(),
 				lvalue.value,
 				{ llvmbuilder.getInt64(0), llvmbuilder.getInt64(0) });
 	}
@@ -2988,7 +2991,7 @@ valandtype getrvalue(valandtype lvalue) {
 			return lvalue;
 		std::cout << "rvalue" << std::endl;
 		basehndl::val ret = {
-			llvmbuilder.CreateLoad(
+			llvmbuilder.CreateLoad(lvalue.value->getType()->getPointerElementType(),
 				/*gen_pointer_to_elem_if_ptr_to_array*/ (lvalue.value)),
 			currtype };
 		printvaltype(ret);
@@ -3916,13 +3919,6 @@ virtual void identifier_typedef_38() {
 	//handledeclident({ (char*)GROUP_PTR_AND_SZ(n) });
 }
 #endif
-void expandtype(std::list<::type> typein, std::list<::type> &typeout) {
-	if (typein.back().spec.basicdeclspec.istypedef()) {
-		auto var = obtainvalbyidentifier(typein.back().spec.basicdeclspec.basic[3], false, true);
-		expandtype(var->type, typeout);
-		typeout.insert(typeout.begin(), typein.begin(), --typein.end());
-	} else typeout.insert(typeout.begin(), typein.begin(), typein.end());
-}
 
 /*DLL_EXPORT void add_typedef_to_decl(std::unordered_map<unsigned, std::string>&& hashes) {
 	currtypevectorbeingbuild.back().p->back().type.front().spec.basicdeclspec.basic[3] = hashes["typedefnmmatched"_h];
@@ -4009,7 +4005,7 @@ virtual void end_param_list_48() {
 #endif
 DLL_EXPORT void add_type(std::unordered_map<unsigned, std::string>&hashes) {
 	auto& lastvar = currtypevectorbeingbuild.back().p->back();
-	parsebasictype({ hashes["ident"_h] }, lastvar.type.back().spec.basicdeclspec);
+	parsebasictype({ hashes["typefound"_h] }, lastvar.type.back().spec.basicdeclspec);
 }
 
 DLL_EXPORT void add_qualif(std::unordered_map<unsigned, std::string>&hashes) {
@@ -4282,6 +4278,8 @@ extern "C" {
 #include <XSUB.h>
 }
 
+#include <cassert>
+
 DLL_EXPORT void docall(const char*, size_t, void*);
 
 void call(std::unordered_map<unsigned, std::string> hash, std::string callname) {
@@ -4313,6 +4311,8 @@ extern "C" void *wait_for_call(void*) {
 	return nullptr;
 }
 
+static std::list<std::pair<std::unordered_map<unsigned, std::string>, std::string>> recordstack;
+
 DLL_EXPORT void do_callout(SV * in, HV * hash)
 {
 
@@ -4325,7 +4325,8 @@ DLL_EXPORT void do_callout(SV * in, HV * hash)
 	std::unordered_map<unsigned, std::string> map;
 	while (value = hv_iternextsv(hash, &key, &key_length)) {
 		pinstr = SvPVutf8(value, inlen);
-		if(record.is_open() && inlen) {
+		if(!inlen) continue;
+		if(record.is_open() && recordstack.empty()) {
 			record.write(pinstr, inlen);
 			record.write(nill, 1);
 			record.write(reinterpret_cast<const char(&)[4]>(std::move(stringhash(std::string{key, (size_t)key_length}.c_str()))), 4);
@@ -4336,7 +4337,9 @@ DLL_EXPORT void do_callout(SV * in, HV * hash)
 
 	pinstr = SvPVutf8(in, inlen);
 
-	if(record.is_open()) {
+	if(!recordstack.empty()) {
+		recordstack.push_back({map, std::string{pinstr, inlen}});
+	} else if(record.is_open()) {
 
 		record.write(nill, 1);
 		record.write(pinstr, inlen);
@@ -4354,4 +4357,31 @@ DLL_EXPORT void do_callout(SV * in, HV * hash)
 			docall(pinstr, inlen, &map);
 		}
 	}
+}
+
+
+DLL_EXPORT void startrecording() {
+	recordstack.push_back({});
+}
+
+DLL_EXPORT void stoprecording() {
+	recordstack.pop_back();
+}
+
+extern "C" int secondmain(char *subject, size_t szsubject, char *pattern,
+	 size_t szpattern, char *modulename, size_t szmodulename,
+	 char *entrypoint, size_t szentrypoint) {
+	
+	std::string entry{entrypoint, szentrypoint};
+
+	auto iterentry = std::find_if(recordstack.begin(), recordstack.end(), [&](decltype(recordstack.back()) &elem) {
+		return elem.second == entry;
+	});
+
+
+	
+
+
+	//startmodule(modulename, szmodulename);
+	return 0;
 }

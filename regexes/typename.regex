@@ -3,165 +3,189 @@
 (?<qualifs>(?<typesandqualifiers>\s*+
 						(?<typesandqualifiersmask>(?&typeorqualif))\s*+))
 
-(?<align>\s*+\b__declspec[(]\s*+\balign[(]\s*+(?<align>(?&numberliteralraw))\s*+[)]\s*+[)]\s*+)
+(?<align>\s*+\b__declspec[(]\s*+\balign[(]\s*+(?<alignnum>(?&numberliteralraw))\s*+[)]\s*+[)]\s*+)
 
-(?<typename>\s*+[(](??{use re 'eval'; qr{
-	((*F)$mainregexdefs)|
-	(??{set {"savedcallouts" => []}})
-	(?=(?<Tqualifs>((?&qualifs)|\s*+((?(<strc>)(*F))(?(<typedefnmmatched>)(*F))
-		((?<strc>(??{set {"tpdf" => ""}})(?&structorunion)(??{unset {"tpdf" => ""}}))
-		|(?<typedefnmmatched>(?&identifier_typedef)))
-		|(?(<typedefkey>)(*F))(?<typedefkey>(\btypedef\b)))\s*+)++))
+(?<typename>\s*+[(]
+(?<typenameinner>
+	(?{push2 \@matches, {}})
+
+	(?(?=
+		(?{push2 \@savedcallouts, []})
+		(?{++$recording; print "recording typename\n"})
+
+		(((?&qualifs)|\s*+((?(?{eval {exists $matches[-1]{strc}} or 0})(*F))(?(?{eval {exists $matches[-1]{typedefnmmatched}} or 0})(*F))
+		(((?&structorunion))(?{$matches[-1]{strc}=$^N})
+		|((?&identifier_typedef))(?{$matches[-1]{typedefnmmatched}=$^N})))
+		|(?(?{eval {exists $matches[-1]{typedefkey}} or 0})(*F))((\btypedef\b))(?{$matches[-1]{typedefkey}=$^N})\s*+)++))
+
+		|(?{pop2 \@savedcallouts})(?{--$recording; print "minus minus typename $recording\n"})(?{pop2 \@matches})(*F))
 		
-	((?{set2 {"qualifstrace" => evalval sub{$savedcallouts[-1]}}})(?{unset2 "savedcallouts"})
-	|(?{unset2 "qualifstrace"; set2 {"savedcallouts" => []}}))
-		\g{Tqualifs}(?{call "identifier_decl"})((??{set {"abstdecl" => "optoutter"}})(?&abstdecl)(??{unset {"abstdecl" => "optoutter"}}))?+
-		(?{call "enddeclaration"})
-		(?{evalval sub{replay $qualifstrace[-1]}})
-		}sxxno})
+	(?{--$recording})(?{push2 \@flags, {"optoutter"}})
+	(?{push2 \@typenamequalifs, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
+	
+		(??{qr{\Q$^N\E}})(?{call 'identifier_decl'})
+		(?&abstdecl)?+
+		(?{call 'enddeclaration'})
 
-		[)](??{unset "qualifstrace"})(?{call "endqualifs"})\s*+
+		(?{pop2 \@flags, {"optoutter"}})
+		(?{replayrecord \@typenamequalifs})
+		(?{pop2 \@matches; pop2 \@typenamequalifs}))
+
+		[)](?{call 'endqualifs'})\s*+
 		
 )
 
-(?<allqualifsparam>\s*+(?&qualifs)\s*+|(?&structorunion))
+(?<abstrmostoutteropt>\s*+(?&callingconv)?+[(](?&abstdecl)[)]\s*+)
 
-(?<allqualifsdecl>(?&allqualifsparam)|(?(?{evalval sub{$tpdf[-1] eq "notpdf"}})(*F)|\s*+(\btypedef\b)\s*+))
+(?<abstrmostoutter>\s*+(?&callingconv)?+([(](?&abstdecl)[)]|(?&identifierminedecl))\s*+)
 
-(?<abstrmostoutteropt>\s*+(?&callingconv)?+[(]((??{set {"abstdecl" => "optoutter"}})(?&abstdecl)(??{unset {"abstdecl" => "optoutter"}}))[)]\s*+)
+(?<abstrmostoutterparams>\s*+(?(?=(?{push2 \@savedcallouts, []})
+		(?{++$recording; print "recording abstrmostoutterparams subs\n"})(?<subs>(?&abstrsubs)))(?{--$recording})
+						(?{call 'identifier_decl'})(?{replayrecord})(?{pop2 \@savedcallouts})\g{subs}
+			|((?{--$recording})(?{pop2 \@savedcallouts})[(](?&abstdecl)[)]|
+			(?(?=((?&identifierminedecl)))(??{qr{\Q$^N\E}})|(?{call 'identifier_decl'}))))
+\s*+)
 
-(?<abstrmostoutter>\s*+(?&callingconv)?+([(]((??{set {"abstdecl" => "outter"}})(?&abstdecl)(??{unset {"abstdecl" => "outter"}}))[)]|(?&identifierminedecl))\s*+)
-
-(?<abstrmostoutterparams>\s*+(?(?=(?{set2 {"tpdf" => "subsparams"}})(?<subs>(?&abstrsubs)))(?{unset2 "tpdf"})\g{subs}
-			|(?{unset2 "tpdf"})([(]((??{set {"abstdecl" => "outterparams"}})(?&abstdecl)(??{unset {"abstdecl" => "outterparams"}}))[)]
-			|(?&identifierminedecl)
-			|(?{call "identifier_decl"})))\s*+)
-
-(?<identifierminedecl>\s*+(?<ident>((??{inc "facet"})(?&identifierraw_qualified)(??{dec "facet"})))
-	(?{call "identifier_decl"})\s*+)
-
-(?#<Tabstrrest, Tabstrrestalt, Tinside>)
-
-(?<Tabstrrest>
-	(?(?{evalval sub {$abstdecl[-1] eq "outterparams"}})
-
-		((??{inc "facet"})(?&abstrmostoutterparams)(??{dec "facet"}))((??{inc "facet"})(?&abstrsubs)(??{dec "facet"}))*+
-
-	|(?(?{evalval sub {$abstdecl[-1] eq "outter"}})
-
-		((??{inc "facet"})(?&abstrmostoutter)(??{dec "facet"}))((??{inc "facet"})(?&abstrsubs)(??{dec "facet"}))*+
-
-	|(?(?{evalval sub {$abstdecl[-1] eq "optoutter"}})
-
-		((??{inc "facet"})(?&abstrmostoutteropt)(??{dec "facet"}))?+((??{inc "facet"})(?&abstrsubs)(??{dec "facet"}))*+)))
-
-	)
+(?<identifierminedecl>\s*+(?<ident>(?&identifierraw_qualified))
+	(?{call 'identifier_decl'})\s*+)
 
 (?<Tabstrrestalt>
-	(?(?{evalval sub {$abstdecl[-1] eq "outterparams"}})(?&abstrmostoutterparams)(?&abstrsubs)*+
-	|(?(?{evalval sub {$abstdecl[-1] eq "outter"}})(?&abstrmostoutter)(?&abstrsubs)*+
-	|(?(?{evalval sub {$abstdecl[-1] eq "optoutter"}})((?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++))))
+	(?(?{existsflag "outterparams", {"outter", "optoutter"}})(?&abstrmostoutterparams)(?&abstrsubs)*+
+	|(?(?{existsflag "outter", {"optoutter", "outterparams"}})(?&abstrmostoutter)(?&abstrsubs)*+
+	|(?(?{existsflag "optoutter", {"outter", "outterparams"}})((?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++))))
 	)
 
 (?<Tinside>
-	(?(?{evalval sub {$abstdecl[-1] eq "outterparams"}})(?&abstrmostoutterparams)
-	|(?(?{evalval sub {$abstdecl[-1] eq "outter"}})(?&abstrmostoutter)
-	|(?(?{evalval sub {$abstdecl[-1] eq "optoutter"}})(?&abstrmostoutteropt)?+))
-	))
+	(?(?{existsflag "outterparams", {"outter", "optoutter"}})(?&abstrmostoutterparams)
+	|(?(?{existsflag "outter", {"optoutter", "outterparams"}})(?&abstrmostoutter)
+	|(?(?{existsflag "optoutter", {"outter", "outterparams"}}))(?&abstrmostoutteropt)?+))
+	)
 
-(?<param>
-						(??{set {"typename" => "insideparams"}, {"decls" => "bb"}})
-						((?&abstdeclorallqualifs))(??{unset {"typename" => "insideparams"}, {"decls" => "bb"}}))
+(?<param>(?{push2 \@flags, {"outterparams"=>undef,"nonopt"=>undef}})(?&abstdeclorallqualifs))
 
-(?<abstrsubs>\s*+(\[
-							(?(?{evalval sub {$tpdf[-1] eq "subsparams"}})(?{call "identifier_decl"}))
-						(?{call "beginconstantexpr"})(?&primexpr)\]
-						(?{call "addsubtotype"})(?{call "endconstantexpr"})
-						|([(](?(?{evalval sub {$tpdf[-1] eq "subsparams"}})(?{call "identifier_decl"}))
-						(((??{inc "nesteddecl"})(??{set {"tpdf" => "firstparam"}})
-						(?&param)(??{unset {"tpdf" => "firstparam"}})
-						(,(?&param))*(??{dec "nesteddecl"})|(?{call "startfunctionparamdecl"}))
-						(?<rest>,?+\s*+\.\.\.\s*+)?+)[)](?{call "endfunctionparamdecl"})))\s*+)
+(?<closingparen>(?![(])[)])
+
+(?<openparen>[(](?<![)]))
+
+(?<abstrsubs>\s*+(\[(?{call 'beginconstantexpr'})(?&primexpr)\]
+						(?{call 'addsubtotype'})(?{call 'endconstantexpr'})
+						|(?&openparen)(?(?=(\s*+((\.\.\.)(?{$matches[-1]{rest}=$^N})|\bvoid\b)?+\s*+(?&closingparen))
+						(?{call 'startfunctionparamdecl'})(?{call 'endfunctionparamdecl'}))
+						(??{qr{\Q$^N\E}})(?{pop2 \@matches})
+						|(?(?=(?{push2 \@savedcallouts, []})(?{push2 \@matches, {}})
+						(?{++$recording; print "recording abstrsubs firstparam\n"})((?&param))(?{--$recording}))
+						(?{call 'startfunctionparamdecl'})(?{replayrecord})(?{pop2 \@savedcallouts})(??{qr{\Q$^N\E}})
+							(,(?(?=(\s*+(\.\.\.)(?{$matches[-1]{rest}=$^N})\s*+))(??{qr{\Q$^N\E}})|(?&param)))*+(?{pop2 \@matches})
+						\s*+(?&closingparen)(?{call 'endfunctionparamdecl'})
+						|(?{--$recording})
+						(?{pop2 \@savedcallouts})(?{pop2 \@matches})(*F)))
+						)\s*+)
 
 (?<abstdecl>
-		(?<abstrptrrev>(?<abstrptr>\s*+[*]\s*+
+		(?(?=(?<abstrptrrev>(?<abstrptr>\s*+[*]\s*+
 						(?<qualifptr>(?&typeorqualif))*+)
-						(?(?!(?<foundabstr>(?&abstrptrrev))(?{call "addptrtotype"}))
+						(?(?!(?<foundabstr>(?&abstrptrrev))(?{call 'addptrtotype'}))
 						(?<abstrrest>(?&Tinside)(?&abstrsubs)*+
-						(?{call "addptrtotype"}))|
-						\g{foundabstr}))|(?&Tabstrrestalt))
+						(?{call 'addptrtotype'}))|
+						\g{foundabstr})))(??{qr{\Q$^N\E}})|(?&Tabstrrestalt))
+)
 
 (?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
 
 (?<Tasbtdecloutter>
-	(?(?{evalval sub {$typename[-1] eq "insideparams"}})((??{set {"abstdecl" => "outterparams"}})(?&abstdecl)(??{unset {"abstdecl" => "outterparams"}}))
-	|((??{set {"abstdecl" => "outter"}})(?&abstdecl)(??{unset {"abstdecl" => "outter"}})))
-	)
+	(?&abstdecl)
+)
 
 (?<Tabstinitorbitfl>
-	(?(?{evalval sub {$typename[-1] eq "bitfl"}})(?&abstrbitfield)|(?&abstrinitialization))
+	(?(?{existsflag "bitfl"})(?&abstrbitfield)|(?&abstrinitialization))
 	)
 
 (?<Tdecl>(?&Tasbtdecloutter)
 			(?&Tabstinitorbitfl)?+)
 
-(?<Tabsqualifnonoptional>
-	(?(?{evalval sub {$typename[-1] eq "insideparams"}})(?&allqualifsparam)|(?&allqualifsdecl))
-)
-
 
 (?<declcomma>,(?&Tdecl))
 
-(?#<Tabsqualifs, Tasbtdecloutter, Tabstinitorbitfl, Tidentifierminetypedef, Tidentifierminetypedeffwd, Tqualifwrapper>)
+(?<abstdeclorallqualifsqualifs>(((?&qualifs))(?{$matches[-1]{typefound}=$^N})|\s*+((?(?{eval {exists $matches[-1]{strc}} or 0})(*F))
+		(?(?{eval {exists $matches[-1]{typedefnmmatched}} or 0})(*F))
+		(((?&structorunion))(?{$matches[-1]{strc}=$^N})
+		|(?(?{eval {exists $matches[-1]{typefound}} or 0})(*F))((?&identifier_typedef))(?{$matches[-1]{typedefnmmatched}=$^N}))
+		|(?(?{eval {exists $matches[-1]{typedefkey}} or 0})(*F))((\btypedef\b))(?{$matches[-1]{typedefkey}=$^N}))\s*+)++)
+
+(?<abstdeclorallqualifsdestr>
+	(?{push2 \@declqualifs, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
+
+	(?(?=(?<declinner>(?&Tdecl)(?{call 'enddeclaration'})(?{replayrecord \@declqualifs})(?{call 'endqualifs'})))\g{declinner}
+	(?(?{eval {existsflag "outterparams"} or 0})|(,(?&declinner))*+)|(?(?{print "dump\n";print Dumper @matches;eval {exists $matches[-1]{strc}} or 0})|
+	(?{pop2 \@flags, undef})
+	(?{pop2 \@declqualifs})
+	(?{pop2 \@matches})(*F)))
+
+	(?{pop2 \@declqualifs})
+	(?{pop2 \@matches}))
+
 (?<abstdeclorallqualifs>
-(??{use re 'eval'; qr{
-	((*F)$mainregexdefs)|
-	(??{set {"savedcallouts" => [], "typefound"}})
-	(?=(?<Tqualifs>((?&qualifs)|\s*+((?(<strc>)(*F))(?(<typedefnmmatched>)(*F))
-		((?<strc>(??{set {"tpdf" => ""}})(?&structorunion)(??{unset {"tpdf" => ""}}))
-		|(?(?{evalval sub {$typefound[-1]}})(*F))(?<typedefnmmatched>(?&identifier_typedef)))
-		|(?(<typedefkey>)(*F))(?<typedefkey>(\btypedef\b)))\s*+)++
-		|(?(?{evalval sub{$decls[-1] eq "extrnl"}})|(*F))))
-	((?{set2 {"qualifstrace" => evalval sub{$savedcallouts[-1]}}})(?{unset2 "savedcallouts", "typefound"})
-	|(?{unset2 "qualifstrace"; set2 {"savedcallouts" => [], "typefound"}}))
-	\g{Tqualifs}(?(?{evalval sub{$tpdf[-1] eq "firstparam"}})(?{call "startfunctionparamdecl"}))
-	(?(?=(?<declinner>(?&Tdecl)(?{call "enddeclaration"})(?{evalval sub{replay $qualifstrace[-1]}})(?{call "endqualifs"})))\g{declinner}
-	(?(?{evalval sub {$typename[-1] eq "insideparams"}})|(,(?&declinner))*+)|(?(<strc>)|(*F)))
-	(?{unset2 "qualifstrace"})
-}sxxno})
+	
+	(?{push2 \@matches, {}})
+
+	(?(?=(?{push2 \@savedcallouts, []})
+		(?{++$recording; print "recording abstdeclorallqualifs\n"})
+
+		((?&abstdeclorallqualifsqualifs)))
+
+		(?{--$recording})
+		(??{qr{\Q$^N\E}})
+		|(?(?{eval {existsflag "opt", {"nonopt"}} or 0})
+	(?{--$recording})
+	|
+	(?{pop2 \@flags, undef})
+
+	(?{pop2 \@savedcallouts})(?{--$recording})(?{pop2 \@matches})(*F)))
+	
+	(?&abstdeclorallqualifsdestr)
+
+	(?{pop2 \@flags, undef})
 )
 
-(?<decl>(?&abstdeclorallqualifs)((?&compoundstatement)|\s*+;(?{call "endfulldecl"})\s*+))
+(?<declopt>(?{push2 \@flags, {"outter"=>undef,"opt"=>undef}})(?&abstdeclorallqualifs)(?(?!\s*+;)(?&compoundstatement)|\s*+;(?{call 'endfulldecl'})\s*+))
 
-(?<cprogram>(??{set {"decls" => "extrnl"}})(?&decl)(??{unset {"decls" => "extrnl"}}))
+(?<decl>(?{push2 \@flags, {"outter"=>undef,"nonopt"=>undef}})(?&abstdeclorallqualifs)\s*+;(?{call 'endfulldecl'})\s*+)
 
-(?<typenamerev>(((??{inc "facet"})(?&typename)(??{dec "facet"}))(?!(?&castexpr)))|(?&typename)(?{call "applycast"})((??{inc "facet"})(?&castexpr)(??{dec "facet"})))
+(?<cprogram>(?&declopt))
+
+(?<typenamerev>(?(?=(?{push2 \@savedcallouts, []})
+		(?{++$recording; print "recording typenamerev\n"})(?<typenamerev1>(?&typename)))
+		(?{--$recording})\g{typenamerev1}(?{push2 \@typenamecurrrecord, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
+		(?&castexpr)
+		(?{replayrecord \@typenamecurrrecord})(?{pop2 \@typenamecurrrecord})
+		(?{call 'applycast'})
+		
+		|(?{pop2 \@savedcallouts})(?{--$recording})(*F))
+)
 
 
-(?<abstrbitfield>\s*+:\s*+(?{call "beginconstantexpr"})(?&assignorsomething)(?{call "endconstantexpr"}))
+(?<abstrbitfield>\s*+:\s*+(?{call 'beginconstantexpr'})(?&assignorsomething)(?{call 'endconstantexpr'}))
 (?<designator>\s*+(\[(?&primexpr)\]|\.\s*+(?&identifier))\s*+)
 (?<initializer>(?&assignorsomething)|\s*+[{]((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*+[}]\s*+)
 (?<abstrinitialization>=(?&initializer))
 
-(?<add_ident_to_enum_def>\s*+(?<identlasttag>((??{inc "facet"})(?&identifierraw_qualified)(??{dec "facet"})))(?{call "add_ident_to_enum_def"})\s*+)
+(?<add_ident_to_enum_def>\s*+(?<identlasttag>(?&identifierraw_qualified))(?{call 'add_ident_to_enum_def'})\s*+)
 
 
-(?<strcelem>(
-		(??{set {"typename" => "bitfl"}, {"decls" => "bb"}})
-		(?&abstdeclorallqualifs)(??{unset {"typename" => "bitfl"}, {"decls" => "bb"}}))\s*+;\s*+)
+(?<strcelem>(?{push2 \@flags, {"bitfl"=>undef, "outter"=>undef, "nonopt"=>undef}})(?&abstdeclorallqualifs)\s*+;\s*+)
 
-(?<structbody>\s*+[{](??{inc "nesteddecl"})(?(<enum>)(?{call "begin_enumerator_def"})
+(?<structbody>\s*+[{](?(?{eval {exists $matches[-1]{enum}} or 0})(?{call 'begin_enumerator_def'})
 	(?<enumerator>(?&add_ident_to_enum_def)
-	((=(?{call "beginconstantexpr"})(?&assignorsomething)(?{call "end_ass_to_enum_def"}))
-	|(?{call "end_without_ass_to_enum_def"})))?+(,(?&enumerator))*+,?+\s*+
-	|(?{call "struc_or_union_body"})\s*+(?&strcelem)*+)\s*+
-	[}](??{dec "nesteddecl"})\s*+(?(<enum>)()|(?{call "endbuildingstructorunion"}))\s*+)
+	((=(?{call 'beginconstantexpr'})(?&assignorsomething)(?{call 'end_ass_to_enum_def'}))
+	|(?{call 'end_without_ass_to_enum_def'})))?+(,(?&enumerator))*+,?+\s*+
+	|(?{call 'struc_or_union_body'})\s*+(?&strcelem)*+)\s*+
+	[}]\s*+(?(?{eval {exists $matches[-1]{enum}} or 0})()|(?{call 'endbuildingstructorunion'}))\s*+)
 
-(?<structorunion>(?(?{evalval sub{$tpdf[-1] eq "notpdf"}})(*F)|
-	(??{set {"tpdf" => ""}})((?=(?<begin>\s*+\b(?<structorunionlast>struct|union|(?<enum>enum))\b\s*+(?&align)?+
-	(?<lasttag>(?&identifierminestruct))?+))\g{begin}(?(?=(?<body>(?&structbody)))\g{body}|(?(<lasttag>)|(*F))))
-	(??{inc "facet"})(?{call "add_tag"})(??{dec "facet"})
-	(??{unset {"tpdf" => ""}}))
+(?<structorunion>
+	(?=(?<begin>\s*+\b(?<structorunionlast>struct|union|(enum)(?{$matches[-1]{enum}=$^N}))\b\s*+(?&align)?+
+	(((?&identifierminestruct))(?{$matches[-1]{lasttag}=$^N}))?+))\g{begin}
+	(?(?=(?<body>(?&structbody)))\g{body}|(?(?{eval {exists $matches[-1]{lasttag}} or 0})|(*F)))
+	(?{call 'add_tag'})
 )
 
-(?<identifierminestruct>(((??{inc "facet"})(?&identifierraw_qualified)(??{dec "facet"}))))
+(?<identifierminestruct>(?&identifierraw_qualified))

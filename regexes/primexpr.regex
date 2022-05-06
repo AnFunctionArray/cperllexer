@@ -4,29 +4,29 @@
 (?<primexpr>(?&assignorsomething)(,(?&assignorsomething))*+)
 
 
-(?<castexpr>(?&typenamerev)|(?<unaryexpr>((?&inner)|(?<inparenths>\s*+[(](?&primexpr)[)]
-						\s*+))(((\[(?&primexpr)\](?{call "subscript"})|[(](?{call "startfunctioncall"})(?&primexpr)?[)]
-						(?{call "endfunctioncall"}))\s*+
+(?<castexpr>(?(?=((?&typenamerev)))(??{qr{\Q$^N\E}})|(?<unaryexpr>(?(?=((?&inner)))(??{qr{\Q$^N\E}})
+						|(?<inparenths>\s*+[(](?&primexpr)[)]
+						\s*+))(((\[(?&primexpr)\](?{call 'subscript'})|[(](?{call 'startfunctioncall'})(?&primexpr)?+[)]
+						(?{call 'endfunctioncall'}))\s*+
 						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?&identifierminemember)
 						|(?<postfixarith>(?<postfixarithraw>[+][+]|--)\s*+)
-						(?{call "unaryincdec"})))*+
-						|(?&unary)))
+						(?{call 'unaryincdec'})))*+
+						|(?&unary))))
 
-(?<identifierminemember>\s*+(?<ident>((??{inc "facet"})(?&identifierraw_qualified)(??{dec "facet"})))
-	(?{call "memberaccess"})\s*+)
+(?<identifierminemember>\s*+(?<ident>(?&identifierraw_qualified))
+	(?{call 'memberaccess'})\s*+)
 
 (?<testxpr>(?&inner)|(?&inparenths))
 
 (?<assignorsomething>
-(??{use re 'eval'; qr{
-	((*F)$mainregexdefs)|
-	(?(?=(?{inc2 "facet"})(?&unaryexpr))
-	(?{dec2 "facet"})(?{call "begin_binary"})(?&unaryexpr)
-	((?<assignop>(?<binoplast>=|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+)
-		(?&assignorsomething)(?{call "binary"})(?{call "end_binary"})|(?&ternaryorsomething)(?{call "end_binary"}))
-		|(?(?=(?&typename)(?{dec2 "facet"})(?{call "begin_binary"}))|(?{dec2 "facet"})(*F))
-		(?&typenamerev)(?&ternaryorsomething)(?{call "end_binary"}))
-}sxxno})
+	(?(?=(?{push2 \@savedcallouts, []})
+		(?{++$recording; print "recording assignorsomething\n"})(?{call 'begin_binary'})((?&unaryexpr)))(??{qr{\Q$^N\E}})
+	(?{--$recording; print "minus minus assignorsomething $recording\n"})(?{replayrecord})(?{pop2 \@savedcallouts})
+	(?(?=(?<assignop>(?<binoplast>=(?!=)|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+))
+		\g{assignop}(?&assignorsomething)(?{call 'binary'})(?{call 'end_binary'})|(?&ternaryorsomething)(?{call 'end_binary'}))
+		|(?{$savedcallouts[-1] = []; print "resetting record\n"})(?(?=(?{call 'begin_binary'})((?&typenamerev)))|(?{--$recording})(?{pop2 \@savedcallouts})(*F))
+		(??{qr{\Q$^N\E}})(?{--$recording; print "minus minus assignorsomething typename $recording\n"})(?{replayrecord})
+		(?{pop2 \@savedcallouts})(?&ternaryorsomething)(?{call 'end_binary'}))
 )
 
 (?<ternaryorsomething>(?&orlogiorsomething)((?&ternaryrest)

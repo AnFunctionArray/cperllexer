@@ -1,4 +1,4 @@
-(?#<binoprest, binopraw>)
+
 (?<binopplusrest>(?<binop>(?<binoplast>
 (?(<addopraw>)(?&mulopraw)
     |(?(<shiftopraw>)(?&addopraw)
@@ -9,8 +9,8 @@
     |(?(<oropraw>)(?&xoropraw)
     |(?(<andlogicopraw>)(?&oropraw)
     |(?(<orlogicopraw>)(?&andlogicopraw)
-    |(?<orlogicopraw>\|\|(?{call "begin_branch"})
-            |(?<andlogicopraw>&&(?{call "begin_branch"})
+    |(?<orlogicopraw>\|\|(?{call 'begin_branch'})
+            |(?<andlogicopraw>&&(?{call 'begin_branch'})
             |(?<oropraw>(?!\|\|)\|
             |(?<xoropraw>\^
             |(?<andopraw>(?!&&)&
@@ -20,12 +20,9 @@
             |(?<addopraw>[\+\-]
             |(?<mulopraw>[\*\/\%]))))))))))
             ))))))))))(?&castexpr)
-    (?&binopplusrest)*(?{call "binary"})))
+    (?&binopplusrest)*(?{call 'binary'})))
 
 
-(?<orlogiorsomething>
-(??{use re 'eval'; qr{
-	((*F)$mainregexdefs)|
+(?<orlogiorsomething>(??{use re 'eval'; $orlogiorsomethingreg //= qr{(?(DEFINE)$mainregexdefs)
     (?&binopplusrest)*+
-}sxxno
-}))
+}sxx}))

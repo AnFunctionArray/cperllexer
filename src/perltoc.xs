@@ -12,25 +12,29 @@ MODULE = AnFunctionArray
 
 PROTOTYPES: ENABLE
 
-=pod
-void startmatching(SV *in, SV *in1, SV *in2)
+
+extern void startmatching(SV *in, SV *in1, SV *in2, SV *in3)
 PREINIT:
     STRLEN len;
     STRLEN secondlen;
     STRLEN thirdlen;
+    STRLEN fourthlen;
     char* s;
     char* s1;
     char* s2;
+    char* s3;
 CODE:
     {
-        int secondmain(char *subject, size_t szsubject, char *pattern, size_t szpattern, char *modulename, size_t szmodulename);
+        int secondmain(char *subject, size_t szsubject, char *pattern, size_t szpattern, char *modulename, size_t szmodulename,
+            char*, size_t);
         s = SvPVutf8(in, len);
         s1 = SvPVutf8(in1, secondlen);
         s2 = SvPVutf8(in2, thirdlen);
-        secondmain(s, len, s1, secondlen, s2, thirdlen);
+        s3 = SvPVutf8(in3, fourthlen);
+        secondmain(s, len, s1, secondlen, s2, thirdlen, s3, fourthlen);
     }
 
-
+=pod
 #SV *
 void callout(SV *in, ...)
 PREINIT:
@@ -57,6 +61,16 @@ CODE:
 
         do_callout(in, hash);
     }
+
+=pod
+extern void startmetaregex(SV *in, AV *hashes, SV *out)
+CODE:
+    {
+        extern void dostartmetaregex(SV* in, AV* hashes, SV*);
+
+        dostartmetaregex(in, hashes, out);
+    }
+=cut
 
 extern void startmodule(SV *in)
 PREINIT:

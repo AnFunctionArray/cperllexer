@@ -17,6 +17,56 @@ use File::Basename;
 
 use Data::Dumper;
 
+#my sub Dumper {"\n"}
+
+my sub print {1}
+my sub print2 {CORE::print(@_)}
+
+sub push2 {
+    my @args = @_;
+    if(@{$args[0]} ~~ @flags) {
+        print "pushing to flags\n";
+        print Dumper $args[1];
+        print Dumper \@flags;
+    }
+    push @{$args[0]}, $args[1]
+}
+
+sub pop2 {
+    my @args = @_;
+    if(@{$args[0]} ~~ @flags) {
+        print "popping from flags\n";
+        print Dumper $flags[-1];
+        print Dumper \@flags;
+        print Dumper \$args[1];
+
+        if(defined $args[1]) {
+            scalar keys %{$flags[-1]} eq scalar keys %{$args[1]} or exit;
+
+            #print "size equal\n";
+
+            foreach my $key (keys %{$flags[-1]}) {
+                exit unless (exists $args[1]->{$key});
+            }
+        }
+    }
+    pop @{$_[0]}
+}
+
+sub existsflag {
+    my $flag = $_[0];
+    my $exclusions = $_[1];
+    foreach my $val (reverse @flags) {
+        return 1 if(exists $val->{$flag});
+
+        foreach my $key (keys %{$exclusions}) {
+            return 0 if (exists $val->{$key});
+        }
+    }
+
+    return 0
+}
+
 print Dumper @ARGV;
 
 #open my $fhnull, '>', "/dev/null" or die "error opening $filename: $!";
@@ -59,6 +109,15 @@ sub dec2 {
     }
 }
 
+sub unset2 {
+
+    foreach my $bulk (@_) {
+        #print "popping $bulk\n";
+        pop @$bulk;
+        print "unsetting $bulk => $bulk->[-1]\n";
+    }
+}
+
 sub set2 {
     #print Dumper(@_);
     foreach my $pair (@_) {
@@ -68,15 +127,6 @@ sub set2 {
             push @$key, $value;
             print "pushing $key to $key->[-1]\n"
         }
-    }
-}
-
-sub unset2 {
-
-    foreach my $bulk (@_) {
-        #print "popping $bulk\n";
-        pop @$bulk;
-        print "unsetting $bulk => $bulk->[-1]\n";
     }
 }
 
@@ -103,8 +153,8 @@ sub common {
 
 sub evalval {
     $Data::Dumper::Deparse = 1;
-    (Dumper $_[0]) =~ m{\$(?!VAR\d)\w++\b};
-    print "reading from " . $&;
+    (Dumper $_[0]) =~ m{$(?!VAR\d)\S++\\b};
+    print "reading from " . Dumper $_[0];
     my $result = eval {
         $_[0]()
     };
@@ -133,12 +183,19 @@ sub set {
 
 sub unset {
     $Data::Dumper::Terse = 1;
-    my $vars = join(',', map {Dumper($_)} @_);
-    my $unset = join(',', map {(keys %$_)[0]} @_);
 
-    print "un " . $unset . "\n";
+    my $args = join(',', @_);
+
+    print "un " . $args . "\n";
     $Data::Dumper::Terse = 0;
-    return "((?{unset2 $unset})|(?{set2 $vars})(*F))"
+
+    #print Dumper @matches;
+
+    return "(*COMMIT)(?{unset2 $args})"
+}
+
+sub setmatch {
+    return "((?{eval {\$matches[-1]->{$_[0]}=\'$^N\'}})|(?{eval {delete \$matches[-1]->{$_[0]}}})(*F))"
 }
 
 sub dec {
@@ -160,10 +217,17 @@ my $mainregexfilecontent = do { local $/; <$fh> };
 
 close $fh;
 
-$filename = "./utility/regex.regex";
+$filename = "regexes/regexmeta.regex";
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
 my $metaregexfilecontent = do { local $/; <$fh> };
+
+close $fh;
+
+$filename = "./utility/regex.regex";
+open my $fh, '<', $filename or die "error opening $filename: $!";
+
+my $utilregexfilecontent = do { local $/; <$fh> };
 
 close $fh;
 
@@ -177,11 +241,11 @@ my $defaultidentifiers = {};
 
 my $entryregex;
 
-my $matchinperl = 1;
+my $matchinperl = 0;
 
 chdir "regexes";
 
-$mainregexfilecontent =~/$metaregexfilecontent/;
+$mainregexfilecontent =~/$utilregexfilecontent/;
 
 chdir "..";
 
@@ -194,7 +258,7 @@ parseregexfile((substr $mainregexfilecontent, length $&), 1);
 
 $mainregexdefs = "$mainregexfinal";
 
-$mainregexdefs =~s/\s|\n//g if(not $matchinperl);
+$mainregexfinal =~s/\s|\n//g if(not $matchinperl);
 
 #$mainregexdefs = "$mainregexdefs|(?&&$entryregex)";
 
@@ -312,16 +376,21 @@ print $cached_instances{$entryregex};
 
 =cut
 
-print "$mainregexdefs\n";
+#print "$mainregexdefs\n";
 
-startmatching($subject, $mainregexfinal, basename($ARGV[0])) if(not $matchinperl);
+#$mainregexfinal = "((*F)$mainregexfinal)^(?&$entryregex)\$";
+
+#if(not $matchinperl) {
+#    startmatching($subject, $mainregexfinal, basename($ARGV[-1]));
+#    exit;
+#}
 
 #exit if(not $matchinperl);
 
 startmodule(basename($ARGV[-1])) if(defined &startmodule and not $nested);
 
-my $matchprototype = qr{(?(DEFINE)$mainregexdefs)^((??{set {"decls" => "extrnl"}})(?&abstdeclorallqualifs)(??{unset {"decls" => "extrnl"}}))}sxxn;
-my $matchtype = qr{(?(DEFINE)$mainregexdefs)(?&abstdeclorallqualifs)}sxxn;
+#my $matchprototype = qr{(?(DEFINE)$mainregexdefs)^((??{set {"decls" => "extrnl"}})(?&abstdeclorallqualifs)(??{unset {"decls" => "extrnl"}}))}sxxn;
+#my $matchtype = qr{(?(DEFINE)$mainregexdefs)(?&abstdeclorallqualifs)}sxxn;
 
 =begin
 sub obtainvalbyidentifier {
@@ -358,7 +427,9 @@ sub obtainvalbyidentifier {
 }
 =cut
 
-use Term::ANSIColor qw(:constants);
+#use Term::ANSIColor qw(:constants);
+
+#$isnested = 1;
 
 if(not $isnested)
 {
@@ -370,11 +441,12 @@ if(not $isnested)
         @typedefidentifiersvector = eval { require $ENV{'REPLAY'} . ".txt"}
     }
     while(1) {
-        while(eval {$subject =~ m{((*F)$mainregexdefs)|\G(?>(?&$entryregex))}sxxngc}){
-        }
+        $regexfinal = qr{(?(DEFINE)$mainregexdefs)^(*COMMIT)(?&$entryregex)*+$}sxx;
+        eval {$subject =~ m{$regexfinal}sxx};
         if($@) {
             warn $@;
-            undef $facet
+            undef $facet;
+            exit
         } else {
             last
         }
@@ -383,7 +455,7 @@ if(not $isnested)
     if($ENV{'RECORD'}) {
         open my $out, '>', "$ENV{RECORD}.txt" or die "error opening $filename: $!";
         $Data::Dumper::Terse = 1;
-        print $out Dumper @typedefidentifiersvector;
+        CORE::print $out Dumper @typedefidentifiersvector;
         close $out;
     }
 
@@ -440,6 +512,8 @@ if(not $isnested)
    # }
 }
 
+exit;
+
 #}
 
 =for comment
@@ -487,56 +561,72 @@ sub replay {
 sub call {
     #print Dumper(\%+);
     my $funcnm = shift;
-    my $captures = { %+ };
-    my $facet = isfacet;
-    if($facet) {
-        eval {
-            print "pushing to " . scalar @savedcallouts . "\n";
-            push @{$savedcallouts[-1]}, {$funcnm => $captures};
+    my $captures = {%+};
+
+    eval {@$captures{keys %{$matches[-1]}} = values %{$matches[-1]}} if (scalar @matches);
+
+    my $subslice = substr $subject, pos(), 10;
+
+    $subslice =~ s{\R}{ }g;
+
+    use Data::Dumper;
+    use POSIX;
+
+    my $printer = $recording ? sub {1} : \&print2;
+
+    $printer->(strftime ("%F %T", localtime time) . " capture: " . $subslice . "\n");
+    $printer->($recording . " " . $funcnm . "\n");
+    $printer->(Dumper(\$captures));
+    
+    if($recording) {
+        #eval {
+            print "$recording pushing to " . scalar @savedcallouts . "\n";
+            push @{$savedcallouts[-1]}, {$funcnm => {%$captures}};
             print "success\n";
-        };
+        #};
         return
     }
-    print $funcnm . "\n";
+    return callcommon($funcnm, { %$captures }, $recording)
+}
 
-    my $argsin = shift;
+sub call2 {
+    return callcommon(shift, {%{$matches[-1]}}, 0)
+}
+
+sub callcommon {
+    #print Dumper(\%+);
+    my $funcnm = shift;
+    my $captures = shift;
+    my $facet = shift;
+
+    #print "instancing " . $funcnm . "\n";
+
+    #my $argsin = shift;
 
     #print Dumper $argsin;
 
-    @$captures{keys %$argsin} = values %$argsin;
+    #@$captures{keys %$argsin} = values %$argsin;
 
     #print "facet -> $facet\n";
     
-    my $cond = ($entryregex =~ m{facet$} or not $facet);
+    #my $cond = ($entryregex =~ m{facet$} or not $facet);
     #return unless($entryregex =~ m{facet$} or not $facet);
     #require re;
     #re->import('debug') if($_[1] eq "Ptr64ToPtr");
     #select($oldfh) if($_[1] eq "Ptr64ToPtr");
     #my @arr = @_;
-    my $subslice = substr $subject, pos(), 10;
-
-    $subslice =~ s{\R}{ }g;
-
-    if ($cond) {
-        use Data::Dumper;
-        use POSIX;
-    
-        print strftime ("%F %T", localtime time) . " capture: " . $subslice . "\n";
-        print $funcnm . "\n";
-        print Dumper(\$captures)
-    }
     
     #foreach my $i (@arr) {
     #    print $i . "\n";
     #}
     my $res;
     eval {
-        if($cond) {
+        if(not $facet) {
             $res = $funcnm->($captures) 
         }
     };
 
-    callout($funcnm, $captures) if(defined &callout and $cond);
+    callout($funcnm, $captures) if(defined &callout and not $facet);
     return $res;
 }
 
@@ -621,7 +711,6 @@ sub getnext {
 
     return $+{arg};
 }
-
 
 sub substitutetemplateinstances {
     my $backup = $&;
@@ -941,6 +1030,221 @@ sub parseregexfile {
 
     #$mainregexfinal =~s/\(\?\?C&(\S++)\)/(?C&$1)/g if(not $matchinperl);
     $mainregexfinal =~s/\(\?C(\d++)\)//g;
+}
+
+sub argsappend {
+    #my %matches = %+;
+
+    (values %{$savedcallouts[-1][-1]})[0]->{'argument' . $argcounter++} = $^N
+}
+
+sub argsreset {
+    $argcounter = 0;
+}
+
+sub regendinner {
+
+    my @reginner = @{$savedcallouts[-1]};
+
+    #print Dumper @savedcallouts;
+
+    pop @savedcallouts;
+
+    #push @{$savedcallouts[-1]}, {"regaddquantif" => {%+}} 
+    (values %{$reginner[0]})[0]->{"regquantif"} = $+{quantifiers} if($+{quantifiers});
+
+    @{$savedcallouts[-1]} = (@{$savedcallouts[-1]}, @reginner);
+}
+
+=begin
+
+sub regchecklookaround {
+    my @reginner = @{$savedcallouts[-1]};
+
+    #print Dumper @savedcallouts;
+
+    pop @savedcallouts;
+
+    (values %{$reginner[0]})[0]->{"conditional"} = "1";
+
+    #push @{$savedcallouts[-1]}, {"regcondlookaround" => {%+}};
+
+    @{$savedcallouts[-1]} = (@{$savedcallouts[-1]}, @reginner);
+}
+=cut
+
+sub regbeginsubcall {
+    push @{$savedcallouts[-1]}, {regbeginsubcall => {
+        "name" => $+{callee}
+    }};
+}
+
+sub regbranch {
+
+    my @reglast = @{$savedcallouts[-1]};
+
+    my @reglastlast = @{$savedcallouts[-2]};
+
+    #splice @savedcallouts, -2, 1;
+
+    pop @savedcallouts;
+    print scalar @savedcallouts . "\n";
+    #exit;
+    #pop @savedcallouts;
+
+    #print Dumper \@reglast;
+    #print Dumper \@reglastlast;
+
+    #push @reglastlast, {"regbranch" => \$reglast[0]};
+
+    #@{$savedcallouts[-1]} = (@reglastlast, @reglastlast);
+
+    @{$savedcallouts[-1]} = ({"regbranch" => \$reglast[0]}, @reglastlast, @reglast)
+    #\$reglast[0]}], @reglastlast, @reglast)
+}
+
+sub regend {
+    my @reglast = @{$savedcallouts[-1]};
+
+    pop @savedcallouts;
+
+    #print Dumper \@reglast;
+
+    @{$savedcallouts[-1]} = (@{$savedcallouts[-1]}, @reglast);
+}
+
+sub startrecord {
+    return qr{((?{set2 {'savedcallouts' => []}})|(?{unset2 'savedcallouts'})(*F))}
+}
+
+sub stoprecord {
+    return qr{((?{unset2 'savedcallouts'})|(?{set2 {'savedcallouts' => []}})(*F))}
+}
+
+$subject = $mainregexfinal;
+
+print  $mainregexfinal;
+
+use if $ENV{'DEBUG'}, re => qw(Debug EXECUTE);
+#call "startrecording";
+push @savedcallouts, [];
+++$facet;
+if(eval {$mainregexfinal =~ m{(?(DEFINE)$metaregexfilecontent)
+    ^(?&regex)$
+}sxx}){
+    print "success\n"
+}
+if($@) {
+    warn $@;
+    undef $facet
+}
+undef $facet;
+my @regexbindings = @{$savedcallouts[-1]};
+pop @savedcallouts;
+
+print Dumper \@savedcallouts;
+
+my $entryindex;
+
+sub findgroup {
+    my $nametofind = $_[0];
+    while (my ($index) = each @regexbindings) {
+        #print $index . "\n";
+        my %elem = %{$regexbindings[$index]};
+        my $elemname = (keys %elem)[0];
+        my %elembody = %{$elem->{$elemname}};
+        #print Dumper $elembody{"name"};
+        if($elemname eq "regbeginsub" and $elembody{"name"} eq $nametofind) {
+            last
+        }
+    }
+    return $index;
+}
+
+$entryindex = findgroup $entryregex;
+
+print $entryindex . "\n";
+
+#call "stoprecording";
+=begin
+#opnumber => stringpos
+
+my @stackoperations = [];
+
+my $currindex = $entryindex;
+
+my $currposatsubject;
+
+#\stackoperations
+
+my @groupsstack = [];
+
+#matches
+#callop
+
+my @callstack = [];
+
+my $entitlements;
+
+sub fillforindex {
+    my %elem = %{$regexbindings[$_[0]]};
+    my $elemname = (keys %elem)[0];
+    my %elembody = %{$elem->{$elemname}};
+
+    return ({%elem}, $elemname, {%elembody})
+}
+
+for(;1;++$currindex) {
+    my (%elem, $elemname, %elembody) = fillforindex $currindex;
+    push @stackoperations, {$currindex => $currposatsubject};
+    given($elemname){
+        when(["regbeginsub", "regbegingroup"]) {
+            push @groupsstack, \$stackoperations[-1];
+        }
+        when("regcall") {
+            push @callstack, {\$stackoperations[-1] => {%matches}};
+
+            $currindex = findgroup($elembody{"callee"});
+
+            @matches{@entitlements} = @matches{@entitlements} if($elembody{"square"});
+
+            (%elem, $elemname, %elembody) = fillforindex $currindex;
+
+            my @newentitlements = map {$_->{entitlement}} @{$elembody{undef}};
+
+            @entitlements = (@entitlements, @newentitlements);
+        }
+        
+    }
+
+    #check quantifs
+
+    
+}
+
+=cut
+
+startmetaregex($entryregex, \@regexbindings, $subject) if(defined &startmetaregex and not $nested);
+#startmatching($subject, $mainregexfinal, basename($ARGV[-1]), $entryregex);
+#exit;
+
+
+sub replayrecord {
+    my @savedcalloutstoreplay = defined $_[0] ? @{$_[0]} : @savedcallouts;
+    if(not $recording) {
+        foreach my $hash (@{$savedcalloutstoreplay[-1]})  {
+            
+            my $funcnm = (keys %$hash)[0];
+            print2 "$funcnm replaying \n";
+            print2 Dumper $hash;
+            callcommon((keys %$hash)[0], (values %$hash)[0], 0)
+            
+        }
+    } else {
+        #print "replay merging\n";
+        #print Dumper $hash;
+        @{$savedcallouts[-1]} = (@{$savedcallouts[-1]}, @{$savedcalloutstoreplay[-1]})
+    }
 }
 
 1
