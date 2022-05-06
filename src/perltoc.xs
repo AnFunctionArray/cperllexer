@@ -62,6 +62,7 @@ CODE:
         do_callout(in, hash);
     }
 
+=pod
 extern void startmetaregex(SV *in, AV *hashes, SV *out)
 CODE:
     {
@@ -69,6 +70,7 @@ CODE:
 
         dostartmetaregex(in, hashes, out);
     }
+=cut
 
 extern void startmodule(SV *in)
 PREINIT:

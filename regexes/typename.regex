@@ -22,13 +22,14 @@
 		
 	(?{--$recording})(?{push2 \@flags, {"optoutter"}})
 	
-		(??{qr{\Q$^N\E}})(?{call 'identifier_decl'})(?&abstdecl)?+
+		(??{qr{\Q$^N\E}})(?{call 'identifier_decl'})
+		(?{push2 \@typenamequalifs, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
+		(?&abstdecl)?+
 		(?{call 'enddeclaration'})
 
 		(?{pop2 \@flags, {"optoutter"}})
-		(?{replayrecord})
-		(?{pop2 \@savedcallouts})
-		(?{pop2 \@matches}))
+		(?{replayrecord \@typenamequalifs})
+		(?{pop2 \@matches; pop2 \@typenamequalifs}))
 
 		[)](?{call 'endqualifs'})\s*+
 		
@@ -112,10 +113,15 @@
 		|(?(?{eval {exists $matches[-1]{typedefkey}} or 0})(*F))((\btypedef\b))(?{$matches[-1]{typedefkey}=$^N}))\s*+)++)
 
 (?<abstdeclorallqualifsdestr>
-	(?(?=(?<declinner>(?&Tdecl)(?{call 'enddeclaration'})(?{replayrecord})(?{call 'endqualifs'})))\g{declinner}
-	(?(?{eval {existsflag "outterparams"} or 0})|(,(?&declinner))*+)|(?(?{print "dump\n";print Dumper @matches;eval {exists $matches[-1]{strc}} or 0})|(*F)))
+	(?{push2 \@declqualifs, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
 
-	(?{pop2 \@savedcallouts})
+	(?(?=(?<declinner>(?&Tdecl)(?{call 'enddeclaration'})(?{replayrecord \@declqualifs})(?{call 'endqualifs'})))\g{declinner}
+	(?(?{eval {existsflag "outterparams"} or 0})|(,(?&declinner))*+)|(?(?{print "dump\n";print Dumper @matches;eval {exists $matches[-1]{strc}} or 0})|
+	(?{pop2 \@flags, undef})
+	(?{pop2 \@declqualifs})
+	(?{pop2 \@matches})(*F)))
+
+	(?{pop2 \@declqualifs})
 	(?{pop2 \@matches}))
 
 (?<abstdeclorallqualifs>
@@ -149,11 +155,12 @@
 
 (?<typenamerev>(?(?=(?{push2 \@savedcallouts, []})
 		(?{++$recording; print "recording typenamerev\n"})(?<typenamerev1>(?&typename)))
-		(?{--$recording})\g{typenamerev1}(?&castexpr)
-		(?{replayrecord})(?{pop2 \@savedcallouts})
+		(?{--$recording})\g{typenamerev1}(?{push2 \@typenamecurrrecord, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
+		(?&castexpr)
+		(?{replayrecord \@typenamecurrrecord})(?{pop2 \@typenamecurrrecord})
 		(?{call 'applycast'})
 		
-		|(?{pop2 \@savedcallouts})(?{--$recording})(*F))
+		|(?{pop2 \@typenamecurrrecord})(?{--$recording})(*F))
 )
 
 

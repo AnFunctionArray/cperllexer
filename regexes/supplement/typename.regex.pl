@@ -131,7 +131,7 @@ sub checktypeorqualif {
     if (exists $typeandqualifs{$^N}) {
         print "$^N -> qualifortype\n";
         if(exists $types{$^N}) {
-            eval {$typefound[-1] = $^N};
+            eval {$matches[-1]{typefound} = $^N};
             call "add_type"
         } else {
             call "add_qualif"

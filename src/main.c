@@ -250,7 +250,7 @@ xs_init(pTHX)
 	newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, __FILE__);
 	newXS("startmatching", XS__startmatching, __FILE__);
 	newXS("callout", XS__callout, __FILE__);
-	newXS("startmetaregex", XS__startmetaregex, __FILE__);
+	//newXS("startmetaregex", XS__startmetaregex, __FILE__);
 	newXS("endmodule", endmodule, __FILE__);
 	newXS("startmodule", XS__startmodule, __FILE__);
 }

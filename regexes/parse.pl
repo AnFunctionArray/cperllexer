@@ -1230,8 +1230,9 @@ startmetaregex($entryregex, \@regexbindings, $subject) if(defined &startmetarege
 
 
 sub replayrecord {
+    my @savedcalloutstoreplay = defined $_[0] ? @{$_[0]} : @savedcallouts;
     if(not $recording) {
-        foreach my $hash (@{$savedcallouts[-1]})  {
+        foreach my $hash (@{$savedcalloutstoreplay[-1]})  {
             
             my $funcnm = (keys %$hash)[0];
             print2 "$funcnm replaying \n";
@@ -1242,7 +1243,7 @@ sub replayrecord {
     } else {
         #print "replay merging\n";
         #print Dumper $hash;
-        @{$savedcallouts[-2]} = (@{$savedcallouts[-2]}, @{$savedcallouts[-1]})
+        @{$savedcallouts[-1]} = (@{$savedcallouts[-1]}, @{$savedcalloutstoreplay[-1]})
     }
 }
 
