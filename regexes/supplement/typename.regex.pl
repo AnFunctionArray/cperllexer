@@ -1,6 +1,8 @@
 use Data::Dumper;
 
-#my sub print {1}
+my sub print {1}
+
+#my sub Dumper {"\n"}
 
 my %typedefs;
 
@@ -125,7 +127,7 @@ sub checkidentpermissive {
 sub checktypeorqualif {
     #print "checking". $^N . "\n";
     return $ok if (existsflag "template");
-    
+
     inc2 "facet";
     if (exists $typeandqualifs{$^N}) {
         print "$^N -> qualifortype\n";

@@ -73,7 +73,7 @@
 						(?<rest>,\s*+\.\.\.\s*+)?+\s*+[)](?{call 'endfunctionparamdecl'}))\s*+)
 
 (?<abstdecl>
-		(?(?=(?<abstrptrrev>(?<abstrptr>\s*+[*]\s*+
+		(?(?=(?<abstrptrrev>(?<abstrptr>\s*+(?(?{eval {existsflag "template"} or 0})[*&]|[*])\s*+
 						(?<qualifptr>(?&typeorqualif))*+)
 						(?(?!(?<foundabstr>(?&abstrptrrev))(?{call 'addptrtotype'}))
 						(?<abstrrest>(?&Tinside)(?&abstrsubs)*+
@@ -105,7 +105,7 @@
 
 (?<abstdeclorallqualifsdestr>
 	(?(?=(?<declinner>(?&Tdecl)(?{call 'enddeclaration'})(?{replayrecord})(?{call 'endqualifs'})))\g{declinner}
-	(?(?{eval {existsflag "outterparams"} or 0})|(,(?&declinner))*+)|(?(?{print "dump\n";print Dumper @flags;eval {exists $matches[-1]{strc}} or 0})|(*F)))
+	(?(?{eval {existsflag "outterparams"} or 0})|(,(?&declinner))*+)|(?(?{print "dump\n";print Dumper @matches;eval {exists $matches[-1]{strc}} or 0})|(*F)))
 
 	(?{pop2 \@savedcallouts})
 	(?{pop2 \@matches}))
@@ -163,7 +163,7 @@
 	(?<enumerator>(?&add_ident_to_enum_def)
 	((=(?{call 'beginconstantexpr'})(?&assignorsomething)(?{call 'end_ass_to_enum_def'}))
 	|(?{call 'end_without_ass_to_enum_def'})))?+(,(?&enumerator))*+,?+\s*+
-	|(?{call 'struc_or_union_body'})\s*+(?&strcelem)++)\s*+
+	|(?{call 'struc_or_union_body'})\s*+(?&strcelem)*+)\s*+
 	[}]\s*+(?(?{eval {exists $matches[-1]{enum}} or 0})()|(?{call 'endbuildingstructorunion'}))\s*+)
 
 (?<structorunion>

@@ -17,7 +17,10 @@ use File::Basename;
 
 use Data::Dumper;
 
-#my sub print {1}
+#my sub Dumper {"\n"}
+
+my sub print {1}
+my sub print2 {CORE::print(@_)}
 
 sub push2 {
     my @args = @_;
@@ -568,9 +571,11 @@ sub call {
     use Data::Dumper;
     use POSIX;
 
-    print strftime ("%F %T", localtime time) . " capture: " . $subslice . "\n";
-    print $recording . " " . $funcnm . "\n";
-    print Dumper(\$captures);
+    my $printer = $recording ? \&print : \&print2;
+
+    $printer->(strftime ("%F %T", localtime time) . " capture: " . $subslice . "\n");
+    $printer->($recording . " " . $funcnm . "\n");
+    $printer->(Dumper(\$captures));
     
     if($recording) {
         #eval {
@@ -1228,8 +1233,8 @@ sub replayrecord {
         foreach my $hash (@{$savedcallouts[-1]})  {
             
             my $funcnm = (keys %$hash)[0];
-            print "$funcnm replaying \n";
-            print Dumper $hash;
+            print2 "$funcnm replaying \n";
+            print2 Dumper $hash;
             callcommon((keys %$hash)[0], (values %$hash)[0], 0)
             
         }
