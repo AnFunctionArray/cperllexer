@@ -17,25 +17,10 @@
 	(?<suffixflt>[flFL])?+(?{call 'collect_float_literal'})
 	|(?<wholenodot>\d++)(?<exponent>[eE](?<signexp>[+-])?+(?<exp>\d++))(?<suffixflt>[flFL])?+(?{call 'collect_float_literal'}))
 
-(?<templateelem>(?{push2 \@flags, {"template"}})(?(?=((?&typenameinner)))
-	(?{pop2 \@flags, {"template"}})(??{qr{\Q$^N\E}})|(?{pop2 \@flags, {"template"}})\b(true|false)\b))
+(?<identifierpure>\b(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9@])*+)\b)
 
-(?<template>(?{push2 \@savedcallouts, []})
-		(?{++$recording; print "recording template\n"})(?(?=(<(?&templateelem)(,(?&templateelem))*+>))(??{qr{\Q$^N\E}})
-		|(?{$recording--; pop2 \@savedcallouts})(*F))
-		(?{$recording--; pop2 \@savedcallouts})
-)
+(?<identifierraw>((?&identifierpure))(??{checkident}))
+(?<identifierraw_qualified>((?&identifierpure))(??{checkidentpermissive}))
+(?<identifier_typedef>((?&identifierpure))(??{checktypedef}))
 
-(?<identext>(?&template)?+((::|[.@])(?&identifierinpurepart)))
-
-(?<identifierinpurepart>(?&identifierpure)(?&identext)?+)
-
-(?<identifierinpure>(?&identifierinpurepart)(?(?{existsflag "operator"})(?{delete $flags[-1]{operator}})\S++\s++|(?{delete $flags[-1]{operator}})))
-
-(?<identifierpure>~?+((?>[_a-zA-Z](?<letter>[_a-zA-Z0-9])*+))(?{$flags[-1]{operator} = undef if ($^N =~ m{\boperator\b}) }))
-
-(?<identifierraw>((?&identifierinpure))(??{checkident}))
-(?<identifierraw_qualified>((?&identifierinpure))(??{checkidentpermissive}))
-(?<identifier_typedef>((?&identifierinpure))(??{checktypedef}))
-
-(?<typeorqualif>((?&identifierinpure))(??{checktypeorqualif}))
+(?<typeorqualif>((?&identifierpure))(??{checktypeorqualif}))

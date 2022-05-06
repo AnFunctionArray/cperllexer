@@ -60,17 +60,25 @@
 	|(?(?{existsflag "optoutter", {"outter", "outterparams"}}))(?&abstrmostoutteropt)?+))
 	)
 
-(?<param>(?{push2 \@flags, {"outterparams"=>undef}})(?&abstdeclorallqualifs))
+(?<param>(?{push2 \@flags, {"outterparams"=>undef,"nonopt"=>undef}})(?&abstdeclorallqualifs))
+
+(?<closingparen>(?![(])[)])
+
+(?<openparen>[(](?<![)]))
 
 (?<abstrsubs>\s*+(\[(?{call 'beginconstantexpr'})(?&primexpr)\]
 						(?{call 'addsubtotype'})(?{call 'endconstantexpr'})
-						|[(](?(?=((?(?=(?{push2 \@savedcallouts, []})
+						|(?&openparen)(?(?=(\s*+((\.\.\.)(?{$matches[-1]{rest}=$^N})|\bvoid\b)?+\s*+(?&closingparen))
+						(?{call 'startfunctionparamdecl'})(?{call 'endfunctionparamdecl'}))
+						(??{qr{\Q$^N\E}})(?{pop2 \@matches})
+						|(?(?=(?{push2 \@savedcallouts, []})(?{push2 \@matches, {}})
 						(?{++$recording; print "recording abstrsubs firstparam\n"})((?&param))(?{--$recording}))
-						(?{call 'startfunctionparamdecl'})(?{replayrecord})(?{pop2 \@savedcallouts})(??{qr{\Q$^N\E}})(,(?&param))*+
+						(?{call 'startfunctionparamdecl'})(?{replayrecord})(?{pop2 \@savedcallouts})(??{qr{\Q$^N\E}})
+							(,(?(?=(\s*+(\.\.\.)(?{$matches[-1]{rest}=$^N})\s*+))(??{qr{\Q$^N\E}})|(?&param)))*+(?{pop2 \@matches})
+						\s*+(?&closingparen)(?{call 'endfunctionparamdecl'})
 						|(?{--$recording})
-						(?{pop2 \@savedcallouts})(*F))))
-						(??{qr{\Q$^N\E}})|(?{call 'startfunctionparamdecl'}))
-						(?<rest>,\s*+\.\.\.\s*+)?+\s*+[)](?{call 'endfunctionparamdecl'}))\s*+)
+						(?{pop2 \@savedcallouts})(?{pop2 \@matches})(*F)))
+						)\s*+)
 
 (?<abstdecl>
 		(?(?=(?<abstrptrrev>(?<abstrptr>\s*+(?(?{eval {existsflag "template"} or 0})[*&]|[*])\s*+
@@ -121,7 +129,7 @@
 
 		(?{--$recording})
 		(??{qr{\Q$^N\E}})
-		|(?(?{eval {existsflag "opt"} or 0})
+		|(?(?{eval {existsflag "opt", {"nonopt"}} or 0})
 	(?{--$recording})
 	|
 	(?{pop2 \@flags, undef})
@@ -135,7 +143,7 @@
 
 (?<declopt>(?{push2 \@flags, {"outter"=>undef,"opt"=>undef}})(?&abstdeclorallqualifs)(?(?!\s*+;)(?&compoundstatement)|\s*+;(?{call 'endfulldecl'})\s*+))
 
-(?<decl>(?{push2 \@flags, {"outter"}})(?&abstdeclorallqualifs)\s*+;(?{call 'endfulldecl'})\s*+)
+(?<decl>(?{push2 \@flags, {"outter"=>undef,"nonopt"=>undef}})(?&abstdeclorallqualifs)\s*+;(?{call 'endfulldecl'})\s*+)
 
 (?<cprogram>(?&declopt))
 
@@ -157,7 +165,7 @@
 (?<add_ident_to_enum_def>\s*+(?<identlasttag>(?&identifierraw_qualified))(?{call 'add_ident_to_enum_def'})\s*+)
 
 
-(?<strcelem>(?{push2 \@flags, {"bitfl"=>undef, "outter"=>undef}})(?&abstdeclorallqualifs)\s*+;\s*+)
+(?<strcelem>(?{push2 \@flags, {"bitfl"=>undef, "outter"=>undef, "nonopt"=>undef}})(?&abstdeclorallqualifs)\s*+;\s*+)
 
 (?<structbody>\s*+[{](?(?{eval {exists $matches[-1]{enum}} or 0})(?{call 'begin_enumerator_def'})
 	(?<enumerator>(?&add_ident_to_enum_def)
