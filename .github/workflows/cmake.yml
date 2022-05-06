@@ -23,7 +23,7 @@ jobs:
         submodules: 'true'
     
     - name: Install dependencies
-      run: sudo apt install librange-v3-dev llvm-14-dev clang-14
+      run: sudo apt install librange-v3-dev llvm-14-dev llvm-14 clang-14
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -32,6 +32,7 @@ jobs:
       env:
         CC:   clang-14
         CXX:  clang++-14
+        LLVM_CONFIG: llvm-config-14
 
     - name: Build
       # Build your program with the given configuration
