@@ -1959,12 +1959,11 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 				currfunctype.rbegin(), currfunctype.rend(),
 				[&](const ::var& param) { return param.identifier == ident; });
 				findparam != currfunctype.rend())
-				if(push) var = findparam;
-				else goto undef;
+				var = findparam;
 			else undef: {
 				std::cout << "not found: " << ident << std::endl;
 				scopevar.begin()->push_back(::var{.identifier = ident, .firstintroduced = 1 });
-				var = --scopevar.front().rend();
+				var = scopevar.front().rbegin();
 				if (!push) return var;
 
 				val immidiate;

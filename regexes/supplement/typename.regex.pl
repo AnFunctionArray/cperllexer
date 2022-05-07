@@ -2,7 +2,7 @@ use Data::Dumper;
 
 my sub print {1}
 
-#my sub Dumper {"\n"}
+my sub Dumper {"\n"}
 
 my %typedefs;
 
