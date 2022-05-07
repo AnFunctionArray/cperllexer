@@ -17,7 +17,7 @@ use File::Basename;
 
 use Data::Dumper;
 
-my sub Dumper {"\n"}
+#my sub Dumper {"\n"}
 
 my sub print {1}
 my sub print2 {CORE::print(@_)}
