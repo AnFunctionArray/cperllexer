@@ -647,13 +647,11 @@ struct val : valandtype {
 };
 
 llvm::Type* createllvmtype(std::list<type> &decltypevector,
-	std::list<::var>* last_struct = nullptr,
 	std::list<type> *refdecltypevector = nullptr);
 
 llvm::Type* createllvmtype(const std::list<type> &decltypevector,
-	std::list<::var>* last_struct = nullptr,
 	std::list<type> *refdecltypevector = nullptr) {
-		return createllvmtype(decltypevector, last_struct, refdecltypevector);
+		return createllvmtype(decltypevector, refdecltypevector);
 }
 
 void addvar(var& lastvar, llvm::Constant* pInitializer = nullptr);
@@ -666,7 +664,7 @@ struct var {
 
 	llvm::Type* requestType(std::list<::type> *pout = nullptr) {
 		if (!pllvmtype) {
-			pllvmtype = createllvmtype(type, nullptr, pout);
+			pllvmtype = createllvmtype(type, pout);
 		}
 		return pllvmtype;
 	}
@@ -723,7 +721,6 @@ operator=(T p)
 static std::list<std::list<::val>::iterator> callees{};
 
 llvm::Type* createllvmtype(std::list<type> &decltypevector,
-	std::list<::var>* last_struct,
 	std::list<type> *refdecltypevector);
 
 val convertTo(val target, std::list<::type> to);
@@ -2309,7 +2306,7 @@ void pushsizeoftype(std::list<type> type) {
 					 "[[sizeoftypename]]" }));
 }
 
-extern const std::list<::var>* getstructorunion(bascitypespec& basic, std::list<::var>* last_struct=nullptr);
+extern const std::list<::var>* getstructorunion(bascitypespec& basic);
 
 DLL_EXPORT void memberaccess(std::unordered_map<unsigned, std::string>&& hashentry) {
 	if (hashentry["arrowordotraw"_h] == "->")
@@ -2633,7 +2630,7 @@ DLL_EXPORT void endsizeofexpr() {
 
 void fixupstructype(std::list<::var>* var) {
 	for (auto& a : *var | ranges::views::drop(1))
-		a.pllvmtype = createllvmtype(a.type, var);
+		a.pllvmtype = createllvmtype(a.type);
 
 	auto& structvar = var->front();
 
@@ -2646,7 +2643,7 @@ void fixupstructype(std::list<::var>* var) {
 	dyn_cast<llvm::StructType> (structvar.pllvmtype)->setBody(structtypes);
 }
 
-const std::list<::var>* getstructorunion(bascitypespec& basic, std::list<::var>* last_struct) {
+const std::list<::var>* getstructorunion(bascitypespec& basic) {
 	std::list<::var>* var = nullptr;
 
 	std::string ident = basic.basic[3];
@@ -2667,13 +2664,13 @@ const std::list<::var>* getstructorunion(bascitypespec& basic, std::list<::var>*
 	if (!var) var = static_cast<std::list<::var>*>(basic.pexternaldata);
 
 	if (var) if (!var->back().pllvmtype)
-		if (var != last_struct) fixupstructype(var);
-		else var->back().pllvmtype = var->front().pllvmtype;
+		var->back().pllvmtype = (llvm::Type*)1,
+		fixupstructype(var);
 
 	return var;
 }
 
-llvm::Type* createllvmtype(std::list<type> &refdecltypevector, std::list<::var>* last_struct, std::list<type> * ptrdecltypevector) {
+llvm::Type* createllvmtype(std::list<type> &refdecltypevector, std::list<type> * ptrdecltypevector) {
 	llvm::Type* pcurrtype;
 
 	auto decltypevector = refdecltypevector;
@@ -2747,7 +2744,7 @@ llvm::Type* createllvmtype(std::list<type> &refdecltypevector, std::list<::var>*
 			switch (
 				stringhash(type.spec.basicdeclspec.basic[0].c_str())) {
 			case "struct"_h: {
-				auto currstruct = getstructorunion(type.spec.basicdeclspec, last_struct);
+				auto currstruct = getstructorunion(type.spec.basicdeclspec);
 				if (!currstruct) {
 					//bincompletetype = true;
 					goto addchar;
