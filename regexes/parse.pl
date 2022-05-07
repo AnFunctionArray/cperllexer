@@ -49,6 +49,9 @@ sub pop2 {
                 exit unless (exists $args[1]->{$key});
             }
         }
+    } else {
+        print "popping\n";
+        print Dumper \$args[0]->[-1];
     }
     pop @{$_[0]}
 }
@@ -563,7 +566,7 @@ sub call {
     my $funcnm = shift;
     my $captures = {%+};
 
-    eval {@$captures{keys %{$matches[-1]}} = values %{$matches[-1]}} if (scalar @matches);
+    @$captures{keys %{$matches[-1]}} = values %{$matches[-1]} if (scalar @matches);
 
     my $subslice = substr $subject, pos(), 10;
 
