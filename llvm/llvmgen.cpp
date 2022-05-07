@@ -1959,8 +1959,9 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 				currfunctype.rbegin(), currfunctype.rend(),
 				[&](const ::var& param) { return param.identifier == ident; });
 				findparam != currfunctype.rend())
-				var = findparam;
-			else {
+				if(push) var = findparam;
+				else goto undef;
+			else undef: {
 				std::cout << "not found: " << ident << std::endl;
 				scopevar.begin()->push_back(::var{.identifier = ident, .firstintroduced = 1 });
 				var = --scopevar.front().rend();
@@ -2113,7 +2114,7 @@ DLL_EXPORT void endbuildingstructorunion() {
 
 	currtypevectorbeingbuild.pop_back();
 
-	assert(structvar.type.back().spec.basicdeclspec.basic[0] == "struct");
+	//assert(structvar.type.back().spec.basicdeclspec.basic[0] == "struct");
 
 	//dyn_cast<llvm::StructType> (structvar.pllvmtype)->setBody(structtypes);
 
