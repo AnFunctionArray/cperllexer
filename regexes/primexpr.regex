@@ -22,8 +22,12 @@
 	(?(?=(?{push2 \@savedcallouts, []})
 		(?{++$recording; print "recording assignorsomething\n"})(?{call 'begin_binary'})((?&unaryexpr)))(??{qr{\Q$^N\E}})
 	(?{--$recording; print "minus minus assignorsomething $recording\n"})(?{replayrecord})(?{pop2 \@savedcallouts})
-	(?(?=(?<assignop>(=(?!=)|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)(?{push2 \@matches, {"binoplast" => $^N}})\s*+))
-		\g{assignop}(?&assignorsomething)(?{print "assign\n"; call 'binary'})(?{call 'end_binary'})(?{pop2 \@matches})
+	(?(?=((?<assignop>=(?!=)|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+))
+		(??{qr{\Q$^N\E}})(?&assignorsomething)(?{
+			push2 \@matches, {"binoplast" => $+{assignop}};
+			call 'binary'; 
+			call 'end_binary'; 
+			pop2 \@matches})
 		|(?&ternaryorsomething)(?{call 'end_binary'}))
 		|(?{$savedcallouts[-1] = []; print "resetting record\n"})(?(?=(?{call 'begin_binary'})((?&typenamerev)))|(?{--$recording})(?{pop2 \@savedcallouts})(*F))
 		(??{qr{\Q$^N\E}})(?{--$recording; print "minus minus assignorsomething typename $recording\n"})(?{replayrecord})

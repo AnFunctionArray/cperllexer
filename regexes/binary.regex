@@ -19,7 +19,10 @@
             |(?<shiftopraw><<|>>
             |(?<addopraw>[\+\-]
             |(?<mulopraw>[\*\/\%]))))))))))
-            ))))))))))(?&castexpr)
+            ))))))))))(??{use re 'eval'; 
+                $orlogiorsomethingcastexprreg //= qr{(?(DEFINE)$mainregexdefs)
+                (?&castexpr)
+            }sxx})
     (?&binopplusrest)*(?{call 'binary'})))
 
 
