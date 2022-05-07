@@ -35,6 +35,6 @@
 )
 
 (?<ternaryorsomething>(?&orlogiorsomething)((?&ternaryrest)
-	(?&ternaryorsomething))?+)
+	(?&castexpr)(?&ternaryorsomething))?+)
 
-(?<ternaryrest>\?(?&primexpr):)	
+(?<ternaryrest>\s*+\?(?&primexpr):\s*+)	
