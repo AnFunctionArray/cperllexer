@@ -1941,7 +1941,7 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 
 	std::list<::var>::reverse_iterator var{};
 
-	(void)std::find_if(scopevar.rbegin(), scopevar.rend(),
+	if(std::find_if(scopevar.rbegin(), scopevar.rend(),
 		[&](std::list<::var>& scope) {
 			auto iter =
 				std::find_if(scope.rbegin(), scope.rend(),
@@ -1952,7 +1952,28 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 			if (iter != scope.rend())
 				return var = iter, true;
 			return false;
-		});
+		}) == scopevar.rend()) {
+			auto& currfunctype = currfunc->type.front().spec.func.parametertypes_list.front();
+
+			if (auto findparam = std::find_if(
+				currfunctype.rbegin(), currfunctype.rend(),
+				[&](const ::var& param) { return param.identifier == ident; });
+				findparam != currfunctype.rend())
+				var = findparam;
+			else {
+				std::cout << "not found: " << ident << std::endl;
+				scopevar.begin()->push_back(::var{.identifier = ident, .firstintroduced = 1 });
+				var = --scopevar.front().rend();
+				if (!push) return var;
+
+				val immidiate;
+				immidiate.originident = ident;
+
+				phndl->immidiates.push_back(immidiate);
+
+				return var;
+			}
+		}
 	/*if (var->type.front ().uniontype == ::type::FUNCTION)
 		phndl->immidiates.push_back (
 			{pglobal = nonconstructable.mainmodule.getFunction (ident),
@@ -1963,14 +1984,7 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 	if (!push) return var;
 
 	val immidiate;
-	auto& currfunctype =
-		currfunc->type.front().spec.func.parametertypes_list.front();
-
-	if (auto findparam = std::find_if(
-		currfunctype.rbegin(), currfunctype.rend(),
-		[&](const ::var& param) { return param.identifier == ident; });
-		findparam != currfunctype.rend())
-		var = findparam;
+	
 
 	llvm::Value* pglobal;
 
@@ -3094,6 +3108,24 @@ DLL_EXPORT void endfunctioncall() {
 
 	auto argsiter = callees.back();
 
+	if(argsiter->type.empty()) {
+		type fntype{type::FUNCTION};
+
+		fntype.spec.func.bisvariadic = true;
+
+		type basicint{ type::BASIC };
+
+		basicint.spec.basicdeclspec.basic[1] = "int";
+
+		auto variter = obtainvalbyidentifier(argsiter->originident, false);
+
+		variter->type = {{fntype, basicint}};
+
+		addvar(*variter);
+
+		*argsiter = *obtainvalbyidentifier(argsiter->originident, false);
+	}
+
 	auto calleevalntype = decay(*argsiter);
 
 	assert(calleevalntype.value->getType()->isPointerTy());
@@ -4010,7 +4042,8 @@ DLL_EXPORT void add_type(std::unordered_map<unsigned, std::string>&hashes) {
 
 DLL_EXPORT void add_qualif(std::unordered_map<unsigned, std::string>&hashes) {
 	auto& lastvar = currtypevectorbeingbuild.back().p->back();
-	lastvar.linkage = hashes["storageclass"_h];
+	//lastvar.linkage = hashes["storageclass"_h];
+	parsebasictype({ hashes["qualiffound"_h] }, lastvar.type.back().spec.basicdeclspec);
 }
 
 DLL_EXPORT void add_tag(std::unordered_map<unsigned, std::string>&hashes) {

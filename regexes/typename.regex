@@ -39,18 +39,26 @@
 
 (?<abstrmostoutter>\s*+(?&callingconv)?+([(](?&abstdecl)[)]|(?&identifierminedecl))\s*+)
 
-(?<abstrmostoutterparams>\s*+(?(?=(?{push2 \@savedcallouts, []})
-		(?{++$recording; print "recording abstrmostoutterparams subs\n"})(?<subs>(?&abstrsubs)))(?{--$recording})
-						(?{call 'identifier_decl'})(?{replayrecord})(?{pop2 \@savedcallouts})\g{subs}
-			|((?{--$recording})(?{pop2 \@savedcallouts})[(](?&abstdecl)[)]|
-			(?(?=((?&identifierminedecl)))(??{qr{\Q$^N\E}})|(?{call 'identifier_decl'}))))
+(?<abstrmostoutterparams>\s*+
+			[(](?&abstdecl)[)]|
+			(?(?=((?&identifierminedecl)))(??{qr{\Q$^N\E}})|(?{call 'identifier_decl'}))
 \s*+)
 
 (?<identifierminedecl>\s*+(?<ident>(?&identifierraw_qualified))
 	(?{call 'identifier_decl'})\s*+)
 
 (?<Tabstrrestalt>
-	(?(?{existsflag "outterparams", {"outter", "optoutter"}})(?&abstrmostoutterparams)(?&abstrsubs)*+
+	(?(?{existsflag "outterparams", {"outter", "optoutter"}})
+	
+	(?(?=(?{push2 \@savedcallouts, []; push2 \@matches, {}})
+		(?{++$recording; print "recording abstrmostoutterparams subs\n"})
+			(?{call 'identifier_decl'})((?&abstrsubs))(?{$matches[-1]{sub}=$^N}))(?{--$recording})
+		(?{qr{\Q$matches[-1]{sub}\E}})(?{call replayrecord})(?{pop2 \@savedcallouts; pop2 \@matches})
+		
+		|(?{--$recording})(?{pop2 \@savedcallouts; pop2 \@matches})(?&abstrmostoutterparams))
+
+	(?&abstrsubs)*+
+
 	|(?(?{existsflag "outter", {"optoutter", "outterparams"}})(?&abstrmostoutter)(?&abstrsubs)*+
 	|(?(?{existsflag "optoutter", {"outter", "outterparams"}})((?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++))))
 	)
@@ -69,14 +77,14 @@
 
 (?<abstrsubs>\s*+(\[(?{call 'beginconstantexpr'})(?&primexpr)\]
 						(?{call 'addsubtotype'})(?{call 'endconstantexpr'})
-						|(?&openparen)(?(?=(\s*+((\.\.\.)(?{$matches[-1]{rest}=$^N})|\bvoid\b)?+\s*+(?&closingparen))
+						|(?(?=((?&openparen)\s*+((\.\.\.)(?{$matches[-1]{rest}=$^N})|\bvoid\b)?+\s*+(?&closingparen))
 						(?{call 'startfunctionparamdecl'})(?{call 'endfunctionparamdecl'}))
-						(??{qr{\Q$^N\E}})(?{pop2 \@matches})
+						(??{qr{\Q$^N\E}})
 						|(?(?=(?{push2 \@savedcallouts, []})(?{push2 \@matches, {}})
-						(?{++$recording; print "recording abstrsubs firstparam\n"})((?&param))(?{--$recording}))
-						(?{call 'startfunctionparamdecl'})(?{replayrecord})(?{pop2 \@savedcallouts})(??{qr{\Q$^N\E}})
-							(,(?(?=(\s*+(\.\.\.)(?{$matches[-1]{rest}=$^N})\s*+))(??{qr{\Q$^N\E}})|(?&param)))*+(?{pop2 \@matches})
-						\s*+(?&closingparen)(?{call 'endfunctionparamdecl'})
+						(?{++$recording; print "recording abstrsubs firstparam\n"; print Dumper \@flags})(?{call 'startfunctionparamdecl'})((?&openparen)(?&param)))
+						(??{qr{\Q$^N\E}})
+							(,(?(?=(\s*+(\.\.\.)(?{$matches[-1]{rest}=$^N})\s*+))(??{qr{\Q$^N\E}})|(?&param)))*+
+						\s*+(?&closingparen)(?{--$recording})(?{replayrecord})(?{pop2 \@savedcallouts})(?{call 'endfunctionparamdecl'})(?{pop2 \@matches})
 						|(?{--$recording})
 						(?{pop2 \@savedcallouts})(?{pop2 \@matches})(*F)))
 						)\s*+)
@@ -106,7 +114,7 @@
 
 (?<declcomma>,(?&Tdecl))
 
-(?<abstdeclorallqualifsqualifs>(((?&qualifs))(?{$matches[-1]{typefound}=$^N})|\s*+((?(?{eval {exists $matches[-1]{strc}} or 0})(*F))
+(?<abstdeclorallqualifsqualifs>(((?&qualifs))|\s*+((?(?{eval {exists $matches[-1]{strc}} or 0})(*F))
 		(?(?{eval {exists $matches[-1]{typedefnmmatched}} or 0})(*F))
 		(((?&structorunion))(?{$matches[-1]{strc}=$^N})
 		|(?(?{eval {exists $matches[-1]{typefound}} or 0})(*F))((?&identifier_typedef))(?{$matches[-1]{typedefnmmatched}=$^N}))
@@ -116,7 +124,8 @@
 	(?{push2 \@declqualifs, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
 
 	(?(?=(?<declinner>(?&Tdecl)(?{call 'enddeclaration'})(?{replayrecord \@declqualifs})(?{call 'endqualifs'})))\g{declinner}
-	(?(?{eval {existsflag "outterparams"} or 0})|(,(?&declinner))*+)|(?(?{print "dump\n";print Dumper @matches;eval {exists $matches[-1]{strc}} or 0})|
+	(?(?{eval {existsflag "outterparams"} or 0})|(,(?&declinner))*+)|(?(?{print "dump\n";print Dumper @matches;eval {exists $matches[-1]{strc}} or 0})
+	(?{replayrecord \@declqualifs})(?{call 'endqualifs'})|
 	(?{pop2 \@flags, undef})
 	(?{pop2 \@declqualifs})
 	(?{pop2 \@matches})(*F)))
@@ -137,6 +146,7 @@
 		(??{qr{\Q$^N\E}})
 		|(?(?{eval {existsflag "opt", {"nonopt"}} or 0})
 	(?{--$recording})
+	(?{print "opt??\n"})
 	|
 	(?{pop2 \@flags, undef})
 

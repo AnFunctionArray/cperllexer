@@ -6,17 +6,10 @@ use re 'eval';
 BEGIN{push @INC, "./misc"};
 BEGIN{push @INC, "./regexes/supplement"};
 
-$filename = $ARGV[1];
-open my $fh, '<', $filename or die "error opening $filename: $!";
-
-my $subjectoutter = do { local $/; <$fh> };
-
-close $fh;
-
 $filename = $ARGV[0];
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
-my $proxy = do { local $/; <$fh> };
+my $subjectoutter = do { local $/; <$fh> };
 
 close $fh;
 
@@ -24,23 +17,19 @@ close $fh;
 
 #use re => qw(Debug EXECUTE);
 
-while($subjectoutter =~ m{
-    ([^{}]*\s++\b(?<fnname>(?<identifierraw>\b(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9])*+)\b(::(?&identifierraw))?+))(?=\s*+[(]).*?\n\})
-(?{
-    
-    #print $& . "\n";
-    my $subject = $^N;
-    my $fnname = $+{fnname};
-    print $fnname . "\n";
-    open my $target, '>', "$fnname.c" or die "error opening $fnname: $!";
+$declsout;
 
-    print $target $subject;
-})}sxxg){}
+while($subjectoutter =~ m{
+    (?<name>((?!:)\S)++):\s*+\.(?(?=space\b)space\s++(?<bytes>\d++)|(?<type>\w++))
+}xxg){
+    my $type = $+{bytes} ? "space$+{bytes}" : $+{type};
+    $declsout = $declsout . "\n$type $+{name};"
+}
 
 $filename = $ARGV[1];
 open my $fh, '>', $filename or die "error opening $filename: $!";
 
-print $fh $subjectoutter;
+print $fh $declsout;
 
 close $fh;
 

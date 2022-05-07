@@ -134,6 +134,7 @@ sub checktypeorqualif {
             eval {$matches[-1]{typefound} = $^N};
             call "add_type"
         } else {
+            eval {$matches[-1]{qualiffound} = $^N};
             call "add_qualif"
         }
         dec2 "facet";
