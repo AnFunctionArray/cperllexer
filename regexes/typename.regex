@@ -125,7 +125,7 @@
 
 	(?(?=(?<declinner>(?&Tdecl)(?{call 'enddeclaration'})(?{replayrecord \@declqualifs})(?{call 'endqualifs'})))\g{declinner}
 	(?(?{eval {existsflag "outterparams"} or 0})|(,(?&declinner))*+)|(?(?{print "dump\n";eval {exists $matches[-1]{strc}} or 0})
-	(?{replayrecord \@declqualifs})(?{call 'endqualifs'})|
+	|
 	(?{pop2 \@flags, undef})
 	(?{pop2 \@declqualifs})
 	(?{pop2 \@matches})(*F)))
@@ -184,12 +184,12 @@
 
 (?<strcelem>(?{push2 \@flags, {"bitfl"=>undef, "outter"=>undef, "nonopt"=>undef}})(?&abstdeclorallqualifs)\s*+;\s*+)
 
-(?<structbody>\s*+[{](?(?{eval {exists $matches[-1]{enum}} or 0})(?{call 'begin_enumerator_def'})
+(?<structbody>\s*+[{](?{push2 \@structbodystack, $recording; $recording = 0})(?(?{eval {exists $matches[-1]{enum}} or 0})(?{call 'begin_enumerator_def'})
 	(?<enumerator>(?&add_ident_to_enum_def)
 	((=(?{call 'beginconstantexpr'})(?&assignorsomething)(?{call 'end_ass_to_enum_def'}))
 	|(?{call 'end_without_ass_to_enum_def'})))?+(,(?&enumerator))*+,?+\s*+
 	|(?{call 'struc_or_union_body'})\s*+(?&strcelem)*+)\s*+
-	[}]\s*+(?(?{eval {exists $matches[-1]{enum}} or 0})()|(?{call 'endbuildingstructorunion'}))\s*+)
+	[}]\s*+(?(?{eval {exists $matches[-1]{enum}} or 0})()|(?{call 'endbuildingstructorunion'}))\s*+(?{$recording = pop2 \@structbodystack}))
 
 (?<structorunion>
 	(?=(?<begin>\s*+\b(?<structorunionlast>struct|union|(enum)(?{$matches[-1]{enum}=$^N}))\b\s*+(?&align)?+
