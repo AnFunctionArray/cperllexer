@@ -14,6 +14,8 @@ Requires preprocessed input.
 
 *Don't forget to clone recursively for test examples*
 
+*git clone --recursive <repo-url>*
+
 ## Only parsing:
 
 perl ./regexes/parse.pl ./regularcbulk/tests/test.c
