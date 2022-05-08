@@ -14,7 +14,7 @@ Requires preprocessed input.
 
 *Don't forget to clone recursively for test examples*
 
-*git clone --recursive <repo-url>*
+*git clone --recursive repo-url*
 
 ## Only parsing:
 
@@ -28,7 +28,7 @@ perl ./regexes/parse.pl ./regularcbulk/tests/test.c
 
 ## Initially:
 
-LLVM_CONFIG=llvm-config-mp-14 cmake .
+LLVM_CONFIG=llvm-config-mp-14 cmake . -Drange-v3_DIR=$HOME/vcpkg/packages/range-v3_arm64-osx/share/range-v3
 
 ## Later on:
 
