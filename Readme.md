@@ -12,6 +12,8 @@ Requires preprocessed input.
 
 # Usage:
 
+*Don't forget to clone recursively for test examples*
+
 ## Only parsing:
 
 perl ./regexes/parse.pl ./regularcbulk/tests/test.c
