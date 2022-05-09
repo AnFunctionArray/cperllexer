@@ -1,6 +1,6 @@
 use Data::Dumper;
 
-my sub print {1}
+my sub print {CORE::print(@_) if( $ENV{'DEBUG'} )}
 
 #my sub Dumper {"\n"}
 

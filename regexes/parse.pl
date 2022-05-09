@@ -19,7 +19,7 @@ use Data::Dumper;
 
 #my sub Dumper {"\n"}
 
-my sub print {1}
+my sub print {CORE::print(@_) if( $ENV{'DEBUG'} )}
 my sub print2 {CORE::print(@_)}
 
 sub push2 {
