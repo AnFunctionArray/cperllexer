@@ -2,6 +2,8 @@
 //#include "llvm/IR/Instructions.h"
 //#include "llvm/IR/Value.h"
 //#include "llvm/Support/Allocator.h"
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/IR/Value.h"
 #include <cctype>
 #include <cstdlib>
 #include <exception>
@@ -48,6 +50,7 @@
 #include <stdint.h>
 #include <string>
 #include <string_view>
+#include <sys/_types/_int8_t.h>
 #include <tuple>
 #include <type_traits>
 #include <unordered_set>
@@ -82,6 +85,7 @@ DLL_EXPORT void constructstring();
 llvm::BranchInst* splitbb(const char* identifier, size_t szident);
 
 size_t getbasictypesz(struct type basictype);
+void fixupstructype(std::list<struct var>* var, bool createllvm = true); 
 
 //static struct basehndl* phndl;
 
@@ -463,10 +467,12 @@ struct basic_type_origin {
 		3 - last typedef or struct/union/enum name
 	*/
 	std::array<std::string, 4> basic;
-	size_t longspecsn{}; //amount of long qualifiers
+	size_t longspecsn{}; //amount of long qualifiers or struct size
 	std::bitset<4> qualifiers;
 
 	void* pexternaldata = nullptr;
+
+	size_t al{-1ull};
 
 	bool operator==(const basic_type_origin&) const = default;
 };
@@ -582,9 +588,11 @@ struct type {
 		FUNCTION
 	} uniontype;
 
-	type(typetype a) : spec{ a }, uniontype{ a } {};
+	struct arrayinfo { 
+			uint64_t size, nelems;
+	};
 
-	typedef uint64_t arraytype;
+	type(typetype a) : spec{ a }, uniontype{ a } {};
 	struct functype {
 		std::list<std::list<var>> parametertypes_list{ 1 };
 		bool bisvariadic;
@@ -609,14 +617,12 @@ struct type {
 			this->~type(), new (this)::type{ type.uniontype };
 		std::array lambdas = {
 			std::function{
-				[&] { spec.basicdeclspec = type.spec.basicdeclspec; }},
+				[&] { cachedtype = type.cachedtype; spec.basicdeclspec = type.spec.basicdeclspec; }},
 			std::function{
-				[&] { spec.ptrqualifiers = type.spec.ptrqualifiers; }},
-			std::function{[&] { spec.arraysz = type.spec.arraysz; }},
-			std::function{[&] { spec.func = type.spec.func; }} };
+				[&] { cachedtype = type.cachedtype; spec.ptrqualifiers = type.spec.ptrqualifiers; }},
+			std::function{[&] { spec.array = type.spec.array; }},
+			std::function{[&] { cachedtype = type.cachedtype; spec.func = type.spec.func; }} };
 		lambdas[uniontype]();
-
-		cachedtype = type.cachedtype;
 
 		return *this;
 	}
@@ -627,14 +633,14 @@ struct type {
 				std::function{[&] { new (&basicdeclspec) bascitypespec{}; }},
 				std::function{
 					[&] { new (&ptrqualifiers) pointrtypequalifiers{}; }},
-				std::function{[&] { arraysz = 0; }},
+				std::function{[&] { }},
 				std::function{[&] { new (&func) functype{}; }} };
 			lambdas[type]();
 		}
 		~typespec() {}
 		bascitypespec basicdeclspec;
 		pointrtypequalifiers ptrqualifiers;
-		arraytype arraysz;
+		arrayinfo array;
 		functype func;
 	} spec;
 
@@ -653,10 +659,10 @@ const ::type basicint = []() {
 	return tmp;
 }();
 
-llvm::Type* createllvmtype(std::list<type> &decltypevector);
+llvm::Type* buildllvmtypefull(std::list<type> &decltypevector);
 
-llvm::Type* createllvmtype(const std::list<type> &decltypevector) {
-		return createllvmtype(decltypevector);
+llvm::Type* buildllvmtypefull(std::list<type> &&decltypevector) {
+		return buildllvmtypefull(reinterpret_cast<std::list<type> &>(std::move(decltypevector)));
 }
 
 struct valbase {
@@ -668,7 +674,7 @@ struct valbase {
 	std::string identifier;
 
 	auto requestType() {
-		return createllvmtype(type);
+		return buildllvmtypefull(type);
 	}
 };
 
@@ -684,7 +690,7 @@ struct var : valbase {
 	llvm::Type* pllvmtype{};
 
 	auto requestType() {
-		return pllvmtype ? pllvmtype : pllvmtype = createllvmtype(type);
+		return pllvmtype ? pllvmtype : pllvmtype = buildllvmtypefull(type);
 	}
 
 	std::list<::type> fixupTypeIfNeeded() {
@@ -699,7 +705,7 @@ struct var : valbase {
 		}
 		for(auto iter = type.rbegin(); iter != type.rend(); ++iter) {
 			if(iter->uniontype == type::ARRAY)
-				iter->spec.arraysz *= getbasictypesz(*(--decltype(iter){iter}));
+				iter->spec.array.size = iter->spec.array.nelems * getbasictypesz(*(--decltype(iter){iter}));
 		}
 		return type;
 	}
@@ -737,7 +743,7 @@ operator=(T p)
 
 static std::list<std::list<::val>::iterator> callees{};
 
-llvm::Type* createllvmtype(std::list<type> &decltypevector,
+llvm::Type* buildllvmtypefull(std::list<type> &decltypevector,
 	std::list<type> *refdecltypevector);
 
 val convertTo(val target, std::list<::type> to);
@@ -1073,11 +1079,11 @@ struct basehndl /* : bindings_compiling*/ {
 
 			tmptype.spec.basicdeclspec.basic[0] = "unsigned";
 
-			ops[0]->value = CreateCastInst(ops[0]->value, createllvmtype({ tmptype }), false),
+			ops[0]->value = CreateCastInst(ops[0]->value, buildllvmtypefull({ tmptype }), false),
 
 				* refspecops[0] = tmptype.spec.basicdeclspec;
 
-			ops[1]->value = CreateCastInst(ops[1]->value, createllvmtype({ tmptype }), true),
+			ops[1]->value = CreateCastInst(ops[1]->value, buildllvmtypefull({ tmptype }), true),
 
 				* refspecops[1] = tmptype.spec.basicdeclspec;
 		}
@@ -1501,17 +1507,19 @@ struct basehndl /* : bindings_compiling*/ {
 			if (ops[i].type.front().uniontype == type::POINTER ||
 				ops[i].type.front().uniontype == type::ARRAY)
 				if (ops[!i].type.front().uniontype == type::BASIC) {
-					extern ::val decay(::val lvalue);
-					ops[i] = decay(ops[i]);
 					immidiates.erase(----immidiates.end(), immidiates.end());
+					bool isarray = ops[i].type.front().uniontype == type::ARRAY;
 					ops[i].type.erase(ops[i].type.begin());
 					llvm::Type *targettype = ops[i].requestType();
+					extern void printvaltype(::val val);
+					printtype(targettype, "");
+					printtype(ops[i].value->getType(), "");
 					ops[!i].value = !bminus
 						? ops[!i].value
 						: llvmbuilder.CreateNeg(ops[!i].value);
 					llvm::Value* lvalue = llvmbuilder.CreateGEP(targettype, ops[i].value,
 
-						ops[!i].value);
+						isarray ? llvm::ArrayRef{ dyn_cast<llvm::Value>(llvmbuilder.getInt32(0)), ops[!i].value } : llvm::ArrayRef{ ops[!i].value });
 					immidiates.push_back(
 						val{ ops[i].type, ops[i].type.front().uniontype != type::FUNCTION
 							 ? llvmbuilder.CreateLoad(targettype, lvalue)
@@ -1617,7 +1625,7 @@ struct basehndl /* : bindings_compiling*/ {
 							currbasictype.basic[1] = "long",
 							currbasictype.longspecsn = 2;
 
-		auto valval = llvm::ConstantInt::get(createllvmtype(currtype), val, !isunsigned);
+		auto valval = llvm::ConstantInt::get(buildllvmtypefull(currtype), val, !isunsigned);
 
 		immidiates.push_back({ currtype, valval });
 	}
@@ -1948,7 +1956,7 @@ void printvaltype(val val) {
 		return;
 	std::string type_str;
 	llvm::raw_string_ostream rso(type_str);
-	val.value->getType()->print(rso);
+	val.requestType()->print(rso);
 	std::string name = val.value->getName().str();
 	name = name.size() ? name : val.identifier;
 	std::cout << name << " is " << rso.str() << std::endl;
@@ -2039,7 +2047,7 @@ DLL_EXPORT void addescapesequencetostring(std::unordered_map<unsigned, std::stri
 DLL_EXPORT void constructstring() {
 	std::list<::type> stirngtype{ 1, ::type::ARRAY };
 
-	stirngtype.back().spec.arraysz = currstring.size() + 1;
+	stirngtype.back().spec.array.nelems = stirngtype.back().spec.array.size = currstring.size() + 1;
 
 	stirngtype.push_back({ ::type::BASIC });
 
@@ -2117,7 +2125,7 @@ DLL_EXPORT void endbuildingstructorunion() {
 	auto& structvar = lastmembers.front();
 
 	//for (auto& a : lastmembers | ranges::views::drop(1))
-		//a.pllvmtype = createllvmtype(a.type);
+		//a.pllvmtype = buildllvmtypefull(a.type);
 
 	/*std::vector<llvm::Type*> structtypes;
 
@@ -2199,36 +2207,36 @@ bool bIsBasicFloat(const type& type) {
 
 val convertTo(val target, std::list<::type> to) {
 	printvaltype(target);
-	printtype(createllvmtype(to), "to");
+	printtype(buildllvmtypefull(to), "to");
 	//if (to.front().spec.basicdeclspec.basic[3].empty())
 	if (bIsBasicInteger(to.front()))
 		if (bIsBasicInteger(target.type.front()))
 			target.value = llvmbuilder.CreateIntCast(
-				target.value, createllvmtype(to),
+				target.value, buildllvmtypefull(to),
 				target.type.front().spec.basicdeclspec.basic[0] != "unsigned");
 		else if (bIsBasicFloat(target.type.front()))
 			if (to.back().spec.basicdeclspec.basic[0] == "unsigned")
-				target.value = llvmbuilder.CreateFPToUI(target.value, createllvmtype(to));
+				target.value = llvmbuilder.CreateFPToUI(target.value, buildllvmtypefull(to));
 			else
-				target.value = llvmbuilder.CreateFPToSI(target.value, createllvmtype(to));
+				target.value = llvmbuilder.CreateFPToSI(target.value, buildllvmtypefull(to));
 		else if (target.type.front().uniontype == type::POINTER)
-			target.value = llvmbuilder.CreatePtrToInt(target.value, createllvmtype(to));
+			target.value = llvmbuilder.CreatePtrToInt(target.value, buildllvmtypefull(to));
 		else;
 	else if (bIsBasicFloat(to.front()))
 		if (bIsBasicInteger(target.type.front()))
 			if (target.type.back().spec.basicdeclspec.basic[0] == "unsigned")
-				target.value = llvmbuilder.CreateUIToFP(target.value, createllvmtype(to));
+				target.value = llvmbuilder.CreateUIToFP(target.value, buildllvmtypefull(to));
 			else
-				target.value = llvmbuilder.CreateSIToFP(target.value, createllvmtype(to));
+				target.value = llvmbuilder.CreateSIToFP(target.value, buildllvmtypefull(to));
 		else if (bIsBasicFloat(target.type.front()))
 			target.value = llvmbuilder.CreateFPCast(
-				target.value, createllvmtype(to));
+				target.value, buildllvmtypefull(to));
 		else
 			;
 	else if (to.front().uniontype == type::POINTER && bIsBasicInteger(target.type.front()))
-		target.value = llvmbuilder.CreateIntToPtr(target.value, createllvmtype(to));
+		target.value = llvmbuilder.CreateIntToPtr(target.value, buildllvmtypefull(to));
 	else
-		target.value = llvmbuilder.CreateBitCast(target.value, createllvmtype(to));
+		target.value = llvmbuilder.CreateBitCast(target.value, buildllvmtypefull(to));
 
 	target.type = to;
 
@@ -2271,21 +2279,34 @@ DLL_EXPORT void applycast() {
 		&& scopevar.size() == 1)
 		currtypevectorbeingbuild.back()
 		.p->back()
-		.pllvmtype = createllvmtype(currtype),
+		.pllvmtype = buildllvmtypefull(currtype),
 		addvar(currtypevectorbeingbuild.back().p->back());
 }*/
 
+extern const std::list<::var>* getstructorunion(bascitypespec& basic, bool llvmfixup=true);
+
+std::array<size_t, 2> getbasictypeszandal(type basictype) {
+	size_t typesize = getbasictypesz(basictype);
+
+	if(basictype.uniontype == type::BASIC && basictype.spec.basicdeclspec.al != -1ULL)
+		return{typesize, basictype.spec.basicdeclspec.al};
+	return {typesize, typesize};
+}
+
 size_t getbasictypesz(type basictype) {
 	if(basictype.uniontype == type::ARRAY)
-		return basictype.spec.arraysz;
+		return basictype.spec.array.size;
 
 	if (basictype.uniontype == type::POINTER)
 		return sizeof(void*);
 
 	assert(basictype.uniontype == type::BASIC);
 
-	if (basictype.spec.basicdeclspec.basic[0] == "struct")
-		return pdatalayout->getTypeStoreSize(createllvmtype({ basictype }));
+	if (basictype.spec.basicdeclspec.basic[0] == "struct") {
+		if(basictype.spec.basicdeclspec.al == -1ULL)
+			getstructorunion(basictype.spec.basicdeclspec, false);
+		return basictype.spec.basicdeclspec.longspecsn;
+	}
 
 	switch (stringhash(basictype.spec.basicdeclspec.basic[1].c_str())) {
 	case "int"_h:
@@ -2319,8 +2340,6 @@ void pushsizeoftype(std::list<type> type) {
 				llvm::APInt{64, szoftype}),
 			"[[sizeoftypename]]" });
 }
-
-extern const std::list<::var>* getstructorunion(bascitypespec& basic);
 
 DLL_EXPORT void memberaccess(std::unordered_map<unsigned, std::string>&& hashentry) {
 	if (hashentry["arrowordotraw"_h] == "->")
@@ -2556,7 +2575,7 @@ DLL_EXPORT void beginbinary() {
 
 	opsscopeinfo.back().currlogicopvar.type.back().spec.basicdeclspec.basic[1] = "int";
 
-	opsscopeinfo.back().currlogicopvar.pllvmtype = createllvmtype(opsscopeinfo.back().currlogicopvar.type);
+	opsscopeinfo.back().currlogicopvar.pllvmtype = buildllvmtypefull(opsscopeinfo.back().currlogicopvar.type);
 
 	addvar(opsscopeinfo.back().currlogicopvar);
 
@@ -2564,7 +2583,7 @@ DLL_EXPORT void beginbinary() {
 
 	result.type.back ().spec.basicdeclspec.basic[1] = "int";
 
-	result.pllvmtype = createllvmtype (result.type);
+	result.pllvmtype = buildllvmtypefull (result.type);
 
 	addvar (result);
 
@@ -2625,7 +2644,7 @@ DLL_EXPORT void endbinary() {
 
 DLL_EXPORT void endsizeofexpr() {
 	auto lastimmtype = phndl->immidiates.back().type;
-	printtype(createllvmtype(lastimmtype),
+	printtype(buildllvmtypefull(lastimmtype),
 		phndl->immidiates.back().identifier);
 	phndl->immidiates.pop_back();
 	pushsizeoftype(lastimmtype);
@@ -2642,22 +2661,52 @@ DLL_EXPORT void endsizeofexpr() {
 
 //DLL_EXPORT void finalizedeclaration() { endpriordecl(); }
 
-void fixupstructype(std::list<::var>* var) {
-	for (auto& a : *var | ranges::views::drop(1))
-		a.pllvmtype = createllvmtype(a.type);
+struct A {
+    char a;
+    struct {
+        double b;
+    };
+    __int128 c;
+    char f;
+};
 
+void fixupstructype(std::list<::var>* var, bool createllvm) {
+	std::vector<llvm::Type*> tmp;
+
+	size_t currsz=0;
+
+	size_t curralign=1;
+
+	for (auto& a : *var | ranges::views::drop(1)) 
+		if(!a.pllvmtype && createllvm) 
+			a.pllvmtype = (llvm::Type*)-1ULL,
+			tmp.push_back(buildllvmtypefull(a.type));
+		else {
+			auto [elemsz, elemalign] = getbasictypeszandal(a.type.front());
+			currsz += elemsz;
+			curralign = elemalign > curralign ? elemalign : curralign;
+			currsz = currsz % curralign + currsz;
+		}
+			
 	auto& structvar = var->front();
 
-	std::vector<llvm::Type*> structtypes;
+	if(createllvm) {
+		std::transform(++tmp.begin(), tmp.end(),
+			var->begin(), var->begin(),
+			[](const llvm::Type* elem, const ::var &out) { 
+				::var tmp = out;
+				tmp.pllvmtype = const_cast<llvm::Type*>(elem) ;
+				return tmp;
+		});
 
-	std::transform(++var->begin(), var->end(),
-		std::back_inserter(structtypes),
-		[](const ::var& elem) { return elem.pllvmtype; });
-
-	dyn_cast<llvm::StructType> (structvar.pllvmtype)->setBody(structtypes);
+		dyn_cast<llvm::StructType> (structvar.pllvmtype)->setBody(tmp);
+	} else {
+		structvar.type.front().spec.basicdeclspec.al = curralign;
+		structvar.type.front().spec.basicdeclspec.longspecsn = currsz;
+	}
 }
 
-const std::list<::var>* getstructorunion(bascitypespec& basic) {
+const std::list<::var>* getstructorunion(bascitypespec& basic, bool llvmfixup) {
 	std::list<::var>* var = nullptr;
 
 	std::string ident = basic.basic[3];
@@ -2677,18 +2726,14 @@ const std::list<::var>* getstructorunion(bascitypespec& basic) {
 
 	if (!var) var = static_cast<std::list<::var>*>(basic.pexternaldata);
 
-	if (var) if (!var->back().pllvmtype)
-		var->back().pllvmtype = (llvm::Type*)1,
-		fixupstructype(var);
+	if (var && !var->front().pllvmtype)
+		fixupstructype(var, llvmfixup);
 
 	return var;
 }
 
-llvm::Type* createllvmtype(std::list<type> &refdecltypevector) {
+llvm::Type* buildllvmtypefull(std::list<type> &refdecltypevector) {
 	llvm::Type* pcurrtype;
-
-	if(refdecltypevector.front().cachedtype) 
-		return refdecltypevector.front().cachedtype;
 
 	auto decltypevector = refdecltypevector;
 
@@ -2791,7 +2836,7 @@ llvm::Type* createllvmtype(std::list<type> &refdecltypevector) {
 	}},
 	std::function{[&](type& type, std::list<::type>::iterator &iter) {
 		pcurrtype = dyn_cast<llvm::Type> (
-			llvm::ArrayType::get(pcurrtype, type.spec.arraysz * getbasictypesz(*--decltype(iter){iter})));
+			llvm::ArrayType::get(pcurrtype, type.spec.array.nelems));
 		return true;
 	}},
 	std::function{[&](type& type, std::list<::type>::iterator &iter) {
@@ -2808,7 +2853,7 @@ llvm::Type* createllvmtype(std::list<type> &refdecltypevector) {
 	try {
 		auto iterref = refdecltypevector.end();
 		for (auto& type : decltypevector)
-			if(!lambdas[type.uniontype](type, iterref))
+			if((pcurrtype = type.cachedtype) || !lambdas[type.uniontype](type, iterref), false)
 				break;
 			else
 				type.cachedtype = pcurrtype, --iterref;
@@ -2993,22 +3038,19 @@ val decay(val lvalue) {
 		::type ptrtype{ ::type::POINTER };
 
 		currtype.erase(currtype.begin());
+		auto elemtype = lvalue.requestType();
 		currtype.push_back(ptrtype);
 		std::rotate(currtype.rbegin(), ++currtype.rbegin(),
 			currtype.rend());
 
 		assert(currtype.front().uniontype == ::type::POINTER);
 
-		printvaltype(lvalue);
+		printtype(elemtype, "");
 
 		lvalue.value = lvalue.lvalues.back().value;
 
 		lvalue.lvalues.pop_back();
 
-		if (lvalue.type.front().uniontype == type::ARRAY)
-			lvalue.value = llvmbuilder.CreateGEP(lvalue.requestType(),
-				lvalue.value,
-				{ llvmbuilder.getInt64(0), llvmbuilder.getInt64(0) });
 	}
 	return lvalue;
 }
@@ -3132,7 +3174,7 @@ DLL_EXPORT void endfunctioncall() {
 
 	llvm::Value* callee = calleevalntype.value;
 
-	auto functype = createllvmtype(calleevalntype.type);
+	auto functype = buildllvmtypefull(calleevalntype.type);
 
 	llvm::Value* pval;
 
@@ -3187,7 +3229,7 @@ DLL_EXPORT void endreturn(std::unordered_map<unsigned, std::string>&& hashes) {
 DLL_EXPORT void endfunctionparamdecl(std::unordered_map<unsigned, std::string>&& hashes) {
 
 	//for (auto& a : *currtypevectorbeingbuild.back().p)
-	//	a.pllvmtype = createllvmtype(a.type);
+	//	a.pllvmtype = buildllvmtypefull(a.type);
 
 	currtypevectorbeingbuild.pop_back();
 
@@ -3238,9 +3280,8 @@ DLL_EXPORT void endqualifs(std::unordered_map<unsigned, std::string>&& hashes) {
 
 			lastvar.type.back().spec.basicdeclspec.pexternaldata = reflaststruc;
 		}
-							  else;
-	else
-		lastvar.fixupTypeIfNeeded();
+
+	lastvar.fixupTypeIfNeeded();
 		/*					  else
 		if (0) case "enum"_h:
 	{
@@ -3274,7 +3315,7 @@ DLL_EXPORT void addsubtotype() {
 	auto res = llvm::dyn_cast<llvm::ConstantInt> (
 		hndlcnstexpr.immidiates.back().value);
 
-	arraytype.spec.arraysz = *res->getValue().getRawData();
+	arraytype.spec.array.nelems = *res->getValue().getRawData();
 	currtypevectorbeingbuild.back().p->back().type.push_back(arraytype);
 
 	hndlcnstexpr.immidiates.pop_back();
@@ -4251,7 +4292,7 @@ DLL_EXPORT void add_ident_to_enum_def(std::unordered_map<unsigned, std::string> 
 
 	tmp.type.push_back(enumtype);
 
-	//tmp.pllvmtype = createllvmtype(tmp.type);
+	//tmp.pllvmtype = buildllvmtypefull(tmp.type);
 
 	//int n = getnameloc3("identlast", *ptable, a, 1, { .dontsearchforclosest = 0 }) + 1;
 
