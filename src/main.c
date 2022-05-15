@@ -288,7 +288,7 @@ void handler1(int sig) {
 	exit(0);
 }
 
-int main(int argc, const char** argv, char** env)
+int main(int argc, char** argv, char** env)
 {
 	//onig_initialize((OnigEncoding[]){&OnigEncodingUTF8}, 1);
 #if 0
