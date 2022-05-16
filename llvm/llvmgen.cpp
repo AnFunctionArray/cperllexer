@@ -50,7 +50,6 @@
 #include <stdint.h>
 #include <string>
 #include <string_view>
-#include <sys/_types/_int8_t.h>
 #include <tuple>
 #include <type_traits>
 #include <unordered_set>
