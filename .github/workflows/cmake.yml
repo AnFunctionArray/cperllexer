@@ -46,5 +46,5 @@ jobs:
       
     - name: TestExecute
       working-directory: ${{github.workspace}}
-      run: clang-14 ./test.c.bc && ! ./a.out
+      run: clang-15 ./test.c.bc && ! ./a.out
       
