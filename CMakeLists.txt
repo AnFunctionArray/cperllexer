@@ -48,10 +48,12 @@ target_link_libraries(regularc PRIVATE ${llvm_libraries} -rdynamic ${PERL_LIBRAR
 
 target_compile_options(regularc PRIVATE -rdynamic -O0 -g)
 
-set(CMAKE_C_FLAGS -Wno-error=implicit-function-declaration -std=c89)
+set(CMAKE_C_FLAGS -Wno-error=implicit-function-declaration)
 
 target_include_directories(regularc PRIVATE ${PERL_INCLUDE_PATH} ${llvm_includes} src)
 
 set_property(TARGET regularc PROPERTY CXX_STANDARD 23)
+
+set_property(TARGET regularc PROPERTY C_STANDARD 90)
 
 set(CMAKE_CXX_VISIBILITY_PRESET default)
