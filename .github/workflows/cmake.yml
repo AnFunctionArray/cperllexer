@@ -23,7 +23,7 @@ jobs:
         submodules: 'true'
     
     - name: Install dependencies
-      run: sudo apt install librange-v3-dev llvm-14-dev llvm-14 clang-14 libperl-dev
+      run: sudo apt install librange-v3-dev llvm-15-dev llvm-15 clang-15 libperl-dev
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
