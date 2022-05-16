@@ -48,7 +48,7 @@ target_link_libraries(regularc PRIVATE ${llvm_libraries} -rdynamic ${PERL_LIBRAR
 
 target_compile_options(regularc PRIVATE -rdynamic -O0 -g)
 
-set(CMAKE_C_FLAGS -Wno-error=implicit-function-declaration)
+set(CMAKE_C_FLAGS -Wno-error=implicit-function-declaration -std=c89)
 
 target_include_directories(regularc PRIVATE ${PERL_INCLUDE_PATH} ${llvm_includes} src)
 
