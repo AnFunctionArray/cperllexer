@@ -6,6 +6,8 @@ use re 'eval';
 BEGIN{push @INC, "./misc"};
 BEGIN{push @INC, "./regexes/supplement"};
 
+#require './regexes/parse.pl';
+
 $filename = $ARGV[0];
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
@@ -19,17 +21,99 @@ close $fh;
 
 $declsout;
 
-while($subjectoutter =~ m{
-    (?<name>((?!:)\S)++):\s*+\.(?(?=space\b)space\s++(?<bytes>\d++)|(?<type>\w++))
-}xxg){
-    my $type = $+{bytes} ? "space$+{bytes}" : $+{type};
-    $declsout = $declsout . "\n$type $+{name};"
-}
+while($subjectoutter =~ s{^#.*$}{}gm){}
+
+print "fixing structs...\n";
+
+$subjectoutter =~ s{__attribute__\((\(([^()]|(?1))*+\))\)|\b(__fastcall|__hidden|__cdecl)\b}{}g; 
+
+@matches = {};
+
+print "fixing operators...\n";
+
+$optoid = {
+    "+" => "plus",
+    "-" => "minus",
+    "*" => "star",
+    "/" => "division",
+    "%" => "modulo",
+    "^" => "xor",
+    "&" => "and",
+    "|" => "or",
+    "~" => "bitwisenot",
+    "!" => "logicalnot",
+    "=" => "assignment",
+    "<" => "lessthan",
+    ">" => "greaterthan",
+    "+=" => "compoundplus",
+    "-=" => "compoundminus",
+    "*=" => "compoundmul",
+    "/=" => "compounddiv",
+    "%=" => "compoundmod" ,
+    "^=" => "compoundxor",
+    "&=" => "compoundand",
+    "|=" => "compoundor",
+    "<<" => "shiftleft",
+    ">>" => "shiftright",
+    ">>=" => "compoundshiftright",
+    "<<=" => "compoundshiftleft",
+    "==" => "equal",
+    "!=" => "notequal",
+    "<=" => "lessthanorequal",
+    ">=" => "greaterthanorequal", 
+    "&&" => "logicaland",
+    "||" => "logicalor",
+    "++" => "increment",
+    "--" => "decremenet",
+    "," => "comma",
+    "->*" => "pointertomember", 
+    "->" => "pointerto" ,
+    "()" => "call",
+    "[]" => "subscript",
+    " new" => "new",
+    " new[]" => "newsubscript",
+    " delete" => "delete",
+    " delete[]" => "deletesubscript",
+};
+
+my $basicsingleops = qr{\+|-|\*|/|%|\^|&|\||~|!|=|<|>|,};
+
+my $basicopsdual = qr{\+=|-=|\*=|/=|%=|^=|&=|\|=|<<|>>|>>=|<<=|==|!=|<=|>=|&&|\|\||\+\+|--|->\*|->|\(\)|\[\]};
+
+$subjectoutter =~ s{
+   \boperator\b((?(?=$basicopsdual)$basicopsdual|$basicsingleops)|\snew(\[\])?+|\sdelete(\[\])?+)
+}{operator$optoid->{$1}}sxxg;
+
+print "fixing pesky template arguments\n";
+
+
+$subjectoutter =~ s{
+   (?<=\w)(<([^<>]*+|(?R))>)
+}{($1 =~ s{(?![<>])($basicops)}{$optoid->{$1}}rg) =~ s{\W}{_}rg}sxxge;
+
+print "misc\n";
+
+$subjectoutter =~ s{([@]|::)~}{_de}g; 
+
+$subjectoutter =~ s{[@]|::}{_}g; 
+
+$subjectoutter =~ s{
+    ^((struct|union)\b\s*+(\w++)\s*+(?<body>\{((?&body)|[^{}])*+\})?+);
+}{typedef $1 $3;}sxxgm;
+
+print "macos specifics\n";
+
+$subjectoutter =~ s{
+    Opaque\w++\b
+}{void}sxxgm;
+
+
+#use re 'debug';
 
 $filename = $ARGV[1];
 open my $fh, '>', $filename or die "error opening $filename: $!";
 
-print $fh $declsout;
+print $fh $subjectoutter;
 
 close $fh;
 

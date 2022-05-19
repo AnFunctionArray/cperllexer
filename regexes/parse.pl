@@ -513,9 +513,8 @@ if(not $isnested)
         ++$i
 =cut
    # }
+   exit;
 }
-
-exit;
 
 #}
 
@@ -1124,6 +1123,8 @@ sub stoprecord {
     return qr{((?{unset2 'savedcallouts'})|(?{set2 {'savedcallouts' => []}})(*F))}
 }
 
+=begin
+
 $subject = $mainregexfinal;
 
 print  $mainregexfinal;
@@ -1169,7 +1170,7 @@ $entryindex = findgroup $entryregex;
 print $entryindex . "\n";
 
 #call "stoprecording";
-=begin
+= begin
 #opnumber => stringpos
 
 my @stackoperations = [];
@@ -1225,12 +1226,10 @@ for(;1;++$currindex) {
     
 }
 
-=cut
-
 startmetaregex($entryregex, \@regexbindings, $subject) if(defined &startmetaregex and not $nested);
 #startmatching($subject, $mainregexfinal, basename($ARGV[-1]), $entryregex);
 #exit;
-
+=cut
 
 sub replayrecord {
     if(not $recording) {
