@@ -8,6 +8,7 @@ BEGIN{push @INC, "./regexes/supplement"};
 #use re qw(Debug ALL);
 
 require "typename.regex.pl";
+require "primexpr.regex.pl";
 
 use List::Util qw(max);
 

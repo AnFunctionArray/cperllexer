@@ -25,7 +25,19 @@ while($subjectoutter =~ s{^#.*$}{}gm){}
 
 print "fixing structs...\n";
 
-$subjectoutter =~ s{__attribute__\((\(([^()]|(?1))*+\))\)|\b(__fastcall|__hidden|__cdecl)\b}{}g; 
+$subjectoutter =~ s{\b__attribute__\s*+\((\(([^()]|(?1))*+\))\)
+    |\b(__fastcall|__hidden|__cdecl|__extension__|__inline__|__inline|__userpurge|__usercall)\b
+    |\b__asm__\b[^;]*+;
+    |\s:\s*+[^\d\W]++\b\s*+(?=\{)
+    |\b__spoils<[^<>]*+>
+    |//.*?(?=\n)
+    |@<\w++>}{}sxxg; 
+
+print "and asm is fixed too\n";
+
+print "now fixing []\n";
+
+$subjectoutter =~ s{\[\](?=;\n|\s*+=)}{[1]}sg;
 
 @matches = {};
 
@@ -95,17 +107,22 @@ print "misc\n";
 
 $subjectoutter =~ s{([@]|::)~}{_de}g; 
 
-$subjectoutter =~ s{[@]|::}{_}g; 
+$subjectoutter =~ s{[@]|::|\$}{_}g; 
 
 $subjectoutter =~ s{
-    ^((struct|union)\b\s*+(\w++)\s*+(?<body>\{((?&body)|[^{}])*+\})?+);
-}{typedef $1 $3;}sxxgm;
+    ^((struct|union|enum)\b\s*+(\w++)\s*+(?<body>\{((?&body)|[^{}])*+\})?+);
+}{typedef $2 $3 $3;\n\ntypedef $1 $3;}sxxgm;
 
-print "macos specifics\n";
+$subjectoutter =~ s{`vftable'}{_vftable}g;
+$subjectoutter =~ s{(?<=\d)i64}{ll}g;
 
-$subjectoutter =~ s{
-    Opaque\w++\b
-}{void}sxxgm;
+#print "macos specifics\n";
+
+#$subjectoutter =~ s{
+#    Opaque\w++\b
+#}{void}sxxgm;
+
+$subjectoutter =~ s{PA\.deinit}{PA_deinit}g;
 
 
 #use re 'debug';

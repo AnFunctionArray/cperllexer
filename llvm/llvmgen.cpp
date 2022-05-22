@@ -1987,9 +1987,8 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 				var = findparam;
 			else undef: {
 				std::cout << "not found: " << ident << std::endl;
-				scopevar.begin()->push_back(::var{std::list{basicint}, nullptr, ident, .firstintroduced = 1 });
-				var = scopevar.front().rbegin();
-				addvar(*var);
+				if (push) phndl->immidiates.push_back(::val{{{}, nullptr, ident}});
+				return {};
 			}
 		}
 	/*if (var->type.front ().uniontype == ::type::FUNCTION)
@@ -3083,10 +3082,21 @@ DLL_EXPORT void endfunctioncall() {
 
 	auto calleevalntype = decay(*argsiter);
 
-	if(!is_type_function_or_fnptr(calleevalntype.type)) {
-		type fntype{type::FUNCTION};
+	type fntype{type::FUNCTION};
 
-		fntype.spec.func.bisvariadic = true;
+	fntype.spec.func.bisvariadic = true;
+
+	llvm::Value* callee = calleevalntype.value;
+
+	if(calleevalntype.type.empty()) {
+		var newvar{calleevalntype};
+		calleevalntype.type = newvar.type = {fntype, basicint};
+		newvar.firstintroduced = 1;
+		addvar(newvar);
+		scopevar.begin()->push_back(newvar);
+		callee = newvar.value;
+	}
+	else if(!is_type_function_or_fnptr(calleevalntype.type)) {
 
 		type ptrtype{type::POINTER};
 
@@ -3103,8 +3113,6 @@ DLL_EXPORT void endfunctioncall() {
 	calleevalntype.value->getType ()->print (rso);
 	std::cout << calleevalntype.value->getName ().str () << " is " << rso.str ()
 			  << std::endl;*/
-
-	llvm::Value* callee = calleevalntype.value;
 
 	auto functype = calleevalntype.requestType();
 
