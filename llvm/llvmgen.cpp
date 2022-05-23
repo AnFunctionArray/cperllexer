@@ -89,7 +89,7 @@ void fixupstructype(std::list<struct var>* var);
 
 const std::list<struct var>::reverse_iterator obtainvalbyidentifier(std::string ident, bool push = true, bool bfindtypedef = false);
 
-extern const struct type basicint;
+extern const struct type basicint, basicsz;
 
 enum class currdecltypeenum {
 	TYPEDEF,
@@ -146,6 +146,8 @@ struct enumdef {
 	std::list<std::list<struct var>::iterator > memberconstants;
 	int maxcount{};
 };
+
+DLL_EXPORT void endsizeofexpr();
 
 std::list<std::list<enumdef>>  enums{ 1 };
 
@@ -655,6 +657,13 @@ const ::type basicint = []() {
 	return tmp;
 }();
 
+const ::type basicsz = []() {
+	::type tmp{  type::BASIC };
+	tmp.spec.basicdeclspec.basic[0] = "unsigned";
+	tmp.spec.basicdeclspec.basic[1] = "long";
+	return tmp;
+}();
+
 llvm::Type* buildllvmtypefull(std::list<type> &decltypevector);
 
 llvm::Type* buildllvmtypefull(std::list<type> &&decltypevector) {
@@ -929,6 +938,8 @@ struct basehndl /* : bindings_compiling*/ {
 	}
 
 	virtual llvm::Value* getlogicalnot() {
+		extern ::val decay(::val lvalue);
+		
 		auto& op = immidiates.back();
 
 		llvm::Value* originstr;
@@ -1299,24 +1310,34 @@ struct basehndl /* : bindings_compiling*/ {
 
 		extern void printvaltype(val);
 
-		if (ops[0].value->getType()->isPointerTy() &&
-			ops[1].value->getType()->isPointerTy()) {
-			assert(bminus);
-			ops[0].value =
-				llvmbuilder.CreatePtrDiff(ops[0].requestType(), ops[0].value, ops[1].value);
-			type ptr_diff{ type::BASIC };
-			ptr_diff.spec.basicdeclspec.basic[1] = "int";
-			ops[0].type = { ptr_diff };
+		bool arewedealingpointers = ops[0].value->getType()->isPointerTy() &&
+			ops[1].value->getType()->isPointerTy();
+
+		val szpointee;
+
+		if (arewedealingpointers) {
+			immidiates.push_back(ops[0]);
+			applyindirection();
+			endsizeofexpr();
+			szpointee = immidiates.back();
+			immidiates.pop_back();
+			ops[0] = convertTo(ops[0], {basicsz});
+			ops[1] = convertTo(ops[1], {basicsz});
 		}
-		else
-			busual && (ops = usualarithmeticconversions(ops), 0),
-			printvaltype(ops[0]),
-			printvaltype(ops[1]),
-			ops[0].value = llvmbuilder.CreateAdd(
-				ops[0].value,
-				!bminus ? ops[1].value : llvmbuilder.CreateNeg(ops[1].value));
+
+		busual && (ops = usualarithmeticconversions(ops), 0),
+		printvaltype(ops[0]),
+		printvaltype(ops[1]),
+		ops[0].value = llvmbuilder.CreateAdd(
+			ops[0].value,
+			!bminus ? ops[1].value : llvmbuilder.CreateNeg(ops[1].value));
 
 		immidiates.push_back(ops[0]);
+
+		if(arewedealingpointers) {
+			immidiates.push_back(szpointee);
+			dividelasttwovalues();
+		}
 	}
 
 	virtual void shifttwovalues(bool bright) {
@@ -1962,6 +1983,8 @@ DLL_EXPORT void obtainvalbyidentifier(std::unordered_map<unsigned, std::string>&
 	obtainvalbyidentifier(hashmap["ident"_h]);
 }
 
+static val *plastnotfound;
+
 const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident, bool push, bool bfindtypedef) {
 
 	std::list<::var>::reverse_iterator var{};
@@ -1987,7 +2010,10 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 				var = findparam;
 			else undef: {
 				std::cout << "not found: " << ident << std::endl;
-				if (push) phndl->immidiates.push_back(::val{{{}, nullptr, ident}});
+				if (push) {
+					phndl->immidiates.push_back(::val{{{}, nullptr, ident}});
+					plastnotfound = &phndl->immidiates.back();
+				}
 				return {};
 			}
 		}
@@ -2246,6 +2272,8 @@ bool bIsBasicFloat(const type& type) {
 }
 
 val convertTo(val target, std::list<::type> to) {
+	extern val decay(val lvalue) ;
+	target = decay(target);
 	printvaltype(target);
 	printtype(buildllvmtypefull(to), "to");
 	//if (to.front().spec.basicdeclspec.basic[3].empty())
@@ -2331,6 +2359,8 @@ void pushsizeoftype(val &&value) {
 	sztype.spec.basicdeclspec.basic[0] = "unsigned";
 
 	sztype.spec.basicdeclspec.basic[1] = "long";
+
+	sztype.spec.basicdeclspec.longspecsn = 2;
 
 	szoftype = pdatalayout->getTypeStoreSize(value.requestType());
 
@@ -3010,10 +3040,11 @@ val decay(val lvalue) {
 	auto &currtype = lvalue.type;
 	auto elemtype = lvalue.requestType();
 
-	if (currtype.front().uniontype == type::ARRAY) {
+	if (currtype.front().uniontype == type::ARRAY || currtype.front().uniontype == type::FUNCTION) {
 		::type ptrtype{ ::type::POINTER };
 
-		currtype.erase(currtype.begin());
+		if(currtype.front().uniontype == type::ARRAY)
+			currtype.erase(currtype.begin());
 		currtype.push_front(ptrtype);
 
 		assert(currtype.front().uniontype == ::type::POINTER);
@@ -3172,7 +3203,7 @@ DLL_EXPORT void endfunctioncall() {
 	std::transform(
 		++argsiter, ::immidiates.end(), std::back_inserter(immidiates),
 		[&](basehndl::val elem) { return !(breached = breached || iterparams == verylongthingy.end()) 
-		? convertTo(decay(elem), iterparams++->type).value : decay(elem).value; });
+		? convertTo(elem, iterparams++->type).value : decay(elem).value; });
 
 	::immidiates.erase(--argsiter, ::immidiates.end());
 
@@ -3272,8 +3303,9 @@ DLL_EXPORT void endqualifs(std::unordered_map<unsigned, std::string>&& hashes) {
 DLL_EXPORT void startfunctionparamdecl() {
 
 	if (currtypevectorbeingbuild.back().currdecltype ==
-		currdecltypeenum::PARAMS) // if declaring a function inside another
-								  // declaration
+		currdecltypeenum::PARAMS 
+		&& currtypevectorbeingbuild.back().p->back().type.size() == 1)
+
 		addptrtotype(std::unordered_map<unsigned, std::string>{});
 
 	currtypevectorbeingbuild.back().p->back().type.push_back(
@@ -3396,7 +3428,7 @@ extern "C" pthread_t thread;
 
 std::ofstream record{getenv("RECORD") ? getenv("RECORD") : "", std::ios::binary};
 
-DLL_EXPORT void endmodule() {
+DLL_EXPORT void endmodule(bool bhandlerexit) {
 	if(getenv("THREADING")) {
 		mutexwork.lock();
 		endwork = true;
@@ -3409,7 +3441,7 @@ DLL_EXPORT void endmodule() {
 		std::string{nonconstructable.mainmodule.getName()} + ".bc", code },
 		outputll{ std::string{nonconstructable.mainmodule.getName()} + ".ll",
 				 code };
-	if(!record.is_open()) {
+	if(!record.is_open() && !bhandlerexit) {
 		nonconstructable.mainmodule.print(outputll, nullptr);
 		llvm::WriteBitcodeToFile(nonconstructable.mainmodule, output);
 	}
@@ -4296,6 +4328,32 @@ DLL_EXPORT void end_ass_to_enum_def() {
 }
 DLL_EXPORT void end_without_ass_to_enum_def() {
 	enums.back().back().memberconstants.back()->constant = llvm::ConstantInt::get(llvmctx, llvm::APInt(32, enums.back().back().maxcount++));
+}
+
+DLL_EXPORT void global_han(const char *fnname, std::unordered_map<unsigned, std::string> && hashes) {
+	if(plastnotfound && scopevar.size() > 1 && !immidiates.empty()) [[unlikely]] {
+		if(std::string{fnname} != "startfunctioncall") { //if not immidiately start a function call
+			::var var{};
+
+			var.identifier = plastnotfound->identifier;
+
+			var.type = {basicint};
+
+			var.firstintroduced = 1;
+
+			addvar(var);
+
+			scopevar.front().push_back(var);
+
+			obtainvalbyidentifier(var.identifier);
+
+			*plastnotfound = immidiates.back();
+
+			immidiates.pop_back();
+		}
+
+		plastnotfound = nullptr;
+	}
 }
 #if 0
 virtual void begin_unnamed_enum_def_94() {

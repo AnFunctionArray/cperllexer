@@ -284,7 +284,7 @@ secondmain(char* subject, size_t szsubject, char* pattern, size_t szpattern, cha
 #include <unistd.h>
 
 void handler1(int sig) {
-	endmodule();
+	endmodule(1);
 	exit(0);
 }
 
@@ -321,7 +321,7 @@ int main(int argc, char** argv, char** env)
 	//fflush(foutput);
 	//fflush(foutput2);
 
-	endmodule();
+	endmodule(0);
 	exit(EXIT_SUCCESS);
 	perl_destruct(my_perl);
 	perl_free(my_perl);
@@ -340,6 +340,10 @@ void docall(const char *name, size_t szname, void *phashmap) {
 	FARPROC pfunc = GetProcAddress(hCurrModule, cProcName);
 
 	if (!pfunc) return;
+
+	extern void global_han();
+
+	global_han(cProcName, phashmap);
 
 	//EXCEPTION_POINTERS* pexc;
 
@@ -365,6 +369,10 @@ void docall(const char *name, size_t szname, void *phashmap) {
 	void *pfunc = dlsym(dlhndl, cProcName);
 
 	if (!pfunc) return;
+
+	extern void global_han();
+
+	global_han(cProcName, phashmap);
 
 	((void (*)(void* phashmap))pfunc)(phashmap);
 }

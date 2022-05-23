@@ -1,9 +1,9 @@
-(?<inner>\s*+(((?<stringlit>("|')(?{push2 \@matches, {"begincharliteral" => $^N}})
-						(?(?=(((?<escape>(?<escaperaw>\\(?(?=x)x[0-9a-fA-F]++|(?(?=0\d)0[0-7]++
-						|['"?\\abfnrtv0]))))
+(?<inner>\s*+(((?<stringlit>(?(?=("|'))(?{push2 \@matches, {"begincharliteral" => $^N}})|(*F))
+						(?(?=(((??{$matches[-1]->{begincharliteral}})
+						((?<escape>(?<escaperaw>\\(?(?=x)x[0-9a-fA-F]++|(?(?=0\d)0[0-7]++|['"?\\abfnrtv0]))))
 						(?{call 'addescapesequencetostring'})|
 						(?<text>(?<textraw>((?!(?&escape)|(??{$matches[-1]->{begincharliteral}})).)++)(?{call 'addplaintexttostring'})))*+
-						(??{$matches[-1]->{begincharliteral}})))(??{qr{\Q$^N\E}})|(?{pop2 \@matches})(*F))
+						(??{$matches[-1]->{begincharliteral}})\s*+)*+))(??{qr{\Q$^N\E}})|(?{pop2 \@matches})(*F))
 						(?{call 'add_literal'})(?{pop2 \@matches}))
 						|(?(?!((?&floating)))(?<numberliteral>(?<numberliteralraw>(?(?=0x)0x(?<hex>[0-9a-fA-F]++)|(?(?=0b)0b(?<bin>[01]++)
 						|(?(?=0\d)0(?<oct>[0-7]++)|(?<dec>\d++))))(?<lng>[Uu](ll|LL|[lL])?+|(ll|LL|[lL])[Uu]?+)?+)

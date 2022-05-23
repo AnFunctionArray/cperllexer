@@ -23,7 +23,7 @@ use Data::Dumper;
 #my sub Dumper {"\n"}
 
 my sub print {CORE::print(@_) if( $ENV{'DEBUG'} )}
-my sub print2 {CORE::print(@_)}
+my sub print2 {CORE::print(@_) if( not $ENV{'SILENT'})}
 
 sub push2 {
     my @args = @_;
@@ -448,6 +448,7 @@ if(not $isnested)
     if($ENV{'REPLAY'}) {
         @typedefidentifiersvector = eval { require $ENV{'REPLAY'} . ".txt"}
     }
+    my $flind = 1;
     while(1) {
         $regexfinal = qr{(?(DEFINE)$mainregexdefs)^(*COMMIT)(?&$entryregex)*+$}sxx;
         eval {$subject =~ m{$regexfinal}sxx};
@@ -456,7 +457,10 @@ if(not $isnested)
             undef $facet;
             exit
         } else {
-            last
+            $filename = $ARGV[$flind++];
+            open my $fh, '<', $filename or die "error opening $filename: $!";
+
+            $subject = do { local $/; <$fh> };
         }
     }
 

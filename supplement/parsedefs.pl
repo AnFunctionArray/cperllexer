@@ -26,11 +26,13 @@ while($subjectoutter =~ s{^#.*$}{}gm){}
 print "fixing structs...\n";
 
 $subjectoutter =~ s{\b__attribute__\s*+\((\(([^()]|(?1))*+\))\)
-    |\b(__fastcall|__hidden|__cdecl|__extension__|__inline__|__inline|__userpurge|__usercall)\b
+    |\b(__fastcall|__hidden|__cdecl|__extension__|__inline__|__inline|__userpurge|__usercall
+    |__stdcall)\b
     |\b__asm__\b[^;]*+;
     |\s:\s*+[^\d\W]++\b\s*+(?=\{)
     |\b__spoils<[^<>]*+>
     |//.*?(?=\n)
+    |\b__asm\b\s*+(?<body>\{((?&body)|[^{}])*+\})
     |@<\w++>}{}sxxg; 
 
 print "and asm is fixed too\n";
@@ -114,7 +116,7 @@ $subjectoutter =~ s{
 }{typedef $2 $3 $3;\n\ntypedef $1 $3;}sxxgm;
 
 $subjectoutter =~ s{`vftable'}{_vftable}g;
-$subjectoutter =~ s{(?<=\d)i64}{ll}g;
+$subjectoutter =~ s{(?<=[A-Fa-f0-9])(u)?+i64}{$1ll}g;
 
 #print "macos specifics\n";
 
