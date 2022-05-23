@@ -3007,24 +3007,19 @@ DLL_EXPORT void endforloop() {
 }
 
 val decay(val lvalue) {
-	auto& currtype = lvalue.type;
+	auto &currtype = lvalue.type;
 	auto elemtype = lvalue.requestType();
 
 	if (currtype.front().uniontype == type::ARRAY) {
 		::type ptrtype{ ::type::POINTER };
 
 		currtype.erase(currtype.begin());
-		currtype.push_back(ptrtype);
-		std::rotate(currtype.rbegin(), ++currtype.rbegin(),
-			currtype.rend());
+		currtype.push_front(ptrtype);
 
 		assert(currtype.front().uniontype == ::type::POINTER);
 
 
-		lvalue.value = llvmbuilder.CreateGEP(
-						elemtype, lvalue.lvalue,
-						{dyn_cast<llvm::Value>(llvmbuilder.getInt32(0)),
-						 dyn_cast<llvm::Value>(llvmbuilder.getInt32(0))});
+		lvalue.value = lvalue.lvalue;
 	
 	}
 	return lvalue;
@@ -3177,7 +3172,7 @@ DLL_EXPORT void endfunctioncall() {
 	std::transform(
 		++argsiter, ::immidiates.end(), std::back_inserter(immidiates),
 		[&](basehndl::val elem) { return !(breached = breached || iterparams == verylongthingy.end()) 
-		? convertTo(decay(elem), iterparams++->type).value : elem.value; });
+		? convertTo(decay(elem), iterparams++->type).value : decay(elem).value; });
 
 	::immidiates.erase(--argsiter, ::immidiates.end());
 
