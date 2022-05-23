@@ -2079,6 +2079,10 @@ DLL_EXPORT void end_ternary() {
 	immidiates.push_back(tmptern);
 }
 
+DLL_EXPORT void comma() {
+	immidiates.pop_back();
+}
+
 DLL_EXPORT void constructstring() {
 	std::list<::type> stirngtype{ 1, ::type::ARRAY };
 

@@ -1,15 +1,17 @@
 #include "statement.regex", "inner.regex", "unary.regex", "binary.regex", "typename.regex"
 #entry ^cprogram
 
-(?<primexprraw>(?&assignorsomething)(,(?&assignorsomething))*+)
+(?<primexprraw>(?&assignorsomething)(,(?{call 'comma'})(?&assignorsomething))*+)
 
 (?<primexprnew>(?{push2 \@flags, {"newexpr"}})(?(?=((?&primexprraw)))(??{qr{\Q$^N\E}})
 	(?{pop2 \@flags})|(?{pop2 \@flags})(*F)))
 
+(?<primexprcall>(?{push2 \@flags, {"callexpr"}})(?(?=((?&primexprraw)))(??{qr{\Q$^N\E}})
+	(?{pop2 \@flags})|(?{pop2 \@flags})(*F)))
 
 (?<castexpr>(?(?=((?&typenamerev)))(??{qr{\Q$^N\E}})|(?<unaryexpr>(?(?=((?&inner)))(??{qr{\Q$^N\E}})
 						|(?<inparenths>\s*+[(](?&primexprnew)[)]
-						\s*+))(((\[(?&primexprnew)\](?{call 'subscript'})|[(](?{call 'startfunctioncall'})(?&primexprnew)?+[)]
+						\s*+))(((\[(?&primexprnew)\](?{call 'subscript'})|[(](?{call 'startfunctioncall'})(?&primexprcall)?+[)]
 						(?{call 'endfunctioncall'}))\s*+
 						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?&identifierminemember)
 						|(?<postfixarith>(?<postfixarithraw>[+][+]|--)\s*+)

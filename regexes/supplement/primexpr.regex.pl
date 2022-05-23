@@ -7,6 +7,17 @@ sub assignment {
     call 'binary'; 
     pop2 \@matches
 }
+
+sub comma {
+    shift;
+    my $flagsarg = shift;
+    my $res = shift;
+    #print "in begin_binary\n";
+    #print Dumper \@$flagsarg;
+    #print
+    
+    $$res = not existsflag "callexpr", {"newexpr"}, $flagsarg;
+}
 =begin
 sub begin_binary {
     shift;
