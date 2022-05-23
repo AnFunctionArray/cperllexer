@@ -2039,6 +2039,46 @@ DLL_EXPORT void addescapesequencetostring(std::unordered_map<unsigned, std::stri
 	}
 }
 
+DLL_EXPORT void begin_ternary() {
+	var tmp{{{basicint}}};
+
+	addvar(tmp);
+
+	tmp.identifier = "[[ternary]]";
+	
+	startifstatement(true);
+
+	immidiates.push_back(val{tmp, tmp.value});
+}
+
+DLL_EXPORT void continueifstatement();
+
+DLL_EXPORT void mid_ternary() {
+	auto tmptern = *----immidiates.end();
+
+	phndl->assigntwovalues();
+
+	continueifstatement();
+
+	immidiates.pop_back();
+	immidiates.push_back(tmptern);
+}
+
+DLL_EXPORT void endifstatement() ;
+
+DLL_EXPORT void end_ternary() {
+	auto tmptern = *----immidiates.end();
+
+	phndl->assigntwovalues();
+
+	endifstatement();
+
+	tmptern.value = llvmbuilder.CreateLoad(tmptern.requestType(), tmptern.lvalue);
+
+	immidiates.pop_back();
+	immidiates.push_back(tmptern);
+}
+
 DLL_EXPORT void constructstring() {
 	std::list<::type> stirngtype{ 1, ::type::ARRAY };
 

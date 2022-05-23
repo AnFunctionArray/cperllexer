@@ -18,6 +18,8 @@ use File::Basename;
 
 use Data::Dumper;
 
+@flags = ();
+
 #my sub Dumper {"\n"}
 
 my sub print {CORE::print(@_) if( $ENV{'DEBUG'} )}
@@ -60,6 +62,8 @@ sub pop2 {
 sub existsflag {
     my $flag = $_[0];
     my $exclusions = $_[1];
+    my @flags = @{$_[2] // \@flags};
+    print "exists flag\n";
     foreach my $val (reverse @flags) {
         return 1 if(exists $val->{$flag});
 
@@ -583,13 +587,18 @@ sub call {
     
     if($recording) {
         #eval {
-            print "$recording pushing to " . scalar @savedcallouts . "\n";
-            push @{$savedcallouts[-1]}, {$funcnm => {%$captures}};
+            print  "$recording " .$funcnm ." pushing to " . scalar @savedcallouts . "\n";
+            push @{$savedcallouts[-1]}, {
+            $funcnm => {
+                matches => {%$captures},
+                flags => [eval { @flags}]
+            }};
             print "success\n";
+            print Dumper \@{$savedcallouts[-1]};
         #};
         return
     }
-    return callcommon($funcnm, { %$captures }, $recording)
+    return callcommon($funcnm, { %$captures }, $recording, (@flags))
 }
 
 sub call2 {
@@ -601,6 +610,7 @@ sub callcommon {
     my $funcnm = shift;
     my $captures = shift;
     my $facet = shift;
+    my $flags = shift;
 
     #print "instancing " . $funcnm . "\n";
 
@@ -622,14 +632,16 @@ sub callcommon {
     #foreach my $i (@arr) {
     #    print $i . "\n";
     #}
-    my $res;
+    my $res=1;
     eval {
         if(not $facet) {
-            $res = $funcnm->($captures) 
+            $funcnm->($captures, $flags, \$res) 
         }
     };
 
-    callout($funcnm, $captures) if(defined &callout and not $facet);
+    print2 "not triggered\n" if(not $res);
+
+    callout($funcnm, $captures) if(defined &callout and not $facet and $res);
     return $res;
 }
 
@@ -1237,9 +1249,10 @@ sub replayrecord {
         foreach my $hash (@{defined $_[0] ? $_[0][-1] : $savedcallouts[-1]})  {
             
             my $funcnm = (keys %$hash)[0];
+            my $record = (values %$hash)[0];
             print2 "$funcnm replaying \n";
             print2 Dumper $hash;
-            callcommon((keys %$hash)[0], (values %$hash)[0], 0)
+            callcommon((keys %$hash)[0], $record->{matches}, 0, \@{$record->{flags}})
             
         }
     } else {

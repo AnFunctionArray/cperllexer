@@ -48,7 +48,7 @@
 	(?{call 'identifier_decl'})\s*+)
 
 (?<Tabstrrestalt>
-	(?(?{existsflag "outterparams", {"outter", "optoutter"}})
+	(?(?{existsflag "outterparams", {"outter" => undef, "optoutter"}})
 	
 	(?(?=(?{push2 \@savedcallouts, []; push2 \@matches, {}})
 		(?{++$recording; print "recording abstrmostoutterparams subs\n"})
@@ -59,14 +59,14 @@
 
 	(?&abstrsubs)*+
 
-	|(?(?{existsflag "outter", {"optoutter", "outterparams"}})(?&abstrmostoutter)(?&abstrsubs)*+
-	|(?(?{existsflag "optoutter", {"outter", "outterparams"}})((?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++))))
+	|(?(?{existsflag "outter", {"optoutter" => undef, "outterparams"}})(?&abstrmostoutter)(?&abstrsubs)*+
+	|(?(?{existsflag "optoutter", {"outter" => undef, "outterparams"}})((?&abstrmostoutteropt)(?&abstrsubs)*+|(?&abstrsubs)++))))
 	)
 
 (?<Tinside>
-	(?(?{existsflag "outterparams", {"outter", "optoutter"}})(?&abstrmostoutterparams)
-	|(?(?{existsflag "outter", {"optoutter", "outterparams"}})(?&abstrmostoutter)
-	|(?(?{existsflag "optoutter", {"outter", "outterparams"}}))(?&abstrmostoutteropt)?+))
+	(?(?{existsflag "outterparams", {"outter" => undef, "optoutter"}})(?&abstrmostoutterparams)
+	|(?(?{existsflag "outter", {"optoutter" => undef, "outterparams"}})(?&abstrmostoutter)
+	|(?(?{existsflag "optoutter", {"outter" => undef, "outterparams"}}))(?&abstrmostoutteropt)?+))
 	)
 
 (?<param>(?{push2 \@flags, {"outterparams"=>undef,"nonopt"=>undef}})(?&abstdeclorallqualifs))
@@ -75,7 +75,7 @@
 
 (?<openparen>[(](?<![)]))
 
-(?<abstrsubs>\s*+(\[(?{call 'beginconstantexpr'})(?&primexpr)\]
+(?<abstrsubs>\s*+(\[(?{call 'beginconstantexpr'})(?&primexprnew)\]
 						(?{call 'addsubtotype'})(?{call 'endconstantexpr'})
 						|(?(?=((?&openparen)\s*+((\.\.\.)(?{$matches[-1]{rest}=$^N})|\bvoid\b)?+\s*+(?&closingparen))
 						(?{call 'startfunctionparamdecl'})(?{call 'endfunctionparamdecl'}))
@@ -175,7 +175,7 @@
 
 
 (?<abstrbitfield>\s*+:\s*+(?{call 'beginconstantexpr'})(?&assignorsomething)(?{call 'endconstantexpr'}))
-(?<designator>\s*+(\[(?&primexpr)\]|\.\s*+(?&identifier))\s*+)
+(?<designator>\s*+(\[(?&primexprnew)\]|\.\s*+(?&identifier))\s*+)
 (?<initializer>(?&assignorsomething)|\s*+[{]((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*+[}]\s*+)
 (?<abstrinitialization>=(?&initializer))
 

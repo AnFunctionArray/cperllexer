@@ -1,27 +1,28 @@
+use Data::Dumper;
+
+my sub print {CORE::print(@_) if( $ENV{'DEBUG'} )}
 
 sub assignment {
     push2 \@matches, {"binoplast" => $+{assignop}};
     call 'binary'; 
-    call 'end_binary'; 
     pop2 \@matches
 }
-
-sub ternary0 {
-    call 'begin_branch'; 
+=begin
+sub begin_binary {
+    shift;
+    my $flagsarg = shift;
+    my $res = shift;
+    print "in begin_binary\n";
+    print Dumper \@$flagsarg;
+    print $$res = not existsflag "ternaryexpr", {"normalexpr"}, $flagsarg;
 }
 
-sub ternary1 {
-    push2 \@matches, {"binoplast" => "&&"};
-    call 'binary'; 
-    pop2 \@matches;
-    call 'begin_branch'; 
+sub end_binary {
+    shift;
+    my $flagsarg = shift;
+    my $res = shift;
+    print $$res = not existsflag "ternaryexpr", {"normalexpr"}, $flagsarg;
 }
-
-sub ternary2 {
-    push2 \@matches, {"binoplast" => "||"};
-    call 'binary'; 
-    pop2 \@matches
-}
-
+=cut
 
 1
