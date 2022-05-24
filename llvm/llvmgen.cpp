@@ -692,6 +692,8 @@ struct val : valbase {
 
 void addvar(var& lastvar, llvm::Constant* pInitializer = nullptr);
 
+static std::vector<llvm::BasicBlock*> pcurrblock;
+
 struct var : valbase {
 
 	llvm::Type* pllvmtype{};
@@ -719,12 +721,10 @@ struct var : valbase {
 	}
 	std::string linkage;
 
-	size_t firstintroduced;
+	llvm::BasicBlock *firstintroduced{pcurrblock.empty() ? nullptr : pcurrblock.back()};
 };
 
 static std::list<var>::iterator currfunc;
-
-static std::vector<llvm::BasicBlock*> pcurrblock;
 
 /*struct valueorconstant {
 		template<class T> requires std::same_as<T, llvm::Value*> ||
@@ -2144,9 +2144,9 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 	if(lastvar.type.front().uniontype == type::FUNCTION || !lastvar.linkage.empty())
 		goto extrnl_decl;
 
-	switch (lastvar.firstintroduced) {
+	if (!lastvar.firstintroduced) {
 	extrnl_decl:
-	case 1:
+	//case 1:
 		llvm::GlobalValue::LinkageTypes linkagetype;
 
 		switch (stringhash(lastvartypestoragespec)) {
@@ -2165,8 +2165,7 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 			lastvar.value = new llvm::GlobalVariable(
 				nonconstructable.mainmodule, lastvar.requestType(), false,
 				linkagetype,
-				lastvar.firstintroduced == 1 ? 
-				pInitializer ? pInitializer : lastvar.linkage.empty() ? llvm::Constant::getNullValue(lastvar.requestType()) : nullptr
+				pInitializer ? pInitializer : lastvar.linkage.empty() ? llvm::Constant::getNullValue(lastvar.requestType())
 				: nullptr,
 				lastvar.identifier);
 			// scopevar.front ().push_back (lastvar);
@@ -2179,12 +2178,14 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 			// scopevar.front ().push_back (lastvar);
 			break;
 		}
-		break;
-	default:
+	}	//break;
+	else {
+	//default:
 		printtype(lastvar.requestType(), lastvar.identifier);
+		llvmbuilder.SetInsertPoint(lastvar.firstintroduced);
 		lastvar.value= llvmbuilder.CreateAlloca(lastvar.requestType(), nullptr,
 			lastvar.identifier);
-		break;
+		llvmbuilder.SetInsertPoint(pcurrblock.back());
 	}
 }
 
@@ -2910,8 +2911,6 @@ DLL_EXPORT void beginscope() {
 		for (auto& param : currfunc->type.front().spec.func.parametertypes_list.front()) {
 			auto origparamvalue = param.value;
 
-			param.firstintroduced = 2;
-
 			printvaltype(val{valbase{param}});
 
 			addvar(param);
@@ -3170,7 +3169,7 @@ DLL_EXPORT void endfunctioncall() {
 	if(calleevalntype.type.empty()) {
 		var newvar{calleevalntype};
 		calleevalntype.type = newvar.type = {fntype, basicint};
-		newvar.firstintroduced = 1;
+		newvar.firstintroduced = nullptr;
 		addvar(newvar);
 		scopevar.begin()->push_back(newvar);
 		callee = newvar.value;
@@ -3289,7 +3288,7 @@ DLL_EXPORT void endqualifs(std::unordered_map<unsigned, std::string>&& hashes) {
 	if (!nontypedeflinkage.empty()) lastvar.linkage = nontypedeflinkage;
 
 	if (std::all_of(refbasic.begin(), refbasic.end(), [](const std::string& elem) {return elem.empty(); }))
-		if (lastvar.firstintroduced == 1) refbasic[1] = "int";
+		if (lastvar.firstintroduced == nullptr) refbasic[1] = "int";
 		else throw std::runtime_error{ "decl with no basic info"};
 
 	if (ranges::contains(std::array{ "struct", "union", "enum" }, refbasic[0]) && refbasic[3].empty())
@@ -4040,8 +4039,6 @@ DLL_EXPORT void identifier_decl(std::unordered_map<unsigned, std::string> && has
 
 	var.linkage = hashes["typedefkey"_h];
 
-	var.firstintroduced = scopevar.size();
-
 	/*basic.spec.basicdeclspec.basic[3] = hashes["typedefnmmatched"_h];
 
 	
@@ -4351,7 +4348,7 @@ DLL_EXPORT void global_han(const char *fnname, std::unordered_map<unsigned, std:
 
 			var.type = {basicint};
 
-			var.firstintroduced = 1;
+			var.firstintroduced = nullptr;
 
 			addvar(var);
 
