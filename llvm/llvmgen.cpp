@@ -2182,7 +2182,7 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 	else {
 	//default:
 		printtype(lastvar.requestType(), lastvar.identifier);
-		llvmbuilder.SetInsertPoint(lastvar.firstintroduced);
+		llvmbuilder.SetInsertPoint(lastvar.firstintroduced, lastvar.firstintroduced->begin());
 		lastvar.value= llvmbuilder.CreateAlloca(lastvar.requestType(), nullptr,
 			lastvar.identifier);
 		llvmbuilder.SetInsertPoint(pcurrblock.back());
@@ -2912,6 +2912,8 @@ DLL_EXPORT void beginscope() {
 			auto origparamvalue = param.value;
 
 			printvaltype(val{valbase{param}});
+
+			param.firstintroduced = pcurrblock.back();
 
 			addvar(param);
 
