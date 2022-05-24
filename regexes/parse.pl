@@ -458,7 +458,7 @@ if(not $isnested)
             exit
         } else {
             $filename = $ARGV[$flind++];
-            open my $fh, '<', $filename or die "error opening $filename: $!";
+            open my $fh, '<', $filename or last;
 
             $subject = do { local $/; <$fh> };
         }

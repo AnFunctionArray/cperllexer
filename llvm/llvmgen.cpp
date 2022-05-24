@@ -1343,6 +1343,10 @@ struct basehndl /* : bindings_compiling*/ {
 	virtual void shifttwovalues(bool bright) {
 		std::array ops = getops(false);
 
+		ops[0] = integralpromotions(ops[0]);
+
+		ops[1].value = llvmbuilder.CreateIntCast(ops[1].value, ops[0].value->getType(), false);
+
 		if (!bright)
 			ops[0].value = llvmbuilder.CreateShl(ops[0].value, ops[1].value);
 		else if (ops[0].type.back().spec.basicdeclspec.basic[0] != "unsigned")
@@ -2162,7 +2166,7 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 				nonconstructable.mainmodule, lastvar.requestType(), false,
 				linkagetype,
 				lastvar.firstintroduced == 1 ? 
-				pInitializer ? pInitializer : llvm::Constant::getNullValue(lastvar.requestType())
+				pInitializer ? pInitializer : lastvar.linkage.empty() ? llvm::Constant::getNullValue(lastvar.requestType()) : nullptr
 				: nullptr,
 				lastvar.identifier);
 			// scopevar.front ().push_back (lastvar);
@@ -2926,6 +2930,8 @@ DLL_EXPORT void beginscope() {
 
 void fixuplabels();
 
+DLL_EXPORT void endreturn(std::unordered_map<unsigned, std::string>&& hashes);
+
 DLL_EXPORT void endscope() {
 	// nonconstructable.mainmodule.
 	// endexpression();
@@ -2933,14 +2939,17 @@ DLL_EXPORT void endscope() {
 	scopevar.pop_back();
 	if (scopevar.size() > 1)
 		splitbb("", 0);
-	else
-		pcurrblock.pop_back();
+		
 	currtypevectorbeingbuild.pop_back();
 	structorunionmembers.pop_back();
 	enums.pop_back();
 
-	if (scopevar.size() == 1) //end of a function
+	if (scopevar.size() == 1) { //end of a function
+		if(!bareweinabrupt())
+			endreturn({});
+		pcurrblock.pop_back();
 		fixuplabels();
+	}
 }
 
 DLL_EXPORT void endexpression() { phndl->immidiates.clear(); }
@@ -3233,7 +3242,10 @@ DLL_EXPORT void endreturn(std::unordered_map<unsigned, std::string>&& hashes) {
 		auto op = convertTo(immidiates.back(), currfunctype);
 		llvmbuilder.CreateRet(op.value);
 	}
-	else llvmbuilder.CreateRetVoid();
+	else {
+		insertinttoimm("0", sizeof "1" - 1, "", 0, 3);
+		endreturn({{"returnval"_h, "0"}});
+	}
 }
 
 DLL_EXPORT void endfunctionparamdecl(std::unordered_map<unsigned, std::string>&& hashes) {
