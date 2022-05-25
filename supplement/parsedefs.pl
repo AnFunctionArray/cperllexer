@@ -26,12 +26,13 @@ while($subjectoutter =~ s{^#.*$}{}gm){}
 print "fixing structs...\n";
 
 $subjectoutter =~ s{\b__attribute__\s*+\((\(([^()]|(?1))*+\))\)
+    |\b__declspec(\(([^()]|(?1))*+\))
     |\b(__fastcall|__hidden|__cdecl|__extension__|__inline__|__inline|__userpurge|__usercall
-    |__stdcall)\b
+    |__stdcall|__unaligned|__thiscall)\b
     |\b__asm__\b[^;]*+;
     |\s:\s*+[^\d\W]++\b\s*+(?=\{)
     |\b__spoils<[^<>]*+>
-    |//.*?(?=\n)
+    |//[^\n]*(?=\n)
     |\b__asm\b\s*+(?<body>\{((?&body)|[^{}])*+\})
     |@<\w++>}{}sxxg; 
 
@@ -69,6 +70,7 @@ $optoid = {
     "|=" => "compoundor",
     "<<" => "shiftleft",
     ">>" => "shiftright",
+    "=/" => "sadfaceass",
     ">>=" => "compoundshiftright",
     "<<=" => "compoundshiftleft",
     "==" => "equal",
@@ -92,7 +94,7 @@ $optoid = {
 
 my $basicsingleops = qr{\+|-|\*|/|%|\^|&|\||~|!|=|<|>|,};
 
-my $basicopsdual = qr{\+=|-=|\*=|/=|%=|^=|&=|\|=|<<|>>|>>=|<<=|==|!=|<=|>=|&&|\|\||\+\+|--|->\*|->|\(\)|\[\]};
+my $basicopsdual = qr{=/|\+=|-=|\*=|/=|%=|^=|&=|\|=|<<|>>|>>=|<<=|==|!=|<=|>=|&&|\|\||\+\+|--|->\*|->|\(\)|\[\]};
 
 $subjectoutter =~ s{
    \boperator\b((?(?=$basicopsdual)$basicopsdual|$basicsingleops)|\snew(\[\])?+|\sdelete(\[\])?+)
@@ -101,9 +103,9 @@ $subjectoutter =~ s{
 print "fixing pesky template arguments\n";
 
 
-$subjectoutter =~ s{
+while($subjectoutter =~ s{
    (?<=\w)(<([^<>]*+|(?R))>)
-}{($1 =~ s{(?![<>])($basicops)}{$optoid->{$1}}rg) =~ s{\W}{_}rg}sxxge;
+}{($1 =~ s{(?![<>])($basicops)}{$optoid->{$1}}rg) =~ s{\W}{_}rg}sxxge){}
 
 print "misc\n";
 
@@ -115,7 +117,7 @@ $subjectoutter =~ s{
     ^((struct|union|enum)\b\s*+(\w++)\s*+(?<body>\{((?&body)|[^{}])*+\})?+);
 }{typedef $2 $3 $3;\n\ntypedef $1 $3;}sxxgm;
 
-$subjectoutter =~ s{`vftable'}{_vftable}g;
+$subjectoutter =~ s{(`[^']*?'(?<body>\{((?&body)|[^{}])*+\})?+)}{$1=~s{\W}{_}gr}ge;
 $subjectoutter =~ s{(?<=[A-Fa-f0-9])(u)?+i64}{$1ll}g;
 
 #print "macos specifics\n";

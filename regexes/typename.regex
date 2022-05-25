@@ -91,7 +91,11 @@
 
 (?<abstdecl>
 		(?(?=(?<abstrptrrev>(?<abstrptr>\s*+[*]\s*+
-						(?<qualifptr>(?&typeorqualif))*+)
+						(?<qualifptr>(?{push2 \@savedcallouts, []; ++$recording;})
+							(?&typeorqualif)*+
+							(?{pop2 \@savedcallouts; --$recording;})
+						)
+						)
 						(?(?!(?<foundabstr>(?&abstrptrrev))(?{call 'addptrtotype'}))
 						(?<abstrrest>(?&Tinside)(?&abstrsubs)*+
 						(?{call 'addptrtotype'}))|

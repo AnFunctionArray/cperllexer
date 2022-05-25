@@ -2848,6 +2848,7 @@ llvm::Type* buildllvmtypefull(std::list<type> &refdecltypevector) {
 			}
 				break;
 			case "enum"_h:
+				*iter = basicint;
 				goto label_int;//throw std::exception{ "enum should have int type" };
 			case "union"_h:
 				break;
