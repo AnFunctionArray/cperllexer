@@ -1,18 +1,18 @@
 
 
-(?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\s*+(?{call 'addcontinue'});|break\s*+(?{call 'addbreak'});|return\b(?<returnval>(?&primexprnew))?+;(?{call 'endreturn'}))\s*+)
+(?<jumpstatement>\s*+(goto\b(?&identifierminegoto);|continue\b\s*+(?{call 'addcontinue'});|break\b\s*+(?{call 'addbreak'});|return\b(?<returnval>(?&primexprnew))?+;(?{call 'endreturn'}))\s*+)
 (?<identifierminegoto>\s*+(?<gtid>(?&identifierraw_qualified))(?{call 'gotolabel'})\s*+)
-(?<iterationstatement>\s*+\b(while\s*+[(](?{call 'startforloopcond'})(?&primexprnew)[)](?{call 'endforloopcond'})(?{call 'addforloopiter'})(?&statement)(?{call 'endforloop'})|do\b(?{call 'startdowhileloop'})(?&statement)\bwhile\s*+[(](?&primexprnew)[)](?{call 'enddowhileloop'})\s*+;
+(?<iterationstatement>\s*+\b(while\b\s*+[(](?{call 'startforloopcond'})(?&primexprnew)[)](?{call 'endforloopcond'})(?{call 'addforloopiter'})(?&statement)(?{call 'endforloop'})|do\b(?{call 'startdowhileloop'})(?&statement)\bwhile\b\s*+[(](?&primexprnew)[)](?{call 'enddowhileloop'})\s*+;
 	|for\s*+[(]((?&decl)|(?&exprstatement))(?{call 'startforloopcond'})(?&primexprnew)?;(?{call 'endforloopcond'})\s*+(?&primexprnew)?+(?{call 'addforloopiter'})[)](?&statement)(?{call 'endforloop'}))\s*+)
 (?<exprstatement>\s*+(?&primexprnew)?;(?{call 'endexpression'})\s*+)
 (?<compoundstatement>\s*+[{](?{call 'beginscope'})
 ((?&decl)|(?&statement))*+\s*+[}](?{call 'endscope'})\s*+)
-(?<selectionstatement>\s*+(if\s*+[(](?&primexprnew)[)](?{call 'startifstatement'})(?&statement)(else\b(?{call 'continueifstatement'})(?&statement))?+(?{call 'endifstatement'})|switch\s*+[(](?&primexprnew)[)](?{call 'startswitch'})(?&statement)(?{call 'endswitch'}))\s*+)
+(?<selectionstatement>\s*+(if\b\s*+[(](?&primexprnew)[)](?{call 'startifstatement'})(?&statement)(else\b(?{call 'continueifstatement'})(?&statement))?+(?{call 'endifstatement'})|switch\b\s*+[(](?&primexprnew)[)](?{call 'startswitch'})(?&statement)(?{call 'endswitch'}))\s*+)
 
 (?<statement>(?(?=(?{push2 \@savedcallouts, []})
 		(?{++$recording; print "recording statement labels\n"})(?<labels>(?&label)++))(?{$recording--})(?{replayrecord})(?{pop2 \@savedcallouts})\g{labels}(?&statementinner)
 		|(?{$recording--})(?{pop2 \@savedcallouts})(?&statementinner)))
 (?<statementinner>(?&exprstatement)|(?&compoundstatement)|(?&selectionstatement)|(?&iterationstatement)|(?&jumpstatement))
 
-(?<label>(?&identifierminelabel)|\s*+\b(case\b(?{call 'beginconstantexpr'})(?&primexprnew):(?{call 'addCase'})(?{call 'endconstantexpr'})|default\s*+:(?{call 'addDefaultCase'}))\s*+)
+(?<label>(?&identifierminelabel)|\s*+\b(case\b(?{call 'beginconstantexpr'})(?&primexprnew):(?{call 'addCase'})(?{call 'endconstantexpr'})|default\b\s*+:(?{call 'addDefaultCase'}))\s*+)
 (?<identifierminelabel>\s*+(?<lbl>(?&identifierraw_qualified))\s*+:(?{call 'splitbb'})\s*+)

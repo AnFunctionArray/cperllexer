@@ -1,6 +1,7 @@
 use Data::Dumper;
 
 my sub print {CORE::print(@_) if( $ENV{'DEBUG'} )}
+my sub print2 {CORE::print(@_) if( not $ENV{'SILENT'})}
 
 sub assignment {
     push2 \@matches, {"binoplast" => $+{assignop}};

@@ -44,6 +44,7 @@
 #include <range/v3/range/traits.hpp>
 #include <range/v3/view.hpp>
 #include <range/v3/view/drop.hpp>
+#include <range/v3/view/iota.hpp>
 #include <range/v3/view/istream.hpp>
 #include <sstream>
 #include <stdexcept>
@@ -84,6 +85,7 @@ DLL_EXPORT void constructstring();
 llvm::BranchInst* splitbb(const char* identifier, size_t szident);
 
 void fixupstructype(std::list<struct var>* var); 
+const llvm::fltSemantics &getfltsemfromtype(struct type flttype);
 
 //static struct basehndl* phndl;
 
@@ -490,9 +492,12 @@ struct bascitypespec : basic_type_origin {
 
 	bool operator== (const bascitypespec& comparer) {
 		std::string ignoredmember = comparer.basic[2];
+		auto ignoredqualifs = qualifiers;
 		std::swap(ignoredmember, basic[2]);
+		std::swap(ignoredqualifs, qualifiers);
 		bool bareequal = basic_type_origin::operator==(comparer);
 		basic[2] = ignoredmember;
+		qualifiers = ignoredqualifs;
 		return bareequal;
 	}
 
@@ -2276,8 +2281,25 @@ bool bIsBasicFloat(const type& type) {
 		&& ranges::contains(std::array{ "float", "double" }, type.spec.basicdeclspec.basic[1]);
 }
 
+bool comparetwotypes(std::list<::type> one, std::list<::type> two) {
+	auto iterone = one.begin(), itertwo = two.begin();
+	switch(iterone->uniontype)
+	if(0) case type::ARRAY:
+		case type::POINTER:
+		case type::FUNCTION:
+		return itertwo->uniontype == iterone->uniontype;
+	else if(0) case type::BASIC:
+		return itertwo->uniontype == iterone->uniontype && itertwo->spec.basicdeclspec == iterone->spec.basicdeclspec;
+	return false;
+}
+
 val convertTo(val target, std::list<::type> to) {
 	extern val decay(val lvalue) ;
+	if(comparetwotypes(target.type, to)) {
+		target.type = to;
+		return target;
+	}
+		
 	target = decay(target);
 	printvaltype(target);
 	printtype(buildllvmtypefull(to), "to");
@@ -2804,14 +2826,10 @@ llvm::Type* buildllvmtypefull(std::list<type> &refdecltypevector) {
 				dyn_cast<llvm::Type> (llvm::Type::getInt8Ty(llvmctx));
 			break;
 			break;
+		case "double"_h:
 		case "float"_h:
 			pcurrtype =
-				dyn_cast<llvm::Type> (llvm::Type::getFloatTy(llvmctx));
-			break;
-			break;
-		case "double"_h:
-			pcurrtype =
-				dyn_cast<llvm::Type> (llvm::Type::getDoubleTy(llvmctx));
+				dyn_cast<llvm::Type> (llvm::Type::getFloatingPointTy(llvmctx, getfltsemfromtype(type)));
 			break;
 			break;
 		default:
@@ -3155,6 +3173,12 @@ DLL_EXPORT void addDefaultCase() {
 (value, type->getPointerTo ())
 }*/
 
+llvm::Value *floattodoubleifneeded(llvm::Value* possiblefloat) {
+	if(possiblefloat->getType()->isFloatTy())
+		return llvmbuilder.CreateFPCast(possiblefloat, llvm::Type::getFloatingPointTy(llvmctx, llvm::APFloatBase::IEEEdouble()));
+	return possiblefloat;
+}
+
 DLL_EXPORT void endfunctioncall() {
 	auto lastblock = pcurrblock.back();
 
@@ -3213,7 +3237,7 @@ DLL_EXPORT void endfunctioncall() {
 	std::transform(
 		++argsiter, ::immidiates.end(), std::back_inserter(immidiates),
 		[&](basehndl::val elem) { return !(breached = breached || iterparams == verylongthingy.end()) 
-		? convertTo(elem, iterparams++->type).value : decay(elem).value; });
+		? convertTo(elem, iterparams++->type).value : floattodoubleifneeded(decay(elem).value); });
 
 	::immidiates.erase(--argsiter, ::immidiates.end());
 
@@ -4217,6 +4241,13 @@ virtual void create_case_65() {
 virtual void switch_stmt_end_66() { endswitch(); }
 virtual void create_default_case_67() { addDefaultCase(); }
 #endif
+const llvm::fltSemantics &getfltsemfromtype(::type flttype) {
+	return flttype.spec.basicdeclspec.basic[1] == "double" ?
+		flttype.spec.basicdeclspec.longspecsn == 1 ? llvm::APFloatBase::IEEEquad()
+	: llvm::APFloatBase::IEEEdouble() : 
+	(assert(flttype.spec.basicdeclspec.basic[1] == "float"),
+	llvm::APFloatBase::IEEEsingle());
+}
 DLL_EXPORT void collect_float_literal(std::unordered_map<unsigned, std::string> &hashes) {
 	std::string wholepart, fractionpart, exponent, exponent_sign;
 	std::string ntoclear;
@@ -4342,6 +4373,7 @@ DLL_EXPORT void end_without_ass_to_enum_def() {
 }
 
 DLL_EXPORT void global_han(const char *fnname, std::unordered_map<unsigned, std::string> && hashes) {
+#ifdef ALLOW_UNDEFINED_REFS
 	if(plastnotfound && scopevar.size() > 1 && !immidiates.empty()) [[unlikely]] {
 		if(std::string{fnname} != "startfunctioncall") { //if not immidiately start a function call
 			::var var{};
@@ -4365,6 +4397,7 @@ DLL_EXPORT void global_han(const char *fnname, std::unordered_map<unsigned, std:
 
 		plastnotfound = nullptr;
 	}
+#endif
 }
 #if 0
 virtual void begin_unnamed_enum_def_94() {
