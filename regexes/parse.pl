@@ -26,7 +26,6 @@ my sub Dumper  {use Data::Dumper; Dumper(@_) if( not $ENV{'PROF'} and not $ENV{'
 my sub strftime  {use POSIX; strftime(@_) if( not $ENV{'PROF'} and not $ENV{'SILENT'} )}
 
 sub push2 {
-    print "in push2\n";
     my @args = @_;
     if ($ENV{'DEBUG'}) {
         if(@{$args[0]} ~~ @flags) {
@@ -36,11 +35,9 @@ sub push2 {
         }
     }
     push @{$args[0]}, $args[1];
-    print "out push2\n";
 }
 
 sub pop2 {
-    print "in pop2\n";
     my @args = @_;
     if ($ENV{'DEBUG'}) {
         if(@{$args[0]} ~~ @flags) {
@@ -64,7 +61,6 @@ sub pop2 {
         }
     }
     pop @{$_[0]};
-    print "out pop2\n";
 }
 
 sub existsflag {
@@ -580,7 +576,6 @@ sub replay {
 }
 
 sub call {
-    print "in call\n";
     #print Dumper(\%+);
     my $funcnm = shift;
     my $captures = {%+};
@@ -616,7 +611,6 @@ sub call {
             print "success\n";
             print Dumper \@{$savedcallouts[-1]};
         #};
-        print "end call\n";
         return
     }
     return callcommon($funcnm, {%$captures}, $recording, (@flags))
@@ -663,7 +657,6 @@ sub callcommon {
     print2 "not triggered\n" if(not $res);
 
     callout($funcnm, $captures) if(defined &callout and not $facet and $res);
-    print "end call\n";
     return $res;
 }
 
@@ -1267,7 +1260,6 @@ startmetaregex($entryregex, \@regexbindings, $subject) if(defined &startmetarege
 =cut
 
 sub replayrecord {
-    print "in replayrecord\n";
     if(not $recording) {
         foreach my $hash (@{defined $_[0] ? $_[0][-1] : $savedcallouts[-1]})  {
             
@@ -1287,7 +1279,6 @@ sub replayrecord {
             @{$savedcallouts[-2]} = (@{$savedcallouts[-2]}, @{$savedcallouts[-1]})
         }
     }
-    print "out of replayrecord\n";
 }
 
 1
