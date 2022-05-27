@@ -13,9 +13,10 @@
 						(?<ident>(?&identifierraw))(?{call 'obtainvalbyidentifier'})\s*+)))\s*+)
 
 
-(?<floating>(?<fractional>(?<wholeopt>\d*+)\.(?<fraction>\d++)|(?<whole>\d++)\.)(?<exponent>[eE](?<signexp>[+-])?+\d++)?+
+(?<floating>((?<fractional>(?<wholeopt>\d*+)\.(?<fraction>\d++)|(?<whole>\d++)\.)(?<exponent>[eE](?<signexp>[+-])?+\d++)?+
+	|(?<wholenodot>\d++)(?<exponent>[eE](?<signexp>[+-])?+(?<exp>\d++))|\s*+(?<nan>\bNAN\b)\s*+)
 	(?<suffixflt>[flFL])?+(?{call 'collect_float_literal'})
-	|(?<wholenodot>\d++)(?<exponent>[eE](?<signexp>[+-])?+(?<exp>\d++))(?<suffixflt>[flFL])?+(?{call 'collect_float_literal'}))
+)
 
 (?<identifierpure>\b(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9@])*+)\b)
 

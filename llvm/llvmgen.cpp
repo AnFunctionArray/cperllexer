@@ -4294,8 +4294,7 @@ rest:
 		finalnumber += "E" + exponent_sign + exponent;
 
 	auto status = floatlit.convertFromString(finalnumber, llvm::APFloatBase::rmNearestTiesToEven);
-
-	immidiates.push_back({ currtype, llvm::ConstantFP::get(pllvmtype, floatlit) });
+	immidiates.push_back({ currtype, llvm::ConstantFP::get(pllvmtype, hashes["nan"_h].empty() ? floatlit : floatlit.getNaN(floatsem)) });
 }
 #if 0
 virtual void finish_float_literal_69() {
