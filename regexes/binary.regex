@@ -19,13 +19,9 @@
             |(?<shiftopraw><<|>>
             |(?<addopraw>[\+\-]
             |(?<mulopraw>[\*\/\%]))))))))))
-            ))))))))))(??{use re 'eval'; 
-                $orlogiorsomethingcastexprreg //= qr{(?(DEFINE)$mainregexdefs)
-                (?&castexpr)
-            }sxx})
-    (?&binopplusrest)*(?{call 'binary'})))
+            ))))))))))
+                (??{$castexprinsidebinary})
+    (?&binopplusrest)*+(?{call 'binary'})))
 
 
-(?<orlogiorsomething>(??{use re 'eval'; $orlogiorsomethingreg //= qr{(?(DEFINE)$mainregexdefs)
-    (?&binopplusrest)(?&binopplusrest)*+
-}sxx}))
+(?<orlogiorsomething>(?&binopplusrest)++)

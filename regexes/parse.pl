@@ -16,47 +16,55 @@ use experimental 'switch';
 
 use File::Basename;
 
-use Data::Dumper;
-
 @flags = ();
 
 #my sub Dumper {"\n"}
 
-my sub print {CORE::print(@_) if( $ENV{'DEBUG'} )}
+my sub print {CORE::print(@_) if( $ENV{'DEBUG'} or $ENV{'PROF'} )}
 my sub print2 {CORE::print(@_) if( not $ENV{'SILENT'})}
+my sub Dumper  {use Data::Dumper; Dumper(@_) if( not $ENV{'PROF'} and not $ENV{'SILENT'} )}
+my sub strftime  {use POSIX; strftime(@_) if( not $ENV{'PROF'} and not $ENV{'SILENT'} )}
 
 sub push2 {
+    print "in push2\n";
     my @args = @_;
-    if(@{$args[0]} ~~ @flags) {
-        print "pushing to flags\n";
-        print Dumper $args[1];
-        print Dumper \@flags;
+    if ($ENV{'DEBUG'}) {
+        if(@{$args[0]} ~~ @flags) {
+            print "pushing to flags\n";
+            print Dumper $args[1];
+            print Dumper \@flags;
+        }
     }
-    push @{$args[0]}, $args[1]
+    push @{$args[0]}, $args[1];
+    print "out push2\n";
 }
 
 sub pop2 {
+    print "in pop2\n";
     my @args = @_;
-    if(@{$args[0]} ~~ @flags) {
-        print "popping from flags\n";
-        print Dumper $flags[-1];
-        print Dumper \@flags;
-        print Dumper \$args[1];
+    if ($ENV{'DEBUG'}) {
+        if(@{$args[0]} ~~ @flags) {
+            print "popping from flags\n";
+            print Dumper $flags[-1];
+            print Dumper \@flags;
+            print Dumper \$args[1];
 
-        if(defined $args[1]) {
-            scalar keys %{$flags[-1]} eq scalar keys %{$args[1]} or exit;
+            if(defined $args[1]) {
+                scalar keys %{$flags[-1]} eq scalar keys %{$args[1]} or exit;
 
-            #print "size equal\n";
+                #print "size equal\n";
 
-            foreach my $key (keys %{$flags[-1]}) {
-                exit unless (exists $args[1]->{$key});
+                foreach my $key (keys %{$flags[-1]}) {
+                    exit unless (exists $args[1]->{$key});
+                }
             }
+        } else {
+            print "popping\n";
+            print Dumper \$args[0]->[-1];
         }
-    } else {
-        print "popping\n";
-        print Dumper \$args[0]->[-1];
     }
-    pop @{$_[0]}
+    pop @{$_[0]};
+    print "out pop2\n";
 }
 
 sub existsflag {
@@ -441,6 +449,8 @@ sub obtainvalbyidentifier {
 
 if(not $isnested)
 {
+    require "binary.regex.pl";
+
     #my $i = 2;
     use if $ENV{'DEBUG'}, re => qw(Debug EXECUTE); 
     #while(1) {
@@ -450,7 +460,7 @@ if(not $isnested)
     }
     my $flind = 1;
     while(1) {
-        $regexfinal = qr{(?(DEFINE)$mainregexdefs)^(*COMMIT)(?&$entryregex)*+$}sxx;
+        $regexfinal = qr{(?(DEFINE)$mainregexdefs)^(*COMMIT)(?&$entryregex)*+$}sxxo;
         eval {$subject =~ m{$regexfinal}sxx};
         if($@) {
             warn $@;
@@ -570,18 +580,24 @@ sub replay {
 }
 
 sub call {
+    print "in call\n";
     #print Dumper(\%+);
     my $funcnm = shift;
     my $captures = {%+};
 
     @$captures{keys %{$matches[-1]}} = values %{$matches[-1]} if (scalar @matches);
 
-    my $subslice = substr $subject, pos(), 10;
+    my $subslice;
 
-    $subslice =~ s{\R}{ }g;
+    if( not $ENV{'PROF'} and not $ENV{'SILENT'} ) {
 
-    use Data::Dumper;
-    use POSIX;
+        $subslice = substr $subject, pos(), 10;
+
+        $subslice =~ s{\R}{ }g;
+    }
+
+    #use Data::Dumper;
+    #use POSIX;
 
     my $printer = $recording ? sub {1} : \&print2;
 
@@ -600,9 +616,10 @@ sub call {
             print "success\n";
             print Dumper \@{$savedcallouts[-1]};
         #};
+        print "end call\n";
         return
     }
-    return callcommon($funcnm, { %$captures }, $recording, (@flags))
+    return callcommon($funcnm, {%$captures}, $recording, (@flags))
 }
 
 sub call2 {
@@ -646,6 +663,7 @@ sub callcommon {
     print2 "not triggered\n" if(not $res);
 
     callout($funcnm, $captures) if(defined &callout and not $facet and $res);
+    print "end call\n";
     return $res;
 }
 
@@ -1249,6 +1267,7 @@ startmetaregex($entryregex, \@regexbindings, $subject) if(defined &startmetarege
 =cut
 
 sub replayrecord {
+    print "in replayrecord\n";
     if(not $recording) {
         foreach my $hash (@{defined $_[0] ? $_[0][-1] : $savedcallouts[-1]})  {
             
@@ -1268,6 +1287,7 @@ sub replayrecord {
             @{$savedcallouts[-2]} = (@{$savedcallouts[-2]}, @{$savedcallouts[-1]})
         }
     }
+    print "out of replayrecord\n";
 }
 
 1
