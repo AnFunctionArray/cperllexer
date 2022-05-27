@@ -104,7 +104,7 @@ print "fixing pesky template arguments\n";
 
 
 while($subjectoutter =~ s{
-   (?<=\w)(<([^<>]*+|(?R))>)
+   (?<!['"][^'"\n]{0,20})(?<=\w)(<([^<>]*+|(?R))>)
 }{($1 =~ s{(?![<>])($basicops)}{$optoid->{$1}}rg) =~ s{\W}{_}rg}sxxge){}
 
 print "misc\n";
@@ -117,7 +117,7 @@ $subjectoutter =~ s{
     ^((struct|union|enum)\b\s*+(\w++)\s*+(?<body>\{((?&body)|[^{}])*+\})?+);
 }{typedef $2 $3 $3;\n\ntypedef $1 $3;}sxxgm;
 
-$subjectoutter =~ s{(`[^']*?'(?<body>\{((?&body)|[^{}])*+\})?+)}{$1=~s{\W}{_}gr}ge;
+while($subjectoutter =~ s{((?<!['"][^'"\n]{0,20})`[^']*?'(?<body>\{((?&body)|[^{}])*+\})?+)}{$1=~s{\W}{_}gr}ge) {}
 $subjectoutter =~ s{(?<=[A-Fa-f0-9])(u)?+i64}{$1ll}g;
 
 #print "macos specifics\n";

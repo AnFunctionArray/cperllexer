@@ -1,4 +1,4 @@
-#$isnested = 1;
+$isnested = 1;
 
 use re 'eval';
 
@@ -17,9 +17,14 @@ close $fh;
 
 #use re => qw(Debug EXECUTE);
 
+$filename = $ARGV[1];
+
+open my $fhdecls, '>', $filename or die "error opening $filename: $!";
+
 $declsout;
 
-while($subjectoutter =~ m{\b(?<fnname>\w++)\([^{}\n]*+\n(?<in>\{([^{}]*+|(?&in))*+\})}gs){
+while($subjectoutter =~ m{\n((?-s)[^{}]*\b(?<fnname>\w++)\([^{}]*)\n(?<in>\{(?s)([^{}]|(?&in))*+\})}g){
+    print $fhdecls $1 . ";\n";
     $filename = $+{fnname} . ".pp";
     $content = $&;
     print $filename . "\n";

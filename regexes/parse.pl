@@ -16,6 +16,8 @@ use experimental 'switch';
 
 use File::Basename;
 
+$genml = $ENV{'GENMLJSON'};
+
 @flags = ();
 
 #my sub Dumper {"\n"}

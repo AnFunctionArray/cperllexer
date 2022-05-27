@@ -132,6 +132,10 @@ std::pair<std::string, std::string> currstruct;
 
 std::string currenum;
 
+bool bIsBasicFloat(const type& type);
+
+bool bIsBasicInteger(const type& type);
+
 typedef std::list<std::pair<std::array<llvm::BranchInst*, 2>, llvm::BasicBlock*>>::iterator arrtwovals;
 
 struct branch {
@@ -666,6 +670,7 @@ const ::type basicsz = []() {
 	::type tmp{  type::BASIC };
 	tmp.spec.basicdeclspec.basic[0] = "unsigned";
 	tmp.spec.basicdeclspec.basic[1] = "long";
+	tmp.spec.basicdeclspec.longspecsn = 1;
 	return tmp;
 }();
 
@@ -1350,6 +1355,19 @@ struct basehndl /* : bindings_compiling*/ {
 
 		ops[0] = integralpromotions(ops[0]);
 
+		/*if(bIsBasicFloat(ops[0].type.front())) {
+			std::list<::type> longty = { basicint };
+
+			if(ops[0].type.front().spec.basicdeclspec.basic[1] == "double") {
+
+				longty.back().spec.basicdeclspec.longspecsn = 2;
+			}
+
+			ops[0] = convertTo(ops[0], longty);
+		}
+		
+		ops[1] = convertTo(ops[1], ops[0].type);*/
+
 		ops[1].value = llvmbuilder.CreateIntCast(ops[1].value, ops[0].value->getType(), false);
 
 		if (!bright)
@@ -1417,11 +1435,9 @@ struct basehndl /* : bindings_compiling*/ {
 		ifstatements.pop_back ();
 	}*/
 	//private:
-	virtual std::array<llvm::Value*, 2> logictwovalues(bool bisand) {
+	virtual void logictwovalues(bool bisand) {
 
 		std::array ops = getops(false);
-
-		std::array<llvm::Value*, 2> instr;
 
 		ops[0].value = llvmbuilder.CreateICmp(
 			llvm::CmpInst::Predicate::ICMP_NE, ops[0].value, getValZero(ops[0]));
@@ -1431,7 +1447,7 @@ struct basehndl /* : bindings_compiling*/ {
 
 		//if (bisand != 2)
 
-		instr[0] = ops[0].value = !bisand
+		ops[0].value = !bisand
 			? llvmbuilder.CreateOr(ops[0].value, ops[1].value)
 			: llvmbuilder.CreateAnd(ops[0].value, ops[1].value);
 		//else
@@ -1448,7 +1464,6 @@ struct basehndl /* : bindings_compiling*/ {
 			ops[0].type.back().spec.basicdeclspec.basic[0] = "";
 
 		immidiates.push_back(ops[0]);
-		return instr;
 	}
 
 	/*public:*
@@ -1767,37 +1782,9 @@ struct handlefpexpr : basehndl {
 		immidiates.push_back(ops[0]);
 	}
 
-	virtual std::array<llvm::Value*, 2> logictwovalues(bool bisand) override {
-		std::array ops = getops(false);
-
-		std::array<llvm::Value*, 2> instr;
-
-		ops[0].value = llvmbuilder.CreateFCmp(
-			llvm::CmpInst::Predicate::FCMP_ONE, ops[0].value,
-			llvm::ConstantFP::get(llvmctx, llvm::APFloat{ getfloatsembytype(ops[0]) }));
-
-		ops[1].value = llvmbuilder.CreateFCmp(
-			llvm::CmpInst::Predicate::FCMP_ONE, ops[1].value,
-			llvm::ConstantFP::get(llvmctx, llvm::APFloat{ getfloatsembytype(ops[1]) }));
-
-		//if (bisand != 2)
-
-		instr[0] = ops[0].value = !bisand
-			? llvmbuilder.CreateOr(ops[0].value, ops[1].value)
-			: llvmbuilder.CreateAnd(ops[0].value, ops[1].value);
-		//else
-		//	instr[0] = ops[0].value = llvmbuilder.CreateOr(ops[0].value, ops[1].value),
-		//	instr[1] = ops[0].value = llvmbuilder.CreateAnd(ops[0].value, ops[1].value);
-
-		ops[0].value = CreateCastInst(ops[0].value, llvm::Type::getInt32Ty(llvmctx), false);
-
-		ops[0].type.erase(ops[0].type.begin(), --ops[0].type.end());
-
-		ops[0].type.back().spec.basicdeclspec.basic[1] = "int",
-			ops[0].type.back().spec.basicdeclspec.basic[0] = "";
-
-		immidiates.push_back(ops[0]);
-		return instr;
+	virtual void logictwovalues(bool bisand) override {
+		getlogicalnot(), basehndl::getlogicalnot();
+		basehndl::logictwovalues(bisand);
 	}
 };
 
@@ -1925,10 +1912,8 @@ struct handlecnstexpr : handlefpexpr {
 		immidiates.push_back(ops[0]);
 	}
 
-	virtual std::array<llvm::Value*, 2> logictwovalues(bool bisand) override {
+	virtual void logictwovalues(bool bisand) override {
 		std::array ops = getops(false);
-
-		llvm::Value* instr;
 
 		ops[0].constant = llvm::ConstantExpr::getICmp(
 			llvm::CmpInst::Predicate::ICMP_NE, ops[0].constant, getValZero(ops[0]));
@@ -1936,7 +1921,7 @@ struct handlecnstexpr : handlefpexpr {
 		ops[1].constant = llvm::ConstantExpr::getICmp(
 			llvm::CmpInst::Predicate::ICMP_NE, ops[1].constant, getValZero(ops[1]));
 
-		instr = ops[0].constant =
+		ops[0].constant =
 			!bisand ? llvm::ConstantExpr::getOr(ops[0].constant, ops[1].constant)
 			: llvm::ConstantExpr::getAnd(ops[0].constant, ops[1].constant);
 
@@ -1951,8 +1936,6 @@ struct handlecnstexpr : handlefpexpr {
 			ops[0].type.back().spec.basicdeclspec.basic[0] = "";
 
 		immidiates.push_back(ops[0]);
-
-		return {};
 	}
 
 	virtual llvm::Constant* CreateCastInst(llvm::Value* C, llvm::Type* Ty, bool bissigned) override {
@@ -2481,7 +2464,7 @@ std::list<std::pair<std::array<llvm::BranchInst*, 2>, llvm::BasicBlock*>>::itera
 
 	auto firstnot = phndl->getlogicalnot();
 
-	auto lastnot = phndl->getlogicalnot();
+	auto lastnot = phndl->basehndl::getlogicalnot();
 
 	splitbb("", 0);
 
@@ -2514,113 +2497,6 @@ DLL_EXPORT void endifstatement() {
 
 	ifstatements.back().second->eraseFromParent();
 	ifstatements.pop_back();
-}
-
-DLL_EXPORT void beginlogicalop(int blastorfirst) {
-
-	/*if (!opsscopeinfo.back ().logicopswitches.empty ()) {
-
-		val imm = opsscopeinfo.back ().currlogicopvar;
-
-		imm.value = llvmbuilder.CreateLoad (imm.value);
-
-		imm.lvalues.push_back (imm);
-
-		imm.identifier = "[[logicop]]";
-
-		immidiates.push_back (imm);
-
-
-
-	} else {*/
-
-	val imm = val{opsscopeinfo.back().currlogicopvar};
-
-	/*val imm = opsscopeinfo.back ().currlogicopvar;
-
-	imm.lvalues.push_back (imm);
-
-	imm.identifier = "[[logicop]]";
-
-	immidiates.push_back (imm);*/
-
-	if (opsscopeinfo.back().lastifs != --ifstatements.end()) {
-
-		imm.value = llvmbuilder.CreateLoad(llvm::Type::getInt32Ty(llvmctx), imm.value);
-
-		//immidiates.pop_back ();
-
-		immidiates.push_back(imm);
-
-		opsscopeinfo.back().logicopswitches.push_back(phndl->logictwovalues(2));
-	}
-
-	std::rotate(----immidiates.end(), --immidiates.end(), immidiates.end());
-
-	phndl->assigntwovalues();
-
-	//immidiates.erase (++opsscopeinfo.back().immidiatesbegin, immidiates.end ());
-
-	//}
-	if (blastorfirst != 2) {
-		if (opsscopeinfo.back().lastifs != --ifstatements.end())
-			continueifstatement();
-
-		startifstatement();
-	}
-	else {
-		continueifstatement();
-
-		imm.value = llvmbuilder.CreateLoad(llvm::Type::getInt32Ty(llvmctx), imm.value);
-
-		immidiates.push_back(imm);
-	}
-
-	//opsscopeinfo.back ().logicopswitches
-
-	/*std::array<llvm::Value *, 3> instrs;
-
-		//instrs[1] = phndl->getlogicalnot ();
-		////instrs[1] = immidiates.back ().value;
-		//instrs[0] = phndl->getlogicalnot ();
-
-	instrs[0] = phndl->logictwovalues (true);
-
-	val imm = currlogicopval.back ();
-
-	imm.identifier = "[[logicop]]";
-
-	imm.lvalues.push_back (imm);
-
-	immidiates.push_back (imm);
-
-	std::rotate (----immidiates.end (), --immidiates.end (), immidiates.end ());
-
-	instrs[2] = phndl->assigntwovalues ();
-
-	immidiates.pop_back ();
-
-	//immidiates.erase (--immidiates.end ());
-
-	splitbb ("", 0);
-
-	imm.value = llvmbuilder.CreateLoad (imm.value);
-	immidiates.push_back (imm);
-
-	if (blastorfirst != 1) {
-
-		opbbs.back ().first.push_back ({pcurrblock.back (), instrs});
-
-		startifstatement ();
-	} else {
-		opbbs.back ().first.push_back ({pcurrblock.back (), instrs});
-
-		//immidiates.push_back (imm);
-
-		opbbs.back ().second = imm;
-	}*/
-
-	//opbbs.push_back (ifstatements.end());
 }
 
 DLL_EXPORT void beginbinary() {
@@ -2656,14 +2532,6 @@ DLL_EXPORT void beginbinary() {
 	opbbs.push_back ({});
 	beginlogicalop (1);*/
 	//currlogicopval.back ().second = --immidiates.end ();
-}
-
-DLL_EXPORT void endbinarybeforerevlogicops() {
-	if (opsscopeinfo.back().lastifs != --ifstatements.end())
-		beginlogicalop(2);
-	/*if (!opbbs.back ().first.empty ())
-		insertinttoimm ("1", sizeof "1", "", 0, 3),
-		beginlogicalop (1);*/
 }
 
 DLL_EXPORT void endbinary() {
