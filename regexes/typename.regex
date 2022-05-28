@@ -109,7 +109,7 @@
 )
 
 (?<Tabstinitorbitfl>
-	(?(?{existsflag "bitfl"})(?&abstrbitfield)|(?&abstrinitialization))
+	(?(?{existsflag "bitfl", {"nonbitfl"}})(?&abstrbitfield)|(?&abstrinitialization))
 	)
 
 (?<Tdecl>(?&Tasbtdecloutter)
@@ -128,7 +128,7 @@
 	(?{push2 \@declqualifs, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
 
 	(?(?=(?<declinner>(?&Tdecl)(?{call 'enddeclaration'})(?{replayrecord \@declqualifs})(?{call 'endqualifs'})))\g{declinner}
-	(?(?{eval {existsflag "outterparams"} or 0})|(,(?&declinner))*+)|(?(?{print "dump\n";eval {exists $matches[-1]{strc}} or 0})
+	(?(?{eval {existsflag "outterparams", {"outter" => undef, "optoutter"}} or 0})|(,(?&declinner))*+)|(?(?{print "dump\n";eval {exists $matches[-1]{strc}} or 0})
 	|
 	(?{pop2 \@flags, undef})
 	(?{pop2 \@declqualifs})
@@ -161,9 +161,9 @@
 	(?{pop2 \@flags, undef})
 )
 
-(?<declopt>(?{push2 \@flags, {"outter"=>undef,"opt"=>undef}})(?&abstdeclorallqualifs)(?(?!\s*+;)(?&compoundstatement)|\s*+;(?{call 'endfulldecl'})\s*+))
+(?<declopt>(?{push2 \@flags, {"outter"=>undef,"opt"=>undef, "nonbitfl"=>undef}})(?&abstdeclorallqualifs)(?(?!\s*+;)(?&compoundstatement)|\s*+;(?{call 'endfulldecl'})\s*+))
 
-(?<decl>(?{push2 \@flags, {"outter"=>undef,"nonopt"=>undef}})(?&abstdeclorallqualifs)\s*+;(?{call 'endfulldecl'})\s*+)
+(?<decl>(?{push2 \@flags, {"outter"=>undef,"nonopt"=>undef, "nonbitfl"=>undef}})(?&abstdeclorallqualifs)\s*+;(?{call 'endfulldecl'})\s*+)
 
 (?<cprogram>(?&declopt))
 

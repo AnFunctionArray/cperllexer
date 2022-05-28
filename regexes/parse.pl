@@ -231,13 +231,6 @@ my $mainregexfilecontent = do { local $/; <$fh> };
 
 close $fh;
 
-$filename = "regexes/regexmeta.regex";
-open my $fh, '<', $filename or die "error opening $filename: $!";
-
-my $metaregexfilecontent = do { local $/; <$fh> };
-
-close $fh;
-
 $filename = "./utility/regex.regex";
 open my $fh, '<', $filename or die "error opening $filename: $!";
 

@@ -43,7 +43,7 @@
 
 (?<ternaryorsomething>(?(?=((?{push2 \@savedcallouts, []})
 		(?{++$recording; print "recording ternaryorsomething\n"})(?&ternaryrest)))(??{qr{\Q$^N\E}})
-	(?{call 'begin_binary'})(?&castexpr)(?&ternarylogicopt)(?{call 'end_ternary'})(?{call 'end_binary'})
+	(?&castexpr)(?&ternarylogicopt)(?{call 'end_ternary'})
 	|(?{--$recording})(?{pop2 \@savedcallouts}))
 )
 
