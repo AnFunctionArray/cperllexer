@@ -23,7 +23,7 @@ open my $fhdecls, '>', $filename or die "error opening $filename: $!";
 
 $declsout;
 
-while($subjectoutter =~ m{\n((?-s)[^{}]*\b(?<fnname>\w++)\([^{}]*)\n(?<in>\{(?s)([^{}]|(?&in))*+\})}g){
+while($subjectoutter =~ m{([^{}]*?\b(?<fnname>\w++)\([^{}]*)\n(?<in>\{\n(?s)((?!\n\}\n).)*?\n\}\n(?{
     print $fhdecls $1 . ";\n";
     $filename = $+{fnname} . ".pp";
     $content = $&;
@@ -33,7 +33,7 @@ while($subjectoutter =~ m{\n((?-s)[^{}]*\b(?<fnname>\w++)\([^{}]*)\n(?<in>\{(?s)
     print $fh $content;
 
     close $fh;
-}
+}))}gsxx){}
 
 =begin
 return;

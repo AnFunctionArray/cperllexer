@@ -2002,11 +2002,24 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 				var = findparam;
 			else undef: {
 				std::cout << "not found: " << ident << std::endl;
-				if (push) {
-					phndl->immidiates.push_back(::val{{{}, nullptr, ident}});
-					plastnotfound = &phndl->immidiates.back();
+			
+				type fntype{type::FUNCTION};
+
+				fntype.spec.func.bisvariadic = true;
+
+				::var newvar{{.identifier = ident}};
+				newvar.type = newvar.type = {fntype, basicint};
+				newvar.firstintroduced = nullptr;
+				addvar(newvar);
+				scopevar.begin()->push_back(newvar);
+
+				var = scopevar.begin()->rbegin();
+
+				/*if (push) {
+					phndl->immidiates.push_back(::val{newvar});
+					//plastnotfound = &phndl->immidiates.back();
 				}
-				return {};
+				return scopevar.begin()->rbegin();*/
 			}
 		}
 	/*if (var->type.front ().uniontype == ::type::FUNCTION)
@@ -2993,8 +3006,10 @@ void fixuplabels() {
 DLL_EXPORT void startswitch() {
 	//pcurrblock.pop_back();
 	//pcurrblock.push_back(llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue)));
+	auto &imm = immidiates.back();
+	imm = phndl->integralpromotions(imm);
 	auto dummyblock = llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->requestValue()));
-	currswitch.push_back({ llvmbuilder.CreateSwitch(phndl->immidiates.back().value, dummyblock), dummyblock });
+	currswitch.push_back({ llvmbuilder.CreateSwitch(imm.value, dummyblock), dummyblock });
 	breakbranches.push_back({});
 
 	//llvmbuilder.SetInsertPoint(pcurrblock.back());
@@ -3061,15 +3076,7 @@ DLL_EXPORT void endfunctioncall() {
 
 	llvm::Value* callee = calleevalntype.value;
 
-	if(calleevalntype.type.empty()) {
-		var newvar{calleevalntype};
-		calleevalntype.type = newvar.type = {fntype, basicint};
-		newvar.firstintroduced = nullptr;
-		addvar(newvar);
-		scopevar.begin()->push_back(newvar);
-		callee = newvar.value;
-	}
-	else if(!is_type_function_or_fnptr(calleevalntype.type)) {
+	if(!is_type_function_or_fnptr(calleevalntype.type)) {
 
 		type ptrtype{type::POINTER};
 
