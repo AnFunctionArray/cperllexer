@@ -1,7 +1,4 @@
-use Data::Dumper;
-
-my sub print {CORE::print(@_) if( $ENV{'DEBUG'} )}
-my sub print2 {CORE::print(@_) if( not $ENV{'SILENT'})}
+my sub Dumper  {use Data::Dumper; Dumper(@_) if( not $silent )}
 
 #my sub Dumper {"\n"}
 
@@ -83,7 +80,7 @@ sub regenerate_typedef_regex {
     #use if $ARGV[1] eq 2, re => qw(Debug EXECUTE);
     #$ident = qr{(?>(?<typedef>(?<ident>(*F)))|$ident)(?(<ident>)(*F))}sxx;
     #$ident = "(?>$ident)";
-    print Dumper %typedefs;
+    print3 Dumper %typedefs;
     $needregen = 0;
 }
 =cut
@@ -98,39 +95,39 @@ sub checktypedef2 {
 
 sub checktypedef {
     #regenerate_typedef_regex() if($needregen);
-    #print "$typedef_regex\n";
-    #print "checking". $^N . "\n";
+    #print3 "$typedef_regex\n";
+    #print3 "checking". $^N . "\n";
     if (checktypedef2 $^N) {
-        print "$^N -> typedefname\n";
+        print3 "$^N -> typedefname\n";
         return $ok 
     }
     return $notok;
 }
 
 sub checkident {
-    #print "checking" .$^N . "\n";
+    #print3 "checking" .$^N . "\n";
     if ((not checktypedef2 $^N) and (not exists $keywords{$^N})) {
-        print "$^N -> ident\n";
+        print3 "$^N -> ident\n";
         return $ok 
     }
     return $notok;
 }
 
 sub checkidentpermissive {
-    #print "checking" .$^N . "\n";
+    #print3 "checking" .$^N . "\n";
     if ((not exists $keywords{$^N})) {
-        print "$^N -> ident-permissive\n";
+        print3 "$^N -> ident-permissive\n";
         return $ok 
     }
     return $notok;
 }
 
 sub checktypeorqualif {
-    #print "checking". $^N . "\n";
+    #print3 "checking". $^N . "\n";
 
     inc2 "facet";
     if (exists $typeandqualifs{$^N}) {
-        print "$^N -> qualifortype\n";
+        print3 "$^N -> qualifortype\n";
         if(exists $types{$^N}) {
             eval {$matches[-1]{typefound} = $^N};
             call "add_type"
@@ -160,7 +157,7 @@ sub identifier_decl {
     my $priorstate = exists ${$typedefidentifiersvector[-1]}{$identifier} ? ${$typedefidentifiersvector[-1]}{$identifier} : -1;
     my $currentstate = $_[0]{'typedefkey'};
     ${$typedefidentifiersvector[-1]}{$identifier} = $currentstate ? 1 : 0;
-    #print "$priorstate -> $currentstate\n";
+    #print3 "$priorstate -> $currentstate\n";
     #$regenerate_needed = 1 
     if($priorstate ne $currentstate) { #and $currentstate ? 1 : $priorstate ne -1) {
         #regenerate_typedef_regex();

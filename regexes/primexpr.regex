@@ -24,7 +24,7 @@
 (?<testxpr>(?&inner)|(?&inparenths))
 
 (?<ternarylogicopt>(?(?=((?&orlogiorsomething)))
-		(?{--$recording; print "minus minus assignorsomething $recording\n"})(?{push2 \@assrec, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
+		(?{--$recording; print3("minus minus assignorsomething $recording\n")})(?{push2 \@assrec, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
 		(?{call 'begin_binary'})(?{replayrecord \@assrec; pop2 \@assrec})(??{qr{\Q$^N\E}})(?{call 'end_binary'})
 		|(?{--$recording})(?{replayrecord})(?{pop2 \@savedcallouts})
 	)(?&ternaryorsomething)
@@ -32,17 +32,17 @@
 
 (?<assignorsomething>
 	(?(?=(?{push2 \@savedcallouts, []})
-		(?{++$recording; print "recording assignorsomething\n"})((?&unaryexpr)))(??{qr{\Q$^N\E}})
+		(?{++$recording; print3("recording assignorsomething\n")})((?&unaryexpr)))(??{qr{\Q$^N\E}})
 	(?(?=((?<assignop>=(?!=)|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+))
-		(??{qr{\Q$^N\E}})(?{--$recording; print "minus minus assignorsomething $recording\n"})
+		(??{qr{\Q$^N\E}})(?{--$recording; print3("minus minus assignorsomething $recording\n")})
 		(?{replayrecord; pop2 \@savedcallouts})(?&assignorsomething)(?{assignment})
 		|(?&ternarylogicopt))
-		|(?{$savedcallouts[-1] = []; print "resetting record\n"})(?(?=((?&typenamerev)))|(?{--$recording})(?{pop2 \@savedcallouts})(*F))
+		|(?{$savedcallouts[-1] = []; print3("resetting record\n")})(?(?=((?&typenamerev)))|(?{--$recording})(?{pop2 \@savedcallouts})(*F))
 		(??{qr{\Q$^N\E}})(?&ternarylogicopt))
 )
 
 (?<ternaryorsomething>(?(?=((?{push2 \@savedcallouts, []})
-		(?{++$recording; print "recording ternaryorsomething\n"})(?&ternaryrest)))(??{qr{\Q$^N\E}})
+		(?{++$recording; print3("recording ternaryorsomething\n")})(?&ternaryrest)))(??{qr{\Q$^N\E}})
 	(?&castexpr)(?&ternarylogicopt)(?{call 'end_ternary'})
 	|(?{--$recording})(?{pop2 \@savedcallouts}))
 )

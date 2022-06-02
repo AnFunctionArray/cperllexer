@@ -20,16 +20,20 @@ $genml = $ENV{'GENMLJSON'};
 
 @flags = ();
 
+$debug = $ENV{'DEBUG'};
+$silent = $ENV{'SILENT'};
+
 #my sub Dumper {"\n"}
 
-my sub print {CORE::print(@_) if( $ENV{'DEBUG'} or $ENV{'PROF'} )}
-my sub print2 {CORE::print(@_) if( not $ENV{'SILENT'})}
-my sub Dumper  {use Data::Dumper; Dumper(@_) if( not $ENV{'PROF'} and not $ENV{'SILENT'} )}
-my sub strftime  {use POSIX; strftime(@_) if( not $ENV{'PROF'} and not $ENV{'SILENT'} )}
+my sub print {CORE::print(@_) if( $debug )}
+my sub print2 {CORE::print(@_) if( not $silent)}
+sub print3 {CORE::print(@_) if( $debug)}
+my sub Dumper  {use Data::Dumper; Dumper(@_) if( not $silent )}
+my sub strftime  {use POSIX; strftime(@_) if( not $silent )}
 
 sub push2 {
     my @args = @_;
-    if ($ENV{'DEBUG'}) {
+    if ($debug) {
         if(@{$args[0]} ~~ @flags) {
             print "pushing to flags\n";
             print Dumper $args[1];
@@ -41,7 +45,7 @@ sub push2 {
 
 sub pop2 {
     my @args = @_;
-    if ($ENV{'DEBUG'}) {
+    if ($debug) {
         if(@{$args[0]} ~~ @flags) {
             print "popping from flags\n";
             print Dumper $flags[-1];
@@ -443,7 +447,7 @@ if(not $isnested)
     require "binary.regex.pl";
 
     #my $i = 2;
-    use if $ENV{'DEBUG'}, re => qw(Debug EXECUTE); 
+    use re => qw(Debug N); 
     #while(1) {
     #require "extractfns.pm";
     if($ENV{'REPLAY'}) {
@@ -579,7 +583,7 @@ sub call {
 
     my $subslice;
 
-    if( not $ENV{'PROF'} and not $ENV{'SILENT'} ) {
+    if( not $silent ) {
 
         $subslice = substr $subject, pos(), 10;
 
