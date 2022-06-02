@@ -444,10 +444,9 @@ sub obtainvalbyidentifier {
 
 if(not $isnested)
 {
-    require "binary.regex.pl";
 
     #my $i = 2;
-    use re, qw(Debug N); 
+    use re qw(Debug N); 
     #while(1) {
     #require "extractfns.pm";
     if($ENV{'REPLAY'}) {
