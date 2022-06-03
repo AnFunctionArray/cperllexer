@@ -5,7 +5,7 @@
 #if !defined(_WIN32) & !defined(_WIN64)
 //#include <pcre2.h>
 #else
-#include <pcre2/pcre2.h>
+//#include <pcre2/pcre2.h>
 #endif
 #include <stdio.h>
 //#include <boost/preprocessor/stringize.hpp>
@@ -256,7 +256,7 @@ xs_init(pTHX)
 }
 
 PerlInterpreter* my_perl; /***    The Perl interpreter    ***/
-pthread_t thread;
+//pthread_t thread;
 #if 0
 #include <userenv.h>
 #include <wtsapi32.h>
@@ -279,9 +279,9 @@ secondmain(char* subject, size_t szsubject, char* pattern, size_t szpattern, cha
 	onig_search(preg, subject, subject + szsubject, subject, subject + szsubject, 0, 0);
 }
 #endif
-#include <pthread.h>
+//#include <pthread.h>
 #include <signal.h>
-#include <unistd.h>
+//#include <unistd.h>
 
 void handler1(int sig) {
 	endmodule(1);
@@ -308,7 +308,7 @@ int main(int argc, char** argv, char** env)
 	signal(SIGTERM, handler1);
 	if(getenv("THREADING")) {
 		void *wait_for_call(void*);
-		pthread_create(&thread, 0, wait_for_call, 0);
+		//pthread_create(&thread, 0, wait_for_call, 0);
 	}
 	PERL_SYS_INIT3(&argc, &argv, &env);
 	my_perl = perl_alloc();

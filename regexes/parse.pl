@@ -446,7 +446,7 @@ if(not $isnested)
 {
 
     #my $i = 2;
-    use re qw(Debug N); 
+    #use re qw(Debug N); 
     #while(1) {
     #require "extractfns.pm";
     if($ENV{'REPLAY'}) {

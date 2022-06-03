@@ -71,7 +71,7 @@
 #if !defined(_WIN32) & !defined(_WIN64)
 //#include <pcre2.h>
 #else
-#include <pcre2/pcre2.h>
+//#include <pcre2/pcre2.h>
 #endif
 
 extern "C" {
@@ -84,8 +84,8 @@ DLL_EXPORT void constructstring();
 
 llvm::BranchInst* splitbb(const char* identifier, size_t szident);
 
-void fixupstructype(std::list<struct var>* var); 
-const llvm::fltSemantics &getfltsemfromtype(struct type flttype);
+void fixupstructype(std::list<struct var>* var);
+const llvm::fltSemantics& getfltsemfromtype(struct type flttype);
 
 //static struct basehndl* phndl;
 
@@ -595,8 +595,8 @@ struct type {
 		FUNCTION
 	} uniontype;
 
-	struct arrayinfo { 
-			uint64_t nelems;
+	struct arrayinfo {
+		uint64_t nelems;
 	};
 
 	type(typetype a) : spec{ a }, uniontype{ a } {};
@@ -640,7 +640,7 @@ struct type {
 				std::function{[&] { new (&basicdeclspec) bascitypespec{}; }},
 				std::function{
 					[&] { new (&ptrqualifiers) pointrtypequalifiers{}; }},
-				std::function{[&] { }},
+				std::function{[&] {}},
 				std::function{[&] { new (&func) functype{}; }} };
 			lambdas[type]();
 		}
@@ -651,33 +651,33 @@ struct type {
 		functype func;
 	} spec;
 
-	llvm::Type *cachedtype{};
+	llvm::Type* cachedtype{};
 };
 
 bool is_type_function_or_fnptr(std::list<type> tp) {
-	return  (tp.front().uniontype == type::FUNCTION 
-		|| tp.front().uniontype == type::POINTER && 
+	return  (tp.front().uniontype == type::FUNCTION
+		|| tp.front().uniontype == type::POINTER &&
 		(++tp.begin())->uniontype == type::FUNCTION);
 }
 
 const ::type basicint = []() {
-	::type tmp{  type::BASIC };
+	::type tmp{ type::BASIC };
 	tmp.spec.basicdeclspec.basic[1] = "int";
 	return tmp;
 }();
 
 const ::type basicsz = []() {
-	::type tmp{  type::BASIC };
+	::type tmp{ type::BASIC };
 	tmp.spec.basicdeclspec.basic[0] = "unsigned";
 	tmp.spec.basicdeclspec.basic[1] = "long";
 	tmp.spec.basicdeclspec.longspecsn = 1;
 	return tmp;
 }();
 
-llvm::Type* buildllvmtypefull(std::list<type> &decltypevector);
+llvm::Type* buildllvmtypefull(std::list<type>& decltypevector);
 
-llvm::Type* buildllvmtypefull(std::list<type> &&decltypevector) {
-		return buildllvmtypefull(reinterpret_cast<std::list<type> &>(std::move(decltypevector)));
+llvm::Type* buildllvmtypefull(std::list<type>&& decltypevector) {
+	return buildllvmtypefull(reinterpret_cast<std::list<type> &>(std::move(decltypevector)));
 }
 
 struct valbase {
@@ -693,7 +693,7 @@ struct valbase {
 	}
 };
 
-typedef llvm::Value *lvaluebase;
+typedef llvm::Value* lvaluebase;
 
 struct val : valbase {
 	lvaluebase lvalue;
@@ -713,7 +713,7 @@ struct var : valbase {
 	}
 
 	std::list<::type> fixupTypeIfNeeded() {
-		auto &basicdeclspecarr = type.back().spec.basicdeclspec.basic;
+		auto& basicdeclspecarr = type.back().spec.basicdeclspec.basic;
 		if (basicdeclspecarr[0].empty() && basicdeclspecarr[1].empty() && !basicdeclspecarr[3].empty()) {
 			auto tmpident = identifier;
 			identifier.clear();
@@ -731,7 +731,7 @@ struct var : valbase {
 	}
 	std::string linkage;
 
-	llvm::BasicBlock *firstintroduced{pcurrblock.empty() ? nullptr : pcurrblock.back()};
+	llvm::BasicBlock* firstintroduced{ pcurrblock.empty() ? nullptr : pcurrblock.back() };
 };
 
 static std::list<var>::iterator currfunc;
@@ -756,8 +756,8 @@ operator=(T p)
 
 static std::list<std::list<::val>::iterator> callees{};
 
-llvm::Type* buildllvmtypefull(std::list<type> &decltypevector,
-	std::list<type> *refdecltypevector);
+llvm::Type* buildllvmtypefull(std::list<type>& decltypevector,
+	std::list<type>* refdecltypevector);
 
 val convertTo(val target, std::list<::type> to);
 
@@ -798,7 +798,7 @@ struct basehndl /* : bindings_compiling*/ {
 	//virtual llvm::Value* assigntwovalues() = 0;
 
 	virtual std::list<struct type> getdefaulttype() {
-		return {basicint};
+		return { basicint };
 	}
 
 	virtual void end_binary() {
@@ -811,7 +811,7 @@ struct basehndl /* : bindings_compiling*/ {
 		if (nbranches.back().first.size() > 1)
 			normalflow = splitbb("", 0);*/
 
-		val ordinary_imm = val{(valbase)ordinary};
+		val ordinary_imm = val{ (valbase)ordinary };
 
 		//auto iternbranch = nbranches.begin();
 
@@ -949,7 +949,7 @@ struct basehndl /* : bindings_compiling*/ {
 
 	virtual llvm::Value* getlogicalnot() {
 		extern ::val decay(::val lvalue);
-		
+
 		auto& op = immidiates.back();
 
 		llvm::Value* originstr;
@@ -1331,20 +1331,20 @@ struct basehndl /* : bindings_compiling*/ {
 			endsizeofexpr();
 			szpointee = immidiates.back();
 			immidiates.pop_back();
-			ops[0] = convertTo(ops[0], {basicsz});
-			ops[1] = convertTo(ops[1], {basicsz});
+			ops[0] = convertTo(ops[0], { basicsz });
+			ops[1] = convertTo(ops[1], { basicsz });
 		}
 
 		busual && (ops = usualarithmeticconversions(ops), 0),
-		printvaltype(ops[0]),
-		printvaltype(ops[1]),
-		ops[0].value = llvmbuilder.CreateAdd(
-			ops[0].value,
-			!bminus ? ops[1].value : llvmbuilder.CreateNeg(ops[1].value));
+			printvaltype(ops[0]),
+			printvaltype(ops[1]),
+			ops[0].value = llvmbuilder.CreateAdd(
+				ops[0].value,
+				!bminus ? ops[1].value : llvmbuilder.CreateNeg(ops[1].value));
 
 		immidiates.push_back(ops[0]);
 
-		if(arewedealingpointers) {
+		if (arewedealingpointers) {
 			immidiates.push_back(szpointee);
 			dividelasttwovalues();
 		}
@@ -1365,7 +1365,7 @@ struct basehndl /* : bindings_compiling*/ {
 
 			ops[0] = convertTo(ops[0], longty);
 		}
-		
+
 		ops[1] = convertTo(ops[1], ops[0].type);*/
 
 		ops[1].value = llvmbuilder.CreateIntCast(ops[1].value, ops[0].value->getType(), false);
@@ -1520,7 +1520,7 @@ struct basehndl /* : bindings_compiling*/ {
 
 		llvm::Value* instr;
 
-		if(ops[0].type.begin()->uniontype != type::ARRAY) {
+		if (ops[0].type.begin()->uniontype != type::ARRAY) {
 
 			ops[1] = decay(ops[1]);
 
@@ -1548,17 +1548,17 @@ struct basehndl /* : bindings_compiling*/ {
 				if (ops[!i].type.front().uniontype == type::BASIC) {
 					immidiates.erase(----immidiates.end(), immidiates.end());
 					bool isarray = ops[i].type.front().uniontype == type::ARRAY;
-					auto &targetplain = ops[i];
-					llvm::Type *targettype = targetplain.requestType();
-					llvm::Value *target = isarray ? targetplain.lvalue : targetplain.value;
-					std::vector<llvm::Value*> gepinidces{ops[!i].value};
+					auto& targetplain = ops[i];
+					llvm::Type* targettype = targetplain.requestType();
+					llvm::Value* target = isarray ? targetplain.lvalue : targetplain.value;
+					std::vector<llvm::Value*> gepinidces{ ops[!i].value };
 					ops[i].type.erase(ops[i].type.begin());
-					
-					if(isarray)
+
+					if (isarray)
 						gepinidces.insert(gepinidces.begin(), dyn_cast<llvm::Value>(llvmbuilder.getInt32(0)));
 					//	targettype = targettype->getPointerTo();
 					else
-					 	targettype = ops[i].type.front().cachedtype;
+						targettype = ops[i].requestType();
 
 					ops[!i].value = !bminus
 						? ops[!i].value
@@ -1689,7 +1689,7 @@ struct handlefpexpr : basehndl {
 	virtual std::list<struct type> getdefaulttype() override {
 		auto basic = basicint;
 		basic.spec.basicdeclspec.basic[2] = "float";
-		return {basic};
+		return { basic };
 	}
 
 	virtual basehndl* (*getrestorefn())(basehndl*) {
@@ -1975,13 +1975,13 @@ DLL_EXPORT void obtainvalbyidentifier(std::unordered_map<unsigned, std::string>&
 	obtainvalbyidentifier(hashmap["ident"_h]);
 }
 
-static val *plastnotfound;
+static val* plastnotfound;
 
 const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident, bool push, bool bfindtypedef) {
 
 	std::list<::var>::reverse_iterator var{};
 
-	if(std::find_if(scopevar.rbegin(), scopevar.rend(),
+	if (std::find_if(scopevar.rbegin(), scopevar.rend(),
 		[&](std::list<::var>& scope) {
 			auto iter =
 				std::find_if(scope.rbegin(), scope.rend(),
@@ -1993,35 +1993,35 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 				return var = iter, true;
 			return false;
 		}) == scopevar.rend()) {
-			auto& currfunctype = currfunc->type.front().spec.func.parametertypes_list.front();
+		auto& currfunctype = currfunc->type.front().spec.func.parametertypes_list.front();
 
-			if (auto findparam = std::find_if(
-				currfunctype.rbegin(), currfunctype.rend(),
-				[&](const ::var& param) { return param.identifier == ident; });
-				findparam != currfunctype.rend())
-				var = findparam;
-			else undef: {
-				std::cout << "not found: " << ident << std::endl;
-			
-				type fntype{type::FUNCTION};
+		if (auto findparam = std::find_if(
+			currfunctype.rbegin(), currfunctype.rend(),
+			[&](const ::var& param) { return param.identifier == ident; });
+			findparam != currfunctype.rend())
+			var = findparam;
+		else undef: {
+			std::cout << "not found: " << ident << std::endl;
 
-				fntype.spec.func.bisvariadic = true;
+			type fntype{ type::FUNCTION };
 
-				::var newvar{{.identifier = ident}};
-				newvar.type = newvar.type = {fntype, basicint};
-				newvar.firstintroduced = nullptr;
-				addvar(newvar);
-				scopevar.begin()->push_back(newvar);
+			fntype.spec.func.bisvariadic = true;
 
-				var = scopevar.begin()->rbegin();
+			::var newvar{ {.identifier = ident} };
+			newvar.type = newvar.type = { fntype, basicint };
+			newvar.firstintroduced = nullptr;
+			addvar(newvar);
+			scopevar.begin()->push_back(newvar);
 
-				/*if (push) {
-					phndl->immidiates.push_back(::val{newvar});
-					//plastnotfound = &phndl->immidiates.back();
-				}
-				return scopevar.begin()->rbegin();*/
+			var = scopevar.begin()->rbegin();
+
+			/*if (push) {
+				phndl->immidiates.push_back(::val{newvar});
+				//plastnotfound = &phndl->immidiates.back();
 			}
+			return scopevar.begin()->rbegin();*/
 		}
+	}
 	/*if (var->type.front ().uniontype == ::type::FUNCTION)
 		phndl->immidiates.push_back (
 			{pglobal = nonconstructable.mainmodule.getFunction (ident),
@@ -2032,7 +2032,7 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 	if (!push) return var;
 
 	val immidiate;
-	
+
 
 	llvm::Value* pglobal;
 
@@ -2071,15 +2071,15 @@ DLL_EXPORT void addescapesequencetostring(std::unordered_map<unsigned, std::stri
 }
 
 DLL_EXPORT void begin_ternary() {
-	var tmp{{{basicint}}};
+	var tmp{ {{basicint}} };
 
 	addvar(tmp);
 
 	tmp.identifier = "[[ternary]]";
-	
+
 	startifstatement(true);
 
-	immidiates.push_back(val{tmp, tmp.value});
+	immidiates.push_back(val{ tmp, tmp.value });
 }
 
 DLL_EXPORT void continueifstatement();
@@ -2095,7 +2095,7 @@ DLL_EXPORT void mid_ternary() {
 	immidiates.push_back(tmptern);
 }
 
-DLL_EXPORT void endifstatement() ;
+DLL_EXPORT void endifstatement();
 
 DLL_EXPORT void end_ternary() {
 	auto tmptern = *----immidiates.end();
@@ -2128,7 +2128,7 @@ DLL_EXPORT void constructstring() {
 
 	immidiates.push_back(
 		val{ stirngtype, lvalue, "[[stringliteral]]" });
-	auto &imm = immidiates.back();
+	auto& imm = immidiates.back();
 	imm.lvalue = lvalue;
 	imm.value = llvmbuilder.CreateLoad(imm.requestType(), imm.value);
 	currstring = "";
@@ -2138,16 +2138,16 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 
 	const char* lastvartypestoragespec = lastvar.linkage.c_str();
 
-	assert (lastvar.linkage != "typedef");
+	assert(lastvar.linkage != "typedef");
 	//	for (lastvar.pValue = nullptr /*(llvm::Value *)lastvar.pllvmtype*/;;)
 	//		return;
 
-	if(lastvar.type.front().uniontype == type::FUNCTION || !lastvar.linkage.empty())
+	if (lastvar.type.front().uniontype == type::FUNCTION || !lastvar.linkage.empty())
 		goto extrnl_decl;
 
 	if (!lastvar.firstintroduced) {
 	extrnl_decl:
-	//case 1:
+		//case 1:
 		llvm::GlobalValue::LinkageTypes linkagetype;
 
 		switch (stringhash(lastvartypestoragespec)) {
@@ -2173,7 +2173,7 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 			break;
 		case type::FUNCTION:
 			printtype(lastvar.requestType(), lastvar.identifier);
-			lastvar.value= llvm::Function::Create(
+			lastvar.value = llvm::Function::Create(
 				llvm::dyn_cast<llvm::FunctionType> (lastvar.requestType()),
 				linkagetype, lastvar.identifier, nonconstructable.mainmodule);
 			// scopevar.front ().push_back (lastvar);
@@ -2181,10 +2181,10 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 		}
 	}	//break;
 	else {
-	//default:
+		//default:
 		printtype(lastvar.requestType(), lastvar.identifier);
 		llvmbuilder.SetInsertPoint(lastvar.firstintroduced, lastvar.firstintroduced->begin());
-		lastvar.value= llvmbuilder.CreateAlloca(lastvar.requestType(), nullptr,
+		lastvar.value = llvmbuilder.CreateAlloca(lastvar.requestType(), nullptr,
 			lastvar.identifier);
 		llvmbuilder.SetInsertPoint(pcurrblock.back());
 	}
@@ -2279,23 +2279,23 @@ bool bIsBasicFloat(const type& type) {
 
 bool comparetwotypes(std::list<::type> one, std::list<::type> two) {
 	auto iterone = one.begin(), itertwo = two.begin();
-	switch(iterone->uniontype)
-	if(0) case type::ARRAY:
+	switch (iterone->uniontype)
+		if (0) case type::ARRAY:
 		case type::POINTER:
 		case type::FUNCTION:
-		return itertwo->uniontype == iterone->uniontype;
-	else if(0) case type::BASIC:
-		return itertwo->uniontype == iterone->uniontype && itertwo->spec.basicdeclspec == iterone->spec.basicdeclspec;
-	return false;
+			return itertwo->uniontype == iterone->uniontype;
+							   else if (0) case type::BASIC:
+								   return itertwo->uniontype == iterone->uniontype && itertwo->spec.basicdeclspec == iterone->spec.basicdeclspec;
+								   return false;
 }
 
 val convertTo(val target, std::list<::type> to) {
-	extern val decay(val lvalue) ;
-	if(comparetwotypes(target.type, to)) {
+	extern val decay(val lvalue);
+	if (comparetwotypes(target.type, to)) {
 		target.type = to;
 		return target;
 	}
-		
+
 	target = decay(target);
 	printvaltype(target);
 	printtype(buildllvmtypefull(to), "to");
@@ -2374,7 +2374,7 @@ DLL_EXPORT void applycast() {
 
 extern const std::list<::var>* getstructorunion(bascitypespec& basic);
 
-void pushsizeoftype(val &&value) {
+void pushsizeoftype(val&& value) {
 	size_t szoftype = 1;
 
 	::type sztype{ ::type::BASIC };
@@ -2388,7 +2388,7 @@ void pushsizeoftype(val &&value) {
 	szoftype = pdatalayout->getTypeStoreSize(value.requestType());
 
 	phndl->immidiates.push_back(
-		val{std::list{sztype},
+		val{ std::list{sztype},
 		llvm::ConstantInt::getIntegerValue(
 				llvm::IntegerType::get(llvmctx, 64),
 				llvm::APInt{64, szoftype}),
@@ -2398,7 +2398,7 @@ void pushsizeoftype(val &&value) {
 DLL_EXPORT void memberaccess(std::unordered_map<unsigned, std::string>&& hashentry) {
 	bool indirection = hashentry["arrowordotraw"_h] == "->";
 
-	if(indirection) phndl->applyindirection();
+	if (indirection) phndl->applyindirection();
 
 	auto& lastvar = phndl->immidiates.back();
 
@@ -2423,7 +2423,7 @@ DLL_EXPORT void memberaccess(std::unordered_map<unsigned, std::string>&& hashent
 		pliststruct->front().pllvmtype,
 		lastvar.lvalue,
 
-		{llvmbuilder.getInt32(0), llvmbuilder.getInt32(imember)} );
+		{ llvmbuilder.getInt32(0), llvmbuilder.getInt32(imember) });
 
 	//printtype(member.pllvmtype->getPointerTo(), "");
 
@@ -2456,7 +2456,7 @@ DLL_EXPORT void endsizeoftypename() {
 
 	currtypevectorbeingbuild.back().p->pop_back();
 
-	pushsizeoftype(val{currtype});
+	pushsizeoftype(val{ currtype });
 }
 
 std::list<std::pair<std::array<llvm::BranchInst*, 2>, llvm::BasicBlock*>> ifstatements{ 1 };
@@ -2599,26 +2599,26 @@ DLL_EXPORT void endsizeofexpr() {
 void fixupstructype(std::list<::var>* var) {
 	std::vector<llvm::Type*> tmp;
 
-	size_t currsz=0;
+	size_t currsz = 0;
 
-	size_t curralign=1;
+	size_t curralign = 1;
 
 	var->front().pllvmtype = llvm::StructType::create(llvmctx);
 
-	for (auto& a : *var | ranges::views::drop(1)) 
-		if(!a.pllvmtype) 
+	for (auto& a : *var | ranges::views::drop(1))
+		if (!a.pllvmtype)
 			a.pllvmtype = (llvm::Type*)-1ULL,
 			tmp.push_back(buildllvmtypefull(a.type));
-			
+
 	auto& structvar = var->front();
 
 	std::transform(tmp.begin(), tmp.end(),
 		++var->begin(), ++var->begin(),
-		[](const llvm::Type* elem, const ::var &out) { 
+		[](const llvm::Type* elem, const ::var& out) {
 			::var tmp = out;
-			tmp.pllvmtype = const_cast<llvm::Type*>(elem) ;
+			tmp.pllvmtype = const_cast<llvm::Type*>(elem);
 			return tmp;
-	});
+		});
 
 	dyn_cast<llvm::StructType> (structvar.pllvmtype)->setBody(tmp);
 }
@@ -2649,16 +2649,16 @@ const std::list<::var>* getstructorunion(bascitypespec& basic) {
 	return var;
 }
 
-llvm::Type* buildllvmtypefull(std::list<type> &refdecltypevector) {
-	llvm::Type* pcurrtype;
+llvm::Type* buildllvmtypefull(std::list<type>& refdecltypevector) {
+	llvm::Type* pcurrtype = nullptr;
 
 	//refdecltypevector.clear();
 
 	//bool bjastypedef = false;
 
 	std::array lambdas = {
-		std::function{[&](type& type, std::list<::type>::reverse_iterator &iter) {
-			switch (stringhash(type.spec.basicdeclspec.basic[1].c_str())) {
+		std::function{[&](std::list<type>::reverse_iterator type) {
+			switch (stringhash(type->spec.basicdeclspec.basic[1].c_str())) {
 			case "short"_h:
 				pcurrtype =
 					dyn_cast<llvm::Type> (llvm::Type::getInt16Ty(llvmctx));
@@ -2667,7 +2667,7 @@ llvm::Type* buildllvmtypefull(std::list<type> &refdecltypevector) {
 			label_int:
 			case "int"_h:
 			case "long"_h:
-				if (type.spec.basicdeclspec.longspecsn > (LONG_MAX == INT_MAX))
+				if (type->spec.basicdeclspec.longspecsn > (LONG_MAX == INT_MAX))
 				case "__int64"_h:
 					pcurrtype = dyn_cast<llvm::Type> (llvm::Type::getInt64Ty(llvmctx));
 				else
@@ -2710,14 +2710,14 @@ llvm::Type* buildllvmtypefull(std::list<type> &refdecltypevector) {
 		case "double"_h:
 		case "float"_h:
 			pcurrtype =
-				dyn_cast<llvm::Type> (llvm::Type::getFloatingPointTy(llvmctx, getfltsemfromtype(type)));
+				dyn_cast<llvm::Type> (llvm::Type::getFloatingPointTy(llvmctx, getfltsemfromtype(*type)));
 			break;
 			break;
 		default:
 			switch (
-				stringhash(type.spec.basicdeclspec.basic[0].c_str())) {
+				stringhash(type->spec.basicdeclspec.basic[0].c_str())) {
 			case "struct"_h: {
-				auto currstruct = getstructorunion(type.spec.basicdeclspec);
+				auto currstruct = getstructorunion(type->spec.basicdeclspec);
 				if (!currstruct) {
 					//bincompletetype = true;
 					goto addchar;
@@ -2729,43 +2729,48 @@ llvm::Type* buildllvmtypefull(std::list<type> &refdecltypevector) {
 			}
 				break;
 			case "enum"_h:
-				*iter = basicint;
+				*type = basicint;
 				goto label_int;//throw std::exception{ "enum should have int type" };
 			case "union"_h:
 				break;
 			default: { // typedef
 				//bjastypedef = true;
-				pcurrtype = obtainvalbyidentifier(type.spec.basicdeclspec.basic[3], false, true)->requestType();
+				pcurrtype = obtainvalbyidentifier(type->spec.basicdeclspec.basic[3], false, true)->requestType();
 				return false;
 			}
 			}
 		}
 			return true;
 	}},
-	std::function{[&](type& type, std::list<::type>::reverse_iterator &iter) {
-		pcurrtype = dyn_cast<llvm::Type> (pcurrtype->getPointerTo());
+	std::function{[&](std::list<type>::reverse_iterator type) {
+		pcurrtype = dyn_cast<llvm::Type> (pcurrtype ? pcurrtype->getPointerTo() : llvm::PointerType::get(llvmctx, 0));
 		return false;
 	}},
-	std::function{[&](type& type, std::list<::type>::reverse_iterator &iter) {
+	std::function{[&](std::list<type>::reverse_iterator type) {
 		pcurrtype = dyn_cast<llvm::Type> (
-			llvm::ArrayType::get(pcurrtype, type.spec.array.nelems));
+			llvm::ArrayType::get(pcurrtype, type->spec.array.nelems));
 		return true;
 	}},
-	std::function{[&](type& type, std::list<::type>::reverse_iterator &iter) {
+	std::function{[&](std::list<type>::reverse_iterator type) {
 		std::vector<llvm::Type*> paramtype;
-		for (auto& a : type.spec.func.parametertypes_list.front())
+		for (auto& a : type->spec.func.parametertypes_list.front())
 			paramtype.push_back(a.requestType());
 		pcurrtype = dyn_cast<llvm::Type> (llvm::FunctionType::get(
-			pcurrtype, paramtype, type.spec.func.bisvariadic));
+			pcurrtype, paramtype, type->spec.func.bisvariadic));
 		return true;
 	}} };
 
 	try {
-		for(auto typeiter = refdecltypevector.rbegin(); typeiter != refdecltypevector.rend(); ++typeiter)
-			if((typeiter->cachedtype) || (!lambdas[typeiter->uniontype](*typeiter, typeiter), false))
+		for (auto typeiter =
+			std::make_reverse_iterator(++std::find_if(refdecltypevector.begin(), refdecltypevector.end(),
+				[&](::type& type) {
+					return ranges::contains(std::array{ ::type::BASIC, ::type::POINTER }, type.uniontype);
+				})); typeiter != refdecltypevector.rend(); ++typeiter) {
+			if ((typeiter->cachedtype) || (!lambdas[typeiter->uniontype](typeiter), false))
 				pcurrtype = typeiter->cachedtype;
 			else
 				typeiter->cachedtype = pcurrtype;
+		}
 	}
 	catch (std::nullptr_t exc) {
 		return exc;
@@ -2794,7 +2799,7 @@ DLL_EXPORT void beginscope() {
 			.spec.func.parametertypes_list.front()
 			.begin();
 		for (auto& arg : dyn_cast<llvm::Function> (currfuncval)->args())
-			iter_params++->value= &arg;
+			iter_params++->value = &arg;
 	}
 
 	splitbb("", 0);
@@ -2811,13 +2816,13 @@ DLL_EXPORT void beginscope() {
 		for (auto& param : currfunc->type.front().spec.func.parametertypes_list.front()) {
 			auto origparamvalue = param.value;
 
-			printvaltype(val{valbase{param}});
+			printvaltype(val{ valbase{param} });
 
 			param.firstintroduced = pcurrblock.back();
 
 			addvar(param);
 
-			printvaltype(val{valbase{param}});
+			printvaltype(val{ valbase{param} });
 
 			llvmbuilder.CreateStore(origparamvalue, param.value);
 		}
@@ -2840,13 +2845,13 @@ DLL_EXPORT void endscope() {
 	scopevar.pop_back();
 	if (scopevar.size() > 1)
 		splitbb("", 0);
-		
+
 	currtypevectorbeingbuild.pop_back();
 	structorunionmembers.pop_back();
 	enums.pop_back();
 
 	if (scopevar.size() == 1) { //end of a function
-		if(!bareweinabrupt())
+		if (!bareweinabrupt())
 			endreturn({});
 		pcurrblock.pop_back();
 		fixuplabels();
@@ -2947,13 +2952,13 @@ DLL_EXPORT void endforloop() {
 }
 
 val decay(val lvalue) {
-	auto &currtype = lvalue.type;
+	auto& currtype = lvalue.type;
 	auto elemtype = lvalue.requestType();
 
 	if (currtype.front().uniontype == type::ARRAY || currtype.front().uniontype == type::FUNCTION) {
 		::type ptrtype{ ::type::POINTER };
 
-		if(currtype.front().uniontype == type::ARRAY)
+		if (currtype.front().uniontype == type::ARRAY)
 			currtype.erase(currtype.begin());
 		currtype.push_front(ptrtype);
 
@@ -2961,7 +2966,7 @@ val decay(val lvalue) {
 
 
 		lvalue.value = lvalue.lvalue;
-	
+
 	}
 	return lvalue;
 }
@@ -3006,7 +3011,7 @@ void fixuplabels() {
 DLL_EXPORT void startswitch() {
 	//pcurrblock.pop_back();
 	//pcurrblock.push_back(llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->pValue)));
-	auto &imm = immidiates.back();
+	auto& imm = immidiates.back();
 	imm = phndl->integralpromotions(imm);
 	auto dummyblock = llvm::BasicBlock::Create(llvmctx, "", dyn_cast<llvm::Function> (currfunc->requestValue()));
 	currswitch.push_back({ llvmbuilder.CreateSwitch(imm.value, dummyblock), dummyblock });
@@ -3057,8 +3062,8 @@ DLL_EXPORT void addDefaultCase() {
 (value, type->getPointerTo ())
 }*/
 
-llvm::Value *floattodoubleifneeded(llvm::Value* possiblefloat) {
-	if(possiblefloat->getType()->isFloatTy())
+llvm::Value* floattodoubleifneeded(llvm::Value* possiblefloat) {
+	if (possiblefloat->getType()->isFloatTy())
 		return llvmbuilder.CreateFPCast(possiblefloat, llvm::Type::getFloatingPointTy(llvmctx, llvm::APFloatBase::IEEEdouble()));
 	return possiblefloat;
 }
@@ -3070,17 +3075,17 @@ DLL_EXPORT void endfunctioncall() {
 
 	auto calleevalntype = decay(*argsiter);
 
-	type fntype{type::FUNCTION};
+	type fntype{ type::FUNCTION };
 
 	fntype.spec.func.bisvariadic = true;
 
 	llvm::Value* callee = calleevalntype.value;
 
-	if(!is_type_function_or_fnptr(calleevalntype.type)) {
+	if (!is_type_function_or_fnptr(calleevalntype.type)) {
 
-		type ptrtype{type::POINTER};
+		type ptrtype{ type::POINTER };
 
-		calleevalntype = convertTo(calleevalntype, { ptrtype, fntype});
+		calleevalntype = convertTo(calleevalntype, { ptrtype, fntype });
 	}
 
 	//assert(calleevalntype.value->getType()->isPointerTy());
@@ -3112,7 +3117,7 @@ DLL_EXPORT void endfunctioncall() {
 
 	std::transform(
 		++argsiter, ::immidiates.end(), std::back_inserter(immidiates),
-		[&](basehndl::val elem) { return !(breached = breached || iterparams == verylongthingy.end()) 
+		[&](basehndl::val elem) { return !(breached = breached || iterparams == verylongthingy.end())
 		? convertTo(elem, iterparams++->type).value : floattodoubleifneeded(decay(elem).value); });
 
 	::immidiates.erase(--argsiter, ::immidiates.end());
@@ -3137,7 +3142,7 @@ DLL_EXPORT void endfunctioncall() {
 
 DLL_EXPORT void endreturn(std::unordered_map<unsigned, std::string>&& hashes) {
 	//llvmbuilder.SetInsertPoint (pcurrblock.back ());
-	if(!hashes["returnval"_h].empty()) {
+	if (!hashes["returnval"_h].empty()) {
 		auto currfunctype = currfunc->type;
 		currfunctype.pop_front();
 		auto op = convertTo(immidiates.back(), currfunctype);
@@ -3145,7 +3150,7 @@ DLL_EXPORT void endreturn(std::unordered_map<unsigned, std::string>&& hashes) {
 	}
 	else {
 		insertinttoimm("0", sizeof "1" - 1, "", 0, 3);
-		endreturn({{"returnval"_h, "0"}});
+		endreturn({ {"returnval"_h, "0"} });
 	}
 }
 
@@ -3191,32 +3196,32 @@ DLL_EXPORT void endqualifs(std::unordered_map<unsigned, std::string>&& hashes) {
 
 	if (std::all_of(refbasic.begin(), refbasic.end(), [](const std::string& elem) {return elem.empty(); }))
 		if (lastvar.firstintroduced == nullptr) refbasic[1] = "int";
-		else throw std::runtime_error{ "decl with no basic info"};
+		else throw std::runtime_error{ "decl with no basic info" };
 
 	if (ranges::contains(std::array{ "struct", "union", "enum" }, refbasic[0]) && refbasic[3].empty())
 		switch (stringhash(refbasic[0].c_str()))
-		if (0) case "struct"_h:
-		case "union"_h:
-		{
-			auto* reflaststruc = &structorunionmembers.back().back();
-			//if (!reflaststruc->back().pllvmtype) fixupstructype(reflaststruc);
+							   if (0) case "struct"_h:
+							   case "union"_h:
+							   {
+								   auto* reflaststruc = &structorunionmembers.back().back();
+								   //if (!reflaststruc->back().pllvmtype) fixupstructype(reflaststruc);
 
-			lastvar.type.back().spec.basicdeclspec.pexternaldata = reflaststruc;
-		}
+								   lastvar.type.back().spec.basicdeclspec.pexternaldata = reflaststruc;
+							   }
 
-	lastvar.fixupTypeIfNeeded();
-		/*					  else
-		if (0) case "enum"_h:
-	{
-		lastvar.type.back().spec.basicdeclspec.pexternaldata = &enums.back().back();
-	}*/
-		//currtypevectorbeingbuild.pop_back();
+							   lastvar.fixupTypeIfNeeded();
+							   /*					  else
+							   if (0) case "enum"_h:
+						   {
+							   lastvar.type.back().spec.basicdeclspec.pexternaldata = &enums.back().back();
+						   }*/
+						   //currtypevectorbeingbuild.pop_back();
 }
 
 DLL_EXPORT void startfunctionparamdecl() {
 
 	if (currtypevectorbeingbuild.back().currdecltype ==
-		currdecltypeenum::PARAMS 
+		currdecltypeenum::PARAMS
 		&& currtypevectorbeingbuild.back().p->back().type.size() == 1)
 
 		addptrtotype(std::unordered_map<unsigned, std::string>{});
@@ -3260,7 +3265,7 @@ DLL_EXPORT void insertinttoimm(const char* str, size_t szstr, const char* suffix
 }
 
 DLL_EXPORT void subscript() {
-	phndl->subscripttwovalues(); 
+	phndl->subscripttwovalues();
 }
 
 static basehndl* (*phpriorhndlfn_cnst_expr)(basehndl*);
@@ -3287,7 +3292,7 @@ DLL_EXPORT void endconstantexpr() {
 
 	// std::cout << "computed value: " << *res->getValue().getRawData() <<
 	// std::endl;
-		phndl->~basehndl(),
+	phndl->~basehndl(),
 		phndl = phpriorhndlfn_cnst_expr(phndl);
 }
 
@@ -3301,8 +3306,8 @@ DLL_EXPORT void startmodule(const char* modulename, size_t szmodulename) {
 
 	llvmctx.setOpaquePointers(true);
 
-	if(const char *preplaypath = getenv("REPLAY")) {
-		std::ifstream replay{preplaypath, std::ifstream::binary};
+	if (const char* preplaypath = getenv("REPLAY")) {
+		std::ifstream replay{ preplaypath, std::ifstream::binary };
 
 		unsigned int hash;
 
@@ -3313,7 +3318,7 @@ DLL_EXPORT void startmodule(const char* modulename, size_t szmodulename) {
 		do {
 			std::getline(replay, value, '\0');
 
-			if(!value.empty()) {
+			if (!value.empty()) {
 				replay.read((char*)&hash, 4);
 				map.insert({ hash, value });
 			}
@@ -3322,7 +3327,7 @@ DLL_EXPORT void startmodule(const char* modulename, size_t szmodulename) {
 				docall(value.c_str(), value.length(), &map);
 				map.clear();
 			}
-		} while(!replay.eof());
+		} while (!replay.eof());
 	}
 
 	//system("PAUSE");
@@ -3330,31 +3335,31 @@ DLL_EXPORT void startmodule(const char* modulename, size_t szmodulename) {
 
 #include <condition_variable>
 #include <mutex>
-#include <pthread.h>
+//#include <pthread.h>
 
 static std::condition_variable condwake;
 static std::mutex mutexwork;
 
 static bool endwork = false;
 
-extern "C" pthread_t thread;
+//extern "C" pthread_t thread;
 
-std::ofstream record{getenv("RECORD") ? getenv("RECORD") : "", std::ios::binary};
+std::ofstream record{ getenv("RECORD") ? getenv("RECORD") : "", std::ios::binary };
 
 DLL_EXPORT void endmodule(bool bhandlerexit) {
-	if(getenv("THREADING")) {
+	if (getenv("THREADING")) {
 		mutexwork.lock();
 		endwork = true;
 		mutexwork.unlock();
 		condwake.notify_one();
-		pthread_join(thread, nullptr);
+		//pthread_join(thread, nullptr);
 	}
 	std::error_code code{};
 	llvm::raw_fd_ostream output{
 		std::string{nonconstructable.mainmodule.getName()} + ".bc", code },
 		outputll{ std::string{nonconstructable.mainmodule.getName()} + ".ll",
 				 code };
-	if(!record.is_open() && !bhandlerexit) {
+	if (!record.is_open() && !bhandlerexit) {
 		nonconstructable.mainmodule.print(outputll, nullptr);
 		llvm::WriteBitcodeToFile(nonconstructable.mainmodule, output);
 	}
@@ -3376,7 +3381,7 @@ DLL_EXPORT void unary(std::unordered_map<unsigned, std::string>&& hashes) {
 		if (bIsBasicFloat(phndl->immidiates.back().type.front()))
 			phndl->~basehndl(),
 			phndl = dynamic_cast<basehndl*>(new (phndl) handlefpexpr{});
-	break;
+		break;
 	}
 
 	switch (stringhash(imm.c_str())) {
@@ -3440,7 +3445,7 @@ DLL_EXPORT void unaryincdec(std::unordered_map<unsigned, std::string>&& hashes) 
 
 	if (!immpostfix.empty())
 		immidiates.back() = immlvalue;
-	if(phpriorhndl)
+	if (phpriorhndl)
 		phndl->~basehndl(),
 
 		phndl = phpriorhndl(phndl);
@@ -3543,19 +3548,19 @@ DLL_EXPORT void binary(std::unordered_map<unsigned, std::string>&& hashes) {
 		break;
 	case ">"_h:
 		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_SGT,
-			 llvm::CmpInst::Predicate::ICMP_UGT, llvm::CmpInst::Predicate::FCMP_OGT);
+			llvm::CmpInst::Predicate::ICMP_UGT, llvm::CmpInst::Predicate::FCMP_OGT);
 		break;
 	case "<"_h:
 		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_SLT,
-			 llvm::CmpInst::Predicate::ICMP_ULT, llvm::CmpInst::Predicate::FCMP_OLT);
+			llvm::CmpInst::Predicate::ICMP_ULT, llvm::CmpInst::Predicate::FCMP_OLT);
 		break;
 	case "<="_h:
 		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_SLE,
-			 llvm::CmpInst::Predicate::ICMP_ULE, llvm::CmpInst::Predicate::FCMP_OLE);
+			llvm::CmpInst::Predicate::ICMP_ULE, llvm::CmpInst::Predicate::FCMP_OLE);
 		break;
 	case ">="_h:
 		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_SGE,
-			 llvm::CmpInst::Predicate::ICMP_UGE, llvm::CmpInst::Predicate::FCMP_OGE);
+			llvm::CmpInst::Predicate::ICMP_UGE, llvm::CmpInst::Predicate::FCMP_OGE);
 		break;
 	case "=="_h:
 		phndl->relatetwovalues(llvm::CmpInst::Predicate::ICMP_EQ,
@@ -3611,7 +3616,7 @@ DLL_EXPORT void binary(std::unordered_map<unsigned, std::string>&& hashes) {
 		refarr->second->eraseFromParent();
 		//ifstatements.erase(branch);
 
-		val ordinary_imm = val{ordinary};
+		val ordinary_imm = val{ ordinary };
 		ordinary_imm.lvalue = ordinary_imm.value;
 
 		immidiates.push_back(ordinary_imm);
@@ -3685,7 +3690,7 @@ void do_print_layour() {
 
 //auto pcompiling = new (&unincompilingobj) bindings_compiling{};
 #if 0
-DLL_EXPORT const char* callout_test(const char** pargs, size_t * szargs) {
+DLL_EXPORT const char* callout_test(const char** pargs, size_t* szargs) {
 	bindings_payload paylod = { .pargs = pargs, .szargs = szargs }; //= { (calloutinfo*)b, a };
 	//struct calloutinfo* ptable = (calloutinfo*)b;
 
@@ -3809,7 +3814,7 @@ DLL_EXPORT void num_lit(std::unordered_map<unsigned, std::string> &hashes) {
 	std::string groups[] = { "hex", "bin", "oct", "dec" };
 
 	//for (const char** pgroup = groups; pgroup != 1[&groups]; ++pgroup)
-	for (int i = 0; i < std::extent< decltype( groups ) >::value; ++i)
+	for (int i = 0; i < std::extent< decltype(groups) >::value; ++i)
 	{
 		//ntoclear = getnameloc3(*pgroup, *ptable, a, 0, { .dontsearchforclosest = 0 });
 		//if (ntoclear != -1 && a->offset_vector[2 * ntoclear] != -1)
@@ -3943,7 +3948,7 @@ DLL_EXPORT void identifier_decl(std::unordered_map<unsigned, std::string> && has
 
 	/*basic.spec.basicdeclspec.basic[3] = hashes["typedefnmmatched"_h];
 
-	
+
 
 	if (const char* pidentraw = var.identifier.c_str())
 	{
@@ -4073,7 +4078,7 @@ virtual void ident_struc_58() {
 	currstruct.second = { PTR_AND_SZ_N(2) };
 
 
-}
+	}
 #endif
 DLL_EXPORT void struc_or_union_body(std::unordered_map<unsigned, std::string> &hashes) {
 	//auto& lastvar = currtypevectorbeingbuild.back().p->back();
@@ -4117,12 +4122,12 @@ virtual void create_case_65() {
 virtual void switch_stmt_end_66() { endswitch(); }
 virtual void create_default_case_67() { addDefaultCase(); }
 #endif
-const llvm::fltSemantics &getfltsemfromtype(::type flttype) {
+const llvm::fltSemantics& getfltsemfromtype(::type flttype) {
 	return flttype.spec.basicdeclspec.basic[1] == "double" ?
 		flttype.spec.basicdeclspec.longspecsn == 1 ? llvm::APFloatBase::IEEEquad()
-	: llvm::APFloatBase::IEEEdouble() : 
-	(assert(flttype.spec.basicdeclspec.basic[1] == "float"),
-	llvm::APFloatBase::IEEEsingle());
+		: llvm::APFloatBase::IEEEdouble() :
+		(assert(flttype.spec.basicdeclspec.basic[1] == "float"),
+			llvm::APFloatBase::IEEEsingle());
 }
 DLL_EXPORT void collect_float_literal(std::unordered_map<unsigned, std::string> &hashes) {
 	std::string wholepart, fractionpart, exponent, exponent_sign;
@@ -4247,15 +4252,15 @@ DLL_EXPORT void end_without_ass_to_enum_def() {
 	enums.back().back().memberconstants.back()->constant = llvm::ConstantInt::get(llvmctx, llvm::APInt(32, enums.back().back().maxcount++));
 }
 
-DLL_EXPORT void global_han(const char *fnname, std::unordered_map<unsigned, std::string> && hashes) {
+DLL_EXPORT void global_han(const char* fnname, std::unordered_map<unsigned, std::string> && hashes) {
 #ifdef ALLOW_UNDEFINED_REFS
-	if(plastnotfound && scopevar.size() > 1 && !immidiates.empty()) [[unlikely]] {
-		if(std::string{fnname} != "startfunctioncall") { //if not immidiately start a function call
+	if (plastnotfound && scopevar.size() > 1 && !immidiates.empty()) [[unlikely]] {
+		if (std::string{ fnname } != "startfunctioncall") { //if not immidiately start a function call
 			::var var{};
 
 			var.identifier = plastnotfound->identifier;
 
-			var.type = {basicint};
+			var.type = { basicint };
 
 			var.firstintroduced = nullptr;
 
@@ -4271,7 +4276,7 @@ DLL_EXPORT void global_han(const char *fnname, std::unordered_map<unsigned, std:
 		}
 
 		plastnotfound = nullptr;
-	}
+}
 #endif
 }
 #if 0
@@ -4300,6 +4305,8 @@ extern "C" {
 #include <perl.h>	/* from the Perl distribution     */
 #include <XSUB.h>
 }
+#undef wait
+#undef write
 
 #include <cassert>
 
@@ -4315,14 +4322,14 @@ void call(std::unordered_map<unsigned, std::string> hash, std::string callname) 
 
 std::queue<std::pair<std::unordered_map<unsigned, std::string>, std::string>> callstack;
 
-extern "C" PerlInterpreter* my_perl;
+extern "C" PerlInterpreter * my_perl;
 
-extern "C" void *wait_for_call(void*) {
+extern "C" void* wait_for_call(void*) {
 	do {
-		std::unique_lock lock{mutexwork};
-		condwake.wait(lock, []{return !callstack.empty() || endwork;});
+		std::unique_lock lock{ mutexwork };
+		condwake.wait(lock, [] {return !callstack.empty() || endwork; });
 
-		while(!callstack.empty()) {
+		while (!callstack.empty()) {
 			auto callinfo = callstack.front();
 			callstack.pop();
 			lock.unlock();
@@ -4330,7 +4337,7 @@ extern "C" void *wait_for_call(void*) {
 			lock.lock();
 		}
 
-	} while(!endwork);
+	} while (!endwork);
 	return nullptr;
 }
 
@@ -4339,44 +4346,49 @@ static std::list<std::pair<std::unordered_map<unsigned, std::string>, std::strin
 DLL_EXPORT void do_callout(SV * in, HV * hash)
 {
 
-	char* key, *pinstr;
+	char* key, * pinstr;
 	I32 key_length;
 	STRLEN inlen;
 	SV* value;
 	hv_iterinit(hash);
-	const char nill[1] = {'\0'};
+	const char nill[1] = { '\0' };
 	std::unordered_map<unsigned, std::string> map;
 	while (value = hv_iternextsv(hash, &key, &key_length)) {
 		pinstr = SvPVutf8(value, inlen);
-		if(!inlen) continue;
-		if(record.is_open() && recordstack.empty()) {
+		if (!inlen) continue;
+		if (record.is_open() && recordstack.empty()) {
 			record.write(pinstr, inlen);
 			record.write(nill, 1);
-			record.write(reinterpret_cast<const char(&)[4]>(std::move(stringhash(std::string{key, (size_t)key_length}.c_str()))), 4);
-		} else {
+			auto hash = stringhash(std::string{ key, (size_t)key_length }.c_str());
+			record.write((char*)&hash, 4);
+		}
+		else {
 			map.insert({ stringhash(std::string{key, (size_t)key_length}.c_str()), std::string{pinstr, inlen} });
 		}
 	}
 
 	pinstr = SvPVutf8(in, inlen);
 
-	if(!recordstack.empty()) {
-		recordstack.push_back({map, std::string{pinstr, inlen}});
-	} else if(record.is_open()) {
+	if (!recordstack.empty()) {
+		recordstack.push_back({ map, std::string{pinstr, inlen} });
+	}
+	else if (record.is_open()) {
 
 		record.write(nill, 1);
 		record.write(pinstr, inlen);
 		record.write(nill, 1);
-	} else {
-		if(getenv("THREADING")) {
+	}
+	else {
+		if (getenv("THREADING")) {
 			mutexwork.lock();
 
-			callstack.push({map, std::string{pinstr, inlen}});
+			callstack.push({ map, std::string{pinstr, inlen} });
 
 			mutexwork.unlock();
 
 			condwake.notify_one();
-		} else {
+		}
+		else {
 			docall(pinstr, inlen, &map);
 		}
 	}
@@ -4391,18 +4403,18 @@ DLL_EXPORT void stoprecording() {
 	recordstack.pop_back();
 }
 
-extern "C" int secondmain(char *subject, size_t szsubject, char *pattern,
-	 size_t szpattern, char *modulename, size_t szmodulename,
-	 char *entrypoint, size_t szentrypoint) {
-	
-	std::string entry{entrypoint, szentrypoint};
+extern "C" int secondmain(char* subject, size_t szsubject, char* pattern,
+	size_t szpattern, char* modulename, size_t szmodulename,
+	char* entrypoint, size_t szentrypoint) {
 
-	auto iterentry = std::find_if(recordstack.begin(), recordstack.end(), [&](decltype(recordstack.back()) &elem) {
+	std::string entry{ entrypoint, szentrypoint };
+
+	auto iterentry = std::find_if(recordstack.begin(), recordstack.end(), [&](decltype(recordstack.back())& elem) {
 		return elem.second == entry;
-	});
+		});
 
 
-	
+
 
 
 	//startmodule(modulename, szmodulename);

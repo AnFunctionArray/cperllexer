@@ -13,7 +13,7 @@ MODULE = AnFunctionArray
 PROTOTYPES: ENABLE
 
 
-extern void startmatching(SV *in, SV *in1, SV *in2, SV *in3)
+extern startmatching(SV *in, SV *in1, SV *in2, SV *in3)
 PREINIT:
     STRLEN len;
     STRLEN secondlen;
@@ -36,7 +36,7 @@ CODE:
 
 =pod
 #SV *
-void callout(SV *in, ...)
+callout(SV *in, ...)
 PREINIT:
     const char *argsarr[0xFF];
     size_t argsarrlen[0xFF];
@@ -54,7 +54,7 @@ CODE:
     #RETVAL
 =cut
 
-extern void callout(SV *in, HV *hash)
+extern callout(SV *in, HV *hash)
 CODE:
     {
         extern void do_callout(SV* in, HV* hash);
@@ -63,7 +63,7 @@ CODE:
     }
 
 =pod
-extern void startmetaregex(SV *in, AV *hashes, SV *out)
+extern startmetaregex(SV *in, AV *hashes, SV *out)
 CODE:
     {
         extern void dostartmetaregex(SV* in, AV* hashes, SV*);
@@ -72,7 +72,7 @@ CODE:
     }
 =cut
 
-extern void startmodule(SV *in)
+extern startmodule(SV *in)
 PREINIT:
     STRLEN len;
     char* s;
