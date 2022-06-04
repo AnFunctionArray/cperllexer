@@ -9,8 +9,8 @@
     |(?(<oropraw>)(?&xoropraw)
     |(?(<andlogicopraw>)(?&oropraw)
     |(?(<orlogicopraw>)(?&andlogicopraw)
-    |(?<orlogicopraw>\|\|(?{call 'begin_branch'})
-            |(?<andlogicopraw>&&(?{call 'begin_branch'})
+    |(?<orlogicopraw>\|\|(?{call 'begin_branch'; $flags[-1]{logicop}=undef})
+            |(?<andlogicopraw>&&(?{call 'begin_branch'; $flags[-1]{logicop}=undef})
             |(?<oropraw>(?!\|\|)\|
             |(?<xoropraw>\^
             |(?<andopraw>(?!&&)&

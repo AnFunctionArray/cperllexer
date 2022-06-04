@@ -23,10 +23,11 @@
 
 (?<testxpr>(?&inner)|(?&inparenths))
 
-(?<ternarylogicopt>(?(?=((?&orlogiorsomething)))
+(?<ternarylogicopt>(?(?=(?{push2 \@flags, {}})((?&orlogiorsomething)))
 		(?{--$recording; print3("minus minus assignorsomething $recording\n")})(?{push2 \@assrec, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
-		(?{call 'begin_binary'})(?{replayrecord \@assrec; pop2 \@assrec})(??{qr{\Q$^N\E}})(?{call 'end_binary'})
-		|(?{--$recording})(?{replayrecord})(?{pop2 \@savedcallouts})
+		(?{call 'begin_binary' if(existsflag "logicop", {})})(?{replayrecord \@assrec; pop2 \@assrec})(??{qr{\Q$^N\E}})(?{call 'end_binary' if(existsflag "logicop", {})})
+		(?{pop2 \@flags})
+		|(?{pop2 \@flags})(?{--$recording})(?{replayrecord})(?{pop2 \@savedcallouts})
 	)(?&ternaryorsomething)
 )
 

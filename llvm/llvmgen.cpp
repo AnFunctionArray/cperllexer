@@ -59,7 +59,9 @@
 #include <unordered_map>
 #include <fstream>
 #include <deque>
+#include <source_location>
 //#include <oniguruma.h>
+#include <boost/stacktrace.hpp>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -78,6 +80,8 @@ extern "C" {
 #include "../src/main.h"
 }
 
+DLL_EXPORT void endconstantexpr(), beginconstantexpr();
+
 DLL_EXPORT void insertinttoimm(const char* str, size_t szstr, const char* suffix, size_t szstr1, int type);
 
 DLL_EXPORT void constructstring();
@@ -89,7 +93,13 @@ const llvm::fltSemantics& getfltsemfromtype(struct type flttype);
 
 //static struct basehndl* phndl;
 
-const std::list<struct var>::reverse_iterator obtainvalbyidentifier(std::string ident, bool push = true, bool bfindtypedef = false);
+static std::list<std::list<var>> scopevar{ 1 };
+
+const std::list<struct var>::reverse_iterator obtainvalbyidentifier(std::string ident, bool push = true, bool bfindtypedef = false,
+	std::pair<
+		std::list<std::list<::var>>::reverse_iterator,
+		std::list<::var>::reverse_iterator
+	> rfromwhere = { scopevar.rbegin(), scopevar.rbegin()->rbegin() });
 
 extern const struct type basicint, basicsz;
 
@@ -105,8 +115,6 @@ enum class currdecltypeenum {
 //std::string currdeclspectypedef;
 
 std::list<std::pair<std::list<std::string>, bool>> qualifsandtypes{ 1 };
-
-static std::list<std::list<var>> scopevar{ 1 };
 
 static std::list<std::list<std::list<var>>> structorunionmembers{ 1 };
 
@@ -554,7 +562,7 @@ bascitypespec parsebasictype(const std::list<std::string>& qualifs, bascitypespe
 			if (ret.basic[1].empty())
 				ret.basic[1] = a;
 			break;
-		case "void"_h:
+		//case "void"_h:
 		case "_Bool"_h:
 		case "__int64"_h:
 		case "int"_h:
@@ -654,6 +662,14 @@ struct type {
 	llvm::Type* cachedtype{};
 };
 
+/*bool is_type_basic_void(const type& ty) {
+	return ty.uniontype == type::BASIC && ty.spec.basicdeclspec.basic[1] == "void";
+}
+
+bool is_type_basic_void_or_ptr(const type& ty) {
+	return ty.uniontype == type::BASIC && ty.spec.basicdeclspec.basic[1] == "void" || ty.uniontype == type::POINTER;
+}*/
+
 bool is_type_function_or_fnptr(std::list<type> tp) {
 	return  (tp.front().uniontype == type::FUNCTION
 		|| tp.front().uniontype == type::POINTER &&
@@ -686,7 +702,11 @@ struct valbase {
 		llvm::Value* value{};
 		llvm::Constant* constant;
 	};
-	std::string identifier;
+	std::string identifier{
+#if 0
+		"[[" + boost::stacktrace::to_string(boost::stacktrace::stacktrace()) + "]]"
+#endif
+	};
 
 	auto requestType() {
 		return buildllvmtypefull(type);
@@ -1045,7 +1065,7 @@ struct basehndl /* : bindings_compiling*/ {
 			if (std::list listtp = { type{type::BASIC} };
 				listtp.back().spec.basicdeclspec.basic[0] = "unsigned",
 				listtp.back().spec.basicdeclspec.basic[1] = "long",
-				listtp.back().spec.basicdeclspec.longspecsn = 2,
+				listtp.back().spec.basicdeclspec.longspecsn = 1,
 				ops[i]->type.size() > 1)
 				ops_in[i] = convertTo(*ops[!i], listtp);
 			else if (ranges::contains(std::array{ "double", "float" }, refspecops[i]->basic[1]))
@@ -1557,7 +1577,7 @@ struct basehndl /* : bindings_compiling*/ {
 					if (isarray)
 						gepinidces.insert(gepinidces.begin(), dyn_cast<llvm::Value>(llvmbuilder.getInt32(0)));
 					//	targettype = targettype->getPointerTo();
-					else
+					else 
 						targettype = ops[i].requestType();
 
 					ops[!i].value = !bminus
@@ -1599,7 +1619,13 @@ struct basehndl /* : bindings_compiling*/ {
 
 		insertinttoimm("0", sizeof "0" - 1, "ul", sizeof "ul" - 1, type);
 
-		subscripttwovalues();
+		extern val coerceto(val target, std::list<::type> to);
+
+		if (!subscripttwovalues()) {
+			auto& imm = *----immidiates.end();
+			imm = coerceto(imm, {type::POINTER, basicint});
+			subscripttwovalues();
+		}
 	}
 
 	void insertinttoimm(const char* str, size_t szstr, const char* suffix_in, size_t szstr1, int type) {
@@ -1977,22 +2003,23 @@ DLL_EXPORT void obtainvalbyidentifier(std::unordered_map<unsigned, std::string>&
 
 static val* plastnotfound;
 
-const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident, bool push, bool bfindtypedef) {
+const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident, bool push, bool bfindtypedef,
+	std::pair<std::list<std::list<::var>>::reverse_iterator, std::list<::var>::reverse_iterator> rfromwhere) {
 
 	std::list<::var>::reverse_iterator var{};
 
-	if (std::find_if(scopevar.rbegin(), scopevar.rend(),
-		[&](std::list<::var>& scope) {
-			auto iter =
-				std::find_if(scope.rbegin(), scope.rend(),
-					[&](const ::var& scopevar) {
-						return scopevar.identifier == ident && (bfindtypedef == (scopevar.linkage == "typedef"));
-					});
+	var = rfromwhere.first->rend();
 
-			if (iter != scope.rend())
-				return var = iter, true;
-			return false;
-		}) == scopevar.rend()) {
+	for (std::list<std::list<::var>>::reverse_iterator iterscope = rfromwhere.first; iterscope != scopevar.rend(); ++iterscope) {
+		for (std::list<::var>::reverse_iterator itervar = iterscope == rfromwhere.first ? rfromwhere.second : iterscope->rbegin(); itervar != iterscope->rend(); ++itervar) {
+			if (itervar->identifier == ident && (bfindtypedef == (itervar->linkage == "typedef"))) {
+				var = itervar;
+				goto found;
+			}
+		}
+	}
+
+	{
 		auto& currfunctype = currfunc->type.front().spec.func.parametertypes_list.front();
 
 		if (auto findparam = std::find_if(
@@ -2000,7 +2027,7 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 			[&](const ::var& param) { return param.identifier == ident; });
 			findparam != currfunctype.rend())
 			var = findparam;
-		else undef: {
+		else if (push) undef: {
 			std::cout << "not found: " << ident << std::endl;
 
 			type fntype{ type::FUNCTION };
@@ -2028,7 +2055,7 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 			 var->type, true});
 	else if (pglobal = nonconstructable.mainmodule.getGlobalVariable (ident))
 		phndl->immidiates.push_back ({pglobal, var->type, true});*/
-
+found:
 	if (!push) return var;
 
 	val immidiate;
@@ -2289,6 +2316,18 @@ bool comparetwotypes(std::list<::type> one, std::list<::type> two) {
 								   return false;
 }
 
+val coerceto(val target, std::list<::type> to) {
+	phndl->immidiates.push_back(target);
+	phndl->getaddress();
+	auto& imm = immidiates.back();
+	imm.type.erase(++imm.type.begin(), imm.type.end());
+	imm.type.splice(imm.type.end(), to);
+	phndl->applyindirection();
+	auto retimm = immidiates.back();
+	immidiates.pop_back();
+	return retimm;
+}
+
 val convertTo(val target, std::list<::type> to) {
 	extern val decay(val lvalue);
 	if (comparetwotypes(target.type, to)) {
@@ -2322,12 +2361,20 @@ val convertTo(val target, std::list<::type> to) {
 		else if (bIsBasicFloat(target.type.front()))
 			target.value = llvmbuilder.CreateFPCast(
 				target.value, buildllvmtypefull(to));
+		else if (target.type.front().uniontype == type::POINTER) {
+			target.value = llvmbuilder.CreatePtrToInt(target.value, buildllvmtypefull({ basicsz })),
+				llvmbuilder.CreateFPCast(
+					target.value, buildllvmtypefull(to));
+		}
+		else;
+	else if (target.type.front().uniontype == type::POINTER)
+		if(bIsBasicInteger(target.type.front()))
+			target.value = llvmbuilder.CreateIntToPtr(target.value, buildllvmtypefull(to));
+		else if(bIsBasicFloat(target.type.front()))
+			target = coerceto(target, { basicsz }),
+			target.value = llvmbuilder.CreateIntToPtr(target.value, buildllvmtypefull(to));
 		else
-			;
-	else if (to.front().uniontype == type::POINTER && bIsBasicInteger(target.type.front()))
-		target.value = llvmbuilder.CreateIntToPtr(target.value, buildllvmtypefull(to));
-	else
-		target.value = llvmbuilder.CreateBitCast(target.value, buildllvmtypefull(to));
+			target.value = llvmbuilder.CreateBitCast(target.value, buildllvmtypefull(to));
 
 	target.type = to;
 
@@ -2383,7 +2430,7 @@ void pushsizeoftype(val&& value) {
 
 	sztype.spec.basicdeclspec.basic[1] = "long";
 
-	sztype.spec.basicdeclspec.longspecsn = 2;
+	sztype.spec.basicdeclspec.longspecsn = 1;
 
 	szoftype = pdatalayout->getTypeStoreSize(value.requestType());
 
@@ -2656,7 +2703,7 @@ llvm::Type* buildllvmtypefull(std::list<type>& refdecltypevector) {
 
 	//bool bjastypedef = false;
 
-	std::array lambdas = {
+	std::array  lambdas = {
 		std::function{[&](std::list<type>::reverse_iterator type) {
 			switch (stringhash(type->spec.basicdeclspec.basic[1].c_str())) {
 			case "short"_h:
@@ -2676,6 +2723,7 @@ llvm::Type* buildllvmtypefull(std::list<type>& refdecltypevector) {
 				break;
 			addvoid:
 			case "void"_h: {
+				//pcurrtype = llvm::PointerType::get(llvmctx, 0);
 				/*pcurrtype =
 					dyn_cast<llvm::Type> (llvm::Type::getVoidTy(llvmctx));
 				break;
@@ -3073,7 +3121,11 @@ DLL_EXPORT void endfunctioncall() {
 
 	auto argsiter = callees.back();
 
-	auto calleevalntype = decay(*argsiter);
+	auto calleevalntype = *argsiter;
+
+	callees.pop_back();
+
+	++argsiter;
 
 	type fntype{ type::FUNCTION };
 
@@ -3085,13 +3137,69 @@ DLL_EXPORT void endfunctioncall() {
 
 		type ptrtype{ type::POINTER };
 
-		calleevalntype = convertTo(calleevalntype, { ptrtype, fntype });
+		calleevalntype = convertTo(calleevalntype, { ptrtype, fntype, basicint });
 	}
 
 	//assert(calleevalntype.value->getType()->isPointerTy());
 
-	if (calleevalntype.type.front().uniontype == type::POINTER)
+	if (calleevalntype.type.front().uniontype != type::POINTER) {
+		
+		std::list<std::pair<std::list<::var>::reverse_iterator, int>> revfunsrank;
+
+		std::list<::var>::reverse_iterator iter;
+
+		for (iter = scopevar.front().rbegin();
+			scopevar.front().rend() != (iter = obtainvalbyidentifier(calleevalntype.identifier, false, false, {--scopevar.rend(), iter}));
+			++iter) {
+
+			if(iter->type.front().uniontype == type::FUNCTION)
+				revfunsrank.push_back({ iter, 0 });
+		}
+
+		if (revfunsrank.size() <= 1)
+			goto rest;
+
+		//revfuns.remove_if([](std::list<::var>::reverse_iterator& a) { return a->type.front().spec.func.parametertypes_list.size() != callees.size(); });
+
+		for (auto &funccand : revfunsrank) {
+
+			funccand.second = abs((long long)std::distance(argsiter, ::immidiates.end()) - funccand.first->type.front().spec.func.parametertypes_list.front().size());
+
+			auto argsiterarg = argsiter;
+			
+			for (auto& params : funccand.first->type.front().spec.func.parametertypes_list.front()) {
+				if (::immidiates.end() == argsiterarg) break;
+
+				auto argval = decay(*argsiterarg);
+				if (params.requestType() != argval.requestType()) {	
+
+					if (params.type.front().uniontype == argval.type.front().uniontype) {
+						funccand.second += 1;
+					}
+					else {
+						funccand.second += 2;
+					}
+				}
+
+				argsiterarg++;
+			}
+		}
+
+		revfunsrank.sort([](std::pair<std::list<::var>::reverse_iterator, int>& arg, std::pair<std::list<::var>::reverse_iterator, int>& arg2) {
+			return arg.second < arg2.second;
+			});
+
+		val imm{ *revfunsrank.front().first };
+
+		imm.lvalue = imm.value;
+
+		calleevalntype = imm;
+	}
+	else {
 		calleevalntype.type.pop_front();
+	}
+
+rest:
 
 	/*std::string type_str;
 	llvm::raw_string_ostream rso (type_str);
@@ -3102,8 +3210,6 @@ DLL_EXPORT void endfunctioncall() {
 	auto functype = calleevalntype.requestType();
 
 	llvm::Value* pval;
-
-	callees.pop_back();
 
 	llvmbuilder.SetInsertPoint(lastblock);
 
@@ -3116,7 +3222,7 @@ DLL_EXPORT void endfunctioncall() {
 	bool breached = false;
 
 	std::transform(
-		++argsiter, ::immidiates.end(), std::back_inserter(immidiates),
+		argsiter, ::immidiates.end(), std::back_inserter(immidiates),
 		[&](basehndl::val elem) { return !(breached = breached || iterparams == verylongthingy.end())
 		? convertTo(elem, iterparams++->type).value : floattodoubleifneeded(decay(elem).value); });
 
