@@ -3331,8 +3331,9 @@ DLL_EXPORT void endqualifs(std::unordered_map<unsigned, std::string>&& hashes) {
 		if (lastvar.firstintroduced == nullptr) refbasic[1] = "int";
 		else throw std::runtime_error{ "decl with no basic info" };
 
-	if (ranges::contains(std::array{ "struct", "union", "enum" }, refbasic[0]) && refbasic[3].empty())
-		switch (stringhash(refbasic[0].c_str()))
+	{
+		if (ranges::contains(std::array{ "struct", "union", "enum" }, refbasic[0]) && refbasic[3].empty())
+			switch (stringhash(refbasic[0].c_str()))
 							   if (0) case "struct"_h:
 							   case "union"_h:
 							   {
@@ -3349,6 +3350,10 @@ DLL_EXPORT void endqualifs(std::unordered_map<unsigned, std::string>&& hashes) {
 							   lastvar.type.back().spec.basicdeclspec.pexternaldata = &enums.back().back();
 						   }*/
 						   //currtypevectorbeingbuild.pop_back();
+	}
+	if (lastvar.type.front().uniontype == type::FUNCTION) {
+		lastvar.requestValue();
+	}
 }
 
 DLL_EXPORT void startfunctionparamdecl() {
