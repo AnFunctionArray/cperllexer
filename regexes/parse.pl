@@ -469,6 +469,7 @@ if(not $isnested)
     }
 
     if($ENV{'RECORD'}) {
+        $silent = 0;
         open my $out, '>', "$ENV{RECORD}.txt" or die "error opening $filename: $!";
         $Data::Dumper::Terse = 1;
         CORE::print $out Dumper @typedefidentifiersvector;

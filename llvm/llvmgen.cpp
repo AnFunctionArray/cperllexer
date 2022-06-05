@@ -61,7 +61,7 @@
 #include <deque>
 #include <source_location>
 //#include <oniguruma.h>
-#include <boost/stacktrace.hpp>
+#include <llvm/ADT/Hashing.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -2019,6 +2019,7 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 		}
 	}
 
+	if (push)
 	{
 		auto& currfunctype = currfunc->type.front().spec.func.parametertypes_list.front();
 
@@ -2027,7 +2028,7 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 			[&](const ::var& param) { return param.identifier == ident; });
 			findparam != currfunctype.rend())
 			var = findparam;
-		else if (push) undef: {
+		else undef: {
 			std::cout << "not found: " << ident << std::endl;
 
 			type fntype{ type::FUNCTION };
@@ -2161,6 +2162,20 @@ DLL_EXPORT void constructstring() {
 	currstring = "";
 }
 
+static void mangle(llvm::Function* in) {
+	std::string type_str;
+	llvm::raw_string_ostream rso(type_str);
+	std::string funident = in->getName().str();
+	llvm::dyn_cast<llvm::FunctionType> (in->getFunctionType())->print(rso);
+	funident += rso.str();
+	std::replace_if(funident.begin(), funident.end(), [](auto ch) {
+		return !::isalnum(ch);
+		}, '_');
+	in->setName(funident);
+}
+
+static std::unordered_map<std::string, size_t> overloadcount;
+
 void addvar(var& lastvar, llvm::Constant* pInitializer) {
 
 	const char* lastvartypestoragespec = lastvar.linkage.c_str();
@@ -2199,10 +2214,20 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 			// scopevar.front ().push_back (lastvar);
 			break;
 		case type::FUNCTION:
+			llvm::Function* pfuncother;
+			lastvar.value = nullptr;
 			printtype(lastvar.requestType(), lastvar.identifier);
-			lastvar.value = llvm::Function::Create(
-				llvm::dyn_cast<llvm::FunctionType> (lastvar.requestType()),
-				linkagetype, lastvar.identifier, nonconstructable.mainmodule);
+			for (size_t i : ranges::iota_view{ 0u, overloadcount[lastvar.identifier] }) {
+				auto tmpident = lastvar.identifier + (i ? "." + std::to_string(i) : "");
+				pfuncother = nonconstructable.mainmodule.getFunction(tmpident);
+				if (pfuncother && pfuncother->getFunctionType() == lastvar.requestType())
+					lastvar.value = pfuncother;
+			}
+			if(!lastvar.value)
+				lastvar.value = llvm::Function::Create(
+					llvm::dyn_cast<llvm::FunctionType> (lastvar.requestType()),
+					linkagetype, lastvar.identifier, nonconstructable.mainmodule),
+				++overloadcount[lastvar.identifier];
 			// scopevar.front ().push_back (lastvar);
 			break;
 		}
@@ -2363,11 +2388,11 @@ val convertTo(val target, std::list<::type> to) {
 				target.value, buildllvmtypefull(to));
 		else if (target.type.front().uniontype == type::POINTER) {
 			target.value = llvmbuilder.CreatePtrToInt(target.value, buildllvmtypefull({ basicsz })),
-				llvmbuilder.CreateFPCast(
+				llvmbuilder.CreateUIToFP(
 					target.value, buildllvmtypefull(to));
 		}
 		else;
-	else if (target.type.front().uniontype == type::POINTER)
+	else if (to.front().uniontype == type::POINTER)
 		if(bIsBasicInteger(target.type.front()))
 			target.value = llvmbuilder.CreateIntToPtr(target.value, buildllvmtypefull(to));
 		else if(bIsBasicFloat(target.type.front()))
@@ -2437,8 +2462,8 @@ void pushsizeoftype(val&& value) {
 	phndl->immidiates.push_back(
 		val{ std::list{sztype},
 		llvm::ConstantInt::getIntegerValue(
-				llvm::IntegerType::get(llvmctx, 64),
-				llvm::APInt{64, szoftype}),
+				llvm::IntegerType::get(llvmctx, 32),
+				llvm::APInt{32, szoftype}),
 			"[[sizeoftypename]]" });
 }
 
@@ -3131,8 +3156,6 @@ DLL_EXPORT void endfunctioncall() {
 
 	fntype.spec.func.bisvariadic = true;
 
-	llvm::Value* callee = calleevalntype.value;
-
 	if (!is_type_function_or_fnptr(calleevalntype.type)) {
 
 		type ptrtype{ type::POINTER };
@@ -3161,9 +3184,13 @@ DLL_EXPORT void endfunctioncall() {
 
 		//revfuns.remove_if([](std::list<::var>::reverse_iterator& a) { return a->type.front().spec.func.parametertypes_list.size() != callees.size(); });
 
+		const auto distance = (long long)std::distance(argsiter, ::immidiates.end());
+
+		constexpr auto maxparamindividualscore = 1;
+
 		for (auto &funccand : revfunsrank) {
 
-			funccand.second = abs((long long)std::distance(argsiter, ::immidiates.end()) - funccand.first->type.front().spec.func.parametertypes_list.front().size());
+			funccand.second = distance * maxparamindividualscore + abs(distance - funccand.first->type.front().spec.func.parametertypes_list.front().size());
 
 			auto argsiterarg = argsiter;
 			
@@ -3171,14 +3198,8 @@ DLL_EXPORT void endfunctioncall() {
 				if (::immidiates.end() == argsiterarg) break;
 
 				auto argval = decay(*argsiterarg);
-				if (params.requestType() != argval.requestType()) {	
-
-					if (params.type.front().uniontype == argval.type.front().uniontype) {
-						funccand.second += 1;
-					}
-					else {
-						funccand.second += 2;
-					}
+				if (bIsBasicFloat(params.type.front()) != bIsBasicFloat(argval.type.front())) {
+					funccand.second += 1;
 				}
 
 				argsiterarg++;
@@ -3189,9 +3210,9 @@ DLL_EXPORT void endfunctioncall() {
 			return arg.second < arg2.second;
 			});
 
-		val imm{ *revfunsrank.front().first };
+		revfunsrank.front().first->requestValue();
 
-		imm.lvalue = imm.value;
+		val imm{ *revfunsrank.front().first };
 
 		calleevalntype = imm;
 	}
@@ -3200,6 +3221,8 @@ DLL_EXPORT void endfunctioncall() {
 	}
 
 rest:
+
+	llvm::Value* callee = calleevalntype.value;
 
 	/*std::string type_str;
 	llvm::raw_string_ostream rso (type_str);
@@ -3230,10 +3253,14 @@ rest:
 
 	printvaltype(calleevalntype);
 
+	val fixupval = calleevalntype;
+
+	fixupval.type.front() = fntype;
+
 	// if (functype->isPtrOrPtrVectorTy ())
 	pval = llvmbuilder.CreateCall(
 		llvm::dyn_cast<llvm::FunctionType> (
-			calleevalntype.requestType()),
+			fixupval.requestType()),
 		callee, immidiates);
 	// else
 	// pval = llvmbuilder.CreateCall (
@@ -3412,6 +3439,9 @@ DLL_EXPORT void startmodule(const char* modulename, size_t szmodulename) {
 
 	llvmctx.setOpaquePointers(true);
 
+	if(getenv("SILENT"))
+		std::cout.rdbuf(NULL);
+
 	if (const char* preplaypath = getenv("REPLAY")) {
 		std::ifstream replay{ preplaypath, std::ifstream::binary };
 
@@ -3466,8 +3496,8 @@ DLL_EXPORT void endmodule(bool bhandlerexit) {
 		outputll{ std::string{nonconstructable.mainmodule.getName()} + ".ll",
 				 code };
 	if (!record.is_open() && !bhandlerexit) {
-		nonconstructable.mainmodule.print(outputll, nullptr);
 		llvm::WriteBitcodeToFile(nonconstructable.mainmodule, output);
+		nonconstructable.mainmodule.print(outputll, nullptr);
 	}
 	nonconstructable.mainmodule.~Module();
 	delete pdatalayout;
