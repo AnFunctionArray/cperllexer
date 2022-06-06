@@ -2,6 +2,7 @@
 
 use re 'eval';
 
+BEGIN{push @INC, "."};
 BEGIN{push @INC, "./misc"};
 BEGIN{push @INC, "./regexes/supplement"};
 
@@ -446,11 +447,11 @@ if(not $isnested)
 {
 
     #my $i = 2;
-    #use re qw(Debug N); 
+    use if $debug, re => qw(Debug EXECUTE); 
     #while(1) {
     #require "extractfns.pm";
     if($ENV{'REPLAY'}) {
-        @typedefidentifiersvector = eval { require $ENV{'REPLAY'} . ".txt"}
+        @typedefidentifiersvector = eval { require $ENV{'REPLAY'} . ".txt"};
     }
     my $flind = 1;
     while(1) {

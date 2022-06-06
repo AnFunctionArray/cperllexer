@@ -62,6 +62,7 @@
 #include <source_location>
 //#include <oniguruma.h>
 #include <llvm/ADT/Hashing.h>
+#include <llvm/Support/FileSystem.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -370,7 +371,9 @@ static struct nonconstructable {
 	nonconstructable() {}
 	~nonconstructable() {}
 	union {
-		llvm::Module mainmodule;
+		struct {
+			llvm::Module mainmodule;
+		};
 	};
 } nonconstructable;
 
@@ -496,6 +499,15 @@ struct bascitypespec : basic_type_origin {
 		basic_type_origin::operator=(source);
 		basic[2].clear();
 		return *this;
+	}
+
+	operator std::string() {
+		std::stringstream type;
+		for (auto curr : basic)
+			if(!curr.empty())
+				type << curr << "_";
+		type << "[[basic]]" << longspecsn;
+		return type.str();
 	}
 
 	/*bool hasLinkage() {
@@ -2162,19 +2174,68 @@ DLL_EXPORT void constructstring() {
 	currstring = "";
 }
 
-static void mangle(llvm::Function* in) {
-	std::string type_str;
-	llvm::raw_string_ostream rso(type_str);
-	std::string funident = in->getName().str();
-	llvm::dyn_cast<llvm::FunctionType> (in->getFunctionType())->print(rso);
-	funident += rso.str();
-	std::replace_if(funident.begin(), funident.end(), [](auto ch) {
-		return !::isalnum(ch);
-		}, '_');
-	in->setName(funident);
+static std::string mangle(std::list<::type> type);
+
+static std::string manglefnparameters(::type type) {
+	std::stringstream fntype;
+	std::list<std::list<::type>> fnparamtypes;
+
+	std::transform(
+		type.spec.func.parametertypes_list.front().begin(), type.spec.func.parametertypes_list.front().end(), std::back_inserter(fnparamtypes),
+		[&](::var elem) { return elem.type; });
+	fntype << "(";
+	for (auto curr : fnparamtypes)
+		fntype << mangle(curr) << ",";
+	fntype << "[[nothing]])";
+	return fntype.str();
 }
 
-static std::unordered_map<std::string, size_t> overloadcount;
+static std::string mangle(std::list<::type> type) {
+	std::stringstream ss;
+
+	ss << "@";
+
+	for (auto curr : type) {
+		(curr.uniontype == type::ARRAY && (ss << "[" << curr.spec.array.nelems << "]", true))
+			|| (curr.uniontype == type::BASIC && (ss << (std::string)curr.spec.basicdeclspec, true))
+			|| (curr.uniontype == type::FUNCTION && (ss << manglefnparameters(curr), true))
+			|| (curr.uniontype == type::POINTER && (ss << "*", true));
+	}
+
+	return ss.str();
+}
+
+static std::list<::var>::reverse_iterator obtainpreviosfunction(std::string ident) {
+
+	std::list<::var>::reverse_iterator iter;
+
+	for (iter = scopevar.front().rbegin();
+		scopevar.front().rend() != (iter = obtainvalbyidentifier(ident, false, false, { --scopevar.rend(), iter }));
+		++iter) {
+
+		if (iter->value)
+			return iter;
+	}
+
+	return iter;
+}
+
+bool comparetwotypesdeep(std::list<::type> first, std::list<::type> second);
+
+static bool comparefunctiontypeparameters(::type fntypeone, ::type fntypetwo) {
+	auto& paramslistone = fntypeone.spec.func.parametertypes_list.front(),
+		& paramslisttwo = fntypetwo.spec.func.parametertypes_list.front();
+
+	auto iterparamsone = paramslistone.begin(), iterparamstwo = paramslisttwo.begin();
+
+	while (iterparamsone != paramslistone.end() && iterparamstwo != paramslisttwo.end()
+		&& comparetwotypesdeep(iterparamsone->type, iterparamstwo->type))
+		++iterparamsone, ++iterparamstwo;
+
+	return iterparamsone == paramslistone.end() && iterparamstwo == paramslisttwo.end();
+}
+
+static std::unordered_map<unsigned, bool> overloadflag;
 
 void addvar(var& lastvar, llvm::Constant* pInitializer) {
 
@@ -2214,20 +2275,22 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 			// scopevar.front ().push_back (lastvar);
 			break;
 		case type::FUNCTION:
-			llvm::Function* pfuncother;
+			std::list<::var>::reverse_iterator pfuncother;
 			lastvar.value = nullptr;
 			printtype(lastvar.requestType(), lastvar.identifier);
-			for (size_t i : ranges::iota_view{ 0u, overloadcount[lastvar.identifier] }) {
-				auto tmpident = lastvar.identifier + (i ? "." + std::to_string(i) : "");
-				pfuncother = nonconstructable.mainmodule.getFunction(tmpident);
-				if (pfuncother && pfuncother->getFunctionType() == lastvar.requestType())
-					lastvar.value = pfuncother;
+			std::string mangledfnname = overloadflag[stringhash(lastvar.identifier.c_str())] ? lastvar.identifier + mangle(lastvar.type) : lastvar.identifier;
+			if ((pfuncother = obtainpreviosfunction(lastvar.identifier) ) != scopevar.front().rend()
+				&& !comparefunctiontypeparameters(pfuncother->type.front(), lastvar.type.front())) {
+				pfuncother->value->setName(pfuncother->identifier + mangle(pfuncother->type));
+				overloadflag[stringhash(lastvar.identifier.c_str())] = true;
 			}
-			if(!lastvar.value)
+			lastvar.value = nonconstructable.mainmodule.getFunction(mangledfnname);
+			if (!lastvar.value) {
 				lastvar.value = llvm::Function::Create(
 					llvm::dyn_cast<llvm::FunctionType> (lastvar.requestType()),
-					linkagetype, lastvar.identifier, nonconstructable.mainmodule),
-				++overloadcount[lastvar.identifier];
+					linkagetype, mangledfnname, nonconstructable.mainmodule
+				);
+			}
 			// scopevar.front ().push_back (lastvar);
 			break;
 		}
@@ -2329,7 +2392,21 @@ bool bIsBasicFloat(const type& type) {
 		&& ranges::contains(std::array{ "float", "double" }, type.spec.basicdeclspec.basic[1]);
 }
 
-bool comparetwotypes(std::list<::type> one, std::list<::type> two) {
+bool comparetwotypesdeep(std::list<::type> first, std::list<::type> second) {
+	auto itertypeone = first.begin(), itertypetwo = second.begin();
+
+	while (itertypeone != first.end() && itertypetwo != second.end()
+		&& itertypeone->uniontype == itertypetwo->uniontype && (
+			(itertypetwo->uniontype == type::ARRAY && itertypeone->spec.array.nelems == itertypetwo->spec.array.nelems) 
+			|| (itertypetwo->uniontype == type::BASIC && itertypeone->spec.basicdeclspec == itertypetwo->spec.basicdeclspec)
+			|| (itertypetwo->uniontype == type::FUNCTION && comparefunctiontypeparameters(*itertypeone, *itertypetwo))
+			|| (itertypetwo->uniontype == type::POINTER && true)))
+		++itertypetwo, ++itertypeone;
+
+	return itertypeone == first.end() && itertypetwo == second.end();
+}
+
+bool comparetwotypesshallow(std::list<::type> one, std::list<::type> two) {
 	auto iterone = one.begin(), itertwo = two.begin();
 	switch (iterone->uniontype)
 		if (0) case type::ARRAY:
@@ -2355,7 +2432,7 @@ val coerceto(val target, std::list<::type> to) {
 
 val convertTo(val target, std::list<::type> to) {
 	extern val decay(val lvalue);
-	if (comparetwotypes(target.type, to)) {
+	if (comparetwotypesshallow(target.type, to)) {
 		target.type = to;
 		return target;
 	}
@@ -3186,7 +3263,7 @@ DLL_EXPORT void endfunctioncall() {
 
 		const auto distance = (long long)std::distance(argsiter, ::immidiates.end());
 
-		constexpr auto maxparamindividualscore = 1;
+		constexpr auto maxparamindividualscore = 2;
 
 		for (auto &funccand : revfunsrank) {
 
@@ -3198,7 +3275,15 @@ DLL_EXPORT void endfunctioncall() {
 				if (::immidiates.end() == argsiterarg) break;
 
 				auto argval = decay(*argsiterarg);
-				if (bIsBasicFloat(params.type.front()) != bIsBasicFloat(argval.type.front())) {
+				if (params.type.front().uniontype != argval.type.front().uniontype) {
+					funccand.second += 2;
+				}
+				else if (params.type.front().uniontype == type::POINTER) {
+					if (!comparetwotypesdeep(params.type, argval.type)) {
+						funccand.second += 1;
+					}
+				}
+				else if (bIsBasicFloat(params.type.front()) != bIsBasicFloat(argval.type.front())) {
 					funccand.second += 1;
 				}
 

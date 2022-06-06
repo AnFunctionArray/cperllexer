@@ -20,7 +20,7 @@
             |(?<addopraw>[\+\-]
             |(?<mulopraw>[\*\/\%]))))))))))
             ))))))))))
-                (??{use re 'eval'; #use re qw(Debug N);
+                (??{use re 'eval'; use if $debug, re => qw(Debug EXECUTE); 
                  $binopplusrestreg //= qr{(?(DEFINE)$mainregexdefs)(?&castexpr)}sxxo})
     (?&binopplusrest)*+(?{call 'binary'})))
 
