@@ -112,12 +112,6 @@
 	(?(?{existsflag "bitfl", {"nonbitfl"}})(?&abstrbitfield)|(?&abstrinitialization))
 	)
 
-(?<Tdecl>(?&Tasbtdecloutter)
-			(?&Tabstinitorbitfl)?+)
-
-
-(?<declcomma>,(?&Tdecl))
-
 (?<abstdeclorallqualifsqualifs>(((?&qualifs))|\s*+((?(?{eval {exists $matches[-1]{strc}} or 0})(*F))
 		(?(?{eval {exists $matches[-1]{typedefnmmatched}} or 0})(*F))
 		(((?&structorunion))(?{$matches[-1]{strc}=$^N})
@@ -127,7 +121,7 @@
 (?<abstdeclorallqualifsdestr>
 	(?{push2 \@declqualifs, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
 
-	(?(?=(?<declinner>(?&Tdecl)(?{call 'enddeclaration'})(?{replayrecord \@declqualifs})(?{call 'endqualifs'})))\g{declinner}
+	(?(?=(?<declinner>(?&Tasbtdecloutter)(?{call 'enddeclaration'})(?{replayrecord \@declqualifs})(?{call 'endqualifs'})))\g{declinner}(?&Tabstinitorbitfl)?+
 	(?(?{eval {existsflag "outterparams", {"outter" => undef, "optoutter"}} or 0})|(,(?&declinner))*+)|(?(?{print3("dump\n");eval {exists $matches[-1]{strc}} or 0})
 	|
 	(?{pop2 \@flags, undef})
@@ -181,7 +175,7 @@
 (?<abstrbitfield>\s*+:\s*+(?{call 'beginconstantexpr'})(?&assignorsomething)(?{call 'endconstantexpr'}))
 (?<designator>\s*+(\[(?&primexprnew)\]|\.\s*+(?&identifier))\s*+)
 (?<initializer>(?&assignorsomething)|\s*+[{]((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*+[}]\s*+)
-(?<abstrinitialization>=(?&initializer))
+(?<abstrinitialization>=(?{call 'begin_initializer'})(?&initializer)(?{call 'finalize_initializer'}))
 
 (?<add_ident_to_enum_def>\s*+(?<identlasttag>(?&identifierraw_qualified))(?{call 'add_ident_to_enum_def'})\s*+)
 

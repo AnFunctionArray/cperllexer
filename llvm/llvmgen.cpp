@@ -2096,6 +2096,59 @@ found:
 	return var;
 }
 
+DLL_EXPORT void begin_initializer(std::unordered_map<unsigned, std::string>& hashes) {
+	if (scopevar.size() == 1)
+		beginconstantexpr();
+}
+
+DLL_EXPORT void finalize_initializer(std::unordered_map<unsigned, std::string>& hashes) {
+	if (scopevar.size() == 1)
+		endconstantexpr();
+	if (currtypevectorbeingbuild.back().p->back().type.front().uniontype == type::ARRAY) {
+		if (scopevar.size() > 1) {
+			auto iterimm = immidiates.begin();
+			for (auto i : ranges::iota_view(0u, immidiates.size())) {
+				immidiates.push_back(val{ currtypevectorbeingbuild.back().p->back() });
+				insertinttoimm(std::to_string(i).c_str(), std::to_string(i).length(), "ul", sizeof "ul" - 1, 3);
+				phndl->subscripttwovalues();
+				immidiates.push_back(*iterimm++);
+				phndl->assigntwovalues();
+			}
+		}
+		else {
+
+			currtypevectorbeingbuild.back().p->back().type.front().spec.array.nelems = immidiates.size();
+
+			std::vector<llvm::Constant*> immidiates;
+
+			std::transform(
+				::immidiates.begin(), ::immidiates.end(), std::back_inserter(immidiates),
+				[&](basehndl::val elem) { return dyn_cast<llvm::Constant>(elem.value); });
+
+			addvar(currtypevectorbeingbuild.back().p->back(),
+				llvm::ConstantArray::get(dyn_cast<llvm::ArrayType>
+					(currtypevectorbeingbuild.back().p->back().requestType()), immidiates));
+		}
+	}
+	else {
+		if (scopevar.size() > 1) {
+			immidiates.push_back(val{ currtypevectorbeingbuild.back().p->back() });
+			immidiates.push_back(immidiates.back());
+			phndl->assigntwovalues();
+		}
+		else {
+			addvar(currtypevectorbeingbuild.back().p->back(),
+				dyn_cast<llvm::Constant>(immidiates.back().value));
+		}
+	}
+
+}
+
+DLL_EXPORT void collect() {
+	if (scopevar.size() > 1)
+		endconstantexpr();
+}
+
 DLL_EXPORT void addplaintexttostring(std::unordered_map<unsigned, std::string>& hashes) {
 	currstring += std::string{ hashes["textraw"_h] };
 }
