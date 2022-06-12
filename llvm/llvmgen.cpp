@@ -162,6 +162,8 @@ struct enumdef {
 	int maxcount{};
 };
 
+static std::list<std::string> callingconv;
+
 DLL_EXPORT void endsizeofexpr();
 
 std::list<std::list<enumdef>>  enums{ 1 };
@@ -553,6 +555,9 @@ pointrtypequalifiers parsequalifiers(const std::string& qualifs) {
 		case "__ptr32"_h:
 			ret[4] = 1;
 			break;
+		case "__stdcall"_h:
+			callingconv.push_back(spec);
+			break;
 		default:
 			std::cerr << "invalid specifier: " << spec << std::endl;
 			std::terminate();
@@ -599,6 +604,9 @@ bascitypespec parsebasictype(const std::list<std::string>& qualifs, bascitypespe
 		case "volatile"_h:
 			ret.qualifiers[2] = 1;
 			break;
+		case "__stdcall"_h:
+			callingconv.push_back(a);
+			break;
 		default:
 			std::cerr << "invalid specifier: " << a << std::endl;
 			std::terminate();
@@ -623,6 +631,7 @@ struct type {
 	struct functype {
 		std::list<std::list<var>> parametertypes_list{ 1 };
 		bool bisvariadic;
+		std::string callconv;
 	};
 
 	type(const type& a) : spec{ a.uniontype }, uniontype{ a.uniontype } {
@@ -828,6 +837,62 @@ static std::list<opscopeinfo> opsscopeinfo;
 
 struct basehndl /* : bindings_compiling*/ {
 	//virtual llvm::Value* assigntwovalues() = 0;
+
+	virtual val convertTo(val target, std::list<::type> to) {
+		extern val decay(val lvalue);
+		extern bool comparetwotypesshallow(std::list<::type> one, std::list<::type> two);
+		extern val coerceto(val target, std::list<::type> to);
+		extern void printvaltype(val);
+		if (comparetwotypesshallow(target.type, to)) {
+			target.type = to;
+			return target;
+		}
+
+		target = decay(target);
+		printvaltype(target);
+		printtype(buildllvmtypefull(to), "to");
+		//if (to.front().spec.basicdeclspec.basic[3].empty())
+		if (bIsBasicInteger(to.front()))
+			if (bIsBasicInteger(target.type.front()))
+				target.value = llvmbuilder.CreateIntCast(
+					target.value, buildllvmtypefull(to),
+					target.type.front().spec.basicdeclspec.basic[0] != "unsigned");
+			else if (bIsBasicFloat(target.type.front()))
+				if (to.back().spec.basicdeclspec.basic[0] == "unsigned")
+					target.value = llvmbuilder.CreateFPToUI(target.value, buildllvmtypefull(to));
+				else
+					target.value = llvmbuilder.CreateFPToSI(target.value, buildllvmtypefull(to));
+			else if (target.type.front().uniontype == type::POINTER)
+				target.value = llvmbuilder.CreatePtrToInt(target.value, buildllvmtypefull(to));
+			else;
+		else if (bIsBasicFloat(to.front()))
+			if (bIsBasicInteger(target.type.front()))
+				if (target.type.back().spec.basicdeclspec.basic[0] == "unsigned")
+					target.value = llvmbuilder.CreateUIToFP(target.value, buildllvmtypefull(to));
+				else
+					target.value = llvmbuilder.CreateSIToFP(target.value, buildllvmtypefull(to));
+			else if (bIsBasicFloat(target.type.front()))
+				target.value = llvmbuilder.CreateFPCast(
+					target.value, buildllvmtypefull(to));
+			else if (target.type.front().uniontype == type::POINTER) {
+				target.value = llvmbuilder.CreatePtrToInt(target.value, buildllvmtypefull({ basicsz })),
+					llvmbuilder.CreateUIToFP(
+						target.value, buildllvmtypefull(to));
+			}
+			else;
+		else if (to.front().uniontype == type::POINTER)
+			if (bIsBasicInteger(target.type.front()))
+				target.value = llvmbuilder.CreateIntToPtr(target.value, buildllvmtypefull(to));
+			else if (bIsBasicFloat(target.type.front()))
+				target = coerceto(target, { basicsz }),
+				target.value = llvmbuilder.CreateIntToPtr(target.value, buildllvmtypefull(to));
+			else
+				target.value = llvmbuilder.CreateBitCast(target.value, buildllvmtypefull(to));
+
+		target.type = to;
+
+		return target;
+	}
 
 	virtual std::list<struct type> getdefaulttype() {
 		return { basicint };
@@ -1832,6 +1897,26 @@ struct handlecnstexpr : handlefpexpr {
 	virtual void begin_branch() { }
 	virtual void end_binary() { }
 
+	virtual val convertTo(val target, std::list<::type> to) {
+		bool comparetwotypesshallow(std::list<::type> one, std::list<::type> two);
+		if (comparetwotypesshallow(target.type, to)) {
+			target.type = to;
+			return target;
+		}
+
+		printtype(buildllvmtypefull(to), "to");
+
+		if (bIsBasicInteger(to.front()))
+			if (bIsBasicInteger(target.type.front()))
+				target.value = llvm::ConstantExpr::getIntegerCast(
+					dyn_cast<llvm::Constant>(target.value), buildllvmtypefull(to),
+					target.type.front().spec.basicdeclspec.basic[0] != "unsigned");
+
+		target.type = to;
+
+		return target;
+	}
+
 	virtual basehndl* (*getrestorefn())(basehndl*) {
 		return [](basehndl* pnhdl) -> basehndl* {
 			return new (pnhdl) handlecnstexpr{};
@@ -2101,13 +2186,13 @@ DLL_EXPORT void begin_initializer(std::unordered_map<unsigned, std::string>& has
 		beginconstantexpr();
 }
 
+static llvm::SmallVector<llvm::Constant*> constantimmidiates;
+
 DLL_EXPORT void finalize_initializer(std::unordered_map<unsigned, std::string>& hashes) {
-	if (scopevar.size() == 1)
-		endconstantexpr();
 	if (currtypevectorbeingbuild.back().p->back().type.front().uniontype == type::ARRAY) {
 		if (scopevar.size() > 1) {
-			auto iterimm = immidiates.begin();
-			for (auto i : ranges::iota_view(0u, immidiates.size())) {
+			auto iterimm = ++immidiates.begin();
+			for (auto i : ranges::iota_view(0u, immidiates.size() - 1)) {
 				immidiates.push_back(val{ currtypevectorbeingbuild.back().p->back() });
 				insertinttoimm(std::to_string(i).c_str(), std::to_string(i).length(), "ul", sizeof "ul" - 1, 3);
 				phndl->subscripttwovalues();
@@ -2116,18 +2201,11 @@ DLL_EXPORT void finalize_initializer(std::unordered_map<unsigned, std::string>& 
 			}
 		}
 		else {
-
-			currtypevectorbeingbuild.back().p->back().type.front().spec.array.nelems = immidiates.size();
-
-			std::vector<llvm::Constant*> immidiates;
-
-			std::transform(
-				::immidiates.begin(), ::immidiates.end(), std::back_inserter(immidiates),
-				[&](basehndl::val elem) { return dyn_cast<llvm::Constant>(elem.value); });
+			currtypevectorbeingbuild.back().p->back().type.front().spec.array.nelems = constantimmidiates.size();
 
 			addvar(currtypevectorbeingbuild.back().p->back(),
 				llvm::ConstantArray::get(dyn_cast<llvm::ArrayType>
-					(currtypevectorbeingbuild.back().p->back().requestType()), immidiates));
+					(currtypevectorbeingbuild.back().p->back().requestType()), constantimmidiates));
 		}
 	}
 	else {
@@ -2138,15 +2216,27 @@ DLL_EXPORT void finalize_initializer(std::unordered_map<unsigned, std::string>& 
 		}
 		else {
 			addvar(currtypevectorbeingbuild.back().p->back(),
-				dyn_cast<llvm::Constant>(immidiates.back().value));
+				constantimmidiates[0]);
 		}
 	}
 
+	if (scopevar.size() == 1)
+		endconstantexpr();
+
+	immidiates.clear();
+
+	constantimmidiates.clear();
 }
 
-DLL_EXPORT void collect() {
-	if (scopevar.size() > 1)
-		endconstantexpr();
+DLL_EXPORT void extract() {
+	std::list<::type> to = currtypevectorbeingbuild.back().p->back().type;
+
+	to.pop_front();
+
+	if (scopevar.size() == 1) {
+		constantimmidiates.push_back(dyn_cast<llvm::Constant>(convertTo(::immidiates.back(), to).value));
+		::immidiates.pop_back();
+	}
 }
 
 DLL_EXPORT void addplaintexttostring(std::unordered_map<unsigned, std::string>& hashes) {
@@ -2331,18 +2421,21 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 			std::list<::var>::reverse_iterator pfuncother;
 			lastvar.value = nullptr;
 			printtype(lastvar.requestType(), lastvar.identifier);
-			std::string mangledfnname = overloadflag[stringhash(lastvar.identifier.c_str())] ? lastvar.identifier + mangle(lastvar.type) : lastvar.identifier;
 			if ((pfuncother = obtainpreviosfunction(lastvar.identifier) ) != scopevar.front().rend()
 				&& !comparefunctiontypeparameters(pfuncother->type.front(), lastvar.type.front())) {
 				pfuncother->value->setName(pfuncother->identifier + mangle(pfuncother->type));
 				overloadflag[stringhash(lastvar.identifier.c_str())] = true;
 			}
+			std::string mangledfnname = overloadflag[stringhash(lastvar.identifier.c_str())] ? lastvar.identifier + mangle(lastvar.type) : lastvar.identifier;
 			lastvar.value = nonconstructable.mainmodule.getFunction(mangledfnname);
 			if (!lastvar.value) {
 				lastvar.value = llvm::Function::Create(
 					llvm::dyn_cast<llvm::FunctionType> (lastvar.requestType()),
 					linkagetype, mangledfnname, nonconstructable.mainmodule
 				);
+				if (!lastvar.type.front().spec.func.callconv.empty()) {
+					dyn_cast<llvm::Function>(lastvar.value)->setCallingConv(llvm::CallingConv::X86_StdCall);
+				}
 			}
 			// scopevar.front ().push_back (lastvar);
 			break;
@@ -2484,56 +2577,8 @@ val coerceto(val target, std::list<::type> to) {
 }
 
 val convertTo(val target, std::list<::type> to) {
-	extern val decay(val lvalue);
-	if (comparetwotypesshallow(target.type, to)) {
-		target.type = to;
-		return target;
-	}
 
-	target = decay(target);
-	printvaltype(target);
-	printtype(buildllvmtypefull(to), "to");
-	//if (to.front().spec.basicdeclspec.basic[3].empty())
-	if (bIsBasicInteger(to.front()))
-		if (bIsBasicInteger(target.type.front()))
-			target.value = llvmbuilder.CreateIntCast(
-				target.value, buildllvmtypefull(to),
-				target.type.front().spec.basicdeclspec.basic[0] != "unsigned");
-		else if (bIsBasicFloat(target.type.front()))
-			if (to.back().spec.basicdeclspec.basic[0] == "unsigned")
-				target.value = llvmbuilder.CreateFPToUI(target.value, buildllvmtypefull(to));
-			else
-				target.value = llvmbuilder.CreateFPToSI(target.value, buildllvmtypefull(to));
-		else if (target.type.front().uniontype == type::POINTER)
-			target.value = llvmbuilder.CreatePtrToInt(target.value, buildllvmtypefull(to));
-		else;
-	else if (bIsBasicFloat(to.front()))
-		if (bIsBasicInteger(target.type.front()))
-			if (target.type.back().spec.basicdeclspec.basic[0] == "unsigned")
-				target.value = llvmbuilder.CreateUIToFP(target.value, buildllvmtypefull(to));
-			else
-				target.value = llvmbuilder.CreateSIToFP(target.value, buildllvmtypefull(to));
-		else if (bIsBasicFloat(target.type.front()))
-			target.value = llvmbuilder.CreateFPCast(
-				target.value, buildllvmtypefull(to));
-		else if (target.type.front().uniontype == type::POINTER) {
-			target.value = llvmbuilder.CreatePtrToInt(target.value, buildllvmtypefull({ basicsz })),
-				llvmbuilder.CreateUIToFP(
-					target.value, buildllvmtypefull(to));
-		}
-		else;
-	else if (to.front().uniontype == type::POINTER)
-		if(bIsBasicInteger(target.type.front()))
-			target.value = llvmbuilder.CreateIntToPtr(target.value, buildllvmtypefull(to));
-		else if(bIsBasicFloat(target.type.front()))
-			target = coerceto(target, { basicsz }),
-			target.value = llvmbuilder.CreateIntToPtr(target.value, buildllvmtypefull(to));
-		else
-			target.value = llvmbuilder.CreateBitCast(target.value, buildllvmtypefull(to));
-
-	target.type = to;
-
-	return target;
+	return phndl->convertTo(target, to);
 }
 
 DLL_EXPORT void applycast() {
@@ -3393,7 +3438,8 @@ rest:
 
 	val fixupval = calleevalntype;
 
-	fixupval.type.front() = fntype;
+	if(fixupval.type.front().spec.func.callconv.empty())
+		fixupval.type.front() = fntype;
 
 	// if (functype->isPtrOrPtrVectorTy ())
 	pval = llvmbuilder.CreateCall(
@@ -3504,6 +3550,11 @@ DLL_EXPORT void startfunctionparamdecl() {
 
 	currtypevectorbeingbuild.back().p->back().type.push_back(
 		{ type::FUNCTION });
+	if (!callingconv.empty()) {
+		currtypevectorbeingbuild.back().p->back().type.back().spec.func.callconv = callingconv.back();
+
+		callingconv.pop_back();
+	}
 
 	currtypevectorbeingbuild.push_back(
 		{ currtypevectorbeingbuild.back()
@@ -3534,6 +3585,10 @@ DLL_EXPORT void addptrtotype(std::unordered_map<unsigned, std::string>&& hashes)
 		parsequalifiers(hashes["qualifptr"_h]);
 
 	currtypevectorbeingbuild.back().p->back().type.push_back(ptrtype);
+}
+
+DLL_EXPORT void setcallconv() {
+	callingconv.push_back("__stdcall");
 }
 
 DLL_EXPORT void insertinttoimm(const char* str, size_t szstr, const char* suffix, size_t szstr1, int type) {

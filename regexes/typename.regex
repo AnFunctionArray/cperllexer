@@ -89,8 +89,8 @@
 						(?{pop2 \@savedcallouts})(?{pop2 \@matches})(*F)))
 						)\s*+)
 
-(?<abstdecl>
-		(?(?=(?<abstrptrrev>(?<abstrptr>\s*+[*]\s*+
+(?<abstdecl>\s*+(?<callconv>\b__stdcall\b\s*+(?{call 'setcallconv'}))?+
+		(?(?=(?<abstrptrrev>(?<abstrptr>\s*+[*]\s*+(?<callconv>\b__stdcall\b\s*+(?{call 'setcallconv'}))?+
 						(?<qualifptr>(?{push2 \@savedcallouts, []; ++$recording;})
 							(?&typeorqualif)*+
 							(?{pop2 \@savedcallouts; --$recording;})
@@ -174,7 +174,7 @@
 
 (?<abstrbitfield>\s*+:\s*+(?{call 'beginconstantexpr'})(?&assignorsomething)(?{call 'endconstantexpr'}))
 (?<designator>\s*+(\[(?&primexprnew)\]|\.\s*+(?&identifier))\s*+)
-(?<initializer>(?&assignorsomething)|\s*+[{]((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*+[}]\s*+)
+(?<initializer>(?&assignorsomething)(?{call 'extract'})|\s*+[{]((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*+[}]\s*+)
 (?<abstrinitialization>=(?{call 'begin_initializer'})(?&initializer)(?{call 'finalize_initializer'}))
 
 (?<add_ident_to_enum_def>\s*+(?<identlasttag>(?&identifierraw_qualified))(?{call 'add_ident_to_enum_def'})\s*+)

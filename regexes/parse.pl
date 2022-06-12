@@ -23,6 +23,7 @@ $genml = $ENV{'GENMLJSON'};
 
 $debug = $ENV{'DEBUG'};
 $silent = $ENV{'SILENT'};
+$lineonly = $ENV{'LINEONLY'};
 
 #my sub Dumper {"\n"}
 
@@ -584,11 +585,16 @@ sub call {
 
     my $subslice;
 
-    if( not $silent ) {
+    if(not $silent or $lineonly)
+    {
 
-        $subslice = substr $subject, pos(), 10;
+        $subslice = substr $subject, pos(), ($lineonly ? 100 : 25);
 
         $subslice =~ s{\R}{ }g;
+    }
+
+    if($lineonly) {
+        CORE::print $subslice . "\n"
     }
 
     #use Data::Dumper;
