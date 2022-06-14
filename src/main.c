@@ -2,6 +2,10 @@
 #define PCRE2_STATIC
 #define _LARGEFILE64_SOURCE
 
+#ifdef NDEBUG
+#define NDEBUGSTATE
+#endif
+
 #if !defined(_WIN32) & !defined(_WIN64)
 //#include <pcre2.h>
 #else
@@ -241,7 +245,7 @@ struct retgetnamevalue getnamevalue(const char* nametoget) {
 #include <perl.h>	/* from the Perl distribution     */
 #include <XSUB.h>
 
-XS__startmatching(), XS__callout(), XS__startmodule(), boot_DynaLoader(), endmodule(), XS__startmetaregex();
+XS__startmatching(), XS__callout(), XS__startmodule(), boot_DynaLoader(), endmodule(), XS__startmetaregex(), dumpabrupt();
 
 static void
 xs_init(pTHX)
@@ -284,7 +288,19 @@ secondmain(char* subject, size_t szsubject, char* pattern, size_t szpattern, cha
 //#include <unistd.h>
 
 void handler1(int sig) {
-	endmodule(1);
+	dumpabrupt();
+	exit(0);
+}
+
+#ifdef _WIN32
+#include 	<crtdbg.h>
+#endif
+
+int handler2(int reportType, char* message, int* returnValue) {
+	if (returnValue)
+		*returnValue = TRUE;
+	printf("%s\n", message);
+	dumpabrupt();
 	exit(0);
 }
 
@@ -306,6 +322,9 @@ int main(int argc, char** argv, char** env)
 #endif
 	//onig_initialize();
 	signal(SIGTERM, handler1);
+#if _WIN32 && defined(NDEBUGSTATE)
+	_CrtSetReportHook(handler2);
+#endif
 	if(getenv("THREADING")) {
 		void *wait_for_call(void*);
 		//pthread_create(&thread, 0, wait_for_call, 0);

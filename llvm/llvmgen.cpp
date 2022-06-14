@@ -105,6 +105,7 @@ const std::list<struct var>::reverse_iterator obtainvalbyidentifier(std::string 
 extern const struct type basicint, basicsz;
 
 enum class currdecltypeenum {
+	STRUCTORUNION,
 	TYPEDEF,
 	CAST,
 	PARAMS,
@@ -717,6 +718,12 @@ llvm::Type* buildllvmtypefull(std::list<type>&& decltypevector) {
 	return buildllvmtypefull(reinterpret_cast<std::list<type> &>(std::move(decltypevector)));
 }
 
+extern struct handlecnstexpr hndlcnstexpr;
+
+extern struct handlefpexpr hndlfpexpr;
+
+extern struct basehndl* phndl;
+
 struct valbase {
 	std::list<::type> type;
 	union {
@@ -732,6 +739,8 @@ struct valbase {
 	auto requestType() {
 		return buildllvmtypefull(type);
 	}
+
+	bool isconstant = (void*) & hndlcnstexpr == (void*)phndl;
 };
 
 typedef llvm::Value* lvaluebase;
@@ -1630,7 +1639,7 @@ struct basehndl /* : bindings_compiling*/ {
 
 		instr = llvmbuilder.CreateStore(ops[1].value, ops[0].lvalue);
 
-		immidiates.push_back(val{ ops[1].type, ops[1].value, "", ops[1].lvalue });
+		immidiates.push_back(val{ {ops[1].type, ops[1].value, ""}, ops[1].lvalue });
 
 		return instr;
 	}
@@ -1664,10 +1673,10 @@ struct basehndl /* : bindings_compiling*/ {
 						targettype, target,
 						gepinidces);
 					immidiates.push_back(
-						val{ ops[i].type, ops[i].type.front().uniontype != type::FUNCTION
+						val{ {ops[i].type, ops[i].type.front().uniontype != type::FUNCTION
 							 ? llvmbuilder.CreateLoad(ops[i].type.front().cachedtype, lvalue)
 							 : lvalue,
-						 ops[i].identifier, lvalue });
+						 ops[i].identifier}, lvalue });
 					printtype(lvalue->getType(), ops[i].identifier);
 					printtype(immidiates.back().value->getType(),
 						ops[i].identifier);
@@ -2107,6 +2116,19 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 
 	var = rfromwhere.first->rend();
 
+	if (push) {
+		auto& currfunctype = currfunc->type.front().spec.func.parametertypes_list.front();
+
+		if (auto findparam = std::find_if(
+			currfunctype.rbegin(), currfunctype.rend(),
+			[&](const ::var& param) { return param.identifier == ident; });
+			findparam != currfunctype.rend())
+		{
+			var = findparam;
+			goto found;
+		}
+	}
+
 	for (std::list<std::list<::var>>::reverse_iterator iterscope = rfromwhere.first; iterscope != scopevar.rend(); ++iterscope) {
 		for (std::list<::var>::reverse_iterator itervar = iterscope == rfromwhere.first ? rfromwhere.second : iterscope->rbegin(); itervar != iterscope->rend(); ++itervar) {
 			if (itervar->identifier == ident && (bfindtypedef == (itervar->linkage == "typedef"))) {
@@ -2115,36 +2137,27 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 			}
 		}
 	}
+	if (push) {
+	undef: {
+		std::cout << "not found: " << ident << std::endl;
 
-	if (push)
-	{
-		auto& currfunctype = currfunc->type.front().spec.func.parametertypes_list.front();
+		type fntype{ type::FUNCTION };
 
-		if (auto findparam = std::find_if(
-			currfunctype.rbegin(), currfunctype.rend(),
-			[&](const ::var& param) { return param.identifier == ident; });
-			findparam != currfunctype.rend())
-			var = findparam;
-		else undef: {
-			std::cout << "not found: " << ident << std::endl;
+		fntype.spec.func.bisvariadic = true;
 
-			type fntype{ type::FUNCTION };
+		::var newvar{ {.identifier = ident} };
+		newvar.type = newvar.type = { fntype, basicint };
+		newvar.firstintroduced = nullptr;
+		addvar(newvar);
+		scopevar.begin()->push_back(newvar);
 
-			fntype.spec.func.bisvariadic = true;
+		var = scopevar.begin()->rbegin();
 
-			::var newvar{ {.identifier = ident} };
-			newvar.type = newvar.type = { fntype, basicint };
-			newvar.firstintroduced = nullptr;
-			addvar(newvar);
-			scopevar.begin()->push_back(newvar);
-
-			var = scopevar.begin()->rbegin();
-
-			/*if (push) {
-				phndl->immidiates.push_back(::val{newvar});
-				//plastnotfound = &phndl->immidiates.back();
-			}
-			return scopevar.begin()->rbegin();*/
+		/*if (push) {
+			phndl->immidiates.push_back(::val{newvar});
+			//plastnotfound = &phndl->immidiates.back();
+		}
+		return scopevar.begin()->rbegin();*/
 		}
 	}
 	/*if (var->type.front ().uniontype == ::type::FUNCTION)
@@ -2171,7 +2184,7 @@ found:
 
 	immidiate.lvalue = immidiate.value;
 
-	if (immidiate.value && immidiate.type.front().uniontype != type::FUNCTION)
+	if (immidiate.value && immidiate.type.front().uniontype != type::FUNCTION && !var->isconstant)
 		immidiate.value = llvmbuilder.CreateLoad(immidiate.requestType(), immidiate.value);
 
 	phndl->immidiates.push_back(immidiate);
@@ -2453,9 +2466,22 @@ void addvar(var& lastvar, llvm::Constant* pInitializer) {
 
 extern std::pair<std::string, std::string> currstruct;
 
-DLL_EXPORT void endbuildingstructorunion() {
-	auto& lastmembers = structorunionmembers.back().back();
+DLL_EXPORT void endqualifs(std::unordered_map<unsigned, std::string>&& hashes);
+
+static std::list<std::list<var>>::iterator laststruc;
+
+DLL_EXPORT void check_stray_struc() {
+	auto& lastmembers = *laststruc;
 	auto& structvar = lastmembers.front();
+
+	if (structvar.identifier.empty()
+		&& currtypevectorbeingbuild.back().currdecltype == currdecltypeenum::STRUCTORUNION) {
+		currtypevectorbeingbuild.back().p->push_back(structvar);
+		currtypevectorbeingbuild.back().p->back().type.front().spec.basicdeclspec.pexternaldata = (void*)&lastmembers;
+	}
+}
+
+DLL_EXPORT void endbuildingstructorunion() {
 
 	//for (auto& a : lastmembers | ranges::views::drop(1))
 		//a.pllvmtype = buildllvmtypefull(a.type);
@@ -2465,6 +2491,8 @@ DLL_EXPORT void endbuildingstructorunion() {
 	std::transform(++lastmembers.begin(), lastmembers.end(),
 		std::back_inserter(structtypes),
 		[](const var& elem) { return elem.pllvmtype; });*/
+
+	laststruc = currtypevectorbeingbuild.back().p;
 
 	currtypevectorbeingbuild.pop_back();
 
@@ -2565,6 +2593,10 @@ bool comparetwotypesshallow(std::list<::type> one, std::list<::type> two) {
 }
 
 val coerceto(val target, std::list<::type> to) {
+	if (comparetwotypesshallow(target.type, to)) {
+		target.type = to;
+		return target;
+	}
 	phndl->immidiates.push_back(target);
 	phndl->getaddress();
 	auto& imm = immidiates.back();
@@ -2642,7 +2674,7 @@ void pushsizeoftype(val&& value) {
 			"[[sizeoftypename]]" });
 }
 
-DLL_EXPORT void memberaccess(std::unordered_map<unsigned, std::string>&& hashentry) {
+bool memberaccess_decoy(std::unordered_map<unsigned, std::string>& hashentry) {
 	bool indirection = hashentry["arrowordotraw"_h] == "->";
 
 	if (indirection) phndl->applyindirection();
@@ -2656,43 +2688,78 @@ DLL_EXPORT void memberaccess(std::unordered_map<unsigned, std::string>&& hashent
 
 	auto listiter = ++pliststruct->begin();
 
+	auto lastvarcopy = lastvar;
+
 	for (; listiter != pliststruct->end() &&
 		listiter->identifier != hashentry["ident"_h];
 		++imember, ++listiter)
-		;
+		if (listiter->identifier.empty()) {
+			if (lastvarcopy.type.front().spec.basicdeclspec.basic[0] != "union") {
+				goto exec_member;
+			}
+			else {
+				lastvar = coerceto(lastvar, listiter->type);
+			}
+		continue_search:
+			if (memberaccess_decoy(hashentry))
+				return true;
+		}
 
-	auto& lastlvalue = lastvar.lvalue;
+	if (listiter == pliststruct->end())
+		return false;
+
+	if (lastvarcopy.type.front().spec.basicdeclspec.basic[0] == "union") {
+		lastvar = coerceto(lastvarcopy, listiter->type);
+		return true;
+	}
+
+exec_member:
+	{
+		auto& lastvar = phndl->immidiates.back();
+
+		lastvar = lastvarcopy;
+
+		auto& lastlvalue = lastvar.lvalue;
 
 
-	auto& member = *listiter;
+		auto& member = *listiter;
 
-	llvm::Value* lvalue = llvmbuilder.CreateGEP(
-		pliststruct->front().pllvmtype,
-		lastvar.lvalue,
+		llvm::Value* lvalue = llvmbuilder.CreateGEP(
+			pliststruct->front().pllvmtype,
+			lastvar.lvalue,
 
-		{ llvmbuilder.getInt32(0), llvmbuilder.getInt32(imember) });
+			{ llvmbuilder.getInt32(0), llvmbuilder.getInt32(imember) });
 
-	//printtype(member.pllvmtype->getPointerTo(), "");
+		//printtype(member.pllvmtype->getPointerTo(), "");
 
-	// lvalue = llvmbuilder.CreatePointerCast(lvalue,
-	// member.pllvmtype->getPointerTo());
+		// lvalue = llvmbuilder.CreatePointerCast(lvalue,
+		// member.pllvmtype->getPointerTo());
 
-	printtype(member.pllvmtype,
-		lastvar.identifier + " " + std::to_string(imember));
+		printtype(member.pllvmtype,
+			lastvar.identifier + " " + std::to_string(imember));
 
-	llvm::Value* rvalue = llvmbuilder.CreateLoad(member.pllvmtype, lvalue);
+		llvm::Value* rvalue = llvmbuilder.CreateLoad(member.pllvmtype, lvalue);
 
-	lastvar.type = member.type;
+		lastvar.type = member.type;
 
-	lastvar.identifier = member.identifier;
+		lastvar.identifier = member.identifier;
 
-	lastvar.value = rvalue;
+		lastvar.value = rvalue;
 
-	printvaltype(lastvar);
+		printvaltype(lastvar);
 
-	lastvar.lvalue = lvalue;
+		lastvar.lvalue = lvalue;
 
-	return;
+		if (member.identifier.empty()) {
+			goto continue_search;
+		}
+	}
+
+	return true;
+}
+
+DLL_EXPORT void memberaccess(std::unordered_map<unsigned, std::string>& hashentry) {
+	assert(memberaccess_decoy(hashentry));
 }
 
 DLL_EXPORT void endsizeoftypename() {
@@ -2850,6 +2917,23 @@ void fixupstructype(std::list<::var>* var) {
 
 	size_t curralign = 1;
 
+	if (var->front().type.front().spec.basicdeclspec.basic[0] == "union") {
+		var->sort(
+			[&](const ::var &first, const ::var& second) -> bool {
+				if (&first == &var->front())
+					return true;
+				else if (&second == &var->front())
+					return false;
+				return 
+					pdatalayout->getTypeStoreSize(const_cast<::var&>(first).requestType()) >
+					pdatalayout->getTypeStoreSize(const_cast<::var&>(second).requestType());
+			}
+		);
+		var->front().pllvmtype = (++var->begin())->pllvmtype;
+
+		return;
+	}
+
 	var->front().pllvmtype = llvm::StructType::create(llvmctx);
 
 	for (auto& a : *var | ranges::views::drop(1))
@@ -2875,12 +2959,15 @@ const std::list<::var>* getstructorunion(bascitypespec& basic) {
 
 	std::string ident = basic.basic[3];
 
+	if(!ident.empty())
+
 	std::find_if(structorunionmembers.rbegin(), structorunionmembers.rend(),
 		[&](std::list<std::list<::var>>& scope) {
 			auto iter = std::find_if(
 				scope.rbegin(), scope.rend(),
 				[&](const std::list<::var>& scopevar) {
-					return scopevar.front().identifier == ident;
+					return scopevar.front().identifier == ident &&
+						scopevar.front().type.front().spec.basicdeclspec.basic[0] == basic.basic[0];
 				});
 
 			if (iter != scope.rend())
@@ -2964,6 +3051,7 @@ llvm::Type* buildllvmtypefull(std::list<type>& refdecltypevector) {
 		default:
 			switch (
 				stringhash(type->spec.basicdeclspec.basic[0].c_str())) {
+			case "union"_h:
 			case "struct"_h: {
 				auto currstruct = getstructorunion(type->spec.basicdeclspec);
 				if (!currstruct) {
@@ -2979,8 +3067,6 @@ llvm::Type* buildllvmtypefull(std::list<type>& refdecltypevector) {
 			case "enum"_h:
 				*type = basicint;
 				goto label_int;//throw std::exception{ "enum should have int type" };
-			case "union"_h:
-				break;
 			default: { // typedef
 				//bjastypedef = true;
 				pcurrtype = obtainvalbyidentifier(type->spec.basicdeclspec.basic[3], false, true)->requestType();
@@ -3521,7 +3607,7 @@ DLL_EXPORT void endqualifs(std::unordered_map<unsigned, std::string>&& hashes) {
 							   if (0) case "struct"_h:
 							   case "union"_h:
 							   {
-								   auto* reflaststruc = &structorunionmembers.back().back();
+								   auto* reflaststruc = &*laststruc;
 								   //if (!reflaststruc->back().pllvmtype) fixupstructype(reflaststruc);
 
 								   lastvar.type.back().spec.basicdeclspec.pexternaldata = reflaststruc;
@@ -3680,7 +3766,7 @@ static bool endwork = false;
 
 std::ofstream record{ getenv("RECORD") ? getenv("RECORD") : "", std::ios::binary };
 
-DLL_EXPORT void endmodule(bool bhandlerexit) {
+DLL_EXPORT void endmodule() {
 	if (getenv("THREADING")) {
 		mutexwork.lock();
 		endwork = true;
@@ -3693,12 +3779,20 @@ DLL_EXPORT void endmodule(bool bhandlerexit) {
 		std::string{nonconstructable.mainmodule.getName()} + ".bc", code },
 		outputll{ std::string{nonconstructable.mainmodule.getName()} + ".ll",
 				 code };
-	if (!record.is_open() && !bhandlerexit) {
+	if (!record.is_open()) {
 		llvm::WriteBitcodeToFile(nonconstructable.mainmodule, output);
 		nonconstructable.mainmodule.print(outputll, nullptr);
 	}
 	nonconstructable.mainmodule.~Module();
 	delete pdatalayout;
+}
+
+DLL_EXPORT void dumpabrupt() {
+	std::error_code code{};
+	llvm::raw_fd_ostream
+		outputll{ std::string{nonconstructable.mainmodule.getName()} + ".ll",
+				 code };
+	nonconstructable.mainmodule.print(outputll, nullptr);
 }
 
 DLL_EXPORT void unary(std::unordered_map<unsigned, std::string>&& hashes) {
@@ -4346,7 +4440,7 @@ DLL_EXPORT void add_tag(std::unordered_map<unsigned, std::string>&hashes) {
 	auto& lastvar = currtypevectorbeingbuild.back().p->back();
 	lastvar.type.back().spec.basicdeclspec.basic[0] = hashes["structorunionlast"_h];
 	if (hashes["lasttag"_h].empty())
-		lastvar.type.back().spec.basicdeclspec.pexternaldata = &structorunionmembers.back().back();
+		lastvar.type.back().spec.basicdeclspec.pexternaldata = &*laststruc;
 	else lastvar.type.back().spec.basicdeclspec.basic[3] = hashes["lasttag"_h];
 }
 
@@ -4425,7 +4519,7 @@ DLL_EXPORT void struc_or_union_body(std::unordered_map<unsigned, std::string> &h
 	tmp.identifier = hashes["lasttag"_h];
 	structorunionmembers.back().push_back({ tmp });
 	currtypevectorbeingbuild.push_back(
-		{ --structorunionmembers.back().end(), currdecltypeenum::PARAMS });
+		{ --structorunionmembers.back().end(), currdecltypeenum::STRUCTORUNION });
 }
 #if 0
 virtual void struc_or_union_body_end_60() {
@@ -4562,6 +4656,7 @@ DLL_EXPORT void add_ident_to_enum_def(std::unordered_map<unsigned, std::string> 
 	//int n = getnameloc3("identlast", *ptable, a, 1, { .dontsearchforclosest = 0 }) + 1;
 
 	tmp.identifier = hashes["identlasttag"_h];//(char*)GROUP_PTR_AND_SZ(n) };
+	tmp.isconstant = true;
 
 	scopevar.back().push_back(tmp);
 
