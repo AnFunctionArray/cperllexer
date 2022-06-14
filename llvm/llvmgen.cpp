@@ -2075,13 +2075,13 @@ struct handlecnstexpr : handlefpexpr {
 	}
 };
 
-static handlecnstexpr hndlcnstexpr{};
+handlecnstexpr hndlcnstexpr{};
 
-static handlefpexpr hndlfpexpr{};
+handlefpexpr hndlfpexpr{};
 
 std::aligned_storage_t<sizeof(handlecnstexpr), alignof(handlecnstexpr)> unincompilingobj;
 
-static basehndl* phndl = new (&unincompilingobj) basehndl{};
+basehndl* phndl = new (&unincompilingobj) basehndl{};
 
 //static std::remove_reference<decltype (basehndl::immidiates)>::type::iterator
 //cnstexpriterstart{};
