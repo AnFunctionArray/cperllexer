@@ -2674,10 +2674,7 @@ void pushsizeoftype(val&& value) {
 			"[[sizeoftypename]]" });
 }
 
-bool memberaccess_decoy(std::unordered_map<unsigned, std::string>& hashentry) {
-	bool indirection = hashentry["arrowordotraw"_h] == "->";
-
-	if (indirection) phndl->applyindirection();
+bool memberaccess_decoy(std::string ident) {
 
 	auto& lastvar = phndl->immidiates.back();
 
@@ -2691,7 +2688,7 @@ bool memberaccess_decoy(std::unordered_map<unsigned, std::string>& hashentry) {
 	auto lastvarcopy = lastvar;
 
 	for (; listiter != pliststruct->end() &&
-		listiter->identifier != hashentry["ident"_h];
+		listiter->identifier != ident;
 		++imember, ++listiter)
 		if (listiter->identifier.empty()) {
 			if (lastvarcopy.type.front().spec.basicdeclspec.basic[0] != "union") {
@@ -2701,7 +2698,7 @@ bool memberaccess_decoy(std::unordered_map<unsigned, std::string>& hashentry) {
 				lastvar = coerceto(lastvar, listiter->type);
 			}
 		continue_search:
-			if (memberaccess_decoy(hashentry))
+			if (memberaccess_decoy(ident))
 				return true;
 		}
 
@@ -2759,7 +2756,11 @@ exec_member:
 }
 
 DLL_EXPORT void memberaccess(std::unordered_map<unsigned, std::string>& hashentry) {
-	assert(memberaccess_decoy(hashentry));
+	bool indirection = hashentry["arrowordotraw"_h] == "->";
+
+	if (indirection) phndl->applyindirection();
+
+	assert(memberaccess_decoy(hashentry["ident"_h]));
 }
 
 DLL_EXPORT void endsizeoftypename() {
