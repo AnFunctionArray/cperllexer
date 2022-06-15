@@ -844,6 +844,28 @@ static std::list<opscopeinfo> opsscopeinfo;
 
 //static std::list<var> currlogicopval{};
 
+static ::type getequivalentintegertype(llvm::Type* inweirdtype) {
+	::type basicty{ type::BASIC };
+	basicty.spec.basicdeclspec.basic[0] = "unsigned";
+	switch (pdatalayout->getTypeStoreSize(inweirdtype)) if (0);
+	else if (0) {
+	case 1:
+		basicty.spec.basicdeclspec.basic[1] = "char";
+		return basicty;
+	case 2:
+		basicty.spec.basicdeclspec.basic[1] = "short";
+		return basicty;
+	case 4:
+		basicty.spec.basicdeclspec.basic[1] = "int";
+		return basicty;
+	case 8:
+		basicty.spec.basicdeclspec.basic[1] = "long";
+		basicty.spec.basicdeclspec.longspecsn = 2;
+		return basicty;
+	}
+	assert(0);
+}
+
 struct basehndl /* : bindings_compiling*/ {
 	//virtual llvm::Value* assigntwovalues() = 0;
 
@@ -873,7 +895,9 @@ struct basehndl /* : bindings_compiling*/ {
 					target.value = llvmbuilder.CreateFPToSI(target.value, buildllvmtypefull(to));
 			else if (target.type.front().uniontype == type::POINTER)
 				target.value = llvmbuilder.CreatePtrToInt(target.value, buildllvmtypefull(to));
-			else;
+			else {
+				target = coerceto(target, to);
+			}
 		else if (bIsBasicFloat(to.front()))
 			if (bIsBasicInteger(target.type.front()))
 				if (target.type.back().spec.basicdeclspec.basic[0] == "unsigned")
@@ -897,6 +921,10 @@ struct basehndl /* : bindings_compiling*/ {
 				target.value = llvmbuilder.CreateIntToPtr(target.value, buildllvmtypefull(to));
 			else
 				target.value = llvmbuilder.CreateBitCast(target.value, buildllvmtypefull(to));
+		else {
+			auto newtype = { getequivalentintegertype(buildllvmtypefull(to)) };
+			target = convertTo(target, newtype);
+		}
 
 		target.type = to;
 
@@ -1789,11 +1817,12 @@ std::list<val>& basehndl::immidiates = ::immidiates;
 const llvm::fltSemantics& getfloatsembytype(val val) {
 	if (val.type.front().spec.basicdeclspec.basic[1] == "float")
 		return llvm::APFloatBase::IEEEsingle();
-	else
+	else {
 		switch (val.type.front().spec.basicdeclspec.longspecsn)
 		case 1:
 			return llvm::APFloatBase::IEEEquad();
-			return llvm::APFloatBase::IEEEdouble();
+	}
+	return llvm::APFloatBase::IEEEdouble();
 }
 
 struct handlefpexpr : basehndl {
@@ -2116,7 +2145,7 @@ const std::list<::var>::reverse_iterator obtainvalbyidentifier(std::string ident
 
 	var = rfromwhere.first->rend();
 
-	if (push) {
+	if (push && scopevar.size() > 1) {
 		auto& currfunctype = currfunc->type.front().spec.func.parametertypes_list.front();
 
 		if (auto findparam = std::find_if(
@@ -3066,7 +3095,7 @@ llvm::Type* buildllvmtypefull(std::list<type>& refdecltypevector) {
 			}
 				break;
 			case "enum"_h:
-				*type = basicint;
+				//*type = basicint;
 				goto label_int;//throw std::exception{ "enum should have int type" };
 			default: { // typedef
 				//bjastypedef = true;
@@ -3602,26 +3631,31 @@ DLL_EXPORT void endqualifs(std::unordered_map<unsigned, std::string>&& hashes) {
 		if (lastvar.firstintroduced == nullptr) refbasic[1] = "int";
 		else throw std::runtime_error{ "decl with no basic info" };
 
-	{
-		if (ranges::contains(std::array{ "struct", "union", "enum" }, refbasic[0]) && refbasic[3].empty())
-			switch (stringhash(refbasic[0].c_str()))
-							   if (0) case "struct"_h:
-							   case "union"_h:
-							   {
-								   auto* reflaststruc = &*laststruc;
-								   //if (!reflaststruc->back().pllvmtype) fixupstructype(reflaststruc);
+	if (ranges::contains(std::array{ "struct", "union", "enum" }, refbasic[0]))
+		switch (stringhash(refbasic[0].c_str())) if (0);
+		else if(0) {
+			case "struct"_h:
+			case "union"_h:
+				if (refbasic[3].empty()) {
+					auto* reflaststruc = &*laststruc;
+					//if (!reflaststruc->back().pllvmtype) fixupstructype(reflaststruc);
 
-								   lastvar.type.back().spec.basicdeclspec.pexternaldata = reflaststruc;
-							   }
+					lastvar.type.back().spec.basicdeclspec.pexternaldata = reflaststruc;
+				}
+		}
+		else if (0) {
+			case "enum"_h:
+				lastvar.type = { basicint };
+		}
 
-							   lastvar.fixupTypeIfNeeded();
-							   /*					  else
-							   if (0) case "enum"_h:
-						   {
-							   lastvar.type.back().spec.basicdeclspec.pexternaldata = &enums.back().back();
-						   }*/
-						   //currtypevectorbeingbuild.pop_back();
-	}
+	lastvar.fixupTypeIfNeeded();
+							/*					  else
+							if (0) case "enum"_h:
+						{
+							lastvar.type.back().spec.basicdeclspec.pexternaldata = &enums.back().back();
+						}*/
+						//currtypevectorbeingbuild.pop_back();
+
 	if (lastvar.type.front().uniontype == type::FUNCTION) {
 		lastvar.requestValue();
 	}
@@ -4440,9 +4474,7 @@ DLL_EXPORT void add_qualif(std::unordered_map<unsigned, std::string>&hashes) {
 DLL_EXPORT void add_tag(std::unordered_map<unsigned, std::string>&hashes) {
 	auto& lastvar = currtypevectorbeingbuild.back().p->back();
 	lastvar.type.back().spec.basicdeclspec.basic[0] = hashes["structorunionlast"_h];
-	if (hashes["lasttag"_h].empty())
-		lastvar.type.back().spec.basicdeclspec.pexternaldata = &*laststruc;
-	else lastvar.type.back().spec.basicdeclspec.basic[3] = hashes["lasttag"_h];
+	lastvar.type.back().spec.basicdeclspec.basic[3] = hashes["lasttag"_h];
 }
 
 DLL_EXPORT void enddeclaration(std::unordered_map<unsigned, std::string>&hashes) {
@@ -4648,7 +4680,7 @@ virtual void end_nested_expr_88() { }
 DLL_EXPORT void add_ident_to_enum_def(std::unordered_map<unsigned, std::string> &hashes) {
 	var tmp;
 	type enumtype{ type::BASIC };
-	enumtype.spec.basicdeclspec.basic = { "enum", "int", "", enums.back().back().ident };
+	enumtype = basicint;
 
 	tmp.type.push_back(enumtype);
 
@@ -4665,7 +4697,7 @@ DLL_EXPORT void add_ident_to_enum_def(std::unordered_map<unsigned, std::string> 
 }
 DLL_EXPORT void begin_enumerator_def(std::unordered_map<unsigned, std::string> && hashes) {
 	//begin_enumerator_decl(pargs, szargs);
-	enums.back().push_back({ hashes["identlasttag"_h], {} });
+	enums.back().push_back({ hashes["lasttag"_h], {} });
 	//add_tag(hashes);
 }
 /*DLL_EXPORT void begin_enumerator_decl(const char** pargs, size_t* szargs) {

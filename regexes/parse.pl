@@ -602,7 +602,7 @@ sub call {
 
     my $printer = $recording ? sub {1} : \&print2;
 
-    $printer->(strftime ("%F %T", localtime time) . " capture: " . $subslice . "\n");
+    $printer->(strftime ("%F %T", localtime time) . " capture@" . pos() . ": " . $subslice . "\n");
     $printer->($recording . " " . $funcnm . "\n");
     $printer->(Dumper(\$captures));
     

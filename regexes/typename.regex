@@ -123,7 +123,7 @@
 
 	(?(?=(?<declinner>(?&Tasbtdecloutter)(?{call 'enddeclaration'})(?{replayrecord \@declqualifs})(?{call 'endqualifs'})))\g{declinner}(?&Tabstinitorbitfl)?+
 	(?(?{eval {existsflag "outterparams", {"outter" => undef, "optoutter"}} or 0})|(,(?&declinner))*+)|(?(?{print3("dump\n");eval {exists $matches[-1]{strc}} or 0})
-	(?{call 'check_stray_struc'})
+	(?{call 'check_stray_struc' if (not eval {exists $matches[-1]{enum}})})
 	|
 	(?{pop2 \@flags, undef})
 	(?{pop2 \@declqualifs})
