@@ -3095,8 +3095,7 @@ llvm::Type* buildllvmtypefull(std::list<type>& refdecltypevector) {
 			}
 				break;
 			case "enum"_h:
-				//*type = basicint;
-				goto label_int;//throw std::exception{ "enum should have int type" };
+				throw std::exception{ "enum should have int type" };
 			default: { // typedef
 				//bjastypedef = true;
 				pcurrtype = obtainvalbyidentifier(type->spec.basicdeclspec.basic[3], false, true)->requestType();
@@ -3645,7 +3644,7 @@ DLL_EXPORT void endqualifs(std::unordered_map<unsigned, std::string>&& hashes) {
 		}
 		else if (0) {
 			case "enum"_h:
-				lastvar.type = { basicint };
+				lastvar.type.back() = basicint ;
 		}
 
 	lastvar.fixupTypeIfNeeded();
