@@ -4112,6 +4112,21 @@ DLL_EXPORT void binary(std::unordered_map<unsigned, std::string>&& hashes) {
 	case "="_h:
 		phndl->assigntwovalues();
 		break;
+	case "*="_h:
+	case "/="_h:
+	case "%="_h:
+	case "+="_h:
+	case "-="_h:
+	case "<<="_h:
+	case ">>="_h:
+	case "&="_h:
+	case "^="_h:
+	case "|="_h:
+		immidiates.insert(--immidiates.end(), *----immidiates.end());
+		hashes["binoplast"_h].erase(--hashes["binoplast"_h].end());
+		binary(std::move(hashes));
+		phndl->assigntwovalues();
+		break;
 	}
 
 	//opbbs.pop_back ();
