@@ -1,6 +1,6 @@
 (?<inner>\s*+(((?<stringlit>(?(?=("|'))(?{push2 \@matches, {"begincharliteral" => $^N}})|(*F))
 						(?(?=(((??{$matches[-1]->{begincharliteral}})
-						((?<escape>(?<escaperaw>\\(?(?=x)x[0-9a-fA-F]++|(?(?=0\d)0[0-7]++|['"?\\abfnrtv0]))))
+						((?<escape>(?<escaperaw>\\(?(?=x)x[0-9a-fA-F]++|(?(?=\d)[0-7]++|['"?\\abfnrtv]))))
 						(?{call 'addescapesequencetostring'})|
 						(?<text>(?<textraw>((?!(?&escape)|(??{$matches[-1]->{begincharliteral}})).)++)(?{call 'addplaintexttostring'})))*+
 						(??{$matches[-1]->{begincharliteral}})\s*+)*+))(??{qr{\Q$^N\E}})|(?{pop2 \@matches})(*F))

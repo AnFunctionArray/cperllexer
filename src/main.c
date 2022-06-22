@@ -304,6 +304,25 @@ int handler2(int reportType, char* message, int* returnValue) {
 	exit(0);
 }
 
+WINBASEAPI
+_Ret_maybenull_
+PVOID
+WINAPI
+AddVectoredExceptionHandler(
+	_In_ ULONG First,
+	_In_ PVECTORED_EXCEPTION_HANDLER Handler
+);
+
+LONG WINAPI
+VectoredHandler1(
+	struct _EXCEPTION_POINTERS* ExceptionInfo
+)
+{
+	dumpabrupt();
+
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+
 int main(int argc, char** argv, char** env)
 {
 	//onig_initialize((OnigEncoding[]){&OnigEncodingUTF8}, 1);
@@ -325,6 +344,7 @@ int main(int argc, char** argv, char** env)
 #if _WIN32 && defined(NDEBUGSTATE)
 	_CrtSetReportHook(handler2);
 #endif
+	AddVectoredExceptionHandler(1, VectoredHandler1);
 	if(getenv("THREADING")) {
 		void *wait_for_call(void*);
 		//pthread_create(&thread, 0, wait_for_call, 0);

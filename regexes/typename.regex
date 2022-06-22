@@ -5,7 +5,7 @@
 
 (?<align>\s*+\b__declspec[(]\s*+\balign[(]\s*+(?<alignnum>(?&numberliteralraw))\s*+[)]\s*+[)]\s*+)
 
-(?<typename>\s*+[(]
+(?<typename>\s*+[(]\s*+
 (?<typenameinner>
 	(?{push2 \@matches, {}})
 
@@ -31,7 +31,7 @@
 		(?{replayrecord \@typenamequalifs})
 		(?{pop2 \@matches; pop2 \@typenamequalifs}))
 
-		[)](?{call 'endqualifs'})\s*+
+		\s*+[)](?{call 'endqualifs'})\s*+
 		
 )
 

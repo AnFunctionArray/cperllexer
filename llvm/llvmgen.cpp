@@ -2,6 +2,18 @@
 //#include "llvm/IR/Instructions.h"
 //#include "llvm/IR/Value.h"
 //#include "llvm/Support/Allocator.h"
+#ifdef NDEBUG
+#undef NDEBUG
+#include <cassert>
+#undef assert
+extern "C" void __cdecl _wassert(
+	_In_z_ wchar_t const* _Message,
+	_In_z_ wchar_t const* _File,
+	_In_   unsigned       _Line
+) {
+	__debugbreak();
+}
+#endif
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/IR/Value.h"
 #include <cctype>
@@ -2291,8 +2303,37 @@ DLL_EXPORT void addescapesequencetostring(std::unordered_map<unsigned, std::stri
 	switch (stringhash(escape.c_str())) {
 	case "\\n"_h:
 		currstring += '\n';
-		break;
+		return;
+	case "\\'"_h:
+		currstring += '\'';
+		return;
+	case "\\\\"_h:
+		currstring += '\\';
+		return;
+	case "\\a"_h:
+		currstring += '\a';
+		return;
+	case "\\b"_h:
+		currstring += '\b';
+		return;
+	case "\\f"_h:
+		currstring += '\f';
+		return;
+	case "\\r"_h:
+		currstring += '\r';
+		return;
+	case "\\t"_h:
+		currstring += '\t';
+		return;
+	case "\\v"_h:
+		currstring += '\v';
+		return;
 	}
+
+	escape[0] = '0';
+	char num = std::stoull(escape);
+
+	currstring += num;
 }
 
 DLL_EXPORT void begin_ternary() {
@@ -3348,7 +3389,7 @@ llvm::BranchInst* splitbb(const char* identifier, size_t szident) {
 		bareweabrupt = true;
 	pcurrblock.push_back(llvm::BasicBlock::Create(
 		llvmctx, std::string{ identifier, szident }, dyn_cast<llvm::Function> (currfunc->requestValue())));
-	llvm::BranchInst* preturn;
+	llvm::BranchInst* preturn=nullptr;
 	if (!bareweabrupt)
 		preturn = llvmbuilder.CreateBr(pcurrblock.back());
 	llvmbuilder.SetInsertPoint(pcurrblock.back());
@@ -4783,8 +4824,6 @@ extern "C" {
 }
 #undef wait
 #undef write
-
-#include <cassert>
 
 DLL_EXPORT void docall(const char*, size_t, void*);
 
