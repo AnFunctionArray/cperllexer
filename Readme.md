@@ -42,6 +42,8 @@ Also read the troubleshooting part.
 
 Also note currently (although it should work on other platforms) my primary target and host is Win32 x86.
 
+And if you have overloading that works too although the sybmbols are mangled by in non standard way (but even overloading on the pointer type should work) and only when needed (meaning normally they are **not** mangled).
+
 ## Only parsing:
 
 perl ./regexes/parse.pl ./regularcbulk/tests/test.c
