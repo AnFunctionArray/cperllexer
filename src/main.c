@@ -303,7 +303,7 @@ int handler2(int reportType, char* message, int* returnValue) {
 	dumpabrupt();
 	exit(0);
 }
-
+#ifdef _WIN32
 WINBASEAPI
 _Ret_maybenull_
 PVOID
@@ -322,7 +322,7 @@ VectoredHandler1(
 
 	return EXCEPTION_EXECUTE_HANDLER;
 }
-
+#endif
 int main(int argc, char** argv, char** env)
 {
 	//onig_initialize((OnigEncoding[]){&OnigEncodingUTF8}, 1);
@@ -343,8 +343,8 @@ int main(int argc, char** argv, char** env)
 	signal(SIGTERM, handler1);
 #if _WIN32 && defined(NDEBUGSTATE)
 	_CrtSetReportHook(handler2);
-#endif
 	AddVectoredExceptionHandler(1, VectoredHandler1);
+#endif
 	if(getenv("THREADING")) {
 		void *wait_for_call(void*);
 		//pthread_create(&thread, 0, wait_for_call, 0);

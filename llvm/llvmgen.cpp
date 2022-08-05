@@ -2,6 +2,7 @@
 //#include "llvm/IR/Instructions.h"
 //#include "llvm/IR/Value.h"
 //#include "llvm/Support/Allocator.h"
+#ifdef _WIN32
 #ifdef NDEBUG
 #undef NDEBUG
 #include <cassert>
@@ -13,6 +14,7 @@ extern "C" void __cdecl _wassert(
 ) {
 	__debugbreak();
 }
+#endif
 #endif
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/IR/Value.h"
@@ -386,9 +388,9 @@ static struct nonconstructable {
 	nonconstructable() {}
 	~nonconstructable() {}
 	union {
-		struct {
+		//struct {
 			llvm::Module mainmodule;
-		};
+		//};
 	};
 } nonconstructable;
 
@@ -1996,10 +1998,10 @@ struct handlecnstexpr : handlefpexpr {
 
 		if (ops[0].type.back().spec.basicdeclspec.basic[0] != "unsigned")
 			ops[0].constant =
-			llvm::ConstantExpr::getSDiv(ops[0].constant, ops[1].constant);
+			llvm::ConstantExpr::get(llvm::Instruction::SDiv, ops[0].constant, ops[1].constant);
 		else
 			ops[0].constant =
-			llvm::ConstantExpr::getUDiv(ops[0].constant, ops[1].constant);
+			llvm::ConstantExpr::get(llvm::Instruction::UDiv, ops[0].constant, ops[1].constant);
 
 		immidiates.push_back(ops[0]);
 	}
@@ -2009,10 +2011,10 @@ struct handlecnstexpr : handlefpexpr {
 
 		if (ops[0].type.back().spec.basicdeclspec.basic[0] != "unsigned")
 			ops[0].constant =
-			llvm::ConstantExpr::getSRem(ops[0].constant, ops[1].constant);
+			llvm::ConstantExpr::get(llvm::Instruction::SRem, ops[0].constant, ops[1].constant);
 		else
 			ops[0].constant =
-			llvm::ConstantExpr::getURem(ops[0].constant, ops[1].constant);
+			llvm::ConstantExpr::get(llvm::Instruction::URem, ops[0].constant, ops[1].constant);
 
 		immidiates.push_back(ops[0]);
 	}
@@ -3136,7 +3138,7 @@ llvm::Type* buildllvmtypefull(std::list<type>& refdecltypevector) {
 			}
 				break;
 			case "enum"_h:
-				throw std::exception{ "enum should have int type" };
+				throw std::logic_error{ "enum should have int type" };
 			default: { // typedef
 				//bjastypedef = true;
 				pcurrtype = obtainvalbyidentifier(type->spec.basicdeclspec.basic[3], false, true)->requestType();
@@ -3794,7 +3796,7 @@ DLL_EXPORT void startmodule(const char* modulename, size_t szmodulename) {
 	new (&nonconstructable.mainmodule)
 		llvm::Module{ std::string{modulename, szmodulename}, llvmctx };
 
-	pdatalayout = new llvm::DataLayout{ &nonconstructable.mainmodule };
+	pdatalayout = new llvm::DataLayout{ "E-p:32:32:32-a:0:32" };
 
 	llvmctx.setOpaquePointers(true);
 
