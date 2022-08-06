@@ -106,6 +106,11 @@ llvm::BranchInst* splitbb(const char* identifier, size_t szident);
 void fixupstructype(std::list<struct var>* var);
 const llvm::fltSemantics& getfltsemfromtype(struct type flttype);
 
+static llvm::IntegerType* (*getInt16Ty)(llvm::LLVMContext& C) = llvm::IntegerType::getInt16Ty;
+static llvm::IntegerType* (*getInt32Ty)(llvm::LLVMContext& C) = llvm::IntegerType::getInt32Ty;
+static llvm::IntegerType* (*getInt64Ty)(llvm::LLVMContext& C) = llvm::IntegerType::getInt64Ty;
+static llvm::IntegerType* (*getInt128Ty)(llvm::LLVMContext& C) = llvm::IntegerType::getInt64Ty;
+
 //static struct basehndl* phndl;
 
 static std::list<std::list<var>> scopevar{ 1 };
@@ -874,7 +879,7 @@ static ::type getequivalentintegertype(llvm::Type* inweirdtype) {
 		return basicty;
 	case 8:
 		basicty.spec.basicdeclspec.basic[1] = "long";
-		basicty.spec.basicdeclspec.longspecsn = 2;
+		basicty.spec.basicdeclspec.longspecsn = 1;
 		return basicty;
 	}
 	assert(0);
@@ -1005,7 +1010,7 @@ struct basehndl /* : bindings_compiling*/ {
 			normalflow->setSuccessor(0, pcurrblock.back());*/
 		if (!nbranches.back().second.empty()) {
 			auto ordinaryval = ordinary.requestValue();
-			ordinary_imm.value = llvmbuilder.CreateLoad(llvm::Type::getInt32Ty(llvmctx), ordinaryval);
+			ordinary_imm.value = llvmbuilder.CreateLoad(getInt32Ty(llvmctx), ordinaryval);
 
 			immidiates.pop_back();
 
@@ -1114,7 +1119,7 @@ struct basehndl /* : bindings_compiling*/ {
 			getValZero(op));
 		op.type.erase(op.type.begin(), --op.type.end());
 
-		op.value = CreateCastInst(op.value, llvm::Type::getInt32Ty(llvmctx), false);
+		op.value = CreateCastInst(op.value, getInt32Ty(llvmctx), false);
 
 		extern void printvaltype(::val val);
 
@@ -1144,11 +1149,11 @@ struct basehndl /* : bindings_compiling*/ {
 			default:
 			case "signed"_h:
 				in.value =
-					CreateCastInst(in.value, llvm::Type::getInt32Ty(llvmctx), true);
+					CreateCastInst(in.value, getInt32Ty(llvmctx), true);
 				break;
 			case "unsigned"_h:
 				in.value =
-					CreateCastInst(in.value, llvm::Type::getInt32Ty(llvmctx), false);
+					CreateCastInst(in.value, getInt32Ty(llvmctx), false);
 				break;
 			}
 			in.type.back().spec.basicdeclspec.basic[0] = "";
@@ -1209,9 +1214,12 @@ struct basehndl /* : bindings_compiling*/ {
 		if (*refspecops[0] == *refspecops[1])
 			return ops_in;
 
+		if (getrank(ops[0]->type.back()) < getrank(ops[1]->type.back()))
+			std::swap(ops[0], ops[1]), std::swap(refspecops[0], refspecops[1]);
+
+		//If same sign just convert to the higher rank
+
 		if (refspecops[0]->compareSign(*refspecops[1])) {
-			if (getrank(ops[0]->type.back()) < getrank(ops[1]->type.back()))
-				std::swap(ops[0], ops[1]), std::swap(refspecops[0], refspecops[1]);
 
 			ops[1]->value = CreateCastInst(ops[1]->value, ops[0]->value->getType(), refspecops[1]->basic[0] != "unsigned");
 
@@ -1220,35 +1228,19 @@ struct basehndl /* : bindings_compiling*/ {
 			return ops_in;
 		}
 
-		if (refspecops[0]->basic[0] != "unsigned")
+		if (refspecops[0]->basic[0] != "unsigned") {
 			std::swap(ops[0], ops[1]), std::swap(refspecops[0], refspecops[1]);
-
-		if (getrank(ops[0]->type.back()) >= getrank(ops[1]->type.back())) {
-			ops[1]->value = CreateCastInst(ops[1]->value, ops[0]->value->getType(), true);
-
-			*refspecops[1] = *refspecops[0];
-
-			return ops_in;
 		}
 
-		if (ranges::contains(std::array{ refspecops[1]->longspecsn, refspecops[0]->longspecsn }, 2)) //if at least one is long long
-			//otherwise there is no difference between int and long on windows
-
-			ops[0]->value = CreateCastInst(ops[0]->value, ops[1]->value->getType(), false),
-
-			* refspecops[0] = *refspecops[1];
+		if (pdatalayout->getTypeSizeInBits(ops[1]->value->getType()) 
+			> pdatalayout->getTypeSizeInBits(ops[0]->value->getType()))
+		//If the signed type can represent all the bits of the unsigned convert to it
+		{
+			ops[0]->value = CreateCastInst(ops[0]->value, ops[1]->value->getType(), false);
+		}
+		//else convert to the unsigned one
 		else {
-			auto tmptype = ops[1]->type.back();
-
-			tmptype.spec.basicdeclspec.basic[0] = "unsigned";
-
-			ops[0]->value = CreateCastInst(ops[0]->value, buildllvmtypefull({ tmptype }), false),
-
-				* refspecops[0] = tmptype.spec.basicdeclspec;
-
-			ops[1]->value = CreateCastInst(ops[1]->value, buildllvmtypefull({ tmptype }), true),
-
-				* refspecops[1] = tmptype.spec.basicdeclspec;
+			ops[1]->value = CreateCastInst(ops[1]->value, ops[0]->value->getType(), true);
 		}
 
 		return ops_in;
@@ -1539,7 +1531,7 @@ struct basehndl /* : bindings_compiling*/ {
 			llvmbuilder.CreateICmp(unsignedpred, ops[0].value, ops[1].value);
 
 		ops[0].value =
-			CreateCastInst(ops[0].value, llvm::Type::getInt32Ty(llvmctx), false);
+			CreateCastInst(ops[0].value, getInt32Ty(llvmctx), false);
 
 		ops[0].type.erase(ops[0].type.begin(), --ops[0].type.end());
 		;
@@ -1604,7 +1596,7 @@ struct basehndl /* : bindings_compiling*/ {
 
 		ops[0].value = llvm::CastInst::Create(
 			llvm::Instruction::CastOps::ZExt, ops[0].value,
-			llvm::Type::getInt32Ty(llvmctx), "", pcurrblock.back());
+			getInt32Ty(llvmctx), "", pcurrblock.back());
 
 		ops[0].type.erase(ops[0].type.begin(), --ops[0].type.end());
 
@@ -1771,11 +1763,43 @@ struct basehndl /* : bindings_compiling*/ {
 
 		//type >>= 2;
 
+		"testing some stuff";
+
+		(long long)( ~(1ULL << sizeof(long long) * 8 - 1) &  ~(LLONG_MIN >> sizeof(long long) * 8 - 16));
+
+		(unsigned long long)(~(ULLONG_MAX >> sizeof(long long) * 8 - 64) );
+
+		"end testing";
+
 		const int base[] = { 16, 2, 7, 10 };
 
 		const unsigned long long val = isunsigned ? std::stoull(imm, nullptr, base[type]) : std::stoll(imm, nullptr, base[type]);
 
-#define CHECK_VAL_RANGE(range) isunsigned ? val <= (range) : val <= ((long long)range)
+		const unsigned long long longlongmaxu64 = 
+			pdatalayout->getTypeSizeInBits(getInt64Ty(llvmctx)) < 64 ?
+			~(LLONG_MIN >> sizeof(long long) * 8 - pdatalayout->getTypeSizeInBits(getInt64Ty(llvmctx)) + 1)
+				:
+		ULLONG_MAX;
+
+		const unsigned long long longlongmaxu128 =
+			pdatalayout->getTypeSizeInBits(getInt128Ty(llvmctx)) < 64 ?
+			~(LLONG_MIN >> sizeof(long long) * 8 - pdatalayout->getTypeSizeInBits(getInt128Ty(llvmctx)) + 1)
+			:
+		ULLONG_MAX;
+
+		const long long longlongmax64 =
+			pdatalayout->getTypeSizeInBits(getInt64Ty(llvmctx)) < 64 ?
+			~(LLONG_MIN >> sizeof(long long) * 8 - pdatalayout->getTypeSizeInBits(getInt64Ty(llvmctx)) + 1)
+			:
+			LLONG_MAX;
+
+		const long long longlongmax128 =
+			pdatalayout->getTypeSizeInBits(getInt128Ty(llvmctx)) < 64 ?
+			~(LLONG_MIN >> sizeof(long long) * 8 - pdatalayout->getTypeSizeInBits(getInt128Ty(llvmctx)) + 1)
+			:
+			LLONG_MAX;
+
+#define CHECK_VAL_RANGE(range, TYPE) isunsigned ? (unsigned long long)val <= ((TYPE)range) : (long long)val <= ((TYPE)range)
 
 		auto& currbasictype = currtype.back().spec.basicdeclspec;
 
@@ -1790,32 +1814,35 @@ struct basehndl /* : bindings_compiling*/ {
 		else if (isunsigned)
 			goto uint;
 
-		if (CHECK_VAL_RANGE(INT_MAX))
+		if (CHECK_VAL_RANGE(~(LLONG_MIN >> sizeof(long long) * 8 - pdatalayout->getTypeSizeInBits(getInt32Ty(llvmctx))), long long))
 			currbasictype.basic[1] = "int";
 		else
 			uint:
-		if (CHECK_VAL_RANGE(UINT_MAX) && (base[type] != 10 || isunsigned))
+		if (CHECK_VAL_RANGE(~(LLONG_MIN >> sizeof(long long) * 8 - pdatalayout->getTypeSizeInBits(getInt32Ty(llvmctx)) + 1), unsigned long long)
+			&& (base[type] != 10 || isunsigned))
 			currbasictype.basic[1] = "int",
 			currbasictype.basic[0] = "unsigned";
 		else
 			slong :
-			if (CHECK_VAL_RANGE(LONG_MAX))
+			if (CHECK_VAL_RANGE(longlongmax64, long long))
 				currbasictype.basic[1] = "long",
 				currbasictype.longspecsn = 1;
 			else
 				ulong :
-				if (CHECK_VAL_RANGE(ULONG_MAX))
+				if (CHECK_VAL_RANGE(longlongmaxu64, unsigned long long))
 					currbasictype.basic[0] = "unsigned",
 					currbasictype.basic[1] = "long",
 					currbasictype.longspecsn = 1;
 				else
 					longlong :
-					if (CHECK_VAL_RANGE(LLONG_MAX))
+					if (CHECK_VAL_RANGE(longlongmax128, long long))
 						currbasictype.basic[1] = "long",
 						currbasictype.longspecsn = 2;
 					else
 						ulonlong :
-						if (CHECK_VAL_RANGE(ULLONG_MAX) && (base[type] != 10 || isunsigned))
+						//for now 128bit literals are not supported if they are actually 128bit
+						if (CHECK_VAL_RANGE(longlongmaxu128, unsigned long long)
+							&& (base[type] != 10 || isunsigned))
 							currbasictype.basic[0] = "unsigned",
 							currbasictype.basic[1] = "long",
 							currbasictype.longspecsn = 2;
@@ -1870,7 +1897,7 @@ struct handlefpexpr : basehndl {
 
 		op.type.erase(op.type.begin(), --op.type.end());
 
-		op.value = CreateCastInst(op.value, llvm::Type::getInt32Ty(llvmctx), false);
+		op.value = CreateCastInst(op.value, getInt32Ty(llvmctx), false);
 
 		extern void printvaltype(::val val);
 
@@ -1927,7 +1954,7 @@ struct handlefpexpr : basehndl {
 			llvmbuilder.CreateFCmp(fltpred, ops[0].value, ops[1].value);
 
 		ops[0].value =
-			CreateCastInst(ops[0].value, llvm::Type::getInt32Ty(llvmctx), false);
+			CreateCastInst(ops[0].value, getInt32Ty(llvmctx), false);
 
 		ops[0].type.erase(ops[0].type.begin(), --ops[0].type.end());
 
@@ -2068,7 +2095,7 @@ struct handlecnstexpr : handlefpexpr {
 				ops[1].constant);
 
 		ops[0].constant =
-			CreateCastInst(ops[0].constant, llvm::Type::getInt32Ty(llvmctx), false);
+			CreateCastInst(ops[0].constant, getInt32Ty(llvmctx), false);
 
 		ops[0].type.erase(ops[0].type.begin(), --ops[0].type.end());
 		;
@@ -2102,7 +2129,7 @@ struct handlecnstexpr : handlefpexpr {
 
 		ops[0].constant =
 			CreateCastInst(ops[0].constant,
-				llvm::Type::getInt32Ty(llvmctx), false);
+				getInt32Ty(llvmctx), false);
 
 		ops[0].type.erase(ops[0].type.begin(), --ops[0].type.end());
 		;
@@ -2741,8 +2768,8 @@ void pushsizeoftype(val&& value) {
 	phndl->immidiates.push_back(
 		val{ std::list{sztype},
 		llvm::ConstantInt::getIntegerValue(
-				llvm::IntegerType::get(llvmctx, 32),
-				llvm::APInt{32, szoftype}),
+				getInt64Ty(llvmctx),
+				llvm::APInt{64, szoftype}),
 			"[[sizeoftypename]]" });
 }
 
@@ -3068,17 +3095,21 @@ llvm::Type* buildllvmtypefull(std::list<type>& refdecltypevector) {
 			switch (stringhash(type->spec.basicdeclspec.basic[1].c_str())) {
 			case "short"_h:
 				pcurrtype =
-					dyn_cast<llvm::Type> (llvm::Type::getInt16Ty(llvmctx));
+					dyn_cast<llvm::Type> (getInt16Ty(llvmctx));
 				break;
 				break;
 			label_int:
 			case "int"_h:
 			case "long"_h:
-				if (type->spec.basicdeclspec.longspecsn > (LONG_MAX == INT_MAX))
-				case "__int64"_h:
-					pcurrtype = dyn_cast<llvm::Type> (llvm::Type::getInt64Ty(llvmctx));
+				if (type->spec.basicdeclspec.longspecsn > 1) {
+					pcurrtype = dyn_cast<llvm::Type> (getInt128Ty(llvmctx));
+				}
+				else if(type->spec.basicdeclspec.longspecsn == 1)  {
+					//case "__int64"_h:
+					pcurrtype = dyn_cast<llvm::Type> (getInt64Ty(llvmctx));
+				}
 				else
-					pcurrtype = dyn_cast<llvm::Type> (llvm::Type::getInt32Ty(llvmctx));
+					pcurrtype = dyn_cast<llvm::Type> (getInt32Ty(llvmctx));
 				break;
 				break;
 			addvoid:
@@ -3792,13 +3823,47 @@ DLL_EXPORT void endconstantexpr() {
 
 DLL_EXPORT void docall(const char*, size_t, void*);
 
+decltype(getInt16Ty) getfnbynbits(int nbits) {
+	{
+		switch (nbits) if (0)
+			case 8:
+				return llvm::IntegerType::getInt8Ty;
+		else if (0)
+			case 16:
+				return llvm::IntegerType::getInt16Ty;
+		else if (0)
+			case 32:
+				return llvm::IntegerType::getInt32Ty;
+		else if (0)
+			case 64:
+				return llvm::IntegerType::getInt64Ty;
+		else if (0)
+			case 128:
+				return llvm::IntegerType::getInt128Ty;
+	}
+	throw std::logic_error{ "unsupported integer type" };
+}
+
 DLL_EXPORT void startmodule(const char* modulename, size_t szmodulename) {
 	new (&nonconstructable.mainmodule)
 		llvm::Module{ std::string{modulename, szmodulename}, llvmctx };
 
-	pdatalayout = new llvm::DataLayout{ "E-p:32:32:32-a:0:32" };
+	if(const char* datalayout = getenv("DATA_LAYOUT"))
+		pdatalayout = new llvm::DataLayout{ datalayout };
+	else
+		pdatalayout = new llvm::DataLayout{ &nonconstructable.mainmodule };
+
+	static const char* inttynames[] = { "Int16", "Int32", "Int64", "Int128" };
+
+	const char** currtyname = inttynames;
+
+	for (auto pfun : std::array{ &getInt16Ty, &getInt32Ty, &getInt64Ty, &getInt128Ty })
+		if (const char* nbits = getenv(*currtyname++)) {
+			*pfun = getfnbynbits(atoi(nbits));
+		}
 
 	llvmctx.setOpaquePointers(true);
+	nonconstructable.mainmodule.setDataLayout(*pdatalayout);
 
 	if(getenv("SILENT"))
 		std::cout.rdbuf(NULL);
