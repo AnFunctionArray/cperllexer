@@ -74,6 +74,7 @@ extern "C" void __cdecl _wassert(
 #include <fstream>
 #include <deque>
 #include <source_location>
+#include <algorithm>
 //#include <oniguruma.h>
 #include <llvm/ADT/Hashing.h>
 #include <llvm/Support/FileSystem.h>
@@ -645,6 +646,7 @@ struct type {
 
 	struct arrayinfo {
 		uint64_t nelems;
+		//std::bitset<1> qualifiers;
 	};
 
 	type(typetype a) : spec{ a }, uniontype{ a } {};
@@ -723,6 +725,12 @@ const ::type basicint = []() {
 	return tmp;
 }();
 
+const ::type nbitint = []() {
+	::type tmp{ type::BASIC };
+	tmp.spec.basicdeclspec.basic[1] = "[[nbitint]]";
+	return tmp;
+}();
+
 const ::type basicsz = []() {
 	::type tmp{ type::BASIC };
 	tmp.spec.basicdeclspec.basic[0] = "unsigned";
@@ -765,7 +773,7 @@ struct valbase {
 typedef llvm::Value* lvaluebase;
 
 struct val : valbase {
-	lvaluebase lvalue;
+	lvaluebase lvalue{};
 };
 
 
@@ -828,7 +836,7 @@ static std::list<std::list<::val>::iterator> callees{};
 llvm::Type* buildllvmtypefull(std::list<type>& decltypevector,
 	std::list<type>* refdecltypevector);
 
-val convertTo(val target, std::list<::type> to);
+val convertTo(val target, std::list<::type> to, bool bdecay=true);
 
 /*auto gen_pointer_to_elem_if_ptr_to_array(llvm::Value* value,
 	llvm::Type** p_type = nullptr) {
@@ -862,22 +870,32 @@ static std::list<opscopeinfo> opsscopeinfo;
 //static std::list<std::pair<std::list<std::pair<llvm::BasicBlock *, std::array<llvm::Value *, 3>>>, val>> opbbs;
 
 //static std::list<var> currlogicopval{};
-
+#if 0
 static ::type getequivalentintegertype(llvm::Type* inweirdtype) {
 	::type basicty{ type::BASIC };
 	basicty.spec.basicdeclspec.basic[0] = "unsigned";
-	switch (pdatalayout->getTypeStoreSize(inweirdtype)) if (0);
+	if (pdatalayout->getTypeStoreSize(inweirdtype) == 1) 
+		goto chartype;
+	if (pdatalayout->getTypeStoreSize(inweirdtype) == pdatalayout->getTypeStoreSize(getInt16Ty(llvmctx))) 
+		goto shorttype;
+	if (pdatalayout->getTypeStoreSize(inweirdtype) == pdatalayout->getTypeStoreSize(getInt32Ty(llvmctx)))
+		goto inttype;
+	if (pdatalayout->getTypeStoreSize(inweirdtype) == pdatalayout->getTypeStoreSize(getInt64Ty(llvmctx)))
+		goto longtype;
+	if (pdatalayout->getTypeStoreSize(inweirdtype) == pdatalayout->getTypeStoreSize(getInt128Ty(llvmctx)))
+		goto longtype;
+	switch (0) if (0);
 	else if (0) {
-	case 1:
+	chartype:
 		basicty.spec.basicdeclspec.basic[1] = "char";
 		return basicty;
-	case 2:
+	shorttype:
 		basicty.spec.basicdeclspec.basic[1] = "short";
 		return basicty;
-	case 4:
+	inttype:
 		basicty.spec.basicdeclspec.basic[1] = "int";
 		return basicty;
-	case 8:
+	longtype:
 		basicty.spec.basicdeclspec.basic[1] = "long";
 		basicty.spec.basicdeclspec.longspecsn = 1;
 		return basicty;
@@ -885,10 +903,30 @@ static ::type getequivalentintegertype(llvm::Type* inweirdtype) {
 	assert(0);
 }
 
+static ::type getequivalentfloattype(llvm::Type* inweirdtype) {
+	::type basicty{ type::BASIC };
+	basicty.spec.basicdeclspec.basic[0] = "unsigned";
+	if (pdatalayout->getTypeStoreSize(inweirdtype) == 4)
+		goto floattype;
+	if (pdatalayout->getTypeStoreSize(inweirdtype) == 8)
+		goto doubletype;
+	switch (0) if (0);
+	else if (0) {
+	floattype:
+		basicty.spec.basicdeclspec.basic[1] = "float";
+		return basicty;
+	doubletype:
+		basicty.spec.basicdeclspec.basic[1] = "double";
+		return basicty;
+	}
+	assert(0);
+}
+#endif
+
 struct basehndl /* : bindings_compiling*/ {
 	//virtual llvm::Value* assigntwovalues() = 0;
 
-	virtual val convertTo(val target, std::list<::type> to) {
+	virtual val convertTo(val target, std::list<::type> to, bool bdecay=true) {
 		extern val decay(val lvalue);
 		extern bool comparetwotypesshallow(std::list<::type> one, std::list<::type> two);
 		extern val coerceto(val target, std::list<::type> to);
@@ -897,8 +935,8 @@ struct basehndl /* : bindings_compiling*/ {
 			target.type = to;
 			return target;
 		}
-
-		target = decay(target);
+		if(bdecay)
+			target = decay(target);
 		printvaltype(target);
 		printtype(buildllvmtypefull(to), "to");
 		//if (to.front().spec.basicdeclspec.basic[3].empty())
@@ -916,6 +954,7 @@ struct basehndl /* : bindings_compiling*/ {
 				target.value = llvmbuilder.CreatePtrToInt(target.value, buildllvmtypefull(to));
 			else {
 				target = coerceto(target, to);
+				to = target.type;
 			}
 		else if (bIsBasicFloat(to.front()))
 			if (bIsBasicInteger(target.type.front()))
@@ -931,18 +970,40 @@ struct basehndl /* : bindings_compiling*/ {
 					llvmbuilder.CreateUIToFP(
 						target.value, buildllvmtypefull(to));
 			}
-			else;
+			else {
+				target = coerceto(target, to);
+				to = target.type;
+			}
 		else if (to.front().uniontype == type::POINTER)
 			if (bIsBasicInteger(target.type.front()))
 				target.value = llvmbuilder.CreateIntToPtr(target.value, buildllvmtypefull(to));
 			else if (bIsBasicFloat(target.type.front()))
 				target = coerceto(target, { basicsz }),
 				target.value = llvmbuilder.CreateIntToPtr(target.value, buildllvmtypefull(to));
-			else
+			else if(target.type.front().uniontype == type::POINTER) {
 				target.value = llvmbuilder.CreateBitCast(target.value, buildllvmtypefull(to));
+			}
+			else {
+				target = coerceto(target, to);
+				to = target.type;
+			}
 		else {
-			auto newtype = { getequivalentintegertype(buildllvmtypefull(to)) };
-			target = convertTo(target, newtype);
+			//if (!bIsBasicFloat(target.type.front()) && !bIsBasicInteger(target.type.front())
+			//	&& target.type.front().uniontype != type::POINTER) {
+			target = coerceto(target, to);
+			to = target.type;
+			//}
+			/*else {
+				var tmp{ to };
+				tmp.identifier = "[[coercetemporary]]";
+				addvar(tmp);
+				immidiates.push_back(val{ tmp });
+				immidiates.back().type = target.type;
+				immidiates.push_back(target);
+				phndl->assigntwovalues();
+				target = val{ tmp };
+				immidiates.pop_back();
+			}*/
 		}
 
 		target.type = to;
@@ -1132,6 +1193,13 @@ struct basehndl /* : bindings_compiling*/ {
 	}
 
 	val integralpromotions(val in) {
+		if (!bIsBasicFloat(in.type.front()) && !bIsBasicInteger(in.type.front())) {
+			if (in.type.front().uniontype != type::POINTER)
+				in = convertTo(in, { nbitint }, false);
+			else
+				in = convertTo(in, { basicsz });
+		}
+
 		assert(in.type.size() == 1);
 
 		std::cout << "promoting" << std::endl;
@@ -1162,7 +1230,7 @@ struct basehndl /* : bindings_compiling*/ {
 		return in;
 	}
 
-	static int getrank(::type basictyp) {
+	/*static int getrank(::type basictyp) {
 		switch (stringhash(basictyp.spec.basicdeclspec.basic[0].c_str())) {
 		default:
 		case "signed"_h:
@@ -1181,9 +1249,18 @@ struct basehndl /* : bindings_compiling*/ {
 		}
 
 		throw std::out_of_range{ "not a integer" };
-	}
+	}*/
 
 	std::array<val, 2> usualarithmeticconversions(std::array<val, 2> ops_in) {
+
+		for (auto i = 0; i < 2; ++i)
+			if (!bIsBasicFloat(ops_in[i].type.front()) && !bIsBasicInteger(ops_in[i].type.front())) {
+				if(ops_in[i].type.front().uniontype != type::POINTER)
+					ops_in[i] = convertTo(ops_in[i], { nbitint }, false);
+				else
+					ops_in[i] = convertTo(ops_in[i], { basicsz });
+			}
+
 		std::array ops = { &ops_in[0], &ops_in[1] };
 
 		std::array refspecops = { &ops[0]->type.back().spec.basicdeclspec, &ops[1]->type.back().spec.basicdeclspec };
@@ -1214,12 +1291,16 @@ struct basehndl /* : bindings_compiling*/ {
 		if (*refspecops[0] == *refspecops[1])
 			return ops_in;
 
-		if (getrank(ops[0]->type.back()) < getrank(ops[1]->type.back()))
-			std::swap(ops[0], ops[1]), std::swap(refspecops[0], refspecops[1]);
+		/*if (getrank(ops[0]->type.back()) < getrank(ops[1]->type.back()))
+			std::swap(ops[0], ops[1]), std::swap(refspecops[0], refspecops[1]);*/
 
 		//If same sign just convert to the higher rank
 
 		if (refspecops[0]->compareSign(*refspecops[1])) {
+
+			if (pdatalayout->getTypeSizeInBits(ops[1]->value->getType()) 
+				> pdatalayout->getTypeSizeInBits(ops[0]->value->getType()))
+				std::swap(ops[0], ops[1]), std::swap(refspecops[0], refspecops[1]);
 
 			ops[1]->value = CreateCastInst(ops[1]->value, ops[0]->value->getType(), refspecops[1]->basic[0] != "unsigned");
 
@@ -1454,26 +1535,11 @@ struct basehndl /* : bindings_compiling*/ {
 
 		immidiates.erase(----immidiates.end(), immidiates.end());
 
-		ops[0] = decay(ops[0]);
+		//ops[0] = decay(ops[0]);
 
-		ops[1] = decay(ops[1]);
+		//ops[1] = decay(ops[1]);
 
 		extern void printvaltype(val);
-
-		bool arewedealingpointers = ops[0].value->getType()->isPointerTy() &&
-			ops[1].value->getType()->isPointerTy();
-
-		val szpointee;
-
-		if (arewedealingpointers) {
-			immidiates.push_back(ops[0]);
-			applyindirection();
-			endsizeofexpr();
-			szpointee = immidiates.back();
-			immidiates.pop_back();
-			ops[0] = convertTo(ops[0], { basicsz });
-			ops[1] = convertTo(ops[1], { basicsz });
-		}
 
 		busual && (ops = usualarithmeticconversions(ops), 0),
 			printvaltype(ops[0]),
@@ -1483,11 +1549,6 @@ struct basehndl /* : bindings_compiling*/ {
 				!bminus ? ops[1].value : llvmbuilder.CreateNeg(ops[1].value));
 
 		immidiates.push_back(ops[0]);
-
-		if (arewedealingpointers) {
-			immidiates.push_back(szpointee);
-			dividelasttwovalues();
-		}
 	}
 
 	virtual void shifttwovalues(bool bright) {
@@ -1660,12 +1721,7 @@ struct basehndl /* : bindings_compiling*/ {
 
 		llvm::Value* instr;
 
-		if (ops[0].type.begin()->uniontype != type::ARRAY) {
-
-			ops[1] = decay(ops[1]);
-
-			ops[1] = convertTo(ops[1], ops[0].type);
-		}
+		ops[1] = convertTo(ops[1], ops[0].type, ops[0].type.front().uniontype == type::POINTER);
 
 		printtype(ops[0].lvalue->getType(),
 			ops[0].identifier);
@@ -1767,7 +1823,7 @@ struct basehndl /* : bindings_compiling*/ {
 
 		(long long)( ~(1ULL << sizeof(long long) * 8 - 1) &  ~(LLONG_MIN >> sizeof(long long) * 8 - 16));
 
-		(unsigned long long)(~(ULLONG_MAX >> sizeof(long long) * 8 - 64) );
+		(unsigned long long)(~(LLONG_MIN >> sizeof(long long) * 8 - 33) );
 
 		"end testing";
 
@@ -1777,25 +1833,25 @@ struct basehndl /* : bindings_compiling*/ {
 
 		const unsigned long long longlongmaxu64 = 
 			pdatalayout->getTypeSizeInBits(getInt64Ty(llvmctx)) < 64 ?
-			~(LLONG_MIN >> sizeof(long long) * 8 - pdatalayout->getTypeSizeInBits(getInt64Ty(llvmctx)) + 1)
+			~(LLONG_MIN >> sizeof(long long) * 8 - pdatalayout->getTypeSizeInBits(getInt64Ty(llvmctx)) - 1)
 				:
 		ULLONG_MAX;
 
 		const unsigned long long longlongmaxu128 =
 			pdatalayout->getTypeSizeInBits(getInt128Ty(llvmctx)) < 64 ?
-			~(LLONG_MIN >> sizeof(long long) * 8 - pdatalayout->getTypeSizeInBits(getInt128Ty(llvmctx)) + 1)
+			~(LLONG_MIN >> sizeof(long long) * 8 - pdatalayout->getTypeSizeInBits(getInt128Ty(llvmctx)) - 1)
 			:
 		ULLONG_MAX;
 
 		const long long longlongmax64 =
 			pdatalayout->getTypeSizeInBits(getInt64Ty(llvmctx)) < 64 ?
-			~(LLONG_MIN >> sizeof(long long) * 8 - pdatalayout->getTypeSizeInBits(getInt64Ty(llvmctx)) + 1)
+			~(LLONG_MIN >> sizeof(long long) * 8 - pdatalayout->getTypeSizeInBits(getInt64Ty(llvmctx)))
 			:
 			LLONG_MAX;
 
 		const long long longlongmax128 =
 			pdatalayout->getTypeSizeInBits(getInt128Ty(llvmctx)) < 64 ?
-			~(LLONG_MIN >> sizeof(long long) * 8 - pdatalayout->getTypeSizeInBits(getInt128Ty(llvmctx)) + 1)
+			~(LLONG_MIN >> sizeof(long long) * 8 - pdatalayout->getTypeSizeInBits(getInt128Ty(llvmctx)))
 			:
 			LLONG_MAX;
 
@@ -1818,7 +1874,7 @@ struct basehndl /* : bindings_compiling*/ {
 			currbasictype.basic[1] = "int";
 		else
 			uint:
-		if (CHECK_VAL_RANGE(~(LLONG_MIN >> sizeof(long long) * 8 - pdatalayout->getTypeSizeInBits(getInt32Ty(llvmctx)) + 1), unsigned long long)
+		if (CHECK_VAL_RANGE(~(LLONG_MIN >> sizeof(long long) * 8 - pdatalayout->getTypeSizeInBits(getInt32Ty(llvmctx)) - 1), unsigned long long)
 			&& (base[type] != 10 || isunsigned))
 			currbasictype.basic[1] = "int",
 			currbasictype.basic[0] = "unsigned";
@@ -2681,14 +2737,17 @@ bool comparetwotypesdeep(std::list<::type> first, std::list<::type> second) {
 
 bool comparetwotypesshallow(std::list<::type> one, std::list<::type> two) {
 	auto iterone = one.begin(), itertwo = two.begin();
+	{
+
 	switch (iterone->uniontype)
 		if (0) case type::ARRAY:
 		case type::POINTER:
 		case type::FUNCTION:
 			return itertwo->uniontype == iterone->uniontype;
-							   else if (0) case type::BASIC:
-								   return itertwo->uniontype == iterone->uniontype && itertwo->spec.basicdeclspec == iterone->spec.basicdeclspec;
-								   return false;
+		else if (0) case type::BASIC:
+			return itertwo->uniontype == iterone->uniontype && itertwo->spec.basicdeclspec == iterone->spec.basicdeclspec;
+	}
+	return false;
 }
 
 val coerceto(val target, std::list<::type> to) {
@@ -2696,18 +2755,104 @@ val coerceto(val target, std::list<::type> to) {
 		target.type = to;
 		return target;
 	}
+
+	if (to.front().uniontype == type::BASIC && to.front().spec.basicdeclspec.basic[1] == "[[nbitint]]") {
+		to.front().spec.basicdeclspec.longspecsn = pdatalayout->getTypeSizeInBits(target.requestType());
+		to.front().cachedtype = nullptr;
+	}
+
+	const unsigned maxbytes = pdatalayout->getTypeStoreSize(target.requestType());
+	const unsigned minbytes = pdatalayout->getTypeStoreSize(buildllvmtypefull(to));
+
+	var tmp = var{ to };
+	addvar(tmp);
+	type arrty{ type::ARRAY };
+
+	arrty.spec.array.nelems = std::min(maxbytes, minbytes);
+	//arrty.spec.array.qualifiers[0] = 1;
+
+	type unsch{ type::BASIC };
+
+	unsch.spec.basicdeclspec.basic[0] = "unsigned";
+	unsch.spec.basicdeclspec.basic[1] = "char";
+
+	std::list<type> arrtyls{ arrty, unsch };
+
+	llvm::Value* rvalue;
+	
+	if(target.lvalue)
+		rvalue = llvmbuilder.CreateLoad(buildllvmtypefull(arrtyls), target.lvalue);
+	else {
+		var tmprval = var{ {target.type, nullptr, "[[tmprval]]"} };
+		addvar(tmprval);
+		llvmbuilder.CreateStore(target.value, tmprval.value);
+		rvalue = llvmbuilder.CreateLoad(buildllvmtypefull(arrtyls), tmprval.value);
+	}
+
+	if(tmp.requestType()->isIntegerTy())
+		llvmbuilder.CreateStore(llvm::ConstantAggregateZero::get(tmp.requestType()), tmp.value);
+
+	llvmbuilder.CreateStore(rvalue, tmp.value);
+
+	auto lval = tmp.value;
+
+	tmp.value = llvmbuilder.CreateLoad(tmp.pllvmtype, tmp.value);
+
+	val ret = { tmp };
+
+	ret.lvalue = lval;
+
+	return ret;
+
+	/*if (!target.lvalue) {
+		
+	}
 	phndl->immidiates.push_back(target);
 	phndl->getaddress();
 	auto& imm = immidiates.back();
 	imm.type.erase(++imm.type.begin(), imm.type.end());
+	bool bistofloat = false;
+	if (bIsBasicInteger(to.front()) || (bistofloat = bIsBasicFloat(to.front()))) {
+		unsigned maxbytes = pdatalayout->getTypeStoreSize(target.requestType());
+		unsigned minbytes = pdatalayout->getTypeStoreSize(buildllvmtypefull(to));
+
+		if (maxbytes >= minbytes) goto petty;
+
+		type arrty{ type::ARRAY };
+		
+		arrty.spec.array.nelems = maxbytes;
+		arrty.spec.array.qualifiers[0] = 1;
+
+		type unsch{ type::BASIC };
+
+		unsch.spec.basicdeclspec.basic[0] = "unsigned";
+		unsch.spec.basicdeclspec.basic[1] = "char";
+
+		std::list<type> arrtyls { arrty, unsch };
+
+		llvm::Value* rvaluearr = llvmbuilder.CreateLoad(buildllvmtypefull(arrtyls), immidiates.back().value);
+
+		var tmp{ to };
+
+		addvar(tmp);
+
+		llvmbuilder.CreateStore(tmp.value, bistofloat ? handlefpexpr{}.getValZero(val{ tmp }) : basehndl{}.getValZero(val{ tmp }));
+
+		llvmbuilder.CreateStore(tmp.value, rvaluearr);
+
+		immidiates.pop_back();
+
+		return val{ tmp };
+	}
+petty:
 	imm.type.splice(imm.type.end(), to);
 	phndl->applyindirection();
 	auto retimm = immidiates.back();
 	immidiates.pop_back();
-	return retimm;
+	return retimm;*/
 }
 
-val convertTo(val target, std::list<::type> to) {
+val convertTo(val target, std::list<::type> to, bool bdecay) {
 
 	return phndl->convertTo(target, to);
 }
@@ -3112,6 +3257,10 @@ llvm::Type* buildllvmtypefull(std::list<type>& refdecltypevector) {
 					pcurrtype = dyn_cast<llvm::Type> (getInt32Ty(llvmctx));
 				break;
 				break;
+			case "[[nbitint]]"_h:
+				pcurrtype = dyn_cast<llvm::Type> (llvm::Type::getIntNTy(llvmctx, type->spec.basicdeclspec.longspecsn));
+				break;
+				break;
 			addvoid:
 			case "void"_h: {
 				//pcurrtype = llvm::PointerType::get(llvmctx, 0);
@@ -3392,7 +3541,8 @@ val decay(val lvalue) {
 	auto& currtype = lvalue.type;
 	auto elemtype = lvalue.requestType();
 
-	if (currtype.front().uniontype == type::ARRAY || currtype.front().uniontype == type::FUNCTION) {
+	if ((currtype.front().uniontype == type::ARRAY) 
+		|| currtype.front().uniontype == type::FUNCTION) {
 		::type ptrtype{ ::type::POINTER };
 
 		if (currtype.front().uniontype == type::ARRAY)
@@ -3561,7 +3711,7 @@ DLL_EXPORT void endfunctioncall() {
 			for (auto& params : funccand.first->type.front().spec.func.parametertypes_list.front()) {
 				if (::immidiates.end() == argsiterarg) break;
 
-				auto argval = decay(*argsiterarg);
+				auto argval = params.type.front().uniontype == type::ARRAY ? *argsiterarg : decay(*argsiterarg);
 				if (params.type.front().uniontype != argval.type.front().uniontype) {
 					funccand.second += 2;
 				}
@@ -3758,7 +3908,7 @@ DLL_EXPORT void startfunctionparamdecl() {
 		 currdecltypeenum::PARAMS });
 }
 
-DLL_EXPORT void addsubtotype() {
+DLL_EXPORT void addsubtotype(std::unordered_map<unsigned, std::string>&& hashes) {
 
 	type arraytype{ type::ARRAY };
 
@@ -3766,6 +3916,7 @@ DLL_EXPORT void addsubtotype() {
 		hndlcnstexpr.immidiates.back().value);
 
 	arraytype.spec.array.nelems = *res->getValue().getRawData();
+	//arraytype.spec.array.qualifiers[0] = hashes["abstrsubqualifs"_h] == "static";
 	currtypevectorbeingbuild.back().p->back().type.push_back(arraytype);
 
 	hndlcnstexpr.immidiates.pop_back();
@@ -4925,8 +5076,11 @@ extern "C" void* wait_for_call(void*) {
 
 static std::list<std::pair<std::unordered_map<unsigned, std::string>, std::string>> recordstack;
 
-DLL_EXPORT void do_callout(SV * in, HV * hash)
+DLL_EXPORT U32 matchpos;
+
+DLL_EXPORT void do_callout(SV * in, HV * hash, U32 pos)
 {
+	matchpos = pos;
 
 	char* key, * pinstr;
 	I32 key_length;

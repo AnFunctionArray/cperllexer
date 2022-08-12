@@ -54,12 +54,12 @@ CODE:
     #RETVAL
 =cut
 
-extern callout(SV *in, HV *hash)
+extern callout(SV *in, HV *hash, U32 pos)
 CODE:
     {
-        extern void do_callout(SV* in, HV* hash);
+        extern void do_callout(SV* in, HV* hash, U32 pos);
 
-        do_callout(in, hash);
+        do_callout(in, hash, pos);
     }
 
 =pod

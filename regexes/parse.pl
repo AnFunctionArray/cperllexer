@@ -577,6 +577,7 @@ sub replay {
 }
 
 sub call {
+    my $currpos = scalar(pos());
     #print Dumper(\%+);
     my $funcnm = shift;
     my $captures = {%+};
@@ -588,7 +589,7 @@ sub call {
     if(not $silent or $lineonly)
     {
 
-        $subslice = substr $subject, pos(), ($lineonly ? 100 : 25);
+        $subslice = substr $subject, $currpos, ($lineonly ? 100 : 25);
 
         $subslice =~ s{\R}{ }g;
     }
@@ -612,18 +613,19 @@ sub call {
             push @{$savedcallouts[-1]}, {
             $funcnm => {
                 matches => {%$captures},
-                flags => [eval { @flags}]
+                flags => [eval { @flags}],
+                pos => $currpos
             }};
             print "success\n";
             print Dumper \@{$savedcallouts[-1]};
         #};
         return
     }
-    return callcommon($funcnm, {%$captures}, $recording, (@flags))
+    return callcommon($funcnm, {%$captures}, $recording, \@flags, $currpos)
 }
 
 sub call2 {
-    return callcommon(shift, {%{$matches[-1]}}, 0)
+    return callcommon(shift, {%{$matches[-1]}}, 0, undef, scalar(pos()))
 }
 
 sub callcommon {
@@ -632,6 +634,7 @@ sub callcommon {
     my $captures = shift;
     my $facet = shift;
     my $flags = shift;
+    my $currpos = shift;
 
     #print "instancing " . $funcnm . "\n";
 
@@ -661,8 +664,7 @@ sub callcommon {
     };
 
     print2 "not triggered\n" if(not $res);
-
-    callout($funcnm, $captures) if(defined &callout and not $facet and $res);
+    callout($funcnm, $captures, scalar($currpos)) if(defined &callout and not $facet and $res);
     return $res;
 }
 
@@ -1273,7 +1275,7 @@ sub replayrecord {
             my $record = (values %$hash)[0];
             print2 "$funcnm replaying \n";
             print2 Dumper $hash;
-            callcommon((keys %$hash)[0], $record->{matches}, 0, \@{$record->{flags}})
+            callcommon((keys %$hash)[0], $record->{matches}, 0, \@{$record->{flags}}, scalar($record->{pos}))
             
         }
     } else {

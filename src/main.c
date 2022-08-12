@@ -287,7 +287,10 @@ secondmain(char* subject, size_t szsubject, char* pattern, size_t szpattern, cha
 #include <signal.h>
 //#include <unistd.h>
 
+U32 matchpos;
+
 void handler1(int sig) {
+	printf("signal %d @ %lu\n", sig, matchpos);
 	dumpabrupt();
 	exit(0);
 }
@@ -341,6 +344,7 @@ int main(int argc, char** argv, char** env)
 #endif
 	//onig_initialize();
 	signal(SIGTERM, handler1);
+	signal(SIGABRT, handler1);
 #if _WIN32 && defined(NDEBUGSTATE)
 	_CrtSetReportHook(handler2);
 	AddVectoredExceptionHandler(1, VectoredHandler1);
