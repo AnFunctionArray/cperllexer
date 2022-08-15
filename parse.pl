@@ -1,6 +1,11 @@
 #!/usr/bin/perl
 
 use re 'eval';
+use threads;
+use threads::shared;
+
+my @threads;
+#my $nthreads :shared = 0;
 
 BEGIN{push @INC, "."};
 
@@ -86,6 +91,44 @@ sub existsflag {
 }
 
 print Dumper @ARGV;
+
+sub endfndef {
+
+}
+
+sub startpotfndef {
+    #print2 "nthr $nthreads\n"; 
+    #preparethread() if(defined &preparethread);
+    my $slice = substr $subject, pos();
+    print2 "pos is " . pos() . "\n";
+    my $waitthread = threads->create(\&waitforthread) if(defined &waitforthread);
+    if($maxthreads > 0) {
+        while(1) {
+            sleep(0);
+            for my $i (0 .. $maxthreads - 1) {
+                if(eval { !$threads[$i]->is_running } or $@) {
+                    $threads[$i] = threads->create(\&execmain, 1, $slice, scalar(pos()));
+                    goto ends;
+                }
+            }
+        }
+    }
+    else {
+        for my $i (0 .. $#threads) {
+            if(eval { !$threads[$i]->is_running } or $@) {
+                $threads[$i] = threads->create(\&execmain, 1, $slice, scalar(pos()));
+                goto ends;
+            }
+        }
+
+        push @threads, threads->create(\&execmain, 1, $slice, scalar(pos()));
+    }
+ends:
+    #lock($nthreads);
+    #++$nthreads;
+    #waitforthread() if(defined &waitforthread);
+    $waitthread->join() if(defined &waitforthread);
+}
 
 #open my $fhnull, '>', "/dev/null" or die "error opening $filename: $!";
 
@@ -453,20 +496,63 @@ if(not $isnested)
         @typedefidentifiersvector = eval { require $ENV{'REPLAY'} . ".txt"};
     }
     my $flind = 1;
-    while(1) {
-        $regexfinal = qr{(?(DEFINE)$mainregexdefs)^(*COMMIT)(?&$entryregex)*+$}sxxo;
-        eval {$subject =~ m{$regexfinal}sxx};
-        if($@) {
-            warn $@;
-            undef $facet;
-            exit
-        } else {
-            $filename = $ARGV[$flind++];
-            open my $fh, '<', $filename or last;
+    sub execmain {
+        my $nthread = scalar($_[0]);
+        my $subject = $_[1];
+        my $currregex;
+        print2 "is sep: " . $nthread . "\n";
+        initthread(scalar($_[2])) if(defined &initthread and $nthread);
+        #while(1) {
+            if(!$nthread) {
+                $regexfinal //= qr{(?(DEFINE)$mainregexdefs)^(*COMMIT)(?&cprogramfast)*+$}sxxo;
+                $currregex = $regexfinal;
+            } else {
+                $regexfinalthread //= qr{(?(DEFINE)$mainregexdefs)^(*COMMIT)(?&compoundstatement)}sxxo;
+                $currregex = $regexfinalthread;
+            }
+            eval {$subject =~ m{$currregex}sxx};
+            #print2 "subject is $subject";
+=begin
+            if($@) {
+                warn $@;
+                undef $facet;
+                exit
+            } else {
+                $filename = $ARGV[$flind++];
+                open my $fh, '<', $filename or last;
 
-            $subject = do { local $/; <$fh> };
+                $subject = do { local $/; <$fh> };
+            }
+=cut
+        #}
+
+        if(!$nthread) {
+            #print2 "full is $&";
+            waitforthreads();
+        } else {
+            if($@) {
+                endmoduleabrupt() if(defined &endmoduleabrupt);
+            }
+            else {
+                dumpmodule() if(defined &dumpmodule);
+                endmodule() if(defined &endmodule);
+            }
+            #decnthreads($nthread);
         }
     }
+
+    #sub decnthreads {
+    #    lock($nthreads);
+    #    $nthreads--;
+    #}
+
+    sub waitforthreads {
+        print2 "joinning\n";
+        eval { $_->join } for @threads;
+        print2 "joined\n";
+    }
+
+    execmain(0, $subject);
 
     if($ENV{'RECORD'}) {
         $silent = 0;
