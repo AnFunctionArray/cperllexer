@@ -3,8 +3,6 @@
 use re 'eval';
 
 BEGIN{push @INC, "."};
-BEGIN{push @INC, "./misc"};
-BEGIN{push @INC, "./regexes/supplement"};
 
 #use re qw(Debug ALL);
 
@@ -230,14 +228,14 @@ sub dec {
 
 #sub loadregex {
 
-$filename = "regexes/primexpr.regex";
+$filename = "primexpr.regex";
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
 my $mainregexfilecontent = do { local $/; <$fh> };
 
 close $fh;
 
-$filename = "./utility/regex.regex";
+$filename = "regex.regex";
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
 my $utilregexfilecontent = do { local $/; <$fh> };
