@@ -45,6 +45,7 @@ my %keywords;
 @keywords{
     "typedef",
     "struct",
+    "union",
     "enum",
     "sizeof",
     "break",
