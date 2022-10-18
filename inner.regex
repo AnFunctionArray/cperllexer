@@ -18,27 +18,6 @@
 	(?<suffixflt>[flFL])?+(?{call 'collect_float_literal'})
 )
 
-(?<quickblock>\{
-	(?<quickinner>([^'"\{\}]|(?<quickstr>(?(?=(?{push2 \@savedcallouts, []})
-		(?{++$recording})((?&stringlit)))
-		(??{qr{\Q$^N\E}})
-		(?{pop2 \@savedcallouts})
-		(?{--$recording})|
-		(?{pop2 \@savedcallouts})
-		(?{--$recording})(*F)))|(?&quickblock)
-		|(?{print2 "at7 $^N" . pos() . " " . (Dumper \@matches ). "\n"})(*F))*+
-		)
-		(?&quickinner)?+
-		\})
-
-(?<declmask>(\b(?<declword>\w++)\b
-	(?(?{exists $complexdecl{$^N}})\s*+\b(?<declwordtagged>\w++)\b
-	\s*+(?(?=\{)(?{call 'lastdeclwordtagged'})(?&quickblock))
-	|(?(?{exists $complexdecl{$^N}})\s*+\b(?<declwordtagged>\w++)(?{call 'lastdeclword'})))
-	|[^()\w'"\{\};]|(?<insizmask>\(([^()'"]|(?&quickstr)|(?&insizmask))*+\))
-)(?&declmask)?+
-)
-
 
 (?<identifierpure>\b(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9@])*+)\b)
 

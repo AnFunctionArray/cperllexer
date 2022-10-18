@@ -15,7 +15,7 @@ BEGIN{push @INC, "."};
 
 require "typename.regex.pl";
 require "primexpr.regex.pl";
-require "quicker.pl";
+require "faster.regex.pl";
 
 use List::Util qw(max);
 
@@ -516,14 +516,15 @@ if(not $isnested)
         cond_signal($donework);
         #while(1) {
             if(!$nthread) {
-                $searching = "playHandlerJumpUpGrab";
-                $regexfinal //= qr{(?(DEFINE)$mainregexdefs)^(*COMMIT)(?&cprogramfaster)*+$}sxxo;
+                $regexfinal //= qr{(?(DEFINE)$mainregexdefs)^(*COMMIT)(?<entry>(?&identifiercompositefast)*+((?&identifiercompositefast)(?&entry))?+)$}sxxo;
                 $currregex = $regexfinal;
             } else {
                 $regexfinalthread //= qr{(?(DEFINE)$mainregexdefs)^(*COMMIT)(?&compoundstatement)}sxxo;
                 $currregex = $regexfinalthread;
             }
-            eval {$subject =~ m{$currregex}sxx};
+            if(eval {$subject =~ m{$currregex}sxx}) {
+                CORE::print "succes\n";
+            }
             #print2 "subject is $subject";
 =begin
             if($@) {

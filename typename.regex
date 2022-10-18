@@ -157,31 +157,9 @@
 )
 
 (?<declopt>(?{push2 \@flags, {"outter"=>undef,"opt"=>undef, "nonbitfl"=>undef}})(?&abstdeclorallqualifs)(?(?!\s*+;)(?&compoundstatement)|\s*+;(?{call 'endfulldecl'})\s*+))
-(?<decloptfast>(?&abstdeclorallqualifs)(?(?!\s*+;)(?{startpotfndef()})(?&quickblock)(?{call 'endfndef'})|\s*+;(?{call 'endfulldecl'})\s*+))
-
 (?<decl>(?{push2 \@flags, {"outter"=>undef,"nonopt"=>undef, "nonbitfl"=>undef}})(?&abstdeclorallqualifs)\s*+;(?{call 'endfulldecl'})\s*+)
 
 (?<cprogram>(?&declopt))
-
-(?<cprogramfaster>(?&decloptfaster))
-
-(?<decloptfaster>
-(?(?=(?{
-	push2 \@matches, {}
-	})((?&declmask)++))
-	(?{print2 "at1 $^N" . pos() . " " . (Dumper \@matches ). "\n"})
-	(?(?{eval {exists $matches[-1]{lastfoundword}} or 0})(?{call 'foundword'}))
-	(?(?=((??{qr{\Q$^N\E}})(?{print2 "at6 " . pos() . " " . (Dumper \@matches ). "\n"})(?&quickblock)))
-		(?{print2 "at2 " . pos() . " " . (Dumper \@matches ). "\n"})
-		(?{call 'startpotfndef'})
-		(??{qr{\Q$^N\E}})
-		(?{print2 "at3 " . pos() . " " . (Dumper \@matches ). "\n"})
-	|
-	(??{qr{\Q$^N\E}})(?{print2 "at5 " . pos() . " " . (Dumper \@matches ). "\n"});)
-	(?{pop2 \@matches})
-	|(?{print2 "at4 " . pos() . "\n"; pop2 \@matches})(*F)
-)
-)
 
 
 (?<typenamerev>(?(?=(?{push2 \@savedcallouts, []})

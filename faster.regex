@@ -1,0 +1,11 @@
+
+
+(?<parens>\s*+(?<openparenf>[(\[])(?<inparen>(?<inparenin>(?&parens)|(?&stringlit)|[^()\[\]"'])*+((?&inparenin)(?&inparen))?+)(?(?{$+{openparenf} eq '('})\)|\])\s*+)
+
+(?<brackets>\s*+\{(?<inbrackets>(?<inbracketsin>(?&brackets)|(?&stringlit)|[^{}"'])*+((?&inbracketsin)(?&inbrackets))?+)\}\s*+)
+
+(?<identiiferfast>\s*+(?<identf>(?&identifierpure))(??{checkfastident()})\s*+)
+
+(?<identifiercompositefast>(?&identiiferfast)(?(?{$istaggable})\s*+(?&identifierpure)?+\s*+(?&brackets)?+)|[^\w\[\]\(\){=;]|(?&parens)
+    |(?=([{=;]))(?{registerfnorobj})(?(?{$^N eq '{'})(?&brackets)
+    |(?(?{$^N eq '='})=.*?;|;)))
