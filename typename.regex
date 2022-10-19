@@ -45,7 +45,7 @@
 \s*+)
 
 (?<identifierminedecl>\s*+(?<ident>(?&identifierraw_qualified))
-	(?{call 'identifier_decl'})\s*+)
+	(?{call 'register_decl'; call 'identifier_decl'})\s*+)
 
 (?<Tabstrrestalt>
 	(?(?{existsflag "outterparams", {"outter" => undef, "optoutter"}})
@@ -193,8 +193,8 @@
 (?<structorunion>
 	(?=(?<begin>\s*+\b(?<structorunionlast>struct|union|(enum)(?{$matches[-1]{enum}=$^N}))\b\s*+
 	(((?&identifierminestruct))(?{$matches[-1]{lasttag}=$^N}))?+))\g{begin}
-	(?(?=(?<body>(?&structbody)))\g{body}|(?(?{eval {exists $matches[-1]{lasttag}} or 0})|(*F)))
-	(?{call 'add_tag'})
+	(?(?{$istypedef})(?&brackets)?+|(?(?=(?<body>(?&structbody)))\g{body}|(?(?{eval {exists $matches[-1]{lasttag}} or 0})|(*F)))
+	(?{call 'add_tag'}))
 )
 
 (?<identifierminestruct>(?&identifierraw_qualified))

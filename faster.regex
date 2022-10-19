@@ -6,6 +6,10 @@
 
 (?<identiiferfast>\s*+(?<identf>(?&identifierpure))(??{checkfastident()})\s*+)
 
-(?<identifiercompositefast>(?&identiiferfast)(?(?{$istaggable})\s*+(?&identifierpure)?+\s*+(?&brackets)?+)|[^\w\[\]\(\){=;]|(?&parens)
-    |(?=([{=;]))(?{registerfnorobj})(?(?{$^N eq '{'})(?&brackets)
-    |(?(?{$^N eq '='})=.*?;|;)))
+(?<identifiercompositefast>
+    ((?<identcomp>(?<identcompinner>(?&identiiferfast)(?(?{$istaggable})\s*+(?&identifierpure)?+\s*+(?&brackets)?+)|[^\w\[\]\(\){=;]|(?&parens))*+
+    ((?&identcompinner)(?&identcomp))?+)((?=([{=;]))(?{registerfnorobj})(?(?{$^N eq '{'})(?&brackets)
+    |(?(?{$^N eq '='})=(?<aftereq>(?<aftereqin>[^'";{}]|(?&stringlit)|(?&brackets))*+((?&aftereqin)(?&aftereq))?+);|;)))
+    |(?(?{$istypedef})(?&cprogram)|(*F)))
+    (?{register_decl_fast()})
+)

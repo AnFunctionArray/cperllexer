@@ -516,6 +516,7 @@ if(not $isnested)
         cond_signal($donework);
         #while(1) {
             if(!$nthread) {
+                register_decl_fast();
                 $regexfinal //= qr{(?(DEFINE)$mainregexdefs)^(*COMMIT)(?<entry>(?&identifiercompositefast)*+((?&identifiercompositefast)(?&entry))?+)$}sxxo;
                 $currregex = $regexfinal;
             } else {
@@ -754,15 +755,19 @@ sub callcommon {
     #foreach my $i (@arr) {
     #    print $i . "\n";
     #}
-    my $res=1;
-    eval {
-        if(not $facet) {
-            $funcnm->($captures, $flags, \$res) 
-        }
-    };
+    my $res=not $facet;
+    my $out=-1;
+    
+    if($res) {
+        eval {$funcnm->($captures, $flags, \$res, \$out) };
+    }
+    if($@ or $facet) {
+        
+        eval {($funcnm . "_universal")->($captures, $flags, \$res, \$out)};
+    }
 
     print2 "not triggered\n" if(not $res);
-    callout($funcnm, $captures, scalar($currpos)) if(defined &callout and not $facet and $res);
+    callout($funcnm, $captures, scalar($currpos), scalar($out)) if(defined &callout and not $facet and $res);
     return $res;
 }
 

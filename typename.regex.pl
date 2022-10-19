@@ -149,7 +149,7 @@ sub endfulldecl {
     }
 }
 
-sub identifier_decl {
+sub register_decl {
     return if($nesteddecl);
     
     my $identifier = $_[0]{'ident'};
