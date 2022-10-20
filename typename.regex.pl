@@ -14,57 +14,50 @@ my %typedefs;
 						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b))
 =cut
 
-my $ok = qr{};
-my $notok = qr{(*F)};
+my %types  = (
+        "int" => (),
+        "char" => (),
+        "short" => (),
+        "long" => (),
+        "signed" => (),
+        "unsigned" => (),
+        "float" => (),
+        "double" => ()
+    );
 
-my %types;
-@types{
-    "int",
-    "char",
-    "short",
-    "long",
-    "signed",
-    "unsigned",
-    "float",
-    "double"
-} = ();
+my %qualifiers  = (
+        "const" => (),
+        "restrict" => (),
+        "volatile" => (),
+        "extern" => (),
+        "static" => (),
+        "auto" => (),
+        "register" => ()
+    );
 
-my %qualifiers;
+my %keywords_base  = (
+        "typedef" => (),
+        "struct" => (),
+        "union" => (),
+        "enum" => (),
+        "sizeof" => (),
+        "break" => (),
+        "case" => (),
+        "continue" => (),
+        "default" => (),
+        "do" => (),
+        "else" => (),
+        "for" => (),
+        "goto" => (),
+        "if" => (),
+        "return" => (),
+        "switch" => (),
+        "while" => ()
+);
 
-@qualifiers{
-    "const",
-    "restrict",
-    "volatile",
-    "extern",
-    "static",
-    "auto",
-    "register"
-} = ();
+my %keywords  = (%qualifiers, %types, %keywords_base);
 
-my %keywords;
-@keywords{
-    "typedef",
-    "struct",
-    "union",
-    "enum",
-    "sizeof",
-    "break",
-    "case",
-    "continue",
-    "default",
-    "do",
-    "else",
-    "for",
-    "goto",
-    "if",
-    "return",
-    "switch",
-    "while"
-} = ();
-
-%keywords = (%qualifiers, %types, %keywords);
-
-my %typeandqualifs = (%qualifiers, %types);
+my %typeandqualifs  = (%qualifiers, %types);
 
 =begin
 sub regenerate_typedef_regex {
@@ -94,36 +87,36 @@ sub checktypedef2 {
     return 0
 }
 
-sub checktypedef_universal  {
+sub checktypedef {
     #regenerate_typedef_regex() if($needregen);
     #print3 "$typedef_regex\n";
     #print3 "checking". $^N . "\n";
     if (checktypedef2 $^N) {
         print3 "$^N -> typedefname\n";
-        return $ok 
+        return qr{}o 
     }
-    return $notok;
+    return qr{(*F)}o;
 }
 
-sub checkident_universal  {
+sub checkident  {
     #print3 "checking" .$^N . "\n";
     if ((not checktypedef2 $^N) and (not exists $keywords{$^N})) {
         print3 "$^N -> ident\n";
-        return $ok 
+        return qr{}o 
     }
-    return $notok;
+    return qr{(*F)}o;
 }
 
-sub checkidentpermissive_universal  {
+sub checkidentpermissive  {
     #print3 "checking" .$^N . "\n";
     if ((not exists $keywords{$^N})) {
         print3 "$^N -> ident-permissive\n";
-        return $ok 
+        return qr{}o 
     }
-    return $notok;
+    return qr{(*F)}o;
 }
 
-sub checktypeorqualif_universal  {
+sub checktypeorqualif  {
     #print3 "checking". $^N . "\n";
 
     inc2 "facet";
@@ -137,10 +130,10 @@ sub checktypeorqualif_universal  {
             call "add_qualif"
         }
         dec2 "facet";
-        return $ok 
+        return qr{}o 
     }
     dec2 "facet";
-    return $notok;
+    return qr{(*F)}o;
 }
 
 sub endfulldecl_universal {

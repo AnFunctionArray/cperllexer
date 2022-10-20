@@ -11,6 +11,13 @@ our (@matches);
 
 BEGIN{push @INC, "."};
 
+use Thread::Queue;
+
+my $q : shared = Thread::Queue->new();
+
+#my $condinput : shared;
+my $condexit : shared;
+
 #use re qw(Debug ALL);
 
 require "typename.regex.pl";
@@ -30,9 +37,10 @@ $genml = $ENV{'GENMLJSON'};
 $debug = $ENV{'DEBUG'};
 $silent = $ENV{'SILENT'};
 $lineonly = $ENV{'LINEONLY'};
+$maxthreads = $ENV{'MAXTHREADS'};
 
 #my sub Dumper {"\n"}
-
+#use Data::Dumper;
 my sub print {CORE::print(@_) if( $debug )}
 my sub print2 {CORE::print(@_) if( not $silent)}
 sub print3 {CORE::print(@_) if( $debug)}
@@ -81,7 +89,7 @@ sub existsflag {
     my $flag = $_[0];
     my $exclusions = $_[1];
     my @flags = @{$_[2] // \@flags};
-    print "exists flag\n";
+    print "exists flag $_[0]\n";
     foreach my $val (reverse @flags) {
         return 1 if(exists $val->{$flag});
 
@@ -510,19 +518,67 @@ if(not $isnested)
         @typedefidentifiersvector = eval { require $ENV{'REPLAY'} . ".txt"};
     }
     my $flind = 1;
+    my $execmainregshared = eval { qr{(?(DEFINE)$mainregexdefs)\G(?&cprogram)}sxxo};
     sub execmain {
-        my $nthread = scalar($_[0]);
+        my $regex = $_[0];
         my $subject = $_[1];
-        my $currregex;
-        print2 "is sep: " . $nthread . "\n";
-        initthread(scalar($_[2])) if(defined &initthread and $nthread);
-        {
-            lock($donework);
-            $donework = 1;
+
+        while (1) {
+            my @item;
+            {
+                lock ($q);
+                #cond_wait ($condinput);
+
+                my $tmp;
+                
+                while (!($tmp = $q->dequeue())) {
+                    cond_wait ($q)
+                }
+
+                if (scalar($tmp) eq 1) {
+                    return;
+                }
+
+                # $silent = 0;
+
+                #CORE::print (Dumper(\$tmp) . "or not\n");
+
+                #$silent = 1;
+
+                @item = @{$tmp};
+            }
+
+            @typedefidentifiersvector = @{$item[0]};
+            my $start = $item[1];
+
+            #CORE::print ($start . "above\n");
+
+            #Copy registered typedefs so far
+
+            @flags = ();
+
+            initthread(scalar($start)) if(defined &initthread and $nthread);
+
+            pos($subject) = $start;
+
+            #CORE::print "$subject\n";
+
+            #exit; 
+
+            if($subject =~ m{$regex}sxxo) {
+                #CORE::print "succes\n";
+            }
         }
-        cond_signal($donework);
+    }
+
+    for (1..$maxthreads) {
+        push @threads, threads->create(\&execmain, $execmainregshared, $subject);
+    }
+   # sub execmain {
         #while(1) {
+
         my $initseq = qr{(?(DEFINE)$fasterregexfilecontent)}sxxn;
+=begin
         while($subject =~ m{$initseq((?<ident>;)|(?&parens)\s*+(?<block>(?&brackets))|(?&brackets)|(?<typedef>\btypedef\b))}gxxnsoc) {
             if ($+{ident} or $+{block}) {
                 #CORE::print $+[0] . "\n";
@@ -532,13 +588,56 @@ if(not $isnested)
                 while ($subject =~ m{$initseq
                     (((?=(?<identparens>(?&inparnes)))(?&parens)
                     |(?<identn>(?&identifierpure)))(?&parens)*+\s*+(?<identen>[,;])|(?&brackets))}sxxgsoc) {
-                    CORE::print $idin . "\n" if ($+{identparens});
-                    CORE::print $+{identn} . "\n" if ($+{identn});
+                    ${$typedefidentifiersvector[-1]}{$+{identparens} // $+{identn}} = 1;
                     last if ($+{identen} eq ';');
                 }
             }
         }
+=cut
+        while ($subject =~ m{$initseq
+            (((?=(?<identparens>(?&inparnes)))(?&parens)
+            |(?<identn>(?&identifierpuref)))(?&parens)*+((?<identen>[,;=])|(?(<identparens>)(?<block>(?&brackets))|(*F)))|(?&brackets)|(?<end>;)|(?<typedef>\btypedef\b))}sxxgsoc) {
+            my $lastpos = $+[0];
+            my $identany = $+{identparens} // $+{identn};
+
+            my $shouldstorelast = ($+{identen} eq ";") || exists $+{block} || exists $+{end};
+
+            if ($identany) {
+                if ($istypedef) {
+                    ${$typedefidentifiersvector[-1]}{$identany} = 1;
+                    undef $istypedef;
+                }
+                elsif (exists $+{block}) {
+                    #CORE::print  ("last $lastposend" . "\n");
+                    #push @threads, threads->create(\&execmain, [@typedefidentifiersvector], $lastposend, $execmainregshared, $subject);
+                    lock $q;
+                    $q->enqueue([[@typedefidentifiersvector], scalar($lastposend)]);
+                    #$condinput++;
+                    cond_signal $q;
+                }
+                else {
+
+                }
+                #CORE::print (($+{identparens} // $+{identn}) . "@ $+[0] - " . (0 + !!$+{block}) . " - " . (0 + !!($+{identen} eq ",")) . "\n");
+            }
+
+            if ($shouldstorelast) {
+                $lastposend = $lastpos
+            }
+            
+            $istypedef = $+{typedef};
+        }
         #CORE::print $fastersubject . "\n";
+        #CORE::print Dumper(\@typedefidentifiersvector) . "\n";
+        print2 "joinning\n";
+        {
+            lock $q;
+            $q->enqueue(1) for (1..$maxthreads);
+            cond_broadcast ($q)
+        }
+            
+        $_->join  for @threads;
+        print2 "joined\n";
         exit;
             if(!$nthread) {
                 register_decl_fast();
@@ -579,20 +678,14 @@ if(not $isnested)
             }
             #decnthreads($nthread);
         }
-    }
+    #}
 
     #sub decnthreads {
     #    lock($nthreads);
     #    $nthreads--;
     #}
 
-    sub waitforthreads {
-        print2 "joinning\n";
-         $_->join  for @threads;
-        print2 "joined\n";
-    }
-
-    execmain(0, $subject);
+    #execmain(0, $subject);
 
     if($ENV{'RECORD'}) {
         $silent = 0;

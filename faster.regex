@@ -3,13 +3,13 @@
 						(?<text>(?<textraw>((?!(?&escape)|\g{begcharlit}).)++)))*+
 						\g{begcharlit})
 
-(?<parens>(?<openparenf>[(\[])(?<inparen>(?<inparenin>=(?&parens)|(?&strunus)|[^()\[\]"'])*+
-    ((?&inparenin)(?&inparen))?+)(?(?{$+{openparenf} eq '('})\)|\]))
+(?<parens>\s*+(?<openparenf>[(\[])(?<inparen>(?<inparenin>=(?&parens)|(?&strunus)|[^()\[\]"'])*+
+    ((?&inparenin)(?&inparen))?+)(?(?{$+{openparenf} eq '('})\)|\])\s*+)
 
-(?<brackets>\{(?<inbrackets>(?<inbracketsin>(?&brackets)|(?&strunus)|[^{}"'])*+((?&inbracketsin)(?&inbrackets))?+)\})
+(?<brackets>\s*+\{(?<inbrackets>(?<inbracketsin>(?&brackets)|(?&strunus)|[^{}"'])*+((?&inbracketsin)(?&inbrackets))?+)\}\s*+)
 
-(?<identifierpure>\b(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9@])*+)\b)
+(?<identifierpuref>\b(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9@])*+)\b)
 
 (?<inparnes>[(](?<inparen>(?<inparenin>=(?&parens)|(?&strunus)|[^\w()\[\]"']
-    |(?<idin>(?&identifierpure))(?(?=\s*+[^\w*])(?{$idin = $+{idin}})))*+
+    |\s*+(?<idin>(?&identifierpuref))(?(?=\s*+[^\w*])(?{$idin = $+{idin}})))*+
     ((?&inparenin)(?&inparen))?+)[)])

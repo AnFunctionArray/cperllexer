@@ -7,7 +7,7 @@
 (?<exprstatement>\s*+(?&primexprnew)?;(?{call 'endexpression'})\s*+)
 (?<compoundstatement>\s*+[{](?{call 'beginscope'})
 ((?&decl)|(?&statement))*+\s*+[}](?{call 'endscope'})\s*+)
-(?<selectionstatement>\s*+(if\b\s*+[(](?&primexprnew)[)](?{call 'startifstatement'})(?&statement)(else\b(?{call 'continueifstatement'})(?&statement))?+(?{call 'endifstatement'})|switch\b\s*+[(](?&primexprnew)[)](?{call 'startswitch'})(?&statement)(?{call 'endswitch'}))\s*+)
+(?<selectionstatement>\s*+(\bif\s*+[(](?&primexprnew)[)](?{call 'startifstatement'})(?&statement)(else\b(?{call 'continueifstatement'})(?&statement))?+(?{call 'endifstatement'})|switch\b\s*+[(](?&primexprnew)[)](?{call 'startswitch'})(?&statement)(?{call 'endswitch'}))\s*+)
 
 (?<statement>(?(?=(?{push2 \@savedcallouts, []})
 		(?{++$recording; print3("recording statement labels\n")})(?<labels>(?&label)++))(?{$recording--})(?{replayrecord})(?{pop2 \@savedcallouts})\g{labels}(?&statementinner)
