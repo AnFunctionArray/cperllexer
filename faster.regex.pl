@@ -36,7 +36,7 @@ sub register_decl_universal {
 =cut
 
 sub register_decl_fast {
-    #CORE::print pos() . "\n";
+    CORE::print pos() . "\n";
 }
 
 1

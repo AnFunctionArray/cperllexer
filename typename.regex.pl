@@ -94,7 +94,7 @@ sub checktypedef2 {
     return 0
 }
 
-sub checktypedef {
+sub checktypedef_universal  {
     #regenerate_typedef_regex() if($needregen);
     #print3 "$typedef_regex\n";
     #print3 "checking". $^N . "\n";
@@ -105,7 +105,7 @@ sub checktypedef {
     return $notok;
 }
 
-sub checkident {
+sub checkident_universal  {
     #print3 "checking" .$^N . "\n";
     if ((not checktypedef2 $^N) and (not exists $keywords{$^N})) {
         print3 "$^N -> ident\n";
@@ -114,7 +114,7 @@ sub checkident {
     return $notok;
 }
 
-sub checkidentpermissive {
+sub checkidentpermissive_universal  {
     #print3 "checking" .$^N . "\n";
     if ((not exists $keywords{$^N})) {
         print3 "$^N -> ident-permissive\n";
@@ -123,7 +123,7 @@ sub checkidentpermissive {
     return $notok;
 }
 
-sub checktypeorqualif {
+sub checktypeorqualif_universal  {
     #print3 "checking". $^N . "\n";
 
     inc2 "facet";
@@ -143,13 +143,13 @@ sub checktypeorqualif {
     return $notok;
 }
 
-sub endfulldecl {
+sub endfulldecl_universal {
     if($needregen) {
         regenerate_typedef_regex();
     }
 }
 
-sub register_decl {
+sub register_decl_universal {
     return if($nesteddecl);
     
     my $identifier = $_[0]{'ident'};
@@ -167,12 +167,12 @@ sub register_decl {
     }
 }
 
-sub beginscope {
+sub beginscope_universal  {
     push @typedefidentifiersvector, {};
     push @typedefidentifierschanged, 0;
 }
 
-sub endscope {
+sub endscope_universal  {
     $needregen = pop @typedefidentifierschanged;
     pop @typedefidentifiersvector;
     regenerate_typedef_regex() if($needregen);

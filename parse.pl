@@ -285,6 +285,13 @@ my $mainregexfilecontent = do { local $/; <$fh> };
 
 close $fh;
 
+$filename = "faster.regex";
+open my $fh, '<', $filename or die "error opening $filename: $!";
+
+my $fasterregexfilecontent = do { local $/; <$fh> };
+
+close $fh;
+
 $filename = "regex.regex";
 open my $fh, '<', $filename or die "error opening $filename: $!";
 
@@ -515,6 +522,24 @@ if(not $isnested)
         }
         cond_signal($donework);
         #while(1) {
+        my $initseq = qr{(?(DEFINE)$fasterregexfilecontent)}sxxn;
+        while($subject =~ m{$initseq((?<ident>;)|(?&parens)\s*+(?<block>(?&brackets))|(?&brackets)|(?<typedef>\btypedef\b))}gxxnsoc) {
+            if ($+{ident} or $+{block}) {
+                #CORE::print $+[0] . "\n";
+                $begin = $+[0]
+            }
+            if ($+{typedef}) {
+                while ($subject =~ m{$initseq
+                    (((?=(?<identparens>(?&inparnes)))(?&parens)
+                    |(?<identn>(?&identifierpure)))(?&parens)*+\s*+(?<identen>[,;])|(?&brackets))}sxxgsoc) {
+                    CORE::print $idin . "\n" if ($+{identparens});
+                    CORE::print $+{identn} . "\n" if ($+{identn});
+                    last if ($+{identen} eq ';');
+                }
+            }
+        }
+        #CORE::print $fastersubject . "\n";
+        exit;
             if(!$nthread) {
                 register_decl_fast();
                 $regexfinal //= qr{(?(DEFINE)$mainregexdefs)^(*COMMIT)(?<entry>(?&identifiercompositefast)*+((?&identifiercompositefast)(?&entry))?+)$}sxxo;

@@ -193,8 +193,8 @@
 (?<structorunion>
 	(?=(?<begin>\s*+\b(?<structorunionlast>struct|union|(enum)(?{$matches[-1]{enum}=$^N}))\b\s*+
 	(((?&identifierminestruct))(?{$matches[-1]{lasttag}=$^N}))?+))\g{begin}
-	(?(?{$istypedef})(?&brackets)?+|(?(?=(?<body>(?&structbody)))\g{body}|(?(?{eval {exists $matches[-1]{lasttag}} or 0})|(*F)))
-	(?{call 'add_tag'}))
+	(?(?=(?<body>(?&structbody)))\g{body}|(?(?{eval {exists $matches[-1]{lasttag}} or 0})|(*F)))
+	(?{call 'add_tag'})
 )
 
 (?<identifierminestruct>(?&identifierraw_qualified))
