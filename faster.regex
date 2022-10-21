@@ -1,15 +1,15 @@
-(?<strunus>(?<begcharlit>"|')
-						((?<escape>(?<escaperaw>\\(?(?=x)x[0-9a-fA-F]++|(?(?=\d)[0-7]++|['"?\\abfnrtv]))))|
-						(?<text>(?<textraw>((?!(?&escape)|\g{begcharlit}).)++)))*+
-						\g{begcharlit})
+(?<strunus>(?<begcharlitf>"|')
+						((?<escapef>(?<escaperawf>\\(?(?=x)x[0-9a-fA-F]++|(?(?=\d)[0-7]++|['"?\\abfnrtv]))))|
+						(?<textf>(?<textrawf>((?!(?&escapef)|\g{begcharlitf}).)++)))*+
+						\g{begcharlitf})
+(?<sqrbrks>\[(?<inparensqr>(?<inpareninsqr>=(?&sqrbrks)|(?&strunus)|[^\[\]"'])*+
+    ((?&inpareninsqr)(?&inparensqr))?+)\])
 
-(?<parens>\s*+(?<openparenf>[(\[])(?<inparen>(?<inparenin>=(?&parens)|(?&strunus)|[^()\[\]"'])*+
-    ((?&inparenin)(?&inparen))?+)(?(?{$+{openparenf} eq '('})\)|\])\s*+)
+(?<rndbrcks>\((?<inparen>(?<inparenin>=(?&rndbrcks)|(?&strunus)|[^()"'])*+
+    ((?&inparenin)(?&inparen))?+)\))
 
-(?<brackets>\s*+\{(?<inbrackets>(?<inbracketsin>(?&brackets)|(?&strunus)|[^{}"'])*+((?&inbracketsin)(?&inbrackets))?+)\}\s*+)
+(?<parens>(?&sqrbrks)|(?&rndbrcks))
 
-(?<identifierpuref>\b(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9@])*+)\b)
+(?<brackets>\{(?<inbrackets>(?<inbracketsin>(?&brackets)|(?&strunus)|[^{}"'])*+((?&inbracketsin)(?&inbrackets))?+)\})
 
-(?<inparnes>[(](?<inparen>(?<inparenin>=(?&parens)|(?&strunus)|[^\w()\[\]"']
-    |\s*+(?<idin>(?&identifierpuref))(?(?=\s*+[^\w*])(?{$idin = $+{idin}})))*+
-    ((?&inparenin)(?&inparen))?+)[)])
+

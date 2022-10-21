@@ -594,41 +594,39 @@ if(not $isnested)
             }
         }
 =cut
+        push2 \@savedcallouts, [];
+        ++$recording;
+        #push2 \@flags, {"skiptaggedbodies"};
         while ($subject =~ m{$initseq
-            (((?=(?<identparens>(?&inparnes)))(?&parens)
-            |(?<identn>(?&identifierpuref)))(?&parens)*+((?<identen>[,;=])|(?(<identparens>)(?<block>(?&brackets))|(*F)))|(?&brackets)|(?<end>;)|(?<typedef>\btypedef\b))}sxxgsoc) {
+            (?&parens)(\s*+(?<block>(?&brackets)))?+|(?<identen>[,;=])|(?&brackets)|(?<typedef>\btypedef\b)}sxxgsoc) {
             my $lastpos = $+[0];
-            my $identany = $+{identparens} // $+{identn};
 
-            my $shouldstorelast = ($+{identen} eq ";") || exists $+{block} || exists $+{end};
+            my $shouldstorelast = $+{identen} eq ';' || exists $+{block};
 
-            if ($identany) {
-                if ($istypedef) {
-                    ${$typedefidentifiersvector[-1]}{$identany} = 1;
-                    undef $istypedef;
-                }
-                elsif (exists $+{block}) {
-                    #CORE::print  ("last $lastposend" . "\n");
-                    #push @threads, threads->create(\&execmain, [@typedefidentifiersvector], $lastposend, $execmainregshared, $subject);
-                    lock $q;
-                    $q->enqueue([[@typedefidentifiersvector], scalar($lastposend)]);
-                    #$condinput++;
-                    cond_signal $q;
-                }
-                else {
-
-                }
-                #CORE::print (($+{identparens} // $+{identn}) . "@ $+[0] - " . (0 + !!$+{block}) . " - " . (0 + !!($+{identen} eq ",")) . "\n");
+            if ($+{typedef}) {
+                my $lastlastpos = $lastpos;
+                pos($subject) = $lastposend;
+                $subject =~ m{$execmainregshared}sxxo;
+                pos($subject) = $lastpos;
+            }
+            elsif ($+{block}) {
+                lock $q;
+                $q->enqueue([[@typedefidentifiersvector], scalar($lastposend)]);
+                #$condinput++;
+                cond_signal $q;
             }
 
             if ($shouldstorelast) {
+                #CORE::print (($lastpos) . "\n");
                 $lastposend = $lastpos
             }
-            
-            $istypedef = $+{typedef};
         }
+        pop2 \@savedcallouts, [];
+        #pop2 \@flags;
+        --$recording;
         #CORE::print $fastersubject . "\n";
-        #CORE::print Dumper(\@typedefidentifiersvector) . "\n";
+        CORE::print Dumper(\@typedefidentifiersvector) . "\n";
+        #exit;
         print2 "joinning\n";
         {
             lock $q;
@@ -836,7 +834,7 @@ sub call {
             print "success\n";
             print Dumper \@{$savedcallouts[-1]};
         #};
-        return
+        #return
     }
     return callcommon($funcnm, {%$captures}, $recording, \@flags, $currpos)
 }
