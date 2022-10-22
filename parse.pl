@@ -463,7 +463,7 @@ print $cached_instances{$entryregex};
 
 #exit if(not $matchinperl);
 
-startmodule(basename($ARGV[-1])) if(defined &startmodule and not $nested);
+#startmodule(basename($ARGV[-1])) if(defined &startmodule and not $nested);
 
 #my $matchprototype = qr{(?(DEFINE)$mainregexdefs)^((??{set {"decls" => "extrnl"}})(?&abstdeclorallqualifs)(??{unset {"decls" => "extrnl"}}))}sxxn;
 #my $matchtype = qr{(?(DEFINE)$mainregexdefs)(?&abstdeclorallqualifs)}sxxn;
@@ -520,8 +520,14 @@ if(not $isnested)
     my $flind = 1;
     my $execmainregshared = eval { qr{(?(DEFINE)$mainregexdefs)\G(?&cprogram)}sxxo};
     sub execmain {
-        my $regex = $_[0];
-        my $subject = $_[1];
+        $regex = $_[0];
+        $subject = $_[1];
+        $fasterregex = $_[2];
+        $threadid = $_[3];
+
+        #inittypenameconstants();
+
+        startmodule(basename($ARGV[-1]) . "_" . $threadid) if(defined &startmodule);
 
         while (1) {
             my @item;
@@ -536,6 +542,7 @@ if(not $isnested)
                 }
 
                 if (scalar($tmp) eq 1) {
+                    endmodule() if(defined &endmodule);
                     return;
                 }
 
@@ -550,6 +557,9 @@ if(not $isnested)
 
             @typedefidentifiersvector = @{$item[0]};
             my $start = $item[1];
+            my $dirty = $item[2];
+
+            consumefilescopes(scalar($dirty - 1)) if ($dirty && defined &consumefilescopes);
 
             #CORE::print ($start . "above\n");
 
@@ -557,7 +567,7 @@ if(not $isnested)
 
             @flags = ();
 
-            initthread(scalar($start)) if(defined &initthread and $nthread);
+            #initthread(scalar($start)) if(defined &initthread and $nthread);
 
             pos($subject) = $start;
 
@@ -571,13 +581,74 @@ if(not $isnested)
         }
     }
 
+    sub parse_filescope_var {
+        CORE::print("test\n");
+        my $identtosearch = $_[0];
+        my $flags = $_[1];
+        my $currpos = $_[2];
+        my $continue = $_[3];
+        my $lastposend = 0;
+
+        if ($flags eq 1) {
+            $identtosearch = qr{\bstruct\s++$identtosearch\s++\{}sxxo;
+        }
+
+        if ($flags eq 2) {
+            $identtosearch = qr{\bunion\s++$identtosearch\s++\{}sxxo;
+        }
+
+        if ($flags eq 3) {
+            $identtosearch = qr{\benum\s++$identtosearch\s++\{}sxxo;
+        }
+
+        if ($flags eq 0) {
+            $identtosearch = qr{\b$identtosearch\b}sxxo;
+        }
+
+        CORE::print("test\n");
+
+        pos($subject) = $continue;
+
+        #CORE::print("$fasterregex\n");
+
+        while ($subject =~ m{$fasterregex\G((?&parens)(\s*+(?<block>(?&brackets)))?+|(?<identen>;)|(?&brackets)|$identtosearch)}sxxgsoc) {
+            CORE::print("test\n");
+            my $lastpos = $+[0];
+
+            my $shouldstorelast = $+{identen} || exists $+{block};
+
+            if ($shouldstorelast) {
+                #CORE::print (($lastpos) . "\n");
+                $lastposend = $lastpos
+            }
+            else {
+                if ($lastposend > $currpos) {
+                    CORE::print("end0\n");
+                    return scalar(0);
+                }
+
+                my $lastpos = pos($subject);
+
+                pos($subject) = $lastposend;
+                $subject =~ m{$regex}sxxo;
+                return scalar($lastpos);
+            }
+        }
+
+        CORE::print("testend\n");
+
+        pos($subject) = $currpos;
+        CORE::print("end0\n");
+        return scalar(0);
+    }
+
+    my $initseq = qr{(?(DEFINE)$fasterregexfilecontent)}sxxn;
+
     for (1..$maxthreads) {
-        push @threads, threads->create(\&execmain, $execmainregshared, $subject);
+        push @threads, threads->create(\&execmain, $execmainregshared, $subject, $initseq, $_);
     }
    # sub execmain {
         #while(1) {
-
-        my $initseq = qr{(?(DEFINE)$fasterregexfilecontent)}sxxn;
 =begin
         while($subject =~ m{$initseq((?<ident>;)|(?&parens)\s*+(?<block>(?&brackets))|(?&brackets)|(?<typedef>\btypedef\b))}gxxnsoc) {
             if ($+{ident} or $+{block}) {
@@ -594,9 +665,12 @@ if(not $isnested)
             }
         }
 =cut
-        push2 \@savedcallouts, [];
-        ++$recording;
+        #push2 \@savedcallouts, [];
+        #++$recording;
         #push2 \@flags, {"skiptaggedbodies"};
+        $lastposend = 0;
+        $dirty = 0;
+        $nstackdirty = 1;
         while ($subject =~ m{$initseq
             (?&parens)(\s*+(?<block>(?&brackets)))?+|(?<identen>[,;=])|(?&brackets)|(?<typedef>\btypedef\b)}sxxgsoc) {
             my $lastpos = $+[0];
@@ -608,12 +682,16 @@ if(not $isnested)
                 pos($subject) = $lastposend;
                 $subject =~ m{$execmainregshared}sxxo;
                 pos($subject) = $lastpos;
+                $dirty = 1;
             }
             elsif ($+{block}) {
+                flushfilescopes(scalar($maxthreads)) if ($dirty and defined &flushfilescopes);
                 lock $q;
-                $q->enqueue([[@typedefidentifiersvector], scalar($lastposend)]);
+                $q->enqueue([[@typedefidentifiersvector], scalar($lastposend), $dirty ? $nstackdirty : 0]);
                 #$condinput++;
                 cond_signal $q;
+                ++$nstackdirty if ($dirty);
+                $dirty = 0;
             }
 
             if ($shouldstorelast) {
@@ -621,9 +699,9 @@ if(not $isnested)
                 $lastposend = $lastpos
             }
         }
-        pop2 \@savedcallouts, [];
+        #pop2 \@savedcallouts, [];
         #pop2 \@flags;
-        --$recording;
+        #--$recording;
         #CORE::print $fastersubject . "\n";
         CORE::print Dumper(\@typedefidentifiersvector) . "\n";
         #exit;
@@ -883,7 +961,7 @@ sub callcommon {
     }
 
     print2 "not triggered\n" if(not $res);
-    callout($funcnm, $captures, scalar($currpos), scalar($out)) if(defined &callout and not $facet and $res);
+    callout($funcnm, $captures, scalar($currpos)) if(defined &callout and not $facet and $res);
     return $res;
 }
 

@@ -36,7 +36,7 @@
 		(?{++$recording; print3("recording assignorsomething\n")})((?&unaryexpr)))(??{qr{\Q$^N\E}})
 	(?(?=((?<assignop>=(?!=)|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+))
 		(??{qr{\Q$^N\E}})(?{--$recording; print3("minus minus assignorsomething $recording\n")})
-		(?{replayrecord; pop2 \@savedcallouts})(?&assignorsomething)(?{assignment})
+		(?{replayrecord; pop2 \@savedcallouts})(?&assignorsomething)(?{(assignment())})
 		|(?&ternarylogicopt))
 		|(?{$savedcallouts[-1] = []; print3("resetting record\n")})(?(?=((?&typenamerev)))|(?{--$recording})(?{pop2 \@savedcallouts})(*F))
 		(??{qr{\Q$^N\E}})(?&ternarylogicopt))

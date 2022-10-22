@@ -14,50 +14,54 @@ my %typedefs;
 						|(?<storageclass>\bextern\b|\bstatic\b|\bauto\b|\bregister\b))
 =cut
 
-my %types  = (
-        "int" => (),
-        "char" => (),
-        "short" => (),
-        "long" => (),
-        "signed" => (),
-        "unsigned" => (),
-        "float" => (),
-        "double" => ()
-    );
+#sub inittypenameconstants {
 
-my %qualifiers  = (
-        "const" => (),
-        "restrict" => (),
-        "volatile" => (),
-        "extern" => (),
-        "static" => (),
-        "auto" => (),
-        "register" => ()
-    );
+@types{
+    "int",
+    "char",
+    "short",
+    "long",
+    "signed",
+    "unsigned",
+    "float",
+    "double"
+} = ();
 
-my %keywords_base  = (
-        "typedef" => (),
-        "struct" => (),
-        "union" => (),
-        "enum" => (),
-        "sizeof" => (),
-        "break" => (),
-        "case" => (),
-        "continue" => (),
-        "default" => (),
-        "do" => (),
-        "else" => (),
-        "for" => (),
-        "goto" => (),
-        "if" => (),
-        "return" => (),
-        "switch" => (),
-        "while" => ()
-);
+@qualifiers{
+    "const",
+    "restrict",
+    "volatile",
+    "extern",
+    "static",
+    "auto",
+    "register"
+} = ();
 
-my %keywords  = (%qualifiers, %types, %keywords_base);
+@keywords{
+    "typedef",
+    "struct",
+    "union",
+    "enum",
+    "sizeof",
+    "break",
+    "case",
+    "continue",
+    "default",
+    "do",
+    "else",
+    "for",
+    "goto",
+    "if",
+    "return",
+    "switch",
+    "while"
+} = ();
 
-my %typeandqualifs  = (%qualifiers, %types);
+%keywords = (%qualifiers, %types, %keywords);
+
+%typeandqualifs = (%qualifiers, %types);
+
+#}
 
 =begin
 sub regenerate_typedef_regex {
@@ -109,6 +113,7 @@ sub checkident  {
 
 sub checkidentpermissive  {
     #print3 "checking" .$^N . "\n";
+    print3 Dumper(\%keywords) . "\n";
     if ((not exists $keywords{$^N})) {
         print3 "$^N -> ident-permissive\n";
         return qr{}o 
@@ -136,13 +141,13 @@ sub checktypeorqualif  {
     return qr{(*F)}o;
 }
 
-sub endfulldecl_universal {
+sub endfulldecl {
     if($needregen) {
         regenerate_typedef_regex();
     }
 }
 
-sub register_decl_universal {
+sub register_decl{
     return if($nesteddecl);
     
     my $identifier = $_[0]{'ident'};
@@ -160,12 +165,12 @@ sub register_decl_universal {
     }
 }
 
-sub beginscope_universal  {
+sub beginscope {
     push @typedefidentifiersvector, {};
     push @typedefidentifierschanged, 0;
 }
 
-sub endscope_universal  {
+sub endscope  {
     $needregen = pop @typedefidentifierschanged;
     pop @typedefidentifiersvector;
     regenerate_typedef_regex() if($needregen);
