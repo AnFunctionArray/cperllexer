@@ -590,28 +590,28 @@ if(not $isnested)
         my $lastposend = 0;
 
         if ($flags eq 1) {
-            $identtosearch = qr{\bstruct\s++$identtosearch\s++\{}sxxo;
+            $identtosearch = qr{\bstruct\s++$identtosearch\s++\{}sxx;
         }
 
         if ($flags eq 2) {
-            $identtosearch = qr{\bunion\s++$identtosearch\s++\{}sxxo;
+            $identtosearch = qr{\bunion\s++$identtosearch\s++\{}sxx;
         }
 
         if ($flags eq 3) {
-            $identtosearch = qr{\benum\s++$identtosearch\s++\{}sxxo;
+            $identtosearch = qr{\benum\s++$identtosearch\s++\{}sxx;
         }
 
         if ($flags eq 0) {
-            $identtosearch = qr{\b$identtosearch\b}sxxo;
+            $identtosearch = qr{\b$identtosearch\b}sxx;
         }
 
-        CORE::print("test\n");
+        CORE::print("test - $currpos\n");
 
         pos($subject) = $continue;
 
-        #CORE::print("$fasterregex\n");
+        CORE::print("$identtosearch\n");
 
-        while ($subject =~ m{$fasterregex\G((?&parens)(\s*+(?<block>(?&brackets)))?+|(?<identen>;)|(?&brackets)|$identtosearch)}sxxgsoc) {
+        while ($subject =~ m{$fasterregex((?&parens)(\s*+(?<block>(?&brackets)))?+|(?<identen>;)|(?&brackets)|$identtosearch)}sxxgsc) {
             CORE::print("test\n");
             my $lastpos = $+[0];
 
