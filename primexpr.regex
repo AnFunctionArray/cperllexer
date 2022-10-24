@@ -1,4 +1,4 @@
-#include "statement.regex", "inner.regex", "unary.regex", "binary.regex", "typename.regex", "faster.regex"
+#include "statement.regex", "inner.regex", "unary.regex", "binary.regex", "typename.regex"
 #entry ^cprogram
 
 (?<primexprraw>(?&assignorsomething)(,(?{call 'comma'})(?&assignorsomething))*+)

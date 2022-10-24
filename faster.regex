@@ -1,15 +1,17 @@
-(?<strunus>(?<begcharlitf>"|')
-						((?<escapef>(?<escaperawf>\\(?(?=x)x[0-9a-fA-F]++|(?(?=\d)[0-7]++|['"?\\abfnrtv]))))|
-						(?<textf>(?<textrawf>((?!(?&escapef)|\g{begcharlitf}).)++)))*+
-						\g{begcharlitf})
-(?<sqrbrks>\[(?<inparensqr>(?<inpareninsqr>=(?&sqrbrks)|(?&strunus)|[^\[\]"'])*+
-    ((?&inpareninsqr)(?&inparensqr))?+)\])
 
-(?<rndbrcks>\((?<inparen>(?<inparenin>=(?&rndbrcks)|(?&strunus)|[^()"'])*+
-    ((?&inparenin)(?&inparen))?+)\))
 
-(?<parens>(?&sqrbrks)|(?&rndbrcks))
 
-(?<brackets>\{(?<inbrackets>(?<inbracketsin>(?&brackets)|(?&strunus)|[^{}"'])*+((?&inbracketsin)(?&inbrackets))?+)\})
 
+
+
+(?<rndbrcksdecl>\s*\((?<inparen>(?<inparenin>\s*+(?&ptr)*+\s*+((?<identinside>(?&identifierpure))|(?&rndbrcksdecl))(\s*+(?&parens)\s*+)*+\s*)*+
+    ((?&inparenin)(?&inparen))?+)\)\s*(?(<identinside>)(*ACCEPT)))
+
+(?<declfast>\s*+(?(?=(?&rndbrcksdecl))(?&parens)|(?<identoutside>(?&identifierpure)))\s*+)
+
+(?<ptr>\s*+\*\s*+(?&typeorqualif)*+\s*+)
+
+
+(?<fasttypedef>((?(<typedefident>)(?<identfakedef>(?&identifier_typedef))(*ACCEPT)|(?<typedefident>(?&identifier_typedef)))(?(<qualifortagfound>)(*F))|(?<qualifortagfound>(?&typeorqualif)|(?&fasttaggable))|\s*+\btypedef\b\s*+)*+
+	(?&ptr)*+\s*+)
 

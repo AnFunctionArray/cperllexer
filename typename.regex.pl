@@ -85,10 +85,30 @@ sub regenerate_typedef_regex {
 
 sub checktypedef2 {
     my $ident = $_[0];
+     #CORE::print ("Dumping typs\n");
+    #$silent = 0;
+    #CORE::print (Dumper(\@typedefidentifiersvector));
+     $silent = 1;
     foreach my $typedefidentifier (reverse @typedefidentifiersvector) {
         return $typedefidentifier->{$ident} if(exists $typedefidentifier->{$ident})
     }
     return 0
+}
+
+sub flattentypedefs {
+    my $typeorqualifss = "";
+    my %rejects = ();
+    foreach my $typedefidentifier (reverse @typedefidentifiersvector) {
+        foreach my $ident (keys %$typedefidentifier) {
+            if (!$typedefidentifier->{$ident}) {
+                $rejects{$ident} = undef;
+            }
+            elsif (! exists $rejects{$ident}) {
+                $typeorqualifss = $typeorqualifss . "|" . $ident
+            }
+        }
+    }
+    return  "\\b(" . (substr($typeorqualifss, 1) // "(*F)") . ")\\b"
 }
 
 sub checktypedef {
@@ -125,6 +145,7 @@ sub checktypeorqualif  {
     #print3 "checking". $^N . "\n";
 
     inc2 "facet";
+    #CORE::print ("at g " . $^N . "\n");
     if (exists $typeandqualifs{$^N}) {
         print3 "$^N -> qualifortype\n";
         if(exists $types{$^N}) {
@@ -141,6 +162,14 @@ sub checktypeorqualif  {
     return qr{(*F)}o;
 }
 
+sub flattentypeorqualif {
+    my $typeorqualifss = "";
+    for my $el (keys %typeandqualifs) {
+        $typeorqualifss = $typeorqualifss . "|" . $el
+    }
+    return "\\b(" .  substr($typeorqualifss, 1) . ")\\b"
+}
+
 sub endfulldecl {
     if($needregen) {
         regenerate_typedef_regex();
@@ -149,6 +178,8 @@ sub endfulldecl {
 
 sub register_decl{
     return if($nesteddecl);
+
+    return if(existsflag "bitfl", {"nonbitfl"});
     
     my $identifier = $_[0]{'ident'};
     return if not $identifier;

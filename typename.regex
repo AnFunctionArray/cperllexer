@@ -112,10 +112,9 @@
 	(?(?{existsflag "bitfl", {"nonbitfl"}})(?&abstrbitfield)|(?&abstrinitialization))
 	)
 
-(?<abstdeclorallqualifsqualifs>(((?&qualifs))|\s*+((?(?{eval {exists $matches[-1]{strc}} or 0})(*F))
-		(?(?{eval {exists $matches[-1]{typedefnmmatched}} or 0})(*F))
-		(((?&structorunion))(?{$matches[-1]{strc}=$^N})
-		|(?(?{eval {exists $matches[-1]{typefound}} or 0})(*F))((?&identifier_typedef))(?{$matches[-1]{typedefnmmatched}=$^N}))
+(?<abstdeclorallqualifsqualifs>(?(?=((?&qualifs)))(??{qr{\Q$^N\E}})|\s*+(
+		(?(?=((?&structorunion)))(??{qr{\Q$^N\E}})(?{$matches[-1]{strc}=$^N})
+		|(?(?{eval {exists $matches[-1]{typefound} or exists $matches[-1]{typedefnmmatched} or exists $matches[-1]{strc}} or 0})(*F))((?&identifier_typedef))(?{$matches[-1]{typedefnmmatched}=$^N}))
 		|(?(?{eval {exists $matches[-1]{typedefkey}} or 0})(*F))((\btypedef\b))(?{$matches[-1]{typedefkey}=$^N}))\s*+)++)
 
 (?<abstdeclorallqualifsdestr>
@@ -156,7 +155,7 @@
 	(?{pop2 \@flags, undef})
 )
 
-(?<declopt>(?{push2 \@flags, {"outter"=>undef,"opt"=>undef, "nonbitfl"=>undef}})(?&abstdeclorallqualifs)(?(?!\s*+;)(?&compoundstatement)|\s*+;(?{call 'endfulldecl'})\s*+))
+(?<declopt>(?{push2 \@flags, {"outter"=>undef,"opt"=>undef, "nonbitfl"=>undef}})(?&abstdeclorallqualifs)(?(?!\s*+;)(?{brodc()})(?&compoundstatement)|\s*+;(?{brodc()})(?{call 'endfulldecl'})\s*+))
 (?<decl>(?{push2 \@flags, {"outter"=>undef,"nonopt"=>undef, "nonbitfl"=>undef}})(?&abstdeclorallqualifs)\s*+;(?{call 'endfulldecl'})\s*+)
 
 (?<cprogram>(?&declopt))
@@ -187,7 +186,7 @@
 	(?<enumerator>(?&add_ident_to_enum_def)
 	((=(?{call 'beginconstantexpr'})(?&assignorsomething)(?{call 'end_ass_to_enum_def'}))
 	|(?{call 'end_without_ass_to_enum_def'})))?+(,(?&enumerator))*+,?+\s*+
-	|(?{call 'struc_or_union_body'})\s*+(?&strcelem)*+)\s*+
+	|(?{call 'struc_or_union_body'})\s*+(?<strceleminf>(?&strcelem)*+((?&strcelem)(?&strceleminf))?+))\s*+
 	[}]\s*+(?(?{eval {exists $matches[-1]{enum}} or 0})()|(?{call 'endbuildingstructorunion'}))\s*+(?{$recording = pop2 \@structbodystack}))
 
 (?<structorunion>
@@ -196,5 +195,7 @@
 	(?(?=(?<body>(?&structbody)))\g{body}|(?(?{eval {exists $matches[-1]{lasttag}} or 0})|(*F)))
 	(?{call 'add_tag'})
 )
+
+(?<taggableonly>(?&structorunion))
 
 (?<identifierminestruct>(?&identifierraw_qualified))
