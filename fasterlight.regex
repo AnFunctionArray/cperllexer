@@ -1,0 +1,17 @@
+(?<strunus>(?<begcharlitf>"|')
+						((?<escapef>(?<escaperawf>\\(?(?=x)x[0-9a-fA-F]++|(?(?=\d)[0-7]++|['"?\\abfnrtv]))))|
+						(?<textf>(?<textrawf>((?!(?&escapef)|\g{begcharlitf}).)++)))*+
+						\g{begcharlitf})
+(?<sqrbrks>\[(?<inparensqr>(?<inpareninsqr>(?&sqrbrks)|(?&strunus)|[^\[\]"'])*+
+    ((?&inpareninsqr)(?&inparensqr))?+)\])
+
+(?<rndbrcks>\((?<inparen>(?<inparenin>(?&rndbrcks)|(?&strunus)|[^()"'])*+
+    ((?&inparenin)(?&inparen))?+)\))
+
+(?<parens>(?&sqrbrks)|(?&rndbrcks))
+
+(?<brackets>\{(?<inbrackets>(?<inbracketsin>(?&brackets)|(?&strunus)|[^{}"'])*+((?&inbracketsin)(?&inbrackets))?+)\})
+
+(?<fasttaggable>\s*+\b(struct|enum|union)\b\s*+(?&identifierpure)?+\s*+(?&brackets)?+\s*+)
+
+(?<identifierpure>\b(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9@])*+)\b)
