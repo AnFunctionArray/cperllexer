@@ -31,6 +31,9 @@ my %typedefs;
     "const",
     "restrict",
     "volatile",
+} = ();
+
+@storageclass{
     "extern",
     "static",
     "auto",
@@ -57,9 +60,11 @@ my %typedefs;
     "while"
 } = ();
 
-%keywords = (%qualifiers, %types, %keywords);
+%qualifsnstrgcls_all = (%qualifiers, ("typedef" => ()), %storageclass);
 
-%typeandqualifs = (%qualifiers, %types);
+%keywords = (%qualifsnstrgcls_all, %types, %keywords);
+
+%typeandqualifs = (%qualifsnstrgcls_all, %types);
 
 #}
 
@@ -117,18 +122,18 @@ sub checktypedef {
     #print3 "checking". $^N . "\n";
     if (checktypedef2 $^N) {
         print3 "$^N -> typedefname\n";
-        return qr{}o 
+        return 1
     }
-    return qr{(*F)}o;
+    return 0;
 }
 
 sub checkident  {
     #print3 "checking" .$^N . "\n";
     if ((not checktypedef2 $^N) and (not exists $keywords{$^N})) {
         print3 "$^N -> ident\n";
-        return qr{}o 
+        return 1 
     }
-    return qr{(*F)}o;
+    return 0;
 }
 
 sub checkidentpermissive  {
@@ -136,30 +141,53 @@ sub checkidentpermissive  {
     print3 Dumper(\%keywords) . "\n";
     if ((not exists $keywords{$^N})) {
         print3 "$^N -> ident-permissive\n";
-        return qr{}o 
+        return 1
     }
-    return qr{(*F)}o;
+    return 0;
 }
 
-sub checktypeorqualif  {
+sub checktypeorqualifortypdf  {
     #print3 "checking". $^N . "\n";
 
-    inc2 "facet";
+    my $force = $_[0];
+
+    #inc2 "facet";
     #CORE::print ("at g " . $^N . "\n");
-    if (exists $typeandqualifs{$^N}) {
+    my $input = $^N;
+    if (exists $typeandqualifs{$input}) {
         print3 "$^N -> qualifortype\n";
-        if(exists $types{$^N}) {
-            eval {$matches[-1]{typefound} = $^N};
-            call "add_type"
-        } else {
-            eval {$matches[-1]{qualiffound} = $^N};
-            call "add_qualif"
+        if(exists $types{$input}) {
+            if (not $force) {
+                eval {$matches[-1]{typefound} = $^N};
+                call "add_type"
+            }
+            return 1;
+        } elsif($force or eval { existsflag "outter", {"optoutter" => undef, "outterparams" } }) {
+            if($^N eq 'typedef') {
+                eval {$matches[-1]{typedefkey} = $input} if (not $force);
+            } else {
+                if (not $force) {
+                    eval {$matches[-1]{qualiffound} = $input};
+                    call "add_qualif"
+                }
+            }
+            return 1;
         }
-        dec2 "facet";
-        return qr{}o 
+        #dec2 "facet"
     }
-    dec2 "facet";
-    return qr{(*F)}o;
+    elsif (not eval {exists $matches[-1]{typedefnmmatched}} and checktypedef2($input)) {
+        CORE::print("there typ" . Dumper(\@matches));
+        if (not $force) {
+            $matches[-1]{typedefnmmatched} = $input
+        }
+        return 1;
+    }
+    #dec2 "facet";
+    return 0;
+}
+
+sub checkqualifonly {
+    return exists $qualifiers{$^N}
 }
 
 sub flattentypeorqualif {
@@ -205,6 +233,12 @@ sub endscope  {
     $needregen = pop @typedefidentifierschanged;
     pop @typedefidentifiersvector;
     regenerate_typedef_regex() if($needregen);
+}
+
+sub declident {
+    if (not eval {exists $matches[-1]{typefound} or exists $matches[-1]{typedefnmmatched}}) {
+        return checktypeorqualif($^N)
+    }
 }
 
 1

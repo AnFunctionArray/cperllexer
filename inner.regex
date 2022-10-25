@@ -5,10 +5,11 @@
 						(?<text>(?<textraw>((?!(?&escape)|(??{$matches[-1]->{begincharliteral}})).)++)(?{call 'addplaintexttostring'})))*+
 						(??{$matches[-1]->{begincharliteral}})\s*+)*+))(??{qr{\Q$^N\E}})|(?{pop2 \@matches})(*F))
 						(?{call 'add_literal'})(?{pop2 \@matches}))
-						|(?(?!((?&floating)))(?<numberliteral>(?<numberliteralraw>(?(?=0x)0x(?<hex>[0-9a-fA-F]++)|(?(?=0b)0b(?<bin>[01]++)
+						|(?(?=((?&floating)))
+						\g{-1}
+						|(?<numberliteral>(?<numberliteralraw>(?(?=0x)0x(?<hex>[0-9a-fA-F]++)|(?(?=0b)0b(?<bin>[01]++)
 						|(?(?=0\d)0(?<oct>[0-7]++)|(?<dec>\d++))))(?<lng>[Uu](ll|LL|[lL])?+|(ll|LL|[lL])[Uu]?+)?+)
-						(?{call 'num_lit'}))
-						|(??{qr{\Q$^N\E}}))
+						(?{call 'num_lit'})))
 						|(?<identifier>\s*+
 						(?<ident>(?&identifierraw))(?{call 'obtainvalbyidentifier'})\s*+)))\s*+)
 
@@ -21,8 +22,9 @@
 
 (?<identifierpure>\b(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9@])*+)\b)
 
-(?<identifierraw>((?&identifierpure))(??{checkident()}))
-(?<identifierraw_qualified>((?&identifierpure))(??{checkidentpermissive()}))
-(?<identifier_typedef>((?&identifierpure))(??{checktypedef()}))
+(?<identifierraw>((?&identifierpure))(?(?{checkident()})|(*F)))
+(?<identifierraw_qualified>((?&identifierpure))(?(?{checkidentpermissive()})|(*F)))
 
-(?<typeorqualif>((?&identifierpure))(??{checktypeorqualif()}))
+(?<qualifonly>((?&identifierpure))(?(?{checkqualifonly()})|(*F)))
+
+(?<typeorqualifortypdf>((?&identifierpure))(?(?{checktypeorqualifortypdf(0)})|(*F)))

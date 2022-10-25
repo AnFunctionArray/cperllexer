@@ -543,7 +543,8 @@ if(not $isnested)
         @typedefidentifiersvector = eval { require $ENV{'REPLAY'} . ".txt"};
     }
     my $flind = 1;
-    my $execmainregshared = qr{(?(DEFINE)$mainregexdefs)\G(?&cprogram)}sxx;
+    my $execmainregshared = eval { #use re qw(Debug EXECUTE);
+         qr{(?(DEFINE)$mainregexdefs)\G(?&cprogram)}sxx; };
     sub execmain {
         $regex = $_[0];
         $subject = $_[1];
@@ -562,9 +563,10 @@ if(not $isnested)
 
         while (1) {
             my @item;
+            my $tmp;
             {
                 #lock ($qprim);
-                lock (@sharedarrcommon);
+                #lock (@sharedarrcommon);
                 #cond_wait ($condinput);
 
                 # $silent = 0;
@@ -577,7 +579,7 @@ if(not $isnested)
 
                 #$silent = 0;
 
-                while (!scalar(@sharedarrcommon)) {
+                while (!defined($tmp = $q->dequeue())) {
                     {
                         lock $shouldend;
                         if ($shouldend) {
@@ -586,12 +588,12 @@ if(not $isnested)
                             return;
                         }
                     }
-                    cond_wait(@sharedarrcommon);
+                    #cond_wait(@sharedarrcommon);
                 }
 
                 #$silent = 1;
 
-                if (! eval {@item = @{pop @sharedarrcommon}}) {
+                if (! eval {@item = @{$tmp}}) {
                     CORE::print("fatal ending\n");
                     endmodule() if(defined &endmodule);
                     return;
@@ -606,7 +608,7 @@ if(not $isnested)
 
              #$silent = 0;
 
-                #CORE::print("working - " . Dumper(\@item). "\n");
+                
 
                 #$silent = 1;
 
@@ -615,6 +617,8 @@ if(not $isnested)
             $nfilescopesrequested = scalar($item[2]);
             $nextpos = scalar($item[3]);
             #$identstoidmap = $item[4];
+
+            CORE::print("working - " . Dumper(\@typedefidentifiersvector). "\n");
 
             #print2("dumping typedefs - $nfilescopesrequested\n");
             
@@ -671,7 +675,7 @@ if(not $isnested)
                 pop2 \@flags;
             }
             elsif(!($subject =~ $regex)) {
-                CORE::print ("4 failed near " . pos($subject) . "\n");
+                CORE::print ("4 failed near " . pos($subject) . " - start - $start\n");
                 exit
                 #CORE::print "succes\n";
             }
@@ -681,7 +685,7 @@ if(not $isnested)
                 exit
             }
 
-            #CORE::print("==========succes=============\n $&\n==========endsuccess=============\n");
+            CORE::print("==========succes=============\n $&\n==========endsuccess=============\n");
 
             #exit;
 
@@ -754,9 +758,9 @@ if(not $isnested)
         return scalar(0);
     }
 
-    my $initseqlight = qr{(?(DEFINE)$fasterlightregexfilecontent)}sxxn;
+    my $initseqlight = $fasterlightregexfilecontent;
 
-    my $initseq = "(?(DEFINE)$fasterlightregexfilecontent$fasterregexfilecontent)";
+    my $initseqlight = "(?(DEFINE)$fasterlightregexfilecontent)";
 
     $delegatetaggables = 1;
    # sub execmain {
@@ -788,18 +792,6 @@ if(not $isnested)
         $threadid = 0;
         #eval {registerthread(scalar(0))};
         my $lastypedef;
-        sub delegatetaggables {
-            #CORE::print "delegatetaggables - $delegatetaggables - $nfilescopesrequested\n";
-            return 0 if (!$delegatetaggables);
-
-            #lock $q;
-            my @arrcp = map { [@$_] } \@typedefidentifiersvector;
-            $q->enqueue([@arrcp, scalar(pos()), scalar($nfilescopesrequested), scalar(1)]);
-            #CORE::print (pos() . " unmask = 0 for $nfilescopesrequested\n");
-            $unmask = 0;
-            #cond_signal ($q);
-            return 1;
-        }
         sub brodc {
             #CORE::print("broadcasting - $unmask , $nfilescopesrequested\n");
             eval {broadcast(scalar($unmask), scalar($nfilescopesrequested))}
@@ -813,7 +805,7 @@ if(not $isnested)
 
         my $typeorqualifsreg = flattentypeorqualif();
 
-        $typeorqualifsreg = qr{(?<typeorqualif>\s*+$typeorqualifsreg\s*+)}sxxn;
+        $typeorqualifsreg = qr{(?(DEFINE)(?<typeorqualif>\s*+$typeorqualifsreg\s*+))}sxxn;
 
         $unmask = 1;
         $delegatetaggables = 0;
@@ -821,33 +813,38 @@ if(not $isnested)
         for (1..$maxthreads) {
             push @threads, threads->create(\&execmain, $execmainregshared, $subject, $initseq, $_);
         }
-
-        $identstoidmap = shared_clone({});
+        {
+            lock $identstoidmap;
+            $identstoidmap = shared_clone({});
+        }
 
          my $begin_time = time();
         my $end_time = time();
         my $nfilescopesrequested;
         while (1) {
-            if (!($subject =~ m{$initseqlight
-            (?&parens)\s*+(?<block>(?&brackets))?+|(?<identen>[;])|(?&brackets)|(?<typedef>\btypedef\b)|(?&strunus)
-            |\b(?<idty>struct|enum|union)\b\s*+(?<idnm>(?&identifierpure))\s*+(?&brackets)}sxxgsoc)) {
-
+            if (!($subject =~ m{$typeorqualifsreg$initseqlight
+            (?&parens)\s*+(?<block>(?&brackets))?+|(?<identen>[;])|(?&brackets)|(?<typedef>\btypedef\b)|(?&strunus)}sxxgsoc)) {
+end:
                 CORE::print ("joinning for real\n");
                 {
                     lock $shouldend;
                     $shouldend = 1;
                 }
-                while(1)
-                {
+                #sleep (10000);
+                #while(1)
+                $q->end();
+                #{
                     CORE::print ("should be ending soonn\n");
-                    {
-                        lock (@sharedarrcommon);
-                        cond_broadcast (@sharedarrcommon);
-                    }
+                    #{
+                        #lock (@sharedarrcommon);
+                        #cond_broadcast (@sharedarrcommon);
+                    #}
                     my $isrun;
-                    $isrun //= $_->is_running()  for @threads;
-                    exit if (!$isrun)
-                }
+                    #$isrun //= $_->is_running()  for @threads;
+                    $_->join for @threads;
+                    #exit if (!$isrun)
+                    exit
+                #}
             }
             my $lastpos = $+[0];
 
@@ -856,20 +853,19 @@ if(not $isnested)
             my $wastypedef = exists $+{typedef};
 
             #CORE::print ("was typ : $lastpos -$lastypedef \n");
-            if($+{idnm}) {
-                $identstoidmap->{$+{idty} . " " . $+{idnm}} = scalar($nfilescopesrequested);
-                #CORE::print ($+{idty} . " " . $+{idnm} . "\n")
-            }
-            elsif ($shouldstorelast)
+            if ($shouldstorelast)
             {
                 {
                     #lock $qprim;
-                    lock (@sharedarrcommon);
-                    my @arrcp = map { [@$_] } \@typedefidentifiersvector;
+                    #lock (@sharedarrcommon);
+                    #my @arrcp = map { [map { [ @$_ ] } \@$_ ] } \@typedefidentifiersvector;
                     #$q->enqueue([@arrcp, scalar($lastposend), scalar($nfilescopesrequested)]);
-                    push @sharedarrcommon, shared_clone([@arrcp, scalar($lastposend), scalar($nfilescopesrequested), scalar($lastpos)]);
-                    cond_signal(@sharedarrcommon);
+                    #push @sharedarrcommon, shared_clone([@arrcp, scalar($lastposend), scalar($nfilescopesrequested), scalar($lastpos)]);
+                    $q->enqueue([@typedefidentifiersvector, scalar($lastposend), scalar($nfilescopesrequested), scalar($lastpos)]);
+                    #cond_signal(@sharedarrcommon);
+                    #goto end
                 }
+                #sleep 1000;
 =begin
                 if (exists $+{block}) {
                     lock $scopevarsdone;
@@ -884,6 +880,7 @@ if(not $isnested)
                 }
 =cut
                 #eval {broadcast(scalar(0))};
+                my %taggables = ("enum" => undef, "struct" => undef, "union" => undef);
                 if($lastypedef) {
                     use Time::HiRes qw( time );
                     $unmask = 1;
@@ -891,7 +888,66 @@ if(not $isnested)
                    #CORE::print ("on start -$lastposend\n");
                     my $lastlastpos = $lastpos;
                     pos($subject) = $lastposend;
+                    my $typedeffound;
+                    while(1) {
+                        my $possibleident;
+                        #push2 \@matches, {};
+                        while ($subject =~ m{\G\s*+\b([_a-zA-Z][_a-zA-Z0-9@]*+)\b\s*+}sxx) {
+                            my $possibleidentlocal = $^N;
+                            pos($subject) = $+[0];
 
+                            #CORE::print ("posi ".$possibleidentlocal . "\n");
+
+                            if (exists $taggables{$possibleidentlocal}) {
+                                if ($subject =~ m{\G\s*+\b([_a-zA-Z][_a-zA-Z0-9@]*+)\b\s*+}sxx) {
+                                    $possibleidentlocal = $^N;
+                                    pos($subject) = $+[0];
+                                    if (subject =~ m{$typeorqualifsreg$initseqlight\G(?&brackets)\s*+}sxx) {
+                                        lock $identstoidmap;
+                                        pos($subject) = $+[0];
+                                        $identstoidmap->{$possibleidentlocal} = scalar($nfilescopesrequested);
+                                    }
+                                }
+                            }
+                            else {
+                                $possibleident = $possibleidentlocal;
+                                last if (not checktypeorqualifortypdf(1));
+                            }
+                        }
+
+                        #pop2 \@matches;
+
+                        if (!$possibleident) {
+                            if ($subject =~ m{$typeorqualifsreg$initseqlight\G\s*+(?&ptr)*+((?&rndbrcksdecl)|(?<identnormal>(?&identifierpure)))\s*+}sxx) {
+                                pos($subject) = $+[0];
+                                if (not exists $+{identnormal}) {
+                                    $subject =~ m{\G[_a-zA-Z][_a-zA-Z0-9@]*+\b}sxx;
+                                    $possibleident = $&;
+                                }
+                                else {
+                                    $possibleident =  $+{identnormal};
+                                }
+                            }
+                        }
+
+                        if (!$possibleident) {
+                            CORE::print ("2 failed near " . pos($subject) . "\n");
+                            exit
+                        }
+                        else {
+                            lock $identstoidmap;
+                            $identstoidmap->{$possibleident} = scalar($nfilescopesrequested);
+                            register_decl({'ident'=>$possibleident, 'typedefkey'=>typedef});
+                        }
+
+                        last if (!($subject =~ m{\G\s*+,\s*+}sxx));
+
+                        pos($subject) = $+[0];
+
+                        undef $possibleident;
+                    }
+                    
+=begin
                      my $typedefsreg = flattentypedefs();
 
                      #CORE::print($typeorqualifsreg . "\n");
@@ -953,11 +1009,13 @@ if(not $isnested)
                         $identstoidmap->{$possibleident} = scalar($nfilescopesrequested);
                         register_decl({'ident'=>$possibleident, 'typedefkey'=>typedef});
                     }
+=cut
                     $end_time = time();
                     #CORE::printf("%.2f\n", $end_time - $begin_time);
                     #CORE::print ("on end - $lastpos\n");
                     $begin_time = time();
                     $lastypedef = 0;
+                    $shouldstorelast = 0;
                 }
 
                 ++$nfilescopesrequested;

@@ -3,13 +3,13 @@
 
 (?<primexprraw>(?&assignorsomething)(,(?{call 'comma'})(?&assignorsomething))*+)
 
-(?<primexprnew>(?{push2 \@flags, {"newexpr"}})(?(?=((?&primexprraw)))(??{qr{\Q$^N\E}})
+(?<primexprnew>(?{push2 \@flags, {"newexpr"}})(?(?=((?&primexprraw)))\g{-1}
 	(?{pop2 \@flags})|(?{pop2 \@flags})(*F)))
 
-(?<primexprcall>(?{push2 \@flags, {"callexpr"}})(?(?=((?&primexprraw)))(??{qr{\Q$^N\E}})
+(?<primexprcall>(?{push2 \@flags, {"callexpr"}})(?(?=((?&primexprraw)))\g{-1}
 	(?{pop2 \@flags})|(?{pop2 \@flags})(*F)))
 
-(?<castexpr>(?(?=((?&typenamerev)))(??{qr{\Q$^N\E}})|(?<unaryexpr>(?(?=((?&inner)))(??{qr{\Q$^N\E}})
+(?<castexpr>(?(?=((?&typenamerev)))\g{-1}|(?<unaryexpr>(?(?=((?&inner)))\g{-1}
 						|(?<inparenths>\s*+[(](?&primexprnew)[)]
 						\s*+))(((\[(?&primexprnew)\](?{call 'subscript'})|[(](?{call 'startfunctioncall'})(?&primexprcall)?+[)]
 						(?{call 'endfunctioncall'}))\s*+
@@ -25,7 +25,7 @@
 
 (?<ternarylogicopt>(?(?=(?{push2 \@flags, {}})((?&orlogiorsomething)))
 		(?{--$recording; print3("minus minus assignorsomething $recording\n")})(?{push2 \@assrec, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
-		(?{call 'begin_binary' if(existsflag "logicop", {})})(?{replayrecord \@assrec; pop2 \@assrec})(??{qr{\Q$^N\E}})(?{call 'end_binary' if(existsflag "logicop", {})})
+		(?{call 'begin_binary' if(existsflag "logicop", {})})(?{replayrecord \@assrec; pop2 \@assrec})\g{-1}(?{call 'end_binary' if(existsflag "logicop", {})})
 		(?{pop2 \@flags})
 		|(?{pop2 \@flags})(?{--$recording})(?{replayrecord})(?{pop2 \@savedcallouts})
 	)(?&ternaryorsomething)
@@ -33,13 +33,14 @@
 
 (?<assignorsomething>
 	(?(?=(?{push2 \@savedcallouts, []})
-		(?{++$recording; print3("recording assignorsomething\n")})((?&unaryexpr)))(??{qr{\Q$^N\E}})
+		(?{++$recording; print3("recording assignorsomething\n")})((?&unaryexpr)))\g{-1}
 	(?(?=((?<assignop>=(?!=)|\*=|\/=|%=|\+=|-=|<<=|>>=|&=|\^=|\|=)\s*+))
-		(??{qr{\Q$^N\E}})(?{--$recording; print3("minus minus assignorsomething $recording\n")})
+		\g{-1}(?{--$recording; print3("minus minus assignorsomething $recording\n")})
 		(?{replayrecord; pop2 \@savedcallouts})(?&assignorsomething)(?{(assignment())})
 		|(?&ternarylogicopt))
-		|(?{$savedcallouts[-1] = []; print3("resetting record\n")})(?(?=((?&typenamerev)))|(?{--$recording})(?{pop2 \@savedcallouts})(*F))
-		(??{qr{\Q$^N\E}})(?&ternarylogicopt))
+		|(?{$savedcallouts[-1] = []; print3("resetting record\n")})
+		(?(?=((?&typenamerev)))\g{-1}(?&ternarylogicopt)|(?{--$recording})(?{pop2 \@savedcallouts})(*F))
+		)
 )
 
 (?<ternaryorsomething>(?(?=((?{push2 \@savedcallouts, []})

@@ -1,7 +1,5 @@
 
 
-(?<qualifs>(?<typesandqualifiers>\s*+
-						(?<typesandqualifiersmask>(?&typeorqualif))\s*+))
 
 (?<align>\s*+\b__declspec[(]\s*+\balign[(]\s*+(?<alignnum>(?&numberliteralraw))\s*+[)]\s*+[)]\s*+)
 
@@ -13,17 +11,14 @@
 		(?{push2 \@savedcallouts, []})
 		(?{++$recording; print3("recording typename\n")})
 
-		(((?&qualifs)|\s*+((?(?{eval {exists $matches[-1]{strc}} or 0})(*F))(?(?{eval {exists $matches[-1]{typedefnmmatched}} or 0})(*F))
-		(((?&structorunion))(?{$matches[-1]{strc}=$^N})
-		|((?&identifier_typedef))(?{$matches[-1]{typedefnmmatched}=$^N})))
-		|(?(?{eval {exists $matches[-1]{typedefkey}} or 0})(*F))((\btypedef\b))(?{$matches[-1]{typedefkey}=$^N})\s*+)++))
+		((?&abstdeclorallqualifsqualifs)))
 
 		|(?{pop2 \@savedcallouts})(?{--$recording; print3("minus minus typename $recording\n")})(?{pop2 \@matches})(*F))
 		
 	(?{--$recording})(?{push2 \@flags, {"optoutter"}})
 	(?{push2 \@typenamequalifs, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
 	
-		(??{qr{\Q$^N\E}})(?{call 'identifier_decl'})
+		\g{-1}(?{call 'identifier_decl'})
 		(?&abstdecl)?+
 		(?{call 'enddeclaration'})
 
@@ -41,7 +36,7 @@
 
 (?<abstrmostoutterparams>\s*+
 			[(](?&abstdecl)[)]|
-			(?(?=((?&identifierminedecl)))(??{qr{\Q$^N\E}})|(?{call 'identifier_decl'}))
+			(?(?=((?&identifierminedecl)))\g{-1}|(?{call 'identifier_decl'}))
 \s*+)
 
 (?<identifierminedecl>\s*+(?<ident>(?&identifierraw_qualified))
@@ -79,11 +74,11 @@
 						(?{call 'addsubtotype'})(?{call 'endconstantexpr'})
 						|(?(?=((?&openparen)\s*+((\.\.\.)(?{$matches[-1]{rest}=$^N})|\bvoid\b)?+\s*+(?&closingparen))
 						(?{call 'startfunctionparamdecl'})(?{call 'endfunctionparamdecl'}))
-						(??{qr{\Q$^N\E}})
+						\g{-1}
 						|(?(?=(?{push2 \@savedcallouts, []})(?{push2 \@matches, {}})
 						(?{++$recording; print3("recording abstrsubs firstparam\n"); })(?{call 'startfunctionparamdecl'})((?&openparen)(?&param)))
-						(??{qr{\Q$^N\E}})
-							(,(?(?=(\s*+(\.\.\.)(?{$matches[-1]{rest}=$^N})\s*+))(??{qr{\Q$^N\E}})|(?&param)))*+
+						\g{-1}
+							(,(?(?=(\s*+(\.\.\.)(?{$matches[-1]{rest}=$^N})\s*+))\g{-1}|(?&param)))*+
 						\s*+(?&closingparen)(?{--$recording})(?{replayrecord})(?{pop2 \@savedcallouts})(?{call 'endfunctionparamdecl'})(?{pop2 \@matches})
 						|(?{--$recording})
 						(?{pop2 \@savedcallouts})(?{pop2 \@matches})(*F)))
@@ -92,14 +87,14 @@
 (?<abstdecl>\s*+(?<callconv>\b__stdcall\b\s*+(?{call 'setcallconv'}))?+
 		(?(?=(?<abstrptrrev>(?<abstrptr>\s*+[*]\s*+(?<callconv>\b__stdcall\b\s*+(?{call 'setcallconv'}))?+
 						(?<qualifptr>(?{push2 \@savedcallouts, []; ++$recording;})
-							(?&typeorqualif)*+
+							(?&qualifonly)*+
 							(?{pop2 \@savedcallouts; --$recording;})
 						)
 						)
 						(?(?!(?<foundabstr>(?&abstrptrrev))(?{call 'addptrtotype'}))
 						(?<abstrrest>(?&Tinside)(?&abstrsubs)*+
 						(?{call 'addptrtotype'}))|
-						\g{foundabstr})))(??{qr{\Q$^N\E}})|(?&Tabstrrestalt))
+						\g{foundabstr})))\g{abstrptrrev}|(?&Tabstrrestalt))
 )
 
 (?<callingconv>\b(__cdecl|__stdcall|__thiscall|__fastcall)\b)
@@ -112,10 +107,7 @@
 	(?(?{existsflag "bitfl", {"nonbitfl"}})(?&abstrbitfield)|(?&abstrinitialization))
 	)
 
-(?<abstdeclorallqualifsqualifs>(?(?=((?&qualifs)))(??{qr{\Q$^N\E}})|\s*+(
-		(?(?=((?&structorunion)))(??{qr{\Q$^N\E}})(?{$matches[-1]{strc}=$^N})
-		|(?(?{eval {exists $matches[-1]{typefound} or exists $matches[-1]{typedefnmmatched} or exists $matches[-1]{strc}} or 0})(*F))((?&identifier_typedef))(?{$matches[-1]{typedefnmmatched}=$^N}))
-		|(?(?{eval {exists $matches[-1]{typedefkey}} or 0})(*F))((\btypedef\b))(?{$matches[-1]{typedefkey}=$^N}))\s*+)++)
+(?<abstdeclorallqualifsqualifs>(?(?=((?&structorunion))(?{eval {$matches[-1]{strc}=$^N}}))\g{-1}|\s*+(?&typeorqualifortypdf)\s*+)++)
 
 (?<abstdeclorallqualifsdestr>
 	(?{push2 \@declqualifs, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
@@ -141,7 +133,7 @@
 		((?&abstdeclorallqualifsqualifs)))
 
 		(?{--$recording})
-		(??{qr{\Q$^N\E}})
+		\g{-1}
 		|(?(?{eval {existsflag "opt", {"nonopt"}} or 0})
 	(?{--$recording})
 	(?{print3("opt??\n")})

@@ -9,8 +9,6 @@
 
 (?<declfast>\s*+(?(?=(?&rndbrcksdecl))(?&parens)|(?<identoutside>(?&identifierpure)))\s*+)
 
-(?<ptr>\s*+\*\s*+(?&typeorqualif)*+\s*+)
-
 
 (?<fasttypedef>((?(<typedefident>)(?<identfakedef>(?&identifier_typedef))(*F)|(?<typedefident>(?&identifier_typedef)))(?(<qualifortagfound>)(*F))|(?<qualifortagfound>(?&typeorqualif)|(?&fasttaggable))|\s*+\btypedef\b\s*+)*+)
 

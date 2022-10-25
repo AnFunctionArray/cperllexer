@@ -15,3 +15,8 @@
 (?<fasttaggable>\s*+\b(struct|enum|union)\b\s*+(?&identifierpure)?+\s*+(?&brackets)?+\s*+)
 
 (?<identifierpure>\b(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9@])*+)\b)
+
+(?<rndbrcksdecl>\s*\((?<inparen>(?<inparenin>\s*+(?&ptr)*+\s*+((?<identinside>\K(?&identifierpure))|(?&rndbrcksdecl))(\s*+(?&parens)\s*+)*+\s*)*+
+    ((?&inparenin)(?&inparen))?+)\)\s*)
+
+(?<ptr>\s*+\*\s*+(?&typeorqualif)*+\s*+)
