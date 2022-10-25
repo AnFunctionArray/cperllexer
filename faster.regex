@@ -12,6 +12,5 @@
 (?<ptr>\s*+\*\s*+(?&typeorqualif)*+\s*+)
 
 
-(?<fasttypedef>((?(<typedefident>)(?<identfakedef>(?&identifier_typedef))(*ACCEPT)|(?<typedefident>(?&identifier_typedef)))(?(<qualifortagfound>)(*F))|(?<qualifortagfound>(?&typeorqualif)|(?&fasttaggable))|\s*+\btypedef\b\s*+)*+
-	(?&ptr)*+\s*+)
+(?<fasttypedef>((?(<typedefident>)(?<identfakedef>(?&identifier_typedef))(*F)|(?<typedefident>(?&identifier_typedef)))(?(<qualifortagfound>)(*F))|(?<qualifortagfound>(?&typeorqualif)|(?&fasttaggable))|\s*+\btypedef\b\s*+)*+)
 

@@ -29,6 +29,7 @@ my $qprim : shared;
 #my $condinput : shared;
 my $condexit : shared;
 my $scopevarsdone : shared;
+my $identstoidmap : shared;
 
 #use re qw(Debug EXECUTE);
 
@@ -526,6 +527,11 @@ sub obtainvalbyidentifier {
 
 #$isnested = 1;
 
+sub getidentid {
+    lock $identstoidmap;
+    return scalar($identstoidmap->{$_[0]})
+}
+
 if(not $isnested)
 {
 
@@ -608,6 +614,7 @@ if(not $isnested)
             my $start = $item[1];
             $nfilescopesrequested = scalar($item[2]);
             $nextpos = scalar($item[3]);
+            #$identstoidmap = $item[4];
 
             #print2("dumping typedefs - $nfilescopesrequested\n");
             
@@ -630,16 +637,14 @@ if(not $isnested)
 
             #initthread(scalar($start)) if(defined &initthread and $nthread);
 
+            #eval { updateavailidents($identstoidmap) };
+
 
             pos($subject) = $start;
 
             #CORE::print "$subject\n";
 
             #exit; 
-
-            #use re qw(Debug EXECUTE);
-
-            #$regex = "" . $regex;
 
             if(0) {
                 use Time::HiRes qw( time );
@@ -779,7 +784,7 @@ if(not $isnested)
         #$dirty = 0;
         #$nstackdirty = 1;
         #my $typedefstosync = 1;
-        $nfilescopesrequested = 0;
+        #$nfilescopesrequested = 0;
         $threadid = 0;
         #eval {registerthread(scalar(0))};
         my $lastypedef;
@@ -817,10 +822,33 @@ if(not $isnested)
             push @threads, threads->create(\&execmain, $execmainregshared, $subject, $initseq, $_);
         }
 
+        $identstoidmap = shared_clone({});
+
          my $begin_time = time();
         my $end_time = time();
-        while ($subject =~ m{$initseqlight
-            (?&parens)\s*+(?<block>(?&brackets))?+|(?<identen>[;])|(?&brackets)|(?<typedef>\btypedef\b)|(?&strunus)}sxxgsoc) {
+        my $nfilescopesrequested;
+        while (1) {
+            if (!($subject =~ m{$initseqlight
+            (?&parens)\s*+(?<block>(?&brackets))?+|(?<identen>[;])|(?&brackets)|(?<typedef>\btypedef\b)|(?&strunus)
+            |\b(?<idty>struct|enum|union)\b\s*+(?<idnm>(?&identifierpure))\s*+(?&brackets)}sxxgsoc)) {
+
+                CORE::print ("joinning for real\n");
+                {
+                    lock $shouldend;
+                    $shouldend = 1;
+                }
+                while(1)
+                {
+                    CORE::print ("should be ending soonn\n");
+                    {
+                        lock (@sharedarrcommon);
+                        cond_broadcast (@sharedarrcommon);
+                    }
+                    my $isrun;
+                    $isrun //= $_->is_running()  for @threads;
+                    exit if (!$isrun)
+                }
+            }
             my $lastpos = $+[0];
 
             my $shouldstorelast = (($+{identen} eq ';') or exists $+{block});
@@ -828,8 +856,11 @@ if(not $isnested)
             my $wastypedef = exists $+{typedef};
 
             #CORE::print ("was typ : $lastpos -$lastypedef \n");
-
-            if ($shouldstorelast)
+            if($+{idnm}) {
+                $identstoidmap->{$+{idty} . " " . $+{idnm}} = scalar($nfilescopesrequested);
+                #CORE::print ($+{idty} . " " . $+{idnm} . "\n")
+            }
+            elsif ($shouldstorelast)
             {
                 {
                     #lock $qprim;
@@ -837,7 +868,7 @@ if(not $isnested)
                     my @arrcp = map { [@$_] } \@typedefidentifiersvector;
                     #$q->enqueue([@arrcp, scalar($lastposend), scalar($nfilescopesrequested)]);
                     push @sharedarrcommon, shared_clone([@arrcp, scalar($lastposend), scalar($nfilescopesrequested), scalar($lastpos)]);
-                    cond_broadcast(@sharedarrcommon);
+                    cond_signal(@sharedarrcommon);
                 }
 =begin
                 if (exists $+{block}) {
@@ -887,6 +918,7 @@ if(not $isnested)
                     if ($possibleident && !($subject =~ m{\G\s*+;}sxxocn)) {
                         #CORE::print ("optional pass 1");
                         pos($subject) = $lastpos;
+                        $identstoidmap->{$possibleident} = scalar($nfilescopesrequested);
                         register_decl({'ident'=>$possibleident, 'typedefkey'=>typedef});
                         #CORE::print ("last $lastpos\n");
                         while ($subject =~ m{(?(DEFINE)$initseq$typeorqualifsreg$typedefsreg)\G\s*+,\s*+(?&ptr)*+\s*+((?&rndbrcksdecl)|(?<identnormal>(?&identifierpure)))\s*+(\s*+(?&parens)\s*+)*+}sxxnc) {
@@ -898,6 +930,7 @@ if(not $isnested)
                                 $subject =~ m{(?(DEFINE)$initseq$typeorqualifsreg$typedefsreg)\G\s*+,\s*+(?&ptr)*+\s*+(?&rndbrcksdecl)\s*+(\s*+(?&parens)\s*+)*+}sxxcn;
                                 $currpos = $+[0]
                             }
+                            $identstoidmap->{$possibleident} = scalar($nfilescopesrequested);
                             register_decl({'ident'=>$possibleident, 'typedefkey'=>typedef});
                             pos($subject) = $currpos;
                             #CORE::print ("in optional pass 1")
@@ -917,6 +950,7 @@ if(not $isnested)
                     else {
                         pos($subject) = $+[0];
                         $lastpos =  $+[0];
+                        $identstoidmap->{$possibleident} = scalar($nfilescopesrequested);
                         register_decl({'ident'=>$possibleident, 'typedefkey'=>typedef});
                     }
                     $end_time = time();
@@ -957,17 +991,6 @@ if(not $isnested)
 
        
         #for my $elem (reverse @sharedarr)
-
-        CORE::print ("joinning for real\n");
-        {
-            lock $shouldend;
-            $shouldend = 1;
-        }
-        {
-         CORE::print ("should be ending soonn\n");
-         lock (@sharedarrcommon);
-         cond_broadcast (@sharedarrcommon);
-        }
             
         $_->join()  for @threads;
         print2 "joined\n";

@@ -88,7 +88,7 @@ sub checktypedef2 {
      #CORE::print ("Dumping typs\n");
     #$silent = 0;
     #CORE::print (Dumper(\@typedefidentifiersvector));
-     $silent = 1;
+    # $silent = 1;
     foreach my $typedefidentifier (reverse @typedefidentifiersvector) {
         return $typedefidentifier->{$ident} if(exists $typedefidentifier->{$ident})
     }
