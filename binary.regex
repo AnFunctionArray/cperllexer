@@ -14,7 +14,7 @@
             |(?<oropraw>(?!\|\|)\|
             |(?<xoropraw>\^
             |(?<andopraw>(?!&&)&
-            |(?<eqopraw>==|\!=
+            |(?<eqopraw>==|!=
             |(?<relopraw>(?!<<)<|(?!>>)>|<=|>=
             |(?<shiftopraw><<|>>
             |(?<addopraw>[\+\-]

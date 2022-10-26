@@ -60,11 +60,11 @@ $maxthreads = $ENV{'MAXTHREADS'};
 
 #my sub Dumper {"\n"}
 #use Data::Dumper;
-my sub print {CORE::print(@_) if( not $silent )}
-my sub print2 {CORE::print(@_) if( not $silent)}
-sub print3 {CORE::print(@_) if( not $silent)}
-my sub Dumper  {use Data::Dumper; Dumper(@_) if( not $silent )}
-my sub strftime  {use POSIX; strftime(@_) if( not $silent)}
+my sub print {CORE::print(@_) if( 0 )}
+my sub print2 {CORE::print(@_) if(0)}
+sub print3 {CORE::print(@_) if( 0)}
+my sub Dumper  {use Data::Dumper; Dumper(@_) if( 0 )}
+my sub strftime  {use POSIX; strftime(@_) if( 0 )}
 
 sub push2 {
     my @args = @_;
@@ -610,7 +610,6 @@ if(not $isnested)
 
                 #cond_signal ($q)
             }
-tryagain:
 
              #$silent = 0;
 
@@ -695,7 +694,14 @@ tryagain:
                 #$silent =0;
                 #CORE::print ("begin " . Dumper(\$typedefidentifiersvector));
                 #$silent =1;
+                my $currposlast = $start;
                 for my $i (0..$ntimes) {
+                    
+tryagain:
+            pos($subject) = $currposlast;
+            while(scalar(@{$typedefidentifiersvector}) != 1) {
+                pop @{$typedefidentifiersvector};
+            }
                                 @flags = ();
             @matches = ();
             @savedcallouts = ();
@@ -718,12 +724,14 @@ tryagain:
                         $regex = eval { use re qw(Debug EXECUTE);  qr{$regexstr}sxx; };
                         }
                         $tryingagainlocal = 1;
-                        #CORE::print "succes\n";
+                        #CORE::print("currposlast" . $currposlast . "\n");
                         goto tryagain
                     }
-                    #CORE::print("==========succes=============\n $&\n==========endsuccess=============\n");
-                    pos($subject) = $+[0]
+                    #CORE::print("$threadid -- $i ==========succes=============\n $&\n==========endsuccess=============\n");
+                    #pos($subject) = $+[0]
+                    $currposlast = $+[0]
                 }
+                #$currposlast = $+[0]
                 #CORE::print (Dumper(\@{$typedefidentifiersvector}));
             }
 
@@ -875,16 +883,16 @@ tryagain:
          my $begin_time = time();
         my $end_time = time();
         my $nfilescopesrequested;
-        my $ndeclsorbodies = 1;
+        my $ndeclsorbodies = 0;
         my $lastntypedfs = 0;
         my $lastqueuepoint = 0;
         while (1) {
             if (!($subject =~ m{$typeorqualifsreg$initseqlight
             (?&parens)\s*+(?<block>(?&brackets))?+|(?<identen>[;])|(?&brackets)|(?&strunus)}sxxgsoc)) {
 end:
-                CORE::print ("joinning for real\n");
+                CORE::print ("joinning for real $lastqueuepoint\n");
                 #sleep (10000);
-                $q->enqueue([scalar($lastntypedfs), scalar($lastqueuepoint), scalar($nfilescopesrequested), scalar($lastpos), scalar($ndeclsorbodies)]);
+                $q->enqueue([scalar($lastntypedfs), scalar($lastqueuepoint), scalar($nfilescopesrequested), scalar($lastpos), scalar($ndeclsorbodies - 1)]);
                 $q->end();
 
                 $_->join for @threads;
@@ -909,12 +917,12 @@ end:
                         #$silent = 0;
                         #CORE::print ("$lastposend enqueuing " . Dumper(\$typedefidentifiersvector) . "\n");
                         #$sileng = 1;
-                        $q->enqueue([scalar($lastntypedfs), scalar($lastqueuepoint), scalar($nfilescopesrequested), scalar($lastpos), scalar($ndeclsorbodies)]);
+                        $q->enqueue([scalar($lastntypedfs), scalar($lastqueuepoint), scalar($nfilescopesrequested), scalar($lastpos), scalar($ndeclsorbodies - 1)]);
                         $lastntypedfs = $qtypdfs->pending();
                         ++$nfilescopesrequested;
                         #CORE::print (("lastpos is : " . $lastpos) . "\n");
                         $lastqueuepoint = $lastposend;
-                        $ndeclsorbodies = 1;
+                        $ndeclsorbodies = 0;
                     }
 
                     #cond_signal(@sharedarrcommon);
