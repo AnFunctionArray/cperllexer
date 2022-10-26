@@ -1270,7 +1270,7 @@ sub callcommon {
     }
 
     print2 "not triggered\n" if(not $res);
-    callout($funcnm, $captures, scalar($currpos)) if(defined &callout and not $facet and $res);
+    eval {callout($funcnm, $captures, scalar($currpos))} if(defined &callout and not $facet and $res);
     return $res;
 }
 
