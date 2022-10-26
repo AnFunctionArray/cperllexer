@@ -60,7 +60,7 @@ my %typedefs;
     "while"
 } = ();
 
-%qualifsnstrgcls_all = (%qualifiers, ("typedef" => ()), %storageclass);
+%qualifsnstrgcls_all = (%qualifiers, %storageclass, "typedef");
 
 %keywords = (%qualifsnstrgcls_all, %types, %keywords);
 
@@ -90,11 +90,13 @@ sub regenerate_typedef_regex {
 
 sub checktypedef2 {
     my $ident = $_[0];
-     #CORE::print ("Dumping typs\n");
-    #$silent = 0;
-    #CORE::print (Dumper(\@typedefidentifiersvector));
-    # $silent = 1;
-    foreach my $typedefidentifier (reverse @typedefidentifiersvector) {
+    #use Devel::Peek;
+    # CORE::print ("Dumping typs - $threadid\n");
+   # $silent = 0;
+    #CORE::print (Dump(\@{$typedefidentifiersvector}));
+    #CORE::print (Dumper(\@{$typedefidentifiersvector}));
+    #$silent = 1;
+    foreach my $typedefidentifier (reverse @{$typedefidentifiersvector}) {
         return $typedefidentifier->{$ident} if(exists $typedefidentifier->{$ident})
     }
     return 0
@@ -152,34 +154,33 @@ sub checktypeorqualifortypdf  {
     my $force = $_[0];
 
     #inc2 "facet";
-    #CORE::print ("at g " . $^N . "\n");
+   # CORE::print ("at g " . Dumper(\%typeandqualifs) . "\n");
     my $input = $^N;
     if (exists $typeandqualifs{$input}) {
         print3 "$^N -> qualifortype\n";
         if(exists $types{$input}) {
-            if (not $force) {
-                eval {$matches[-1]{typefound} = $^N};
-                call "add_type"
-            }
+            eval {$matches[-1]{typefound} = $input};
+            call "add_type" if (not $force);
             return 1;
-        } elsif($force or eval { existsflag "outter", {"optoutter" => undef, "outterparams" } }) {
-            if($^N eq 'typedef') {
-                eval {$matches[-1]{typedefkey} = $input} if (not $force);
+        } elsif($force || eval { existsflag("outter", {"optoutter" => undef, "outterparams" })
+            || existsflag("outterparams", {"optoutter" => undef, "outter" })}) {
+            if($input eq 'typedef') {
+                eval {$matches[-1]{typedefkey} = $input};
             } else {
-                if (not $force) {
-                    eval {$matches[-1]{qualiffound} = $input};
-                    call "add_qualif"
+                eval {$matches[-1]{qualiffound} = $input};
+                if(not exists $storageclass{$input}) {
+                    eval {$matches[-1]{qualifnonstoragefnd} = $input}
                 }
+                call "add_qualif" if (not $force);
             }
             return 1;
         }
         #dec2 "facet"
     }
-    elsif (not eval {exists $matches[-1]{typedefnmmatched}} and checktypedef2($input)) {
-        CORE::print("there typ" . Dumper(\@matches));
-        if (not $force) {
-            $matches[-1]{typedefnmmatched} = $input
-        }
+    elsif (not eval {exists $matches[-1]{typedefnmmatched} or exists $matches[-1]{typefound} or 
+            exists $matches[-1]{qualifnonstoragefnd} or exists $matches[-1]{strc}} and checktypedef2($input)) {
+        #CORE::print("there typ" . Dumper(\@matches));
+        eval {$matches[-1]{typedefnmmatched} = $input};
         return 1;
     }
     #dec2 "facet";
@@ -208,13 +209,18 @@ sub register_decl{
     return if($nesteddecl);
 
     return if(existsflag "bitfl", {"nonbitfl"});
-    
+    #$silent = 0;
+    #CORE::print ("register $threadid ". Dumper(\%{$_[0]}) . "\n");
+    #$sielnt = 1;
     my $identifier = $_[0]{'ident'};
     return if not $identifier;
     #$last_object_identifier = $identifier;
-    my $priorstate = exists ${$typedefidentifiersvector[-1]}{$identifier} ? ${$typedefidentifiersvector[-1]}{$identifier} : -1;
+    my $priorstate = exists ${$typedefidentifiersvector->[-1]}{$identifier} ? ${$typedefidentifiersvector->[-1]}{$identifier} : -1;
     my $currentstate = $_[0]{'typedefkey'};
-    ${$typedefidentifiersvector[-1]}{$identifier} = $currentstate ? 1 : 0;
+    ${$typedefidentifiersvector->[-1]}{$identifier} = $currentstate ? 1 : 0;
+
+    $qtypdfs->enqueue([scalar($currentstate ? 1 : 0),$identifier]) if($threadid eq 0);
+
     #print3 "$priorstate -> $currentstate\n";
     #$regenerate_needed = 1 
     if($priorstate ne $currentstate) { #and $currentstate ? 1 : $priorstate ne -1) {
@@ -225,13 +231,13 @@ sub register_decl{
 }
 
 sub beginscope {
-    push @typedefidentifiersvector, {};
-    push @typedefidentifierschanged, 0;
+    push @{$typedefidentifiersvector}, {};
+    push @{$typedefidentifierschanged}, 0;
 }
 
 sub endscope  {
-    $needregen = pop @typedefidentifierschanged;
-    pop @typedefidentifiersvector;
+    $needregen = pop @{$typedefidentifierschanged};
+    pop @{$typedefidentifiersvector};
     regenerate_typedef_regex() if($needregen);
 }
 

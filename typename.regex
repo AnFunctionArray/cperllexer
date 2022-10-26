@@ -72,13 +72,13 @@
 
 (?<abstrsubs>\s*+(\[(?{call 'beginconstantexpr'})(?&primexprnew)\]
 						(?{call 'addsubtotype'})(?{call 'endconstantexpr'})
-						|(?(?=((?&openparen)\s*+((\.\.\.)(?{$matches[-1]{rest}=$^N})|\bvoid\b)?+\s*+(?&closingparen))
+						|(?(?=(?<parenscap>(?&openparen)\s*+((\.\.\.)(?{$matches[-1]{rest}=$^N})|\bvoid\b)?+\s*+(?&closingparen))
 						(?{call 'startfunctionparamdecl'})(?{call 'endfunctionparamdecl'}))
-						\g{-1}
+						\g{parenscap}
 						|(?(?=(?{push2 \@savedcallouts, []})(?{push2 \@matches, {}})
 						(?{++$recording; print3("recording abstrsubs firstparam\n"); })(?{call 'startfunctionparamdecl'})((?&openparen)(?&param)))
 						\g{-1}
-							(,(?(?=(\s*+(\.\.\.)(?{$matches[-1]{rest}=$^N})\s*+))\g{-1}|(?&param)))*+
+							(,(?(?=(\s*+(\.\.\.)(?{$matches[-1]{rest}=$^N})\s*+))\g{-2}|(?&param)))*+
 						\s*+(?&closingparen)(?{--$recording})(?{replayrecord})(?{pop2 \@savedcallouts})(?{call 'endfunctionparamdecl'})(?{pop2 \@matches})
 						|(?{--$recording})
 						(?{pop2 \@savedcallouts})(?{pop2 \@matches})(*F)))
