@@ -60,11 +60,11 @@ $maxthreads = $ENV{'MAXTHREADS'};
 
 #my sub Dumper {"\n"}
 #use Data::Dumper;
-my sub print {CORE::print(@_) if( $debug )}
+my sub print {CORE::print(@_) if( not $silent )}
 my sub print2 {CORE::print(@_) if( not $silent)}
-sub print3 {CORE::print(@_) if( $debug)}
+sub print3 {CORE::print(@_) if( not $silent)}
 my sub Dumper  {use Data::Dumper; Dumper(@_) if( not $silent )}
-my sub strftime  {use POSIX; strftime(@_) if( not $silent )}
+my sub strftime  {use POSIX; strftime(@_) if( not $silent)}
 
 sub push2 {
     my @args = @_;
@@ -721,6 +721,7 @@ tryagain:
                         #CORE::print "succes\n";
                         goto tryagain
                     }
+                    #CORE::print("==========succes=============\n $&\n==========endsuccess=============\n");
                     pos($subject) = $+[0]
                 }
                 #CORE::print (Dumper(\@{$typedefidentifiersvector}));
@@ -883,6 +884,7 @@ tryagain:
 end:
                 CORE::print ("joinning for real\n");
                 #sleep (10000);
+                $q->enqueue([scalar($lastntypedfs), scalar($lastqueuepoint), scalar($nfilescopesrequested), scalar($lastpos), scalar($ndeclsorbodies)]);
                 $q->end();
 
                 $_->join for @threads;
@@ -903,7 +905,7 @@ end:
                     #$q->enqueue([@typedefidentifiersvector, scalar($lastposend), scalar($nfilescopesrequested)]);
                     #CORE::print ("$lastposend enqueuing " . Dumper($typedefidentifiersvector) . "\n");
                     #$q->enqueue([$qtypdfs->pending(), scalar($lastposend), scalar($nfilescopesrequested), scalar($lastpos)]);
-                    if (!($lastpos - $lastposend < $minlen)) {
+                    if (!($lastpos - $lastqueuepoint < $minlen)) {
                         #$silent = 0;
                         #CORE::print ("$lastposend enqueuing " . Dumper(\$typedefidentifiersvector) . "\n");
                         #$sileng = 1;
