@@ -34,7 +34,11 @@ my $qprim : shared;
 #my $condinput : shared;
 my $condexit : shared;
 my $scopevarsdone : shared;
-my $identstoidmap : shared;
+my $identstoidmap : shared = shared_clone({});
+my $identsdone : shared = shared_clone({});
+my $identwaiters : shared = shared_clone({});
+
+$nfilescopesrequested = 0;
 
 #use re qw(Debug EXECUTE);
 
@@ -63,6 +67,7 @@ $maxthreads = $ENV{'MAXTHREADS'};
 my sub print {CORE::print(@_) if( 0 )}
 my sub print2 {CORE::print(@_) if(0)}
 sub print3 {CORE::print(@_) if( 0)}
+my sub Dumper2  {use Data::Dumper; CORE::print(Dumper(@_)) }
 my sub Dumper  {use Data::Dumper; Dumper(@_) if( 0 )}
 my sub strftime  {use POSIX; strftime(@_) if( 0 )}
 
@@ -533,9 +538,118 @@ sub obtainvalbyidentifier {
 
 #$isnested = 1;
 
-sub getidentid {
-    lock $identstoidmap;
-    return scalar($identstoidmap->{$_[0]})
+sub findnearest {
+    my $currpos = $_[0];
+    my @idposes = @_[1];
+
+    my $shortdst = 2147483647;
+    my $closest = -1;
+
+    #Dumper2(\@idposes);
+
+    foreach my $idpos (@idposes) {
+        #CORE::print ("idpos " . $idpos . "\n");
+        return $idpos;
+        #f($idpos <= $currpos) {
+        #    return
+        #}
+    }
+
+    CORE::print ("idpos " . $closest . "\n");
+
+    return $closest
+}
+
+sub getidtostor {
+    my $ident = $_[0];
+    my $currpos = pos();
+    CORE::print("getting for $ident\n");
+    {
+        lock $identstoidmap;
+        return -1 if (not exists $identstoidmap->{$ident});
+        lock %{$identstoidmap->{$ident}};
+        #CORE::print("dump " . $ident);
+
+        @identscurr = keys %{$identstoidmap->{$ident}};
+
+        $idtosignal = findnearest($currpos, @identscurr);
+
+        return $idtosignal
+    }
+}
+
+sub broadcastid {
+    my $ident = $_[0];
+     my $idtosignal = $_[1];
+     my $locker;
+     #CORE::print("dump " . $ident ."\n");
+    {
+        lock $identstoidmap;
+        #return -1 if (not exists $identstoidmap->{$ident});
+        lock %{$identstoidmap->{$ident}};
+
+        $locker = $identstoidmap->{$ident}->{$idtosignal};
+    }
+    {
+        lock @{$locker};
+
+        CORE::print ("signalling over " . $idtosignal . "\n");
+
+        $locker[0] = 1;
+
+        cond_broadcast(@{$locker})
+    }
+
+    #CORE::print ("signalling " . $idtosignal . "\n");
+
+    return $idtosignal
+}
+
+sub waitforid {
+     my $currpos = pos();
+    my $ident = $_[0];
+    my @identscur;
+    my $idtosignal;
+    my $locker;
+
+            {
+            lock $identstoidmap;
+            #return -1 if (not exists $identstoidmap->{$ident});
+            lock %{$identstoidmap->{$ident}};
+            
+            #CORE::print("dump " . Dumper(\$identstoidmap->{$_[0]}));
+
+            @identscurr = keys %{$identstoidmap->{$ident}};
+
+            $idtosignal = findnearest($currpos, @identscurr);
+
+            CORE::print("nearest " . $idtosignal . "\n");
+
+            return -1 if ($idtosignal eq -1);
+
+            $locker = $identstoidmap->{$ident}->{$idtosignal};
+            C#ORE::print("there " . $idtosignal . "\n");
+        }
+    
+    while(1)
+    {
+
+        {
+            #lock $identstoidmap->{$_[0]}->{$idtosignal};
+
+            lock @{$locker};
+
+            return $idtosignal if ($locker[0]);
+
+            CORE::print ("waitin on " . $idtosignal . "\n");
+
+            cond_wait(@{$locker});
+
+            CORE::print ("end wait on " . $idtosignal . "\n");
+        }
+    }
+
+    return $idtosignal;
 }
 
 my $tryingagain: shared = 0;
@@ -686,6 +800,22 @@ if(not $isnested)
                 #CORE::printf("%.2f\n", $end_time - $begin_time);
                 #all('check_stray_struc') if (not eval {exists $matches[-1]{enum}}); 
                 eval {broadcast(scalar(1), scalar($nfilescopesrequested))};
+
+                {
+                    lock $identsdone;
+                    $identsdone->{scalar($nfilescopesrequested)} = undef
+                }
+
+                {
+                    lock $identwaiters;
+
+                    my @waiters = @{$identwaiters->{scalar($nfilescopesrequested)}};
+
+                    foreach (@waiters) {
+                        lock $_;
+                        cond_signal $_
+                    }
+                }
                 
                 pop2 \@matches;
                 pop2 \@flags;
@@ -855,8 +985,37 @@ tryagain:
             return 1;
         }
         sub brodc {
-            #CORE::print("broadcasting - $unmask , $nfilescopesrequested\n");
-            eval {broadcast(scalar($unmask), scalar($nfilescopesrequested))}
+            #CORE::print ("broadcasting\n");
+            CORE::print("broadcasting - $unmask , $nfilescopesrequested\n");
+            eval {broadcast(scalar($unmask), scalar($nfilescopesrequested))};
+            {
+                lock $identsdone;
+                #CORE::print ("broadcasting\n");
+                $identsdone->{scalar($nfilescopesrequested)} = undef if ($_[0]);
+                #CORE::print ("broadcasting\n");
+            }
+
+            {
+                my @waiters;
+                {
+                    lock $identwaiters;
+
+                    #CORE::print ("broadcasting\n");
+
+                    return if (not exists $identwaiters->{scalar($nfilescopesrequested)});
+
+                    @waiters = @{$identwaiters->{scalar($nfilescopesrequested)}};
+
+                    foreach (@waiters) {
+                        lock $_;
+                        cond_signal $_
+                    }
+
+                    delete $identwaiters->{scalar($nfilescopesrequested)};
+                }
+
+                #CORE::print ("brosignaling\n");
+            }
         }
 
         sub probequeue {
@@ -875,10 +1034,7 @@ tryagain:
         for (1..$maxthreads) {
             push @threads, threads->create(\&execmain, $execmainregshared, $subject, $initseq, $_);
         }
-        {
-            lock $identstoidmap;
-            $identstoidmap = shared_clone({});
-        }
+        
 
          my $begin_time = time();
         my $end_time = time();
@@ -888,7 +1044,7 @@ tryagain:
         my $lastqueuepoint = 0;
         while (1) {
             if (!($subject =~ m{$typeorqualifsreg$initseqlight
-            (?&parens)\s*+(?<block>(?&brackets))?+|(?<identen>[;])|(?&brackets)|(?&strunus)}sxxgsoc)) {
+            (?&rndbrcks)\s*+(?<block>(?&brackets))?+|(?<identen>[;])|(?&brackets)|(?&strunus)}sxxgs)) {
 end:
                 CORE::print ("joinning for real $lastqueuepoint\n");
                 #sleep (10000);
@@ -937,24 +1093,32 @@ end:
                     my $typedeffound;
                     my $taggablefound;
                     while(1) {
+                        my $posident;
                         my $possibleident;
                         my $wasinside = 0;
                         push2 \@matches, {};
                         push2 \@flags, {"outter"=>undef,"opt"=>undef, "nonbitfl"=>undef};
                         while ($subject =~ m{\G\s*+\b([_a-zA-Z][_a-zA-Z0-9@]*+)\b\s*+}sxx) {
                             my $possibleidentlocal = $^N;
+                            $posident = $-[0];
                             pos($subject) = $+[0];
 
                             #CORE::print ("posi ".$possibleidentlocal . "\n");
 
                             if (exists $taggables{$possibleidentlocal}) {
+                                #my $posident = $-[0];
                                 if ($subject =~ m{\G\s*+\b([_a-zA-Z][_a-zA-Z0-9@]*+)\b\s*+}sxx) {
-                                    $possibleidentlocal = $^N;
+                                    $possibleidentlocal = $possibleidentlocal . " " . $^N;
+                                    #CORE::print("tag setting $possibleidentlocal\n");
                                     pos($subject) = $+[0];
-                                    if (subject =~ m{$typeorqualifsreg$initseqlight\G(?&brackets)\s*+}sxx) {
-                                        lock $identstoidmap;
+                                    if ($subject =~ m{$typeorqualifsreg$initseqlight\G(?&brackets)\s*+}sxx) {
                                         pos($subject) = $+[0];
-                                        $identstoidmap->{$possibleidentlocal} = scalar($nfilescopesrequested);
+                                        lock $identstoidmap;
+                                        $identstoidmap->{$possibleidentlocal} = shared_clone({}) if (not exists $identstoidmap->{$possibleidentlocal});
+                                        lock %{$identstoidmap->{$possibleidentlocal}};
+                                        #lock $identstoidmap->{$possibleident};
+                                        CORE::print("tag setting $possibleidentlocal @ $lastposend\n");
+                                        $identstoidmap->{$possibleidentlocal}->{(scalar($lastposend))} = shared_clone([0]);
                                     }
                                     $matches[-1]{strc} = 1
                                 }
@@ -970,15 +1134,18 @@ end:
                         }
 
                         if (!$possibleident) {
-                            if ($subject =~ m{$typeorqualifsreg$initseqlight\G\s*+(?&ptr)*+((?&rndbrcksdecl)|(?<identnormal>(?&identifierpure)))\s*+}sxx) {
+                            if ($subject =~ m{$typeorqualifsreg$initseqlight\G\s*+(?&ptr)*+((?&rndbrcksdecl)|\K(?<identnormal>(?&identifierpure)))\s*+}sxx) {
                                 pos($subject) = $+[0];
                                 if (not exists $+{identnormal}) {
-                                    $subject =~ m{\G[_a-zA-Z][_a-zA-Z0-9@]*+\b}sxx;
+                                    $& =~ m{\G[_a-zA-Z][_a-zA-Z0-9@]*+\b}sxx;
+                                    #$posident = $-[0];
                                     $possibleident = $&;
                                 }
                                 else {
+                                    #$posident = $-[0];
                                     $possibleident =  $+{identnormal};
                                 }
+                                $posident = $-[0];
                             }
                         }
 
@@ -986,18 +1153,24 @@ end:
                             CORE::print ("2 failed near ??" . pos($subject) . "\n");
                             exit
                         }
-                        else {
+                        elsif($possibleident) {
                             lock $identstoidmap;
-                            $identstoidmap->{$possibleident} = scalar($nfilescopesrequested);
+                            $identstoidmap->{$possibleident} = shared_clone({}) if (not exists $identstoidmap->{$possibleident});
+                            lock %{$identstoidmap->{$possibleident}};
+                            #lock $identstoidmap->{$possibleident};
+                            CORE::print("setting $possibleident - $lastposend\n");
+                            $identstoidmap->{$possibleident}->{(scalar($lastposend))} = shared_clone([0]);
                             register_decl({'ident'=>$possibleident, 'typedefkey'=>($matches[-1]{typedefkey})}, 1);
                         }
 
                         pop2 \@matches;
                         pop2 \@flags;
 
-                        pos($subject) = $+[0];
+                        pos($subject) = $+[0] if ($subject =~ m{$typeorqualifsreg$initseqlight\G(\s*+(?&parens)\s*+)*+}sxx);
 
                         last if (!($subject =~ m{\G\s*+,\s*+}sxx));
+
+                        pos($subject) = $+[0];
 
                         undef $possibleident;
                         undef $typedeffound;
