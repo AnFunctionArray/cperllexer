@@ -1179,6 +1179,7 @@ end:
                 }
 
             if ($shouldstorelast) {
+                pos($subject) = $lastpos;
                 $lastposend = $lastpos;
                 ++$ndeclsorbodies;
             }
