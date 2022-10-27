@@ -541,26 +541,34 @@ sub obtainvalbyidentifier {
 sub findnearest {
     my $currpos = $_[0];
     my @idposes = @_[1];
+    my $closest = $_[2];
 
     my $shortdst = 2147483647;
     my $closest = -1;
+    my @returnarr = ();
 
     #Dumper2(\@idposes);
 
     foreach my $idpos (@idposes) {
         #CORE::print ("idpos " . $idpos . "\n");
-        return $idpos;
-        #f($idpos <= $currpos) {
-        #    return
-        #}
+        #return $idpos;
+        if ($closest && abs($currpos - $idpos) < $shortdst) {
+            $shortdst = abs($currpos - $idpos);
+            push @returnarr, $idpos;
+        }
+        elsif($idpos <= $currpos) {
+            push @returnarr, $idpos;
+        }
     }
 
-    CORE::print ("idpos " . $closest . "\n");
+   # CORE::print ("idpos " . $closest . "\n");
 
-    return $closest
+    return @returnarr
 }
 
 sub getidtostor {
+    return pos();
+
     my $ident = $_[0];
     my $currpos = pos();
     CORE::print("getting for $ident\n");
@@ -572,7 +580,7 @@ sub getidtostor {
 
         @identscurr = keys %{$identstoidmap->{$ident}};
 
-        $idtosignal = findnearest($currpos, @identscurr);
+        $idtosignal = (findnearest($currpos, @identscurr, 1))[0];
 
         return $idtosignal
     }
@@ -588,16 +596,16 @@ sub broadcastid {
         #return -1 if (not exists $identstoidmap->{$ident});
         lock %{$identstoidmap->{$ident}};
 
-        $locker = $identstoidmap->{$ident}->{$idtosignal};
+        $locker = $identstoidmap->{$ident};
     }
     {
-        lock @{$locker};
+        lock %{$locker};
 
         CORE::print ("signalling over " . $idtosignal . "\n");
 
-        $locker[0] = 1;
+        $locker->{$idtosignal} = 1;
 
-        cond_broadcast(@{$locker})
+        cond_broadcast(%{$locker})
     }
 
     #CORE::print ("signalling " . $idtosignal . "\n");
@@ -609,25 +617,27 @@ sub waitforid {
      my $currpos = pos();
     my $ident = $_[0];
     my @identscur;
-    my $idtosignal;
+    my @idtosignal;
     my $locker;
 
             {
             lock $identstoidmap;
-            #return -1 if (not exists $identstoidmap->{$ident});
-            lock %{$identstoidmap->{$ident}};
+            return -1 if (not exists $identstoidmap->{$ident});
+            #lock %{$identstoidmap->{$ident}};
             
             #CORE::print("dump " . Dumper(\$identstoidmap->{$_[0]}));
 
-            @identscurr = keys %{$identstoidmap->{$ident}};
+            #@identscurr = keys %{$identstoidmap->{$ident}};
 
-            $idtosignal = findnearest($currpos, @identscurr);
+            #@idtosignal = findnearest($currpos, @identscurr, 0);
 
-            CORE::print("nearest " . $idtosignal . "\n");
+            #return -1 if (not scalar (@idtosignal));
 
-            return -1 if ($idtosignal eq -1);
+            #CORE::print("nearest " . $idtosignal . "\n");
 
-            $locker = $identstoidmap->{$ident}->{$idtosignal};
+            #return -1 if ($idtosignal eq -1);
+
+            $locker = $identstoidmap->{$ident};
             C#ORE::print("there " . $idtosignal . "\n");
         }
     
@@ -637,19 +647,27 @@ sub waitforid {
         {
             #lock $identstoidmap->{$_[0]}->{$idtosignal};
 
-            lock @{$locker};
+            lock %{$locker};
 
-            return $idtosignal if ($locker[0]);
+            CORE::print("$currpos waitin : " . Dumper2(\%{$locker}));
 
-            CORE::print ("waitin on " . $idtosignal . "\n");
+            foreach my $ind (keys %{$locker}) {
+                CORE::print ("check map $ind \n");
+                if ($locker->{$ind} and $ind <= $currpos) {
+                    CORE::print ("foind on " . $ident . " - $id\n");
+                    return $ind;
+                }
+            }
 
-            cond_wait(@{$locker});
+            CORE::print ("waitin on " . $ident . "\n");
 
-            CORE::print ("end wait on " . $idtosignal . "\n");
+            cond_wait(%{$locker});
+
+            CORE::print ("end wait on " . $ident . "\n");
         }
     }
 
-    return $idtosignal;
+    #return $idtosignal;
 }
 
 my $tryingagain: shared = 0;
@@ -1115,10 +1133,10 @@ end:
                                         pos($subject) = $+[0];
                                         lock $identstoidmap;
                                         $identstoidmap->{$possibleidentlocal} = shared_clone({}) if (not exists $identstoidmap->{$possibleidentlocal});
-                                        lock %{$identstoidmap->{$possibleidentlocal}};
+                                        #lock %{$identstoidmap->{$possibleidentlocal}};
                                         #lock $identstoidmap->{$possibleident};
                                         CORE::print("tag setting $possibleidentlocal @ $lastposend\n");
-                                        $identstoidmap->{$possibleidentlocal}->{(scalar($lastposend))} = shared_clone([0]);
+                                        #$identstoidmap->{$possibleidentlocal}->{(scalar($lastposend))} = 0;
                                     }
                                     $matches[-1]{strc} = 1
                                 }
@@ -1156,10 +1174,10 @@ end:
                         elsif($possibleident) {
                             lock $identstoidmap;
                             $identstoidmap->{$possibleident} = shared_clone({}) if (not exists $identstoidmap->{$possibleident});
-                            lock %{$identstoidmap->{$possibleident}};
+                            #lock %{$identstoidmap->{$possibleident}};
                             #lock $identstoidmap->{$possibleident};
                             CORE::print("setting $possibleident - $lastposend\n");
-                            $identstoidmap->{$possibleident}->{(scalar($lastposend))} = shared_clone([0]);
+                            #$identstoidmap->{$possibleident}->{(scalar($lastposend))} = 0;
                             register_decl({'ident'=>$possibleident, 'typedefkey'=>($matches[-1]{typedefkey})}, 1);
                         }
 
