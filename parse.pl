@@ -567,7 +567,23 @@ sub findnearest {
 }
 
 sub getidtostor {
-    return pos();
+    my $ident = $_[0];
+    my $currpos = pos();
+    my $lastid = -1;
+
+    {
+        #return -1 if (not exists $identstoidmap->{$ident});
+        lock @{$identstoidmap->{$ident}};
+
+        #CORE::print ("$ident " . Dumper2(\@{$identstoidmap->{$ident}}) . "\n");
+
+        foreach my $id (@{$identstoidmap->{$ident}}) {
+            CORE::print ($id->[0] . " against " .  $currpos . "\n");
+            last if ($id->[0] > $currpos);
+            $lastid++;
+        }
+    }
+    return $lastid;
 }
 
 sub broadcastid {
@@ -581,8 +597,7 @@ sub broadcastid {
 
         CORE::print ("signalling over " . $idtosignal . "\n");
 
-        push @{$identstoidmap->{$ident}}, $idtosignal;
-
+        $identstoidmap->{$ident}->[$idtosignal]->[1] = 1;
 
         cond_broadcast(@{$identstoidmap->{$ident}})
     }
@@ -601,6 +616,8 @@ sub waitforid {
     
     while(1)
     {
+        my $areallset = 1;
+        my $nset = -1;
 
         {
             #lock $identstoidmap->{$_[0]}->{$idtosignal};
@@ -613,15 +630,17 @@ sub waitforid {
             lock @{$identstoidmap->{$ident}};
 
 
-                #CORE::print("$currpos waitin : " . Dumper2(\@{$locker}));
+                #CORE::print("$currpos waitin : " . Dumper2(\@{$identstoidmap->{$ident}}));
 
                 foreach my $ind (@{$identstoidmap->{$ident}}) {
-                    CORE::print ("check map $ind \n");
-                    if ($ind <= $currpos) {
-                        CORE::print ("foind on " . $ident . " - $ind\n");
-                        return $ind;
-                    }
+                    #CORE::print ("check map $ind \n");
+                    last if(not ($ind->[0] <= $currpos));
+                    $areallset = $areallset && $ind->[1];
+                    last if (not $areallset);
+                    ++$nset;
                 }
+
+            return $nset if($areallset);
 
             CORE::print ("waitin on " . $ident . "\n");
 
@@ -1096,10 +1115,16 @@ end:
                                     if ($subject =~ m{$typeorqualifsreg$initseqlight\G(?&brackets)\s*+}sxx) {
                                         pos($subject) = $+[0];
                                         lock $identstoidmap;
-                                        $identstoidmap->{$possibleidentlocal} = shared_clone([]) if (not exists $identstoidmap->{$possibleidentlocal});
+                                        if (not exists $identstoidmap->{$possibleidentlocal}) {
+                                            $identstoidmap->{$possibleidentlocal} = shared_clone([[$lastposend, 0]]) 
+                                        }
+                                        else {
+                                            lock (@{$identstoidmap->{$possibleidentlocal}});
+                                            push @{$identstoidmap->{$possibleidentlocal}}, shared_clone([$lastposend, 0]);
+                                        }
                                         #lock %{$identstoidmap->{$possibleidentlocal}};
                                         #lock $identstoidmap->{$possibleident};
-                                        CORE::print("tag setting $possibleidentlocal @ $lastposend\n");
+                                        #CORE::print("tag setting $possibleidentlocal @ $lastposend\n");
                                         #$identstoidmap->{$possibleidentlocal}->{(scalar($lastposend))} = 0;
                                     }
                                     $matches[-1]{strc} = 1
@@ -1137,10 +1162,16 @@ end:
                         }
                         elsif($possibleident) {
                             lock $identstoidmap;
-                            $identstoidmap->{$possibleident} = shared_clone([]) if (not exists $identstoidmap->{$possibleident});
+                            if (not exists $identstoidmap->{$possibleident}) {
+                                $identstoidmap->{$possibleident} = shared_clone([[$lastposend, 0]])
+                            }
+                            else {
+                                lock (@{$identstoidmap->{$possibleident}});
+                                push @{$identstoidmap->{$possibleident}}, shared_clone([$lastposend, 0]);
+                            }
                             #lock %{$identstoidmap->{$possibleident}};
                             #lock $identstoidmap->{$possibleident};
-                            CORE::print("setting $possibleident - $lastposend\n");
+                            #CORE::print("setting $possibleident - $lastposend\n");
                             #$identstoidmap->{$possibleident}->{(scalar($lastposend))} = 0;
                             register_decl({'ident'=>$possibleident, 'typedefkey'=>($matches[-1]{typedefkey})}, 1);
                         }
