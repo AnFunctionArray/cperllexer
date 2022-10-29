@@ -17,3 +17,18 @@ Just use this patch (if not already merged - it increases speed by 2x (not a jok
 You need to check - I've recently disabled verbose logging (if you fancy to see the output)
 
 I may post info here - https://cparser2.blogspot.com
+
+
+Backend - compile and run regularc from here - https://github.com/AnFunctionArray/cllvmbackend
+
+Backend doesn't support variable initializations.
+
+Void must be typedefed (I don't like it).
+
+Function overriding is somewhat supported (because of needs)
+
+Variadaic arguments are something that I've not even came to imlement (although the ... is parsed (and also void as single keyword meaning no parameters))
+
+Each thread generates its own IR file.
+
+Tested on huge 8.5 MB files - if there is an error check the right number - it's offset in the file being parsed. 
