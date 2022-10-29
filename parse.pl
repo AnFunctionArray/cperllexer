@@ -3,7 +3,7 @@
 use re 'eval';
 use threads;
 use threads::shared;
-use Clone 'clone';
+#use Clone 'clone';
 
 my @threads;
 my $donework :shared;
@@ -578,11 +578,12 @@ sub getidtostor {
         #CORE::print ("$ident " . Dumper2(\@{$identstoidmap->{$ident}}) . "\n");
 
         foreach my $id (@{$identstoidmap->{$ident}}) {
-            CORE::print ($id->[0] . " against " .  $currpos . "\n");
+            #CORE::print ($id->[0] . " against " .  $currpos . "\n");
             last if ($id->[0] > $currpos);
             $lastid++;
         }
     }
+    #CORE::print ("lastid $lastid\n");
     return $lastid;
 }
 
@@ -596,6 +597,8 @@ sub broadcastid {
         lock @{$identstoidmap->{$ident}};
 
         CORE::print ("signalling over " . $idtosignal . "\n");
+
+        lock @{$identstoidmap->{$ident}->[$idtosignal]};
 
         $identstoidmap->{$ident}->[$idtosignal]->[1] = 1;
 
@@ -633,6 +636,7 @@ sub waitforid {
                 #CORE::print("$currpos waitin : " . Dumper2(\@{$identstoidmap->{$ident}}));
 
                 foreach my $ind (@{$identstoidmap->{$ident}}) {
+                    lock @{$ind};
                     #CORE::print ("check map $ind \n");
                     last if(not ($ind->[0] <= $currpos));
                     $areallset = $areallset && $ind->[1];
