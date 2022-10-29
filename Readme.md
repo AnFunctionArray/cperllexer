@@ -32,3 +32,5 @@ Variadaic arguments are something that I've not even came to imlement (although 
 Each thread generates its own IR file.
 
 Tested on huge 8.5 MB files - if there is an error check the right number - it's offset in the file being parsed. 
+
+It does support Nested structures (and even unions - although that's debatable recently - but considering I've other huge problems in the backend not a priority right now).
