@@ -1,9 +1,9 @@
-(?<inner>\s*+(((?<stringlit>(?(?=("|'))(?{push2 \@matches, {"begincharliteral" => $^N}})|(*F))
-						(?(?=(((??{$matches[-1]->{begincharliteral}})
+(?<inner>\s*+(((?<stringlit>(?(?=(?<quote>"|'))(?{push2 \@matches, {"begincharliteral" => $^N}})|(*F))
+						(?(?=(?<strtexts>(\g{quote}
 						((?<escape>(?<escaperaw>\\(?(?=x)x[0-9a-fA-F]++|(?(?=\d)[0-7]++|['"?\\abfnrtv]))))
 						(?{call 'addescapesequencetostring'})|
 						(?<text>(?<textraw>((?!(?&escape)|(??{$matches[-1]->{begincharliteral}})).)++)(?{call 'addplaintexttostring'})))*+
-						(??{$matches[-1]->{begincharliteral}})\s*+)*+))(??{qr{\Q$^N\E}})|(?{pop2 \@matches})(*F))
+						\g{quote}\s*+)*+))\g{strtexts}|(?{pop2 \@matches})(*F))
 						(?{call 'add_literal'})(?{pop2 \@matches}))
 						|(?(?=((?&floating)))
 						\g{-1}

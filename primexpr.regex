@@ -44,7 +44,7 @@
 )
 
 (?<ternaryorsomething>(?(?=((?{push2 \@savedcallouts, []})
-		(?{++$recording; print3("recording ternaryorsomething\n")})(?&ternaryrest)))(??{qr{\Q$^N\E}})
+		(?{++$recording; print3("recording ternaryorsomething\n")})(?&ternaryrest)))\g{-1}
 	(?&castexpr)(?&ternarylogicopt)(?{call 'end_ternary'})
 	|(?{--$recording})(?{pop2 \@savedcallouts}))
 )
