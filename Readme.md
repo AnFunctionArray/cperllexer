@@ -16,3 +16,4 @@ Just use this patch (if not already merged - it increases speed by 2x (not a jok
 
 You need to check - I've recently disabled verbose logging (if you fancy to see the output)
 
+I may post info here - https://cparser2.blogspot.com
