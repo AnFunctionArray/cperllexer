@@ -25,7 +25,7 @@ Backend doesn't support variable initializations.
 
 Void must be typedefed (I don't like it).
 
-Function overriding is somewhat supported (because of needs)
+Function overloading is somewhat supported (because of needs)
 
 Variadaic arguments are something that I've not even came to imlement (although the ... is parsed (and also void as single keyword meaning no parameters))
 
