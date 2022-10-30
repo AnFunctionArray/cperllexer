@@ -596,7 +596,7 @@ sub broadcastid {
         #return -1 if (not exists $identstoidmap->{$ident});
         lock @{$identstoidmap->{$ident}};
 
-        CORE::print ("signalling over " . $idtosignal . "\n");
+        #CORE::print ("signalling over " . $idtosignal . "\n");
 
         lock @{$identstoidmap->{$ident}->[$idtosignal]};
 
@@ -646,11 +646,11 @@ sub waitforid {
 
             return $nset if($areallset);
 
-            CORE::print ("waitin on " . $ident . "\n");
+            #CORE::print ("waitin on " . $ident . "\n");
 
             cond_wait(@{$identstoidmap->{$ident}});
 
-            CORE::print ("end wait on " . $ident . "\n");
+            #CORE::print ("end wait on " . $ident . "\n");
         }
     }
 
@@ -1049,7 +1049,7 @@ tryagain:
         my $lastqueuepoint = 0;
         while (1) {
             if (!($subject =~ m{$typeorqualifsreg$initseqlight
-            (?&rndbrcks)\s*+(?<block>(?&brackets))?+|(?<identen>[;])|(?&brackets)|(?&strunus)}sxxgs)) {
+            (?&parens)\s*+(?<block>(?&brackets))?+|(?<identen>[;])|(?&brackets)|(?&strunus)}sxxgs)) {
 end:
                 CORE::print ("joinning for real $lastqueuepoint\n");
                 #sleep (10000);
