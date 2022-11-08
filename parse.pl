@@ -1097,7 +1097,19 @@ end:
                     #pos($subject) = $+[0];
                     my $typedeffound;
                     my $taggablefound;
-                    while(1) {
+                    #while(1) {
+                        my sub push_decl {
+                            my $lastposend = $_[0];
+                            my $possibleidentlocal = $_[1];
+                            lock $identstoidmap;
+                            if (not exists $identstoidmap->{$possibleidentlocal}) {
+                                $identstoidmap->{$possibleidentlocal} = shared_clone([[$lastposend, 0]]) 
+                            }
+                            else {
+                                lock (@{$identstoidmap->{$possibleidentlocal}});
+                                push @{$identstoidmap->{$possibleidentlocal}}, shared_clone([$lastposend, 0]);
+                            }
+                        }
                         my $posident;
                         my $possibleident;
                         my $wasinside = 0;
@@ -1118,14 +1130,7 @@ end:
                                     pos($subject) = $+[0];
                                     if ($subject =~ m{$typeorqualifsreg$initseqlight\G(?&brackets)\s*+}sxx) {
                                         pos($subject) = $+[0];
-                                        lock $identstoidmap;
-                                        if (not exists $identstoidmap->{$possibleidentlocal}) {
-                                            $identstoidmap->{$possibleidentlocal} = shared_clone([[$lastposend, 0]]) 
-                                        }
-                                        else {
-                                            lock (@{$identstoidmap->{$possibleidentlocal}});
-                                            push @{$identstoidmap->{$possibleidentlocal}}, shared_clone([$lastposend, 0]);
-                                        }
+                                        push_decl($lastposend, $possibleidentlocal)
                                         #lock %{$identstoidmap->{$possibleidentlocal}};
                                         #lock $identstoidmap->{$possibleident};
                                         #CORE::print("tag setting $possibleidentlocal @ $lastposend\n");
@@ -1144,7 +1149,7 @@ end:
                             }
                         }
 
-                        if (!$possibleident) {
+                        my sub register_decl_shallow {
                             if ($subject =~ m{$typeorqualifsreg$initseqlight\G\s*+(?&ptr)*+((?&rndbrcksdecl)|\K(?<identnormal>(?&identifierpure)))\s*+}sxx) {
                                 pos($subject) = $+[0];
                                 if (not exists $+{identnormal}) {
@@ -1160,19 +1165,16 @@ end:
                             }
                         }
 
+                        if (!$possibleident) {
+                            register_decl_shallow
+                        }
+
                         if (!$possibleident and not $taggablefound) {
                             CORE::print ("2 failed near ??" . pos($subject) . "\n");
                             exit
                         }
                         elsif($possibleident) {
-                            lock $identstoidmap;
-                            if (not exists $identstoidmap->{$possibleident}) {
-                                $identstoidmap->{$possibleident} = shared_clone([[$lastposend, 0]])
-                            }
-                            else {
-                                lock (@{$identstoidmap->{$possibleident}});
-                                push @{$identstoidmap->{$possibleident}}, shared_clone([$lastposend, 0]);
-                            }
+                            push_decl($lastposend, $possibleident);
                             #lock %{$identstoidmap->{$possibleident}};
                             #lock $identstoidmap->{$possibleident};
                             #CORE::print("setting $possibleident - $lastposend\n");
@@ -1180,19 +1182,26 @@ end:
                             register_decl({'ident'=>$possibleident, 'typedefkey'=>($matches[-1]{typedefkey})}, 1);
                         }
 
+                        pos($subject) = $+[0] if ($subject =~ m{$typeorqualifsreg$initseqlight\G(\s*+(?&parens)\s*+)*+}sxx);
+
+                        while ($subject =~ m{$typeorqualifsreg$initseqlight\G\s*+,\s*+(?&ptr)*+((?&rndbrcksdecl)|\K(?<identnormal>(?&identifierpure)))\s*+}sxx) {
+                            pos($subject) = $+[0];
+                            my $possibleidentlocal;
+                            register_decl_shallow();
+                            push_decl($lastposend, $possibleidentlocal);
+                            register_decl({'ident'=>$possibleident, 'typedefkey'=>($matches[-1]{typedefkey})}, 1);
+                            pos($subject) = $+[0] if ($subject =~ m{$typeorqualifsreg$initseqlight\G(\s*+(?&parens)\s*+)*+}sxx);
+                        }
+
                         pop2 \@matches;
                         pop2 \@flags;
 
-                        pos($subject) = $+[0] if ($subject =~ m{$typeorqualifsreg$initseqlight\G(\s*+(?&parens)\s*+)*+}sxx);
-
-                        last if (!($subject =~ m{\G\s*+,\s*+}sxx));
-
-                        pos($subject) = $+[0];
+                        #pos($subject) = $+[0];
 
                         undef $possibleident;
                         undef $typedeffound;
                         undef $taggablefound;
-                    }
+                    #}
                 }
 
             if ($shouldstorelast) {
