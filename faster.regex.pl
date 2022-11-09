@@ -1,11 +1,15 @@
 
 sub dispatch_file_scope_stm {
     my $currpos = pos();
-    CORE::print ( $currpos . "__" .$lastpos . "\n" );
-    $q->enqueue([scalar($lastntypedfs), scalar($lastpos), scalar($currpos)]);
+    #CORE::print ( $currpos . "__" .$lastpos . "\n" );
+    $q->enqueue(shared_clone([scalar($lastntypedfs), scalar($lastpos), scalar($currpos)]));
     $lastpos = $currpos;
     if ($typedefs_changed) {
-        $qtypdfs->enqueue(\{ %{$typedefidentifiersvector->[0]} });
+       # eval {#use Data::Dumper;
+        #CORE::print ("sending\n");
+        #CORE::print Dumper(\$typedefidentifiersvector);
+       # };
+        $qtypdfs->enqueue(shared_clone({ %{$typedefidentifiersvector->[0]} }));
         $lastntypedfs = $qtypdfs->pending();#scalar(@{keys %{$typedefidentifiersvector->[0]}});
         undef $typedefs_changed;
     }

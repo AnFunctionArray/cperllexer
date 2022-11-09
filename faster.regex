@@ -14,7 +14,7 @@
 (?<fasterdecls>(?(?=(?{push2 \@matches, {}})(?<declbod>((?&typeorqualifortypdf)
     |\s*+(struct|union|enum)\s*+(?<identtag>(?&identifierpure))?+\s*+((?&brackets)(?{register_taggable()}))?+)*+
     (?<identoutter>\s*+(?&ptr)*+((?&rndbrcksdecl)|(?<identnormal>(?&identifierpure))(?{register_normal_decl()}))\s*+)
-    (\s*+(?&parens)\s*+)*+((,(?&identoutter)(\s*+(?&parens)\s*+)*+)*+)))(?{dispatch_file_scope_stm()})\g{declbod}|(*F)(?{$recording--; pop2 \@matches})))
+    (\s*+(?&parens)\s*+)*+((,(?&identoutter)(\s*+(?&parens)\s*+)*+)*+)))|(*F)(?{pop2 \@matches})))
 
 (?<rndbrcksdecl>\s*\((?<inparen>(?<inparenin>\s*+(?&ptr)*+\s*+((?<identinside>(?&identifierpure))(?{register_normal_decl()})|(?&rndbrcksdecl))(\s*+(?&parens)\s*+)*+\s*)*+
     ((?&inparenin)(?&inparen))?+)\)\s*)

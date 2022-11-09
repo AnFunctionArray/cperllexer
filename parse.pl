@@ -68,7 +68,7 @@ my sub print {CORE::print(@_) if( 0 )}
 my sub print2 {CORE::print(@_) if(0)}
 sub print3 {CORE::print(@_) if( 0)}
 my sub Dumper2  {use Data::Dumper; CORE::print(Dumper(@_)) }
-my sub Dumper  {use Data::Dumper; Dumper(@_) if( 1 )}
+my sub Dumper  {use Data::Dumper; Dumper(@_) if( 0 )}
 my sub strftime  {use POSIX; strftime(@_) if( 0 )}
 
 sub push2 {
@@ -758,7 +758,7 @@ if(not $isnested)
             $nextpos = scalar($item[2]);
             my $ntyps = scalar($item[0]);
             #lock $typedefidentifiersvector;
-            $typedefidentifiersvector = [$ntyps ? %{$qtypdfs->peek($ntyps - 1)} : {}]; #[{}];
+            $typedefidentifiersvector = [$ntyps ? {%{$qtypdfs->peek($ntyps - 1)}} : {}]; #[{}];
             CORE::print (Dumper(\@{$typedefidentifiersvector}));
             #CORE::print ("$start\n");
 =begin
@@ -989,7 +989,7 @@ tryagain:
     push2 \@flags, {"outter"=>undef,"opt"=>undef, "nonbitfl"=>undef};
 
     while($subject =~ m{$initseqlight
-    ;\s*+(?&fasterdecls)|(?&parens)(\s*+(?&brackets)\s*+(?&fasterdecls))?+|(?&brackets)|(?&strunus)}sxxg) {
+    (;|^)(?{dispatch_file_scope_stm()})\s*+(?&fasterdecls)|(?&parens)(\s*+(?&brackets)\s*+(?{dispatch_file_scope_stm()})(?&fasterdecls))?+|(?&brackets)|(?&strunus)}sxxg) {
     }
 
     if(!($subject =~ m{\s*+$}sxxg)) {

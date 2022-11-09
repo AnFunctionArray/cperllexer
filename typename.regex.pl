@@ -91,7 +91,7 @@ sub regenerate_typedef_regex {
 sub checktypedef2 {
     my $ident = $_[0];
     #use Devel::Peek;
-    # CORE::print ("Dumping typs - $threadid\n");
+    #CORE::print ("Dumping typs - $threadid\n");
    # $silent = 0;
    #CORE::print "dimp\n";
    #use Data::Dumper;
@@ -214,9 +214,9 @@ sub register_decl{
     #$silent = 0;
     #$sielnt = 1;
     my $identifier = $_[0]{'ident'};
-    CORE::print ("register $threadid ". $identifier . "\n");
-    use Data::Dumper;
-    Dumper($_[0]);
+    #CORE::print ("register $threadid ". $identifier . $_[0]{'typedefkey'} . "\n");
+    #use Data::Dumper;
+    #Dumper($_[0]);
     return if not $identifier;
     #$last_object_identifier = $identifier;
     my $priorstate = exists ${$typedefidentifiersvector->[-1]}{$identifier} ? ${$typedefidentifiersvector->[-1]}{$identifier} : -1;
