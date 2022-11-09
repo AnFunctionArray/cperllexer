@@ -1,4 +1,4 @@
-my sub Dumper  {use Data::Dumper; Dumper(@_) if( not $silent )}
+#my sub Dumper  {use Data::Dumper; Dumper(@_) if( not $silent )}
 
 #my sub Dumper {"\n"}
 
@@ -93,11 +93,13 @@ sub checktypedef2 {
     #use Devel::Peek;
     # CORE::print ("Dumping typs - $threadid\n");
    # $silent = 0;
-    #CORE::print (Dump(\@{$typedefidentifiersvector}));
+   #CORE::print "dimp\n";
+   #use Data::Dumper;
+    #CORE::print (Dumper(\@{$typedefidentifiersvector}));
     #CORE::print (Dumper(\@{$typedefidentifiersvector}));
     #$silent = 1;
     foreach my $typedefidentifier (reverse @{$typedefidentifiersvector}) {
-        return $typedefidentifier->{$ident} if(exists $typedefidentifier->{$ident})
+        return $typedefidentifier->{$ident} if($typedefidentifier->{$ident})
     }
     return 0
 }
@@ -131,8 +133,8 @@ sub checktypedef {
 
 sub checkident  {
     #print3 "checking" .$^N . "\n";
-    if ((not checktypedef2 $^N) and (not exists $keywords{$^N})) {
-        print3 "$^N -> ident\n";
+    if (!(checktypedef2($^N)) && !(exists $keywords{$^N})) {
+        #CORE::print "$^N -> ident\n";
         return 1 
     }
     return 0;

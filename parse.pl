@@ -42,9 +42,9 @@ $nfilescopesrequested = 0;
 
 #use re qw(Debug EXECUTE);
 
-require "typename.regex.pl";
-require "primexpr.regex.pl";
-require "faster.regex.pl";
+do "typename.regex.pl";
+do "primexpr.regex.pl";
+do "faster.regex.pl";
 
 use List::Util qw(max);
 
@@ -68,7 +68,7 @@ my sub print {CORE::print(@_) if( 0 )}
 my sub print2 {CORE::print(@_) if(0)}
 sub print3 {CORE::print(@_) if( 0)}
 my sub Dumper2  {use Data::Dumper; CORE::print(Dumper(@_)) }
-my sub Dumper  {use Data::Dumper; Dumper(@_) if( 0 )}
+my sub Dumper  {use Data::Dumper; Dumper(@_) if( 1 )}
 my sub strftime  {use POSIX; strftime(@_) if( 0 )}
 
 sub push2 {
@@ -675,6 +675,7 @@ if(not $isnested)
     my $execmainregshared = eval { #use re qw(Debug EXECUTE);
          "(?(DEFINE)$mainregexdefs)\\G(?&cprogram)" };
     sub execmain {
+        use re qw(Debug EXECUTE);
         $regexstr = $_[0];
         $regex = qr{$_[0]}sxx;
         $subject = $_[1];
@@ -759,7 +760,8 @@ if(not $isnested)
             $ntimes = scalar($item[4]);
             my $ntyps = scalar($item[0]);
             #lock $typedefidentifiersvector;
-            $typedefidentifiersvector = [$ntyps ? $qtypdfs->peek($ntyps - 1) : {}]; #[{}];
+            $typedefidentifiersvector = [$ntyps ? %{$qtypdfs->peek($ntyps - 1)} : {}]; #[{}];
+            CORE::print (Dumper(\@{$typedefidentifiersvector}));
 =begin
             for my $i (0..$ntyps) {
                 my $elem = $qtypdfs->peek($i);
@@ -1094,7 +1096,7 @@ end:
                         $q->enqueue([scalar($qtypdfs->pending()), scalar($lastqueuepoint), scalar($nfilescopesrequested), scalar($lastpos), scalar($ndeclsorbodies - 1)]);
                         #$lastntypedfs = $qtypdfs->pending();
                         if ($typedefs_changed) {
-                            $qtypdfs->enqueue({ %{$typedefidentifiersvector->[0]} });
+                            $qtypdfs->enqueue(\{ %{$typedefidentifiersvector->[0]} });
                             $lastntypedfs = scalar(@{keys %{$typedefidentifiersvector->[0]}});
                             undef $typedefs_changed;
                         }
@@ -1134,20 +1136,18 @@ end:
                         my $wasinside = 0;
                         push2 \@matches, {};
                         push2 \@flags, {"outter"=>undef,"opt"=>undef, "nonbitfl"=>undef};
-                        while ($subject =~ m{\G\s*+([_a-zA-Z][_a-zA-Z0-9]*+)\s*+}sxx) {
+                        while ($subject =~ m{\G\s*+([_a-zA-Z][_a-zA-Z0-9]*+)\s*+}sxxg) {
                             my $possibleidentlocal = $^N;
                             $posident = $-[0];
-                            pos($subject) = $+[0];
 
                             #CORE::print ("posi ".$possibleidentlocal . "\n");
 
                             if (exists $taggables{$possibleidentlocal}) {
                                 #my $posident = $-[0];
-                                if ($subject =~ m{\G\s*+([_a-zA-Z][_a-zA-Z0-9]*+)\s*+}sxx) {
+                                if ($subject =~ m{\G\s*+([_a-zA-Z][_a-zA-Z0-9]*+)\s*+}sxxg) {
                                     $possibleidentlocal = $possibleidentlocal . " " . $^N;
                                     #CORE::print("tag setting $possibleidentlocal\n");
-                                    pos($subject) = $+[0];
-                                    if ($subject =~ m{$typeorqualifsreg$initseqlight\G(?&brackets)\s*+}sxx) {
+                                    if ($subject =~ m{$typeorqualifsreg$initseqlight\G(?&brackets)\s*+}sxxg) {
                                         pos($subject) = $+[0];
                                         push_decl($lastposend, $possibleidentlocal)
                                         #lock %{$identstoidmap->{$possibleidentlocal}};
@@ -1169,7 +1169,6 @@ end:
                         }
 
                         my sub process_ident_shallow {
-                            pos($subject) = $+[0];
                             if (not exists $+{identnormal}) {
                                 $& =~ m{\G[_a-zA-Z][_a-zA-Z0-9]*+}sxx;
                                 #$posident = $-[0];
@@ -1183,10 +1182,12 @@ end:
                         }
 
                         if (!$possibleident) {
-                            if ($subject =~ m{$typeorqualifsreg$initseqlight\G\s*+(?&ptr)*+((?&rndbrcksdecl)|\K(?<identnormal>(?&identifierpure)))\s*+}sxx) {
+                            if ($subject =~ m{$typeorqualifsreg$initseqlight\G\s*+(?&ptr)*+((?&rndbrcksdecl)|\K(?<identnormal>(?&identifierpure)))\s*+}sxxg) {
                                 process_ident_shallow
                             }
                         }
+
+                        my $istypedef = $matches[-1]{typedefkey};
 
                         if (!$possibleident and not $taggablefound) {
                             CORE::print ("2 failed near ??" . pos($subject) . "\n");
@@ -1198,29 +1199,29 @@ end:
                             #lock $identstoidmap->{$possibleident};
                             #CORE::print("setting $possibleident - $lastposend\n");
                             #$identstoidmap->{$possibleident}->{(scalar($lastposend))} = 0;
-                            register_decl({'ident'=>$possibleident, 'typedefkey'=>($matches[-1]{typedefkey})}, 1);
+                            register_decl({'ident'=>$possibleident, 'typedefkey'=>($istypedef)}, 1);
                             #$qtypdfs->enqueue([scalar($possibleident),scalar(${$typedefidentifiersvector->[-1]}{$possibleident})]);
-                        }
-
-                        pos($subject) = $+[0] if ($subject =~ m{$typeorqualifsreg$initseqlight\G(\s*+(?&parens)\s*+)*+}sxx);
-
-                        while ($subject =~ m{$typeorqualifsreg$initseqlight\G\s*+,\s*+(?&ptr)*+((?&rndbrcksdecl)|\K(?<identnormal>(?&identifierpure)))\s*+}sxx) {
-                            my $possibleident;
-                            process_ident_shallow;
-                            push_decl($lastposend, $possibleident);
-                            register_decl({'ident'=>$possibleident, 'typedefkey'=>($matches[-1]{typedefkey})}, 1);
-                            #$qtypdfs->enqueue([scalar($possibleident),scalar(${$typedefidentifiersvector->[-1]}{$possibleident})]);
-                            pos($subject) = $+[0] if ($subject =~ m{$typeorqualifsreg$initseqlight\G(\s*+(?&parens)\s*+)*+}sxx);
                         }
 
                         pop2 \@matches;
                         pop2 \@flags;
 
+                        $subject =~ m{$typeorqualifsreg$initseqlight\G(\s*+(?&parens)\s*+)*+}sxxg;
+
+                        while ($subject =~ m{$typeorqualifsreg$initseqlight\G\s*+,\s*+(?&ptr)*+((?&rndbrcksdecl)|\K(?<identnormal>(?&identifierpure)))\s*+}sxxg) {
+                            my $possibleident;
+                            process_ident_shallow;
+                            push_decl($lastposend, $possibleident);
+                            register_decl({'ident'=>$possibleident, 'typedefkey'=>($istypedef)}, 1);
+                            #$qtypdfs->enqueue([scalar($possibleident),scalar(${$typedefidentifiersvector->[-1]}{$possibleident})]);
+                            $subject =~ m{$typeorqualifsreg$initseqlight\G(\s*+(?&parens)\s*+)*+}sxxg;
+                        }
+
                         #pos($subject) = $+[0];
 
-                        undef $possibleident;
-                        undef $typedeffound;
-                        undef $taggablefound;
+                        #undef $possibleident;
+                        #undef $typedeffound;
+                        #undef $taggablefound;
                     #}
                 }
 

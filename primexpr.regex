@@ -9,14 +9,14 @@
 (?<primexprcall>(?{push2 \@flags, {"callexpr"}})(?(?=((?&primexprraw)))\g{-1}
 	(?{pop2 \@flags})|(?{pop2 \@flags})(*F)))
 
-(?<castexpr>(?<unaryexpr>(?(?=(?<innerorty>(?(?=((?&typenamerev)))\g{-1}|(?&inner))))\g{innerorty}
+(?<castexpr>(?(?=((?&typenamerev)))\g{-1}|(?<unaryexpr>(?(?=((?&inner)))\g{-1}
 						|(?<inparenths>\s*+[(](?&primexprnew)[)]
 						\s*+))(((\[(?&primexprnew)\](?{call 'subscript'})|[(](?{call 'startfunctioncall'})(?&primexprcall)?+[)]
 						(?{call 'endfunctioncall'}))\s*+
 						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?&identifierminemember)
 						|(?<postfixarith>(?<postfixarithraw>[+][+]|--)\s*+)
 						(?{call 'unaryincdec'})))*+
-						|(?&unary)))
+						|(?&unary))))
 
 (?<identifierminemember>\s*+(?<ident>(?&identifierraw_qualified))
 	(?{call 'memberaccess'})\s*+)
