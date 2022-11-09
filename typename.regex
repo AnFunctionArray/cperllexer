@@ -155,7 +155,7 @@
 
 (?<typenamerev>(?(?=(?{push2 \@savedcallouts, []})
 		(?{++$recording; print3("recording typenamerev\n")})(?<typenamerev1>(?&typename)))
-		(?{--$recording})\g{typenamerev1}(?{push2 \@typenamecurrrecord, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
+		(?{--$recording})\g{-1}(?{push2 \@typenamecurrrecord, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
 		(?&castexpr)
 		(?{replayrecord \@typenamecurrrecord})(?{pop2 \@typenamecurrrecord})
 		(?{call 'applycast'})

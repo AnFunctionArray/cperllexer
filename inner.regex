@@ -1,7 +1,7 @@
-(?<inner>\s*+(((?<stringlit>(?(?=(?<quote>"|'))(?{push2 \@matches, {"begincharliteral" => $^N}})|(*F))
+(?<inner>\s*+(((?<stringlit>(?(?=(?<quote>["']))(?{push2 \@matches, {"begincharliteral" => $^N}})|(*F))
 						(?(?=(?<strtexts>(\g{quote}
-						((?&escape)|
-						(?<text>(?<textraw>((?!(?&escaperaw)|(??{$matches[-1]->{begincharliteral}})).)++)(?{call 'addplaintexttostring'})))*+
+						(?(?=((?&escape)))\g{-1}|
+						(?<text>(?<textraw>((?!\g{quote}).))(?{call 'addplaintexttostring'})))*+
 						\g{quote}\s*+)*+))\g{strtexts}|(?{pop2 \@matches})(*F))
 						(?{call 'add_literal'})(?{pop2 \@matches}))
 						|(?(?=((?&floating)))
@@ -20,7 +20,7 @@
 )
 
 
-(?<identifierpure>\b(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9@])*+)\b)
+(?<identifierpure>(?>[_a-zA-Z](?<letter>[_a-zA-Z\d])*+))
 
 (?<identifierraw>((?&identifierpure))(?(?{checkident()})|(*F)))
 (?<identifierraw_qualified>((?&identifierpure))(?(?{checkidentpermissive()})|(*F)))

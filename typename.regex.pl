@@ -210,16 +210,16 @@ sub register_decl{
 
     return if(existsflag "bitfl", {"nonbitfl"});
     #$silent = 0;
-    #CORE::print ("register $threadid ". Dumper(\%{$_[0]}) . "\n");
     #$sielnt = 1;
     my $identifier = $_[0]{'ident'};
+    #CORE::print ("register $threadid ". $identifier . "\n");
     return if not $identifier;
     #$last_object_identifier = $identifier;
     my $priorstate = exists ${$typedefidentifiersvector->[-1]}{$identifier} ? ${$typedefidentifiersvector->[-1]}{$identifier} : -1;
-    my $currentstate = $_[0]{'typedefkey'};
+    my $currentstate = exists $_[0]{'typedefkey'};
     ${$typedefidentifiersvector->[-1]}{$identifier} = $currentstate ? 1 : 0;
 
-    $qtypdfs->enqueue([scalar($currentstate ? 1 : 0),$identifier]) if($threadid eq 0);
+    #$qtypdfs->enqueue([scalar($currentstate ? 1 : 0),$identifier]) if($threadid eq 0);
 
     #print3 "$priorstate -> $currentstate\n";
     #$regenerate_needed = 1 
@@ -227,6 +227,7 @@ sub register_decl{
         #regenerate_typedef_regex();
         $needregen = $typedefidentifierschanged[-1] = 1;
         #$regenerate_needed = 0;
+        $typedefs_changed = 1;
     }
 }
 
