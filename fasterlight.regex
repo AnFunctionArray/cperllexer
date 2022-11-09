@@ -18,7 +18,6 @@
 
 (?<identifierpure>(?>[_a-zA-Z](?<letter>[_a-zA-Z0-9])*+))
 
-(?<rndbrcksdecl>\s*\((?<inparen>(?<inparenin>\s*+(?&ptr)*+\s*+((?<identinside>\K(?&identifierpure))|(?&rndbrcksdecl))(\s*+(?&parens)\s*+)*+\s*)*+
-    ((?&inparenin)(?&inparen))?+)\)\s*)
 
-(?<ptr>\s*+\*\s*+(?&typeorqualif)*+\s*+)
+
+(?<ptr>\s*+\*\s*+(?&qualifonly)*+\s*+)

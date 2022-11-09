@@ -164,7 +164,7 @@ sub checktypeorqualifortypdf  {
             eval {$matches[-1]{typefound} = $input};
             call "add_type" if (not $force);
             return 1;
-        } elsif($force || eval { existsflag("outter", {"optoutter" => undef, "outterparams" })
+        } elsif(eval { existsflag("outter", {"optoutter" => undef, "outterparams" })
             || existsflag("outterparams", {"optoutter" => undef, "outter" })}) {
             if($input eq 'typedef') {
                 eval {$matches[-1]{typedefkey} = $input};
@@ -214,7 +214,9 @@ sub register_decl{
     #$silent = 0;
     #$sielnt = 1;
     my $identifier = $_[0]{'ident'};
-    #CORE::print ("register $threadid ". $identifier . "\n");
+    CORE::print ("register $threadid ". $identifier . "\n");
+    use Data::Dumper;
+    Dumper($_[0]);
     return if not $identifier;
     #$last_object_identifier = $identifier;
     my $priorstate = exists ${$typedefidentifiersvector->[-1]}{$identifier} ? ${$typedefidentifiersvector->[-1]}{$identifier} : -1;

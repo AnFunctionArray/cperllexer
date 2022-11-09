@@ -16,9 +16,9 @@ use Thread::Queue;
 
 our @typedfsmap : shared;
 
-my $q = Thread::Queue->new();
+$q = Thread::Queue->new();
 
-our $qtypdfs = Thread::Queue->new();
+$qtypdfs = Thread::Queue->new();
 
 my @sharedarr;
 my @sharedarrcommon : shared;
@@ -675,7 +675,7 @@ if(not $isnested)
     my $execmainregshared = eval { #use re qw(Debug EXECUTE);
          "(?(DEFINE)$mainregexdefs)\\G(?&cprogram)" };
     sub execmain {
-        use re qw(Debug EXECUTE);
+        #use re qw(Debug EXECUTE);
         $regexstr = $_[0];
         $regex = qr{$_[0]}sxx;
         $subject = $_[1];
@@ -755,13 +755,12 @@ if(not $isnested)
             $silent = 0;
             #CORE::print("$index - working - " . Dumper(\%typdefshash). "\n");
             $silent = 1;
-            $nfilescopesrequested = scalar($item[2]);
-            $nextpos = scalar($item[3]);
-            $ntimes = scalar($item[4]);
+            $nextpos = scalar($item[2]);
             my $ntyps = scalar($item[0]);
             #lock $typedefidentifiersvector;
             $typedefidentifiersvector = [$ntyps ? %{$qtypdfs->peek($ntyps - 1)} : {}]; #[{}];
             CORE::print (Dumper(\@{$typedefidentifiersvector}));
+            #CORE::print ("$start\n");
 =begin
             for my $i (0..$ntyps) {
                 my $elem = $qtypdfs->peek($i);
@@ -794,7 +793,7 @@ if(not $isnested)
             #eval { updateavailidents($identstoidmap) };
 
 
-            pos($subject) = $start;
+            $currposlast = $start;
 
             #CORE::print "$subject\n";
 
@@ -844,45 +843,52 @@ if(not $isnested)
                 #$silent =0;
                 #CORE::print ("begin " . Dumper(\$typedefidentifiersvector));
                 #$silent =1;
+=begin
                 my $currposlast = $start;
-                for my $i (0..$ntimes) {
-                    
-tryagain:
-            pos($subject) = $currposlast;
-            while(scalar(@{$typedefidentifiersvector}) != 1) {
-                pop @{$typedefidentifiersvector};
+            my $i = 0;
+            while(1) {
+                CORE::print ("pos is to after " . $+[0] . "\n");
+            if ($i++ >= $ntimes) {
+                last unless ($currposlast < $lastpos);
+                CORE::print ("pos is last $lastpos\n to pos " . $currposlast . "\n");
+                goto tryagain_begin
             }
-                                @flags = ();
-            @matches = ();
-            @savedcallouts = ();
-            $recording = 0;
-                    if(!($subject =~ $regex)) {
-                        if ($tryingagainlocal) {
-                        lock ($tryingagain);
-                        if($tryingagain) {
-                            sleep (100000);
-                        }
-                        CORE::print ("4 failed near " . pos($subject) . " - start - $start\n");
-                        
-                        $tryingagainlocal = $tryingagain = 1;
-                        $silent = 0;
-            #CORE::print (Dump(\@{$typedefidentifiersvector}));
-            CORE::print (Dumper(\@{$typedefidentifiersvector}));
-            $silent = 1;
-                        CORE::print ("retrying...");
-                        
-                        $regex = eval { use re qw(Debug EXECUTE);  qr{$regexstr}sxx; };
-                        }
-                        $tryingagainlocal = 1;
-                        #CORE::print("currposlast" . $currposlast . "\n");
-                        goto tryagain
+=cut
+tryagain:
+                pos($subject) = $currposlast;
+                @flags = ();
+                @matches = ();
+                @savedcallouts = ();
+                $recording = 0;
+                if(!($subject =~ $regex) || $+[0] < $nextpos) {
+                    CORE::print ( "fail" . $+[0] . "__" .$nextpos . "\n" );
+                    if ($tryingagainlocal) {
+                    lock ($tryingagain);
+                    if($tryingagain) {
+                        sleep (100000);
                     }
-                    #CORE::print("$threadid -- $i ==========succes=============\n $&\n==========endsuccess=============\n");
-                    #pos($subject) = $+[0]
-                    $currposlast = $+[0]
+                    CORE::print ("4 failed near " . pos($subject) . " - start - $start\n");
+                    
+                    $tryingagainlocal = $tryingagain = 1;
+                    $silent = 0;
+                    #CORE::print (Dump(\@{$typedefidentifiersvector}));
+                    CORE::print (Dumper(\@{$typedefidentifiersvector}));
+                    $silent = 1;
+                    CORE::print ("retrying...");
+                    
+                    $regex = eval { use re qw(Debug EXECUTE);  qr{$regexstr}sxx; };
+                    }
+                    $tryingagainlocal = 1;
+                    #CORE::print("currposlast" . $currposlast . "\n");
+                    goto tryagain
                 }
+                #CORE::print("$threadid -- $i ==========succes=============\n $&\n==========endsuccess=============\n");
+                #pos($subject) = $+[0]
+                #CORE::print ("pos is to pos " . $+[0] . "\n");
+                $currposlast = $+[0];
+            #}
                 #$currposlast = $+[0]
-                CORE::print (Dumper(\@{$typedefidentifiersvector}));
+                #CORE::print (Dumper(\@{$typedefidentifiersvector}));
             }
 
             #CORE::print("==========succes=============\n $&\n==========endsuccess=============\n");
@@ -960,7 +966,45 @@ tryagain:
 
     my $initseqlight = $fasterlightregexfilecontent;
 
-    my $initseqlight = "(?(DEFINE)$fasterlightregexfilecontent)";
+    sub push_decl {
+        my $lastposend = $_[0];
+        my $possibleidentlocal = $_[1];
+        lock $identstoidmap;
+        if (not exists $identstoidmap->{$possibleidentlocal}) {
+            $identstoidmap->{$possibleidentlocal} = shared_clone([[$lastposend, 0]]) 
+        }
+        else {
+            lock (@{$identstoidmap->{$possibleidentlocal}});
+            push @{$identstoidmap->{$possibleidentlocal}}, shared_clone([$lastposend, 0]);
+        }
+    }
+
+    my $initseqlight = qr{(?(DEFINE)$fasterregexfilecontent$fasterlightregexfilecontent)}sxx;
+
+    for (1..$maxthreads) {
+        push @threads, threads->create(\&execmain, $execmainregshared, $subject, $initseq, $_);
+    }
+
+    push2 \@matches, {};
+    push2 \@flags, {"outter"=>undef,"opt"=>undef, "nonbitfl"=>undef};
+
+    while($subject =~ m{$initseqlight
+    ;\s*+(?&fasterdecls)|(?&parens)(\s*+(?&brackets)\s*+(?&fasterdecls))?+|(?&brackets)|(?&strunus)}sxxg) {
+    }
+
+    if(!($subject =~ m{\s*+$}sxxg)) {
+        exit -1
+    }
+
+    CORE::print ("joinning for real $lastqueuepoint\n");
+
+    $q->end();
+
+    $_->join for @threads;
+    exit
+
+    pop2 \@matches;
+    pop2 \@flags;
 
     $delegatetaggables = 1;
    # sub execmain {
@@ -980,7 +1024,7 @@ tryagain:
                 }
             }
         }
-=cut
+= cut
         #push2 \@savedcallouts, [];
         #++$recording;
         #push2 \@flags, {"skiptaggedbodies"};
@@ -1103,7 +1147,7 @@ end:
                         #push @typedefidentifiersvectorcopies, { %{$typedefidentifiersvector->[0]} };
                         ++$nfilescopesrequested;
                         #CORE::print (("lastpos is : " . $lastpos) . "\n");
-                        $lastqueuepoint = $lastposend;
+                        $lastqueuepoint = $lastpos;
                         $ndeclsorbodies = 0;
                     }
 
@@ -1226,11 +1270,12 @@ end:
                 }
 
             if ($shouldstorelast) {
-                pos($subject) = $lastpos;
+                #pos($subject) = $lastpos;
                 $lastposend = $lastpos;
                 ++$ndeclsorbodies;
             }
         }
+=cut
         #pop2 \@savedcallouts, [];
         #pop2 \@flags;
         #--$recording;

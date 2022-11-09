@@ -1,41 +1,25 @@
 
-my %tagkeys;
-@tagkeys{
-    "struct",
-    "union",
-    "enum",
-} = ();
-
-sub checkfastident {
-    $istaggable = exists $tagkeys{$+{identf}};
-   # CORE::print "$+{identf}\n";
-   $istypedef = 0;
-
-    if ($+{identf} ne "typedef") {
-        return qr{};
-    }
-
-    $istypedef = 1;
-    
-    return qr{(*F)};
-}
-
-=begin
-sub register_decl_universal {
-    my $res = $_[2];
-    my $out = $_[3];
-
-    if ($istypedef) {
-        register_decl();
-        $$res = 1;
-        $$out = $lastdeclpos;
-        CORE::print "$lastdeclpos";
+sub dispatch_file_scope_stm {
+    my $currpos = pos();
+    CORE::print ( $currpos . "__" .$lastpos . "\n" );
+    $q->enqueue([scalar($lastntypedfs), scalar($lastpos), scalar($currpos)]);
+    $lastpos = $currpos;
+    if ($typedefs_changed) {
+        $qtypdfs->enqueue(\{ %{$typedefidentifiersvector->[0]} });
+        $lastntypedfs = $qtypdfs->pending();#scalar(@{keys %{$typedefidentifiersvector->[0]}});
+        undef $typedefs_changed;
     }
 }
-=cut
 
-sub register_decl_fast {
-    CORE::print pos() . "\n";
+sub register_taggable {
+    push_decl($lastpos, $+{identtag})
+}
+
+sub register_normal_decl {
+    my $ident = $+{identnormal} // $+{identinside};
+    $matches[-1]{'ident'} = $ident;
+    register_decl($matches[-1]);
+    push_decl($lastpos, $ident)
 }
 
 1
