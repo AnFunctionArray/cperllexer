@@ -4,17 +4,21 @@
 
 
 
-(?<rndbrcksdecl>\s*\((?<inparen>(?<inparenin>\s*+(?&ptr)*+\s*+((?<identinside>(?&identifierpure))|(?&rndbrcksdecl))(\s*+(?&parens)\s*+)*+\s*)*+
-    ((?&inparenin)(?&inparen))?+)\)\s*)
-
-(?<typeorqualifortypdf>\s*+((?&identifierpure))(?(?{checktypeorqualifortypdf(1)})|(*F))\s*+)
+(?<typeorqualifortypdf>((?&identifierpure))(?(?{checktypeorqualifortypdf(1)})|(*F)))
 
 (?<qualifonly>((?&identifierpure))(?(?{checkqualifonly()})|(*F)))
 
-(?<fasterdecls>(?(?=(?{push2 \@matches, {}})(?<declbod>((?&typeorqualifortypdf)
-    |\s*+(struct|union|enum)\s*+(?<identtag>(?&identifierpure))?+\s*+((?&brackets)(?{register_taggable()}))?+)*+
-    (?<identoutter>\s*+(?&ptr)*+((?&rndbrcksdecl)|(?<identnormal>(?&identifierpure))(?{register_normal_decl()}))\s*+)
-    (\s*+(?&parens)\s*+)*+((,(?&identoutter)(\s*+(?&parens)\s*+)*+)*+)))|(*F)(?{pop2 \@matches})))
+(?<fasterdecls>(?(?=(?{push2 \@matches, {}})(?<declbod>((?(<tagend>)(*F))(\s*+(?&typeorqualifortypdf)\s*+
+    |\s*+\b(?<tagtype>struct|union|enum)\b\s*+(?<identtag>((?&identifierpure))(?{eval {$matches[-1]{strc}=$^N}}))?+\s*+((?&brackets)(?{register_taggable()}))?+\s*+((?<tagend>;)(?{dispatch_file_scope_stm(pos(),$minlen)}))?+))*+
+    (?(<tagend>)|(?&identoutter)
+    (\s*+(?&parens)\s*+)*+((,(?&identoutter)(\s*+(?&parens)\s*+)*+)*+
+    ((?![{])((?&parens)|(?&brackets)|(?&strunus)|[^\[\]\(\)\{\}'";])*+;(?{dispatch_file_scope_stm(pos(),$minlen)}))
+    |\s*+(?&brackets)\s*+(?{dispatch_file_scope_stm(pos(),$minlen)})))))
+    \g{declbod}
+    (?{pop2 \@matches})|(*F)(?{pop2 \@matches})))
 
-(?<rndbrcksdecl>\s*\((?<inparen>(?<inparenin>\s*+(?&ptr)*+\s*+((?<identinside>(?&identifierpure))(?{register_normal_decl()})|(?&rndbrcksdecl))(\s*+(?&parens)\s*+)*+\s*)*+
+(?<rndbrcksdecl>\s*\((?<inparen>(?<inparenin>\s*+(?&ptr)*+\s*+((?<identinside>(?&identifierpure))(?{register_normal_decl($+{identinside})})|(?&rndbrcksdecl))(\s*+(?&parens)\s*+)*+\s*)*+
     ((?&inparenin)(?&inparen))?+)\)\s*)
+
+(?<identoutter>\s*+(?&ptr)*+((?&rndbrcksdecl)|(?<identnormal>(?&identifierpure))(?{register_normal_decl($+{identnormal})}))\s*+)
+

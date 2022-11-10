@@ -16,6 +16,12 @@ my %typedefs;
 
 #sub inittypenameconstants {
 
+%types = ();
+%ququalifiers = ();
+%storageclass = ();
+%keywords = ();
+%tags = ();
+
 @types{
     "int",
     "char",
@@ -58,6 +64,12 @@ my %typedefs;
     "return",
     "switch",
     "while"
+} = ();
+
+@tags{
+    "struct",
+    "union",
+    "enum"
 } = ();
 
 %qualifsnstrgcls_all = (%qualifiers, %storageclass, "typedef");
@@ -156,8 +168,11 @@ sub checktypeorqualifortypdf  {
     my $force = $_[0];
 
     #inc2 "facet";
-   # CORE::print ("at g " . Dumper(\%typeandqualifs) . "\n");
+    #CORE::print ("dumping\n");
+   #Dumper2(\%tags);
     my $input = $^N;
+    #CORE::print ("iednt $input \n");
+    return 0 if (exists $tags{$input});
     if (exists $typeandqualifs{$input}) {
         print3 "$^N -> qualifortype\n";
         if(exists $types{$input}) {
