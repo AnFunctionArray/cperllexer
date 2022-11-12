@@ -56,6 +56,7 @@ $genml = $ENV{'GENMLJSON'};
 
 @flags = ();
 
+$maxtimoeut = $ENV{'TIMEOUTWAIT'} // 2;
 $minlen = $ENV{'MINQUEUECOUNT'};
 $debug = $ENV{'DEBUG'};
 $silent = $ENV{'SILENT'};
@@ -635,7 +636,7 @@ sub waitforid {
             lock @{$identstoidmap->{$ident}};
 
 
-                CORE::print("$currpos waitin : " . Dumper2(\@{$identstoidmap->{$ident}}));
+                #CORE::print("$currpos waitin : $ident, " . Dumper2(\@{$identstoidmap->{$ident}}));
 
                 foreach my $ind (@{$identstoidmap->{$ident}}) {
                     lock @{$ind};
@@ -650,9 +651,12 @@ sub waitforid {
 
             #CORE::print ("waitin on " . $ident . "\n");
 
-            cond_wait(@{$identstoidmap->{$ident}});
+            if(!cond_timedwait(@{$identstoidmap->{$ident}}, time() + $maxtimoeut)) {
 
-            CORE::print ("end wait on " . $ident . "\n");
+                CORE::print("$currpos waitin timed out on : $ident, \n");
+                Dumper2(\@{$identstoidmap->{$ident}});
+                sleep(10000)
+            }
         }
     }
 
@@ -761,7 +765,7 @@ my $tryingagain: shared = 0;
             $silent = 1;
             $nextpos = scalar($item[2]);
             my $ntyps = scalar($item[0]);
-            my $ntomatch = scalar($item[3]);
+            #my $ntomatch = scalar($item[3]);
             #lock $typedefidentifiersvector;
             $typedefidentifiersvector = [$ntyps ? {%{$qtypdfs->peek($ntyps - 1)}} : {}]; #[{}];
             #CORE::print (Dumper(\@{$typedefidentifiersvector}));
@@ -863,18 +867,12 @@ my $tryingagain: shared = 0;
             my $lastvalid = $start;
             my $tryingagainlocal;
             my $lasrtypedefobj = {%{$typedefidentifiersvector->[0]}};
-            my $i = 1;
+            my $i = 0;
             my $entertryagain = 0;
             while(1){
-                if ($i++ >= $ntomatch) {
-                    if($+[0] < $nextpos) {
-                        CORE::print "less than nextpos\n";
-                        CORE::print ( "fail" . pos($subject) . "__" .$nextpos . "\n" );
-                        $entertryagain  = 1;
-                        goto tryagain
-                    }
-                    last
-                }
+                #if ($i++ >= $ntomatch) {
+                last if($lastvalid >= $nextpos);
+                #}
 tryagain:    #[{}];
                 #pos($subject) = $currposlast;
                 @flags = ();
@@ -882,8 +880,9 @@ tryagain:    #[{}];
                 @savedcallouts = ();
                 $recording = 0;
                 #CORE::print ("matchin...");
-                if($entertryagain || !($subject =~ m{$regex}gxxs)) {
-                    #CORE::print ( "fail" . $+[0] . "__" .$nextpos . "\n" );
+                if(!($subject =~ m{$regex}gxxs) || $+[0] == $lastvalid) {
+                    CORE::print ( "fail" . $+[0] . "__" .$nextpos . "\n" );
+                    eval{reset_state()};
                     pos($subject) = $lastvalid;
                     $typedefidentifiersvector = [{%{$lasrtypedefobj}}];
                     if ($tryingagainlocal) {
@@ -912,7 +911,7 @@ tryagain:    #[{}];
                     $tryingagainlocal = 0;
                     $lasrtypedefobj = {%{$typedefidentifiersvector->[0]}};
                 #}
-                #CORE::print("$threadid -- $i ==========succes=============\n $&\n==========endsuccess=============\n");
+                CORE::print("$threadid -- $i ==========succes=============\n $&\n==========endsuccess=============\n");
                 #pos($subject) = $+[0]
                 #CORE::print ("pos is to pos " . $+[0] . "\n");
                 #$currposlast = $+[0];
@@ -1061,7 +1060,7 @@ tryagain_main:
     #}
 
     if ($nqueues) {
-        $q->enqueue(([scalar($lastntypedfs), scalar($lastpos), scalar(length $subject), scalar($nqueues) + 1]));
+        $q->enqueue(([scalar($lastntypedfs), scalar($lastpos), scalar(length $subject) - 1]));
     }
 
     CORE::print ("joinning for real $lastqueuepoint\n");

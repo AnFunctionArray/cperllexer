@@ -4,8 +4,8 @@ sub dispatch_file_scope_stm {
     $lastcurpos = $currpos;
     #CORE::print ( $currpos . "__" .$lastpos . "\n" );
     if ($nqueues++ == $minlen) {
-        $q->enqueue([scalar($lastntypedfs), scalar($lastpos), scalar($currpos), scalar($nqueues) + 1]);
-        $lastpos = $currpos;
+        $q->enqueue([scalar($lastntypedfs), scalar($lastpos_dispatch), scalar($currpos) - 1]);
+        $lastpos_dispatch = $currpos;
         if ($typedefs_changed) {
         # eval {#use Data::Dumper;
             #CORE::print ("sending\n");
@@ -24,6 +24,7 @@ sub register_taggable {
 }
 
 sub register_normal_decl {
+    #my $poslast = pos();
     my $ident = $_[0];
     $matches[-1]{'ident'} = $ident;
     register_decl($matches[-1]);
