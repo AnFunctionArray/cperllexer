@@ -4,7 +4,7 @@
 
 
 
-(?<typeorqualifortypdf>((?&identifierpure))(?(?{checktypeorqualifortypdf(0, 1)})|(*F)))
+(?<typeorqualifortypdf>((?&identifierpure))(?(?{checktypeorqualifortypdf(1)})|(*F)))
 
 (?<qualifonly>((?&identifierpure))(?(?{checkqualifonly()})|(*F)))
 

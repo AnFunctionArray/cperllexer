@@ -107,7 +107,7 @@ sub checktypedef2 {
    # $silent = 0;
    #CORE::print "dimp\n";
    #use Data::Dumper;
-    #CORE::print (Dumper(\@{$typedefidentifiersvector}));
+    #CORE::print (Dumper2(\@{$typedefidentifiersvector}));
     #CORE::print (Dumper(\@{$typedefidentifiersvector}));
     #$silent = 1;
     foreach my $typedefidentifier (reverse @{$typedefidentifiersvector}) {
@@ -165,8 +165,7 @@ sub checkidentpermissive  {
 sub checktypeorqualifortypdf  {
     #print3 "checking". $^N . "\n";
 
-    my $force = scalar $_[0];
-    my $callnot = scalar $_[1];
+    my $callnot = scalar $_[0];
 
     #inc2 "facet";
     #CORE::print ("dumping\n");
@@ -196,8 +195,7 @@ sub checktypeorqualifortypdf  {
         #dec2 "facet"
     }
     elsif (not eval {exists $matches[-1]{typedefnmmatched} or exists $matches[-1]{typefound} or 
-            exists $matches[-1]{qualifnonstoragefnd} or exists $matches[-1]{strc}} and checktypedef2($input)
-            or $force) {
+            exists $matches[-1]{qualifnonstoragefnd} or exists $matches[-1]{strc}} and checktypedef2($input)) {
         #CORE::print("there typ" . Dumper(\@matches));
         eval {$matches[-1]{typedefnmmatched} = $input};
         return 1;
@@ -224,10 +222,17 @@ sub endfulldecl {
     }
 }
 
-sub register_decl{
-    return if($nesteddecl);
+sub identifier_decl {
+    my @fwdargs = @_;
+    my $flags = $_[1];
+    return if(existsflag "bitfl", {"nonbitfl"}, $flags);
 
-    return if(existsflag "bitfl", {"nonbitfl"});
+    return unless(existsflag "outter", {"optoutter" => undef, "outterparams"}, $flags);
+
+    return register_decl(@fwdargs);
+}
+
+sub register_decl{
     #$silent = 0;
     #$sielnt = 1;
     my $identifier = $_[0]{'ident'};
@@ -236,9 +241,9 @@ sub register_decl{
     #Dumper($_[0]);
     return if not $identifier;
     #$last_object_identifier = $identifier;
-    my $priorstate = exists ${$typedefidentifiersvector->[-1]}{$identifier} ? ${$typedefidentifiersvector->[-1]}{$identifier} : -1;
+    my $priorstate = exists $typedefidentifiersvector->[-1]->{$identifier} ? $typedefidentifiersvector->[-1]->{$identifier} : -1;
     my $currentstate = exists $_[0]{'typedefkey'};
-    ${$typedefidentifiersvector->[-1]}{$identifier} = $currentstate ? 1 : 0;
+    $typedefidentifiersvector->[-1]->{$identifier} = $currentstate ? 1 : 0;
 
     #$qtypdfs->enqueue([scalar($currentstate ? 1 : 0),$identifier]) if($threadid eq 0);
 
@@ -250,6 +255,12 @@ sub register_decl{
         #$regenerate_needed = 0;
         $typedefs_changed = 1;
     }
+
+    #CORE::print ("Dumping typs - $threadid\n");
+   # $silent = 0;
+   #CORE::print "dimp\n";
+   #use Data::Dumper;
+    #CORE::print (Dumper2(\@{$typedefidentifiersvector}));
 }
 
 sub beginscope {

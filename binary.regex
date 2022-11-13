@@ -21,8 +21,8 @@
                     |(?<shiftopraw><<|>>
                     |(?<addopraw>[\+\-]
                     |(?<mulopraw>[\*\/\%]))))))))))
-                    )))))))))))\g{lastbin}
-                    |(?{ --$recording; push2 \@savedcallouts, []})(*F))
+                    )))))))))))\g{lastbin}(?{ --$recording; pop2 \@savedcallouts, []})
+                    |(?{ --$recording; pop2 \@savedcallouts, []})(*F))
                         \g{castinbin}
             (?&binopplusrest)*+(?{call 'binary'})))
 

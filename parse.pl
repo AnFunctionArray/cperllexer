@@ -68,14 +68,14 @@ $maxthreads = $ENV{'MAXTHREADS'};
 
 #my sub Dumper {"\n"}
 #use Data::Dumper;
-my sub print {CORE::print(@_) if( $printprops[0] eq 1)}
-my sub print2 {CORE::print(@_) if($printprops[1] eq 1)}
-sub print3 {CORE::print(@_) if( $printprops[2] eq 1)}
+my sub print {CORE::print(@_) if( $printprops[0] eq '1')}
+my sub print2 {CORE::print(@_) if($printprops[1] eq '1')}
+sub print3 {CORE::print(@_) if( $printprops[2] eq '1')}
 sub Dumper2  {CORE::print(Data::Dumper::Dumper(@_)) }
-my sub Dumper  {Data::Dumper::Dumper(@_) if( $printprops[3] eq 1 )}
-my sub strftime  {POSIX::strftime(@_) if( $printprops[4] eq 1 )}
+my sub Dumper  {Data::Dumper::Dumper(@_) if( $printprops[3] eq '1' )}
+my sub strftime  {POSIX::strftime(@_) if( $printprops[4] eq '1' )}
 
-Dumper2(\@printprops);
+#Dumper2(\@printprops);
 
 sub push2 {
     my @args = @_;
@@ -687,7 +687,7 @@ my $tryingagain: shared = 0;
         #use re qw(Debug EXECUTE);
         #CORE::print("here1\n");
         $regexstr = $_[0];
-        $regex = qr{(?(DEFINE)$regexstr)\G(?&cprogram)}sxx;
+        $regex = qr{(?(DEFINE)$regexstr)\G\s*+(?&cprogram)}sxx;
         $subject = $_[1];
         $fasterregex = $_[2];
         $threadid = $_[3];
@@ -744,6 +744,7 @@ my $tryingagain: shared = 0;
 
                 #cond_signal ($q)
             }
+            #Dumper2(\@item);
             #CORE::print("here\n");
 
              #$silent = 0;
@@ -797,7 +798,7 @@ my $tryingagain: shared = 0;
             @flags = ();
             @matches = ();
             @savedcallouts = ();
-            $recording = 0;
+            undef $recording;
 
             $unmask = 1;
             $hasdelegates = 0;
@@ -813,47 +814,7 @@ my $tryingagain: shared = 0;
 
             #exit; 
 
-            if(0) {
-                use Time::HiRes qw( time );
-                push2 \@matches, {};
-                push2 \@savedcallouts, [];
-                push2 \@flags, {"outter"=>undef,"opt"=>undef, "nonbitfl"=>undef};
-                ++$recording;
-                #CORE::print ("matching struct " . $unmask . "s\n");
-                #use re qw(Debug EXECUTE);
-                my $begin_time = time();
-                if (!($subject =~ m{(?(DEFINE)$regex)\G(?&taggableonly)}sxx)) {
-                    CORE::print ("3 failed near " . pos($subject) . "\n");
-                    exit
-                }
-                my $end_time = time();
-                pop2 \@savedcallouts;
-                --$recording;
-                #CORE::print("outcawst $&\n");
-                #CORE::printf("%.2f\n", $end_time - $begin_time);
-                #all('check_stray_struc') if (not eval {exists $matches[-1]{enum}}); 
-                eval {broadcast(scalar(1), scalar($nfilescopesrequested))};
-
-                {
-                    lock $identsdone;
-                    $identsdone->{scalar($nfilescopesrequested)} = undef
-                }
-
-                {
-                    lock $identwaiters;
-
-                    my @waiters = @{$identwaiters->{scalar($nfilescopesrequested)}};
-
-                    foreach (@waiters) {
-                        lock $_;
-                        cond_signal $_
-                    }
-                }
-                
-                pop2 \@matches;
-                pop2 \@flags;
-            }
-            else {
+            {
                 #$silent =0;
                 #CORE::print ("begin " . Dumper(\$typedefidentifiersvector));
                 #$silent =1;
@@ -885,13 +846,14 @@ tryagain:    #[{}];
                 #@savedcallouts = ();
                 #$recording = 0;
                 #CORE::print ("matchin...");
+                #eval {$subject =~ m{$regex}gxxs} or print $@ . "\n";
                 if(!($subject =~ m{$regex}gxxs) || pos($subject) == $lastvalid) {
                     #CORE::print ( "fail" . $+[0] . "__" .$nextpos . "\n" );
                     eval{reset_state()};
                     @flags = ();
             @matches = ();
             @savedcallouts = ();
-            $recording = 0;
+            undef $recording;
                     pos($subject) = $lastvalid;
                     $typedefidentifiersvector = [{%{$lasrtypedefobj}}];
                     if ($tryingagainlocal) {
@@ -908,7 +870,7 @@ tryagain:    #[{}];
                     #$silent = 1;
                     CORE::print ("retrying...");
                     
-                    $regex = eval { use re qw(Debug EXECUTE);  qr{(?(DEFINE)$regexstr)\G(?&cprogram)}sxx; };
+                    $regex = eval { use re qw(Debug EXECUTE);  qr{(?(DEFINE)$regexstr)\G\s*+(?&cprogram)}sxx; };
                     }
                     $tryingagainlocal = 1;
                     $entertryagain = 0;
@@ -918,9 +880,9 @@ tryagain:    #[{}];
                 #else {
                     $lastvalid = pos($subject);
                     $tryingagainlocal = 0;
-                    $lasrtypedefobj = {%{$typedefidentifiersvector->[0]}};
+                    $lasrtypedefobj = {map {$_ => $typedefidentifiersvector->[0]->{$_}} keys %{$typedefidentifiersvector->[0]}};
                 #}
-                CORE::print("$threadid -- $i ==========succes=============\n $&\n==========endsuccess=============\n");
+                #CORE::print("$threadid -- $i ==========succes=============\n $&\n==========endsuccess=============\n");
                 #pos($subject) = $+[0]
                 #CORE::print ("pos is to pos " . $+[0] . "\n");
                 #$currposlast = $+[0];
@@ -1045,7 +1007,7 @@ tryagain_main:
             @flags = ();
             @matches = ();
             @savedcallouts = ();
-            $recording = 0;
+            undef $recording;
             push2 \@matches, {};
             push2 \@flags, {"outter"=>undef,"opt"=>undef, "nonbitfl"=>undef};
             $typedefidentifiersvector = [{%{$lasrtypedefobj}}];
@@ -1069,15 +1031,15 @@ tryagain_main:
     #}
 
     if ($nqueues) {
-        $q->enqueue(([scalar($lastntypedfs), scalar($lastpos_dispatch), scalar(length $subject) - 1]));
+        $q->enqueue([scalar($lastntypedfs), scalar($lastpos_dispatch), scalar(length $subject) - 1]);
     }
 
-    CORE::print ("joinning for real $lastqueuepoint\n");
+    CORE::print ("joinning $nqueues, $lastpos_dispatch for real $lastqueuepoint\n");
 
     $q->end();
 
     $_->join for @threads;
-    exit
+    exit;
 
     pop2 \@matches;
     pop2 \@flags;
@@ -1557,7 +1519,7 @@ sub call {
             push @{$savedcallouts[-1]}, {
             $funcnm => {
                 matches => {%$captures},
-                flags => map {@$_} eval { @flags},
+                flags => eval { map {@$_} @flags},
                 pos => $currpos
             }};
             print "success\n";

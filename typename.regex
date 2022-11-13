@@ -40,7 +40,7 @@
 \s*+)
 
 (?<identifierminedecl>\s*+(?<ident>(?&identifierraw_qualified))
-	(?{call 'register_decl'; call 'identifier_decl'})\s*+)
+	(?{call 'identifier_decl'})\s*+)
 
 (?<Tabstrrestalt>
 	(?(?{existsflag "outterparams", {"outter" => undef, "optoutter"}})
