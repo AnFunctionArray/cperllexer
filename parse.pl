@@ -65,12 +65,12 @@ $maxthreads = $ENV{'MAXTHREADS'};
 
 #my sub Dumper {"\n"}
 #use Data::Dumper;
-my sub print {CORE::print(@_) if( 0 )}
-my sub print2 {CORE::print(@_) if(0)}
-sub print3 {CORE::print(@_) if( 0)}
+my sub print {CORE::print(@_) if( 1 )}
+my sub print2 {CORE::print(@_) if(1)}
+sub print3 {CORE::print(@_) if( 1)}
 sub Dumper2  {use Data::Dumper; CORE::print(Dumper(@_)) }
-my sub Dumper  {use Data::Dumper; Dumper(@_) if( 0 )}
-my sub strftime  {use POSIX; strftime(@_) if( 0 )}
+my sub Dumper  {use Data::Dumper; Dumper(@_) if( 1 )}
+my sub strftime  {use POSIX; strftime(@_) if( 1 )}
 
 sub push2 {
     my @args = @_;
@@ -875,14 +875,18 @@ my $tryingagain: shared = 0;
                 #}
 tryagain:    #[{}];
                 #pos($subject) = $currposlast;
-                @flags = ();
-                @matches = ();
-                @savedcallouts = ();
-                $recording = 0;
+                #@flags = ();
+                #@matches = ();
+                #@savedcallouts = ();
+                #$recording = 0;
                 #CORE::print ("matchin...");
-                if(!($subject =~ m{$regex}gxxs) || $+[0] == $lastvalid) {
-                    CORE::print ( "fail" . $+[0] . "__" .$nextpos . "\n" );
+                if(!($subject =~ m{$regex}gxxs) || pos($subject) == $lastvalid) {
+                    #CORE::print ( "fail" . $+[0] . "__" .$nextpos . "\n" );
                     eval{reset_state()};
+                    @flags = ();
+            @matches = ();
+            @savedcallouts = ();
+            $recording = 0;
                     pos($subject) = $lastvalid;
                     $typedefidentifiersvector = [{%{$lasrtypedefobj}}];
                     if ($tryingagainlocal) {
@@ -907,7 +911,7 @@ tryagain:    #[{}];
                     goto tryagain
                 }
                 #else {
-                    $lastvalid = $+[0];
+                    $lastvalid = pos($subject);
                     $tryingagainlocal = 0;
                     $lasrtypedefobj = {%{$typedefidentifiersvector->[0]}};
                 #}
@@ -1048,7 +1052,7 @@ tryagain_main:
             }
             elsif($tryagain++ == 1) {
                 use re qw(Debug EXECUTE); 
-                $compreg = qr{(?(DEFINE)$fasterregexfilecontent$fasterlightregexfilecontent)\G\s*+(?&fasterdecls)}sxx;
+                $compreg = qr{(?(DEFINE)$finitseqlight)\G\s*+(?&fasterdecls)}sxx;
                 #CORE::print("trying again with debug\n" . $initseqlight );
                 pos($subject) = $lastposcurrlast;
                 goto tryagain_main
@@ -1060,7 +1064,7 @@ tryagain_main:
     #}
 
     if ($nqueues) {
-        $q->enqueue(([scalar($lastntypedfs), scalar($lastpos), scalar(length $subject) - 1]));
+        $q->enqueue(([scalar($lastntypedfs), scalar($lastpos_dispatch), scalar(length $subject) - 1]));
     }
 
     CORE::print ("joinning for real $lastqueuepoint\n");
@@ -1548,7 +1552,7 @@ sub call {
             push @{$savedcallouts[-1]}, {
             $funcnm => {
                 matches => {%$captures},
-                flags => [eval { @flags}],
+                flags => map {@$_} eval { @flags},
                 pos => $currpos
             }};
             print "success\n";

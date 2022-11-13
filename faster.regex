@@ -4,7 +4,7 @@
 
 
 
-(?<typeorqualifortypdf>((?&identifierpure))(?(?{checktypeorqualifortypdf(1)})|(*F)))
+(?<typeorqualifortypdf>((?&identifierpure))(?(?{checktypeorqualifortypdf(0, 1)})|(*F)))
 
 (?<qualifonly>((?&identifierpure))(?(?{checkqualifonly()})|(*F)))
 
@@ -13,8 +13,8 @@
     (?(<tagend>)|(?&identoutter)
     (\s*+(?&parens)\s*+)*+((,(?&identoutter)(\s*+(?&parens)\s*+)*+)*+
     ((?![{])((?&parens)|(?&brackets)|(?&strunus)|[^\[\]\(\)\{\}'";])*+;(?{dispatch_file_scope_stm(pos(),$minlen)}))
-    |\s*+(?&brackets)\s*+(?{dispatch_file_scope_stm(pos(),$minlen)})))))
-    \g{declbod}
+    |\s*+(?&brackets)(?{dispatch_file_scope_stm(pos(),$minlen)})))))
+    \g{declbod}(?<=[};])
     (?{pop2 \@matches})|(*F)(?{pop2 \@matches})))
 
 (?<rndbrcksdecl>\s*\((?<inparen>(?<inparenin>\s*+(?&ptr)*+\s*+((?<identinside>(?&identifierpure))(?{register_normal_decl($+{identinside})})|(?&rndbrcksdecl))(\s*+(?&parens)\s*+)*+\s*)*+

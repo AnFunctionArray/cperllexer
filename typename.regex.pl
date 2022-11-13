@@ -166,6 +166,7 @@ sub checktypeorqualifortypdf  {
     #print3 "checking". $^N . "\n";
 
     my $force = $_[0];
+    my $callnot = $_[1];
 
     #inc2 "facet";
     #CORE::print ("dumping\n");
@@ -177,7 +178,7 @@ sub checktypeorqualifortypdf  {
         print3 "$^N -> qualifortype\n";
         if(exists $types{$input}) {
             eval {$matches[-1]{typefound} = $input};
-            call "add_type" if (not $force);
+            call "add_type" if (not $callnot);
             return 1;
         } elsif(eval { existsflag("outter", {"optoutter" => undef, "outterparams" })
             || existsflag("outterparams", {"optoutter" => undef, "outter" })}) {
@@ -188,14 +189,15 @@ sub checktypeorqualifortypdf  {
                 if(not exists $storageclass{$input}) {
                     eval {$matches[-1]{qualifnonstoragefnd} = $input}
                 }
-                call "add_qualif" if (not $force);
+                call "add_qualif" if (not $callnot);
             }
             return 1;
         }
         #dec2 "facet"
     }
     elsif (not eval {exists $matches[-1]{typedefnmmatched} or exists $matches[-1]{typefound} or 
-            exists $matches[-1]{qualifnonstoragefnd} or exists $matches[-1]{strc}} and checktypedef2($input)) {
+            exists $matches[-1]{qualifnonstoragefnd} or exists $matches[-1]{strc}} and checktypedef2($input)
+            or $force) {
         #CORE::print("there typ" . Dumper(\@matches));
         eval {$matches[-1]{typedefnmmatched} = $input};
         return 1;
