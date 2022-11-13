@@ -51,6 +51,8 @@ use List::Util qw(max);
 use experimental 'switch';
 
 use File::Basename;
+use Data::Dumper;
+use POSIX;
 
 $genml = $ENV{'GENMLJSON'};
 
@@ -62,15 +64,18 @@ $debug = $ENV{'DEBUG'};
 $silent = $ENV{'SILENT'};
 $lineonly = $ENV{'LINEONLY'};
 $maxthreads = $ENV{'MAXTHREADS'};
+@printprops = split //, $ENV{'PRINTPROPS'};
 
 #my sub Dumper {"\n"}
 #use Data::Dumper;
-my sub print {CORE::print(@_) if( 1 )}
-my sub print2 {CORE::print(@_) if(1)}
-sub print3 {CORE::print(@_) if( 1)}
-sub Dumper2  {use Data::Dumper; CORE::print(Dumper(@_)) }
-my sub Dumper  {use Data::Dumper; Dumper(@_) if( 1 )}
-my sub strftime  {use POSIX; strftime(@_) if( 1 )}
+my sub print {CORE::print(@_) if( $printprops[0] eq 1)}
+my sub print2 {CORE::print(@_) if($printprops[1] eq 1)}
+sub print3 {CORE::print(@_) if( $printprops[2] eq 1)}
+sub Dumper2  {CORE::print(Data::Dumper::Dumper(@_)) }
+my sub Dumper  {Data::Dumper::Dumper(@_) if( $printprops[3] eq 1 )}
+my sub strftime  {POSIX::strftime(@_) if( $printprops[4] eq 1 )}
+
+Dumper2(\@printprops);
 
 sub push2 {
     my @args = @_;
@@ -353,11 +358,11 @@ my $entryregex;
 
 my $matchinperl = 0;
 
-chdir "regexes";
+#chdir "regexes";
 
 $mainregexfilecontent =~/$utilregexfilecontent/;
 
-chdir "..";
+#chdir "..";
 
 #(?{parseregexfile($+{filename})})
 #(?{entryregexmain($+{entrygroup}, $+{prefix})})
@@ -1033,7 +1038,7 @@ tryagain_main:
         while($subject =~ m{$compreg}gxxs) {
             #CORE::print($lastposcurrlast . "\n");
             $lasrtypedefobj = {%{$typedefidentifiersvector->[0]}};
-            $lastposcurrlast = $+[0];
+            $lastposcurrlast = pos($subject);
         }
 
         if(!($subject =~ m{$}sxxg)) {

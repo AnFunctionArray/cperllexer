@@ -27,9 +27,7 @@ sub register_normal_decl {
     my $poslast = pos();
     my $ident = $_[0];
     $matches[-1]{'ident'} = $ident;
-    CORE::print ("registering " . $ident . " " . $matches[-1]{typedefkey} . "\n");
+    #CORE::print ("registering " . $ident . " " . $matches[-1]{typedefkey} . "\n");
     register_decl($matches[-1]);
     push_decl($poslast, $ident)
 }
-
-1

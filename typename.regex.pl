@@ -165,8 +165,8 @@ sub checkidentpermissive  {
 sub checktypeorqualifortypdf  {
     #print3 "checking". $^N . "\n";
 
-    my $force = $_[0];
-    my $callnot = $_[1];
+    my $force = scalar $_[0];
+    my $callnot = scalar $_[1];
 
     #inc2 "facet";
     #CORE::print ("dumping\n");
@@ -268,5 +268,3 @@ sub declident {
         return checktypeorqualif($^N)
     }
 }
-
-1

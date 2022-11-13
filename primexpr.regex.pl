@@ -33,5 +33,3 @@ sub end_binary {
     print $$res = not existsflag "ternaryexpr", {"normalexpr"}, $flagsarg;
 }
 =cut
-
-1
