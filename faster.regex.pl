@@ -4,7 +4,7 @@ sub dispatch_file_scope_stm {
     $lastcurpos = $currpos;
     #CORE::print ( $currpos . "__" .$lastpos . "\n" );
     if ($nqueues++ == $minlen) {
-        $q->enqueue([scalar($lastntypedfs), scalar($lastpos_dispatch), scalar($currpos) - 1]);
+        $q->enqueue([scalar($lastntypedfs), scalar($lastpos_dispatch), scalar($currpos)]);
         $lastpos_dispatch = $currpos;
         if ($typedefs_changed) {
         # eval {#use Data::Dumper;

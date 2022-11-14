@@ -995,7 +995,7 @@ tryagain:    #[{}];
     my $tryagain = 2;
     my $lasrtypedefobj = {%{$typedefidentifiersvector->[0]}};
     my $lastposcurrlast = 0;
-    my $compreg = qr{$initseqlight\G\s*+(?&fasterdecls)}sxx;
+    my $compreg = qr{$initseqlight\G\s*+(?<globaloutter>(?<globalinner>(?&fasterdecls))*+((?&globalinner)(?&globaloutter))?+)}sxx;
 
     #while(1) {
         {
@@ -1022,7 +1022,7 @@ tryagain_main:
             }
             elsif($tryagain++ == 1) {
                 use re qw(Debug EXECUTE); 
-                $compreg = qr{(?(DEFINE)$finitseqlight)\G\s*+(?&fasterdecls)}sxx;
+                $compreg = qr{(?(DEFINE)$finitseqlight)\G\s*+(?<globaloutter>(?<globalinner>(?&fasterdecls))*+((?&globalinner)(?&globaloutter))?+)}sxx;
                 #CORE::print("trying again with debug\n" . $initseqlight );
                 pos($subject) = $lastposcurrlast;
                 goto tryagain_main
