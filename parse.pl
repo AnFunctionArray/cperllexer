@@ -58,7 +58,7 @@ $genml = $ENV{'GENMLJSON'};
 
 @flags = ();
 
-$maxtimoeut = $ENV{'TIMEOUTWAIT'} // 2;
+$maxtimoeut = $ENV{'TIMEOUTWAIT'} // -1;
 $minlen = $ENV{'MINQUEUECOUNT'};
 $debug = $ENV{'DEBUG'};
 $silent = $ENV{'SILENT'};
@@ -656,11 +656,14 @@ sub waitforid {
 
             #CORE::print ("waitin on " . $ident . "\n");
 
-            if(!cond_timedwait(@{$identstoidmap->{$ident}}, time() + $maxtimoeut)) {
+            if($maxtimoeut != -1 && !cond_timedwait(@{$identstoidmap->{$ident}}, time() + $maxtimoeut)) {
 
                 CORE::print("$currpos waitin timed out on : $ident, \n");
                 Dumper2(\@{$identstoidmap->{$ident}});
                 sleep(10000)
+            }
+            else {
+                cond_wait(@{$identstoidmap->{$ident}})
             }
         }
     }
