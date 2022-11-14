@@ -1,30 +1,27 @@
-
-(?<binopplusrest>
-    (?=(?<lastbin>(?&binoplast))(?<castinbin>(?&castexpr)))
-    (?<binop>
-        (?(?=(?{push2 \@savedcallouts, []; ++$recording})(?<binoplast>(?(<addopraw>)(?&mulopraw)
-            |(?(<shiftopraw>)(?&addopraw)
-            |(?(<relopraw>)(?&shiftopraw)
-            |(?(<eqopraw>)(?&relopraw)
-            |(?(<andopraw>)(?&eqopraw)
-            |(?(<xoropraw>)(?&andopraw)
-            |(?(<oropraw>)(?&xoropraw)
-            |(?(<andlogicopraw>)(?&oropraw)
-            |(?(<orlogicopraw>)(?&andlogicopraw)
-            |(?<orlogicopraw>\|\|(?{call 'begin_branch'; $flags[-1]{logicop}=undef})
-                    |(?<andlogicopraw>&&(?{call 'begin_branch'; $flags[-1]{logicop}=undef})
-                    |(?<oropraw>(?!\|\|)\|
-                    |(?<xoropraw>\^
-                    |(?<andopraw>(?!&&)&
-                    |(?<eqopraw>==|!=
-                    |(?<relopraw>(?!<<)<|(?!>>)>|<=|>=
-                    |(?<shiftopraw><<|>>
-                    |(?<addopraw>[\+\-]
-                    |(?<mulopraw>[\*\/\%]))))))))))
-                    )))))))))))\g{lastbin}(?{ --$recording; pop2 \@savedcallouts, []})
-                    |(?{ --$recording; pop2 \@savedcallouts, []})(*F))
-                        \g{castinbin}
-            (?&binopplusrest)*+(?{call 'binary'})))
+(?<binopplusrest>(?<binop>(?<binoplast>
+ (?(<addopraw>)(?&mulopraw)
+     |(?(<shiftopraw>)(?&addopraw)
+     |(?(<relopraw>)(?&shiftopraw)
+     |(?(<eqopraw>)(?&relopraw)
+     |(?(<andopraw>)(?&eqopraw)
+     |(?(<xoropraw>)(?&andopraw)
+     |(?(<oropraw>)(?&xoropraw)
+     |(?(<andlogicopraw>)(?&oropraw)
+     |(?(<orlogicopraw>)(?&andlogicopraw)
+     |(?<orlogicopraw>\|\|(?{call 'begin_branch'; $flags[-1]{logicop}=undef})
+             |(?<andlogicopraw>&&(?{call 'begin_branch'; $flags[-1]{logicop}=undef})
+             |(?<oropraw>(?!\|\|)\|
+             |(?<xoropraw>\^
+             |(?<andopraw>(?!&&)&
+             |(?<eqopraw>==|!=
+             |(?<relopraw>(?!<<)<|(?!>>)>|<=|>=
+             |(?<shiftopraw><<|>>
+             |(?<addopraw>[\+\-]
+             |(?<mulopraw>[\*\/\%]))))))))))
+             ))))))))))
+                 (??{use re 'eval'; use if $debug, re => qw(Debug EXECUTE); 
+                  $binopplusrestreg //= qr{(?(DEFINE)$mainregexdefs)(?&castexpr)}sxx})
+     (?&binopplusrest)*+(?{call 'binary'})))
 
 
 (?<orlogiorsomething>(?&binopplusrest)++)
