@@ -576,7 +576,7 @@ sub findnearest {
 
 sub getidtostor {
     my $ident = $_[0];
-    my $currpos = pos();
+    my $currpos = $currexecinitialpos;
     my $lastid = -1;
 
     {
@@ -619,7 +619,7 @@ sub broadcastid {
 }
 
 sub waitforid {
-     my $currpos = pos();
+     my $currpos = $currexecinitialpos;
     my $ident = $_[0];
     my @identscur;
     my @idtosignal;
@@ -646,7 +646,7 @@ sub waitforid {
                 foreach my $ind (@{$identstoidmap->{$ident}}) {
                     lock @{$ind};
                     #CORE::print ("check map $ind \n");
-                    last if(not ($ind->[0] <= $currpos));
+                    last if(not ($ind->[0] < $currpos));
                     $areallset = $areallset && $ind->[1];
                     last if (not $areallset);
                     ++$nset;
@@ -769,6 +769,7 @@ my $tryingagain: shared = 0;
             $typedefidentifiersvector = [{%typdefshash}];
 =cut
             my $start = $item[1];
+            $currexecinitialpos = $start;
             $silent = 0;
             #CORE::print("$index - working - " . Dumper(\%typdefshash). "\n");
             $silent = 1;
@@ -1522,7 +1523,7 @@ sub call {
             push @{$savedcallouts[-1]}, {
             $funcnm => {
                 matches => {%$captures},
-                flags => eval { map {@$_} @flags},
+                flags => [map {$_} @flags],
                 pos => $currpos
             }};
             print "success\n";

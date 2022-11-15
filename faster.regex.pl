@@ -20,7 +20,7 @@ sub dispatch_file_scope_stm {
 }
 
 sub register_taggable {
-    push_decl(pos(), $+{tagtype} . " " . $+{identtag})
+    push_decl($lastpos_dispatch, $+{tagtype} . " " . $+{identtag})
 }
 
 sub register_normal_decl {
@@ -29,5 +29,5 @@ sub register_normal_decl {
     $matches[-1]{'ident'} = $ident;
     #CORE::print ("registering " . $ident . " " . $matches[-1]{typedefkey} . "\n");
     register_decl($matches[-1]);
-    push_decl($poslast, $ident)
+    push_decl($lastpos_dispatch, $ident)
 }

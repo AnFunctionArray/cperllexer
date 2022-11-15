@@ -11,7 +11,7 @@ sub comma {
     my $flagsarg = shift;
     my $res = shift;
     #print "in begin_binary\n";
-    #print Dumper \@$flagsarg;
+    #print Dumper2 \@$flagsarg;
     #print
     
     $$res = not existsflag "callexpr", {"newexpr"}, $flagsarg;

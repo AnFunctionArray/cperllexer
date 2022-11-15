@@ -1,7 +1,7 @@
 (?<inner>\s*+(((?<stringlit>(?(?=(?<quote>["']))(?{push2 \@matches, {"begincharliteral" => $^N}})|(*F))
 						(?(?=(?<strtexts>(\g{quote}
 						(?(?=((?&escape)))\g{-1}|
-						(?<text>(?<textraw>((?!\g{quote}).))(?{call 'addplaintexttostring'})))*+
+						(?<text>(?<textraw>((?!\g{quote}|\\).)*+)(?{call 'addplaintexttostring'})))*+
 						\g{quote}\s*+)*+))\g{strtexts}|(?{pop2 \@matches})(*F))
 						(?{call 'add_literal'})(?{pop2 \@matches}))
 						|(?(?=((?&floating)))
