@@ -576,7 +576,7 @@ sub findnearest {
 
 sub getidtostor {
     my $ident = $_[0];
-    my $currpos = $currexecinitialpos;
+    my $currpos = pos();
     my $lastid = -1;
 
     {
@@ -646,7 +646,7 @@ sub waitforid {
                 foreach my $ind (@{$identstoidmap->{$ident}}) {
                     lock @{$ind};
                     #CORE::print ("check map $ind \n");
-                    last if(not ($ind->[0] < $currpos));
+                    last if($ind->[0] >= $currpos);
                     $areallset = $areallset && $ind->[1];
                     last if (not $areallset);
                     ++$nset;
