@@ -690,7 +690,7 @@ my $tryingagain: shared = 0;
         #use re qw(Debug EXECUTE);
         #CORE::print("here1\n");
         $regexstr = $_[0];
-        $regex = qr{(?(DEFINE)$regexstr)\G\s*+(?&cprogram)}sxx;
+        $regex = qr{(?(DEFINE)$regexstr)\G\s*+((?&cprogram)(?(?{pos() >= $nextpos})(*ACCEPT)))*+}sxx;
         $subject = $_[1];
         $fasterregex = $_[2];
         $threadid = $_[3];
@@ -874,7 +874,7 @@ tryagain:    #[{}];
                     #$silent = 1;
                     CORE::print ("retrying...");
                     
-                    $regex = eval { use re qw(Debug EXECUTE);  qr{(?(DEFINE)$regexstr)\G\s*+(?&cprogram)}sxx; };
+                    $regex = eval { use re qw(Debug EXECUTE);  qr{(?(DEFINE)$regexstr)\G\s*+((?&cprogram)(?(?{pos() >= $nextpos})(*ACCEPT)))*+}sxx; };
                     }
                     $tryingagainlocal = 1;
                     $entertryagain = 0;
@@ -996,7 +996,7 @@ tryagain:    #[{}];
     my $tryagain = 2;
     my $lasrtypedefobj = {%{$typedefidentifiersvector->[0]}};
     my $lastposcurrlast = 0;
-    my $compreg = qr{$initseqlight\G\s*+(?<globaloutter>(?<globalinner>(?&fasterdecls))*+((?&globalinner)(?&globaloutter))?+)}sxx;
+    my $compreg = qr{$initseqlight\G\s*+(?&fasterdecls)*+}sxx;
 
     #while(1) {
         {
@@ -1023,7 +1023,7 @@ tryagain_main:
             }
             elsif($tryagain++ == 1) {
                 use re qw(Debug EXECUTE); 
-                $compreg = qr{(?(DEFINE)$finitseqlight)\G\s*+(?<globaloutter>(?<globalinner>(?&fasterdecls))*+((?&globalinner)(?&globaloutter))?+)}sxx;
+                $compreg = qr{(?(DEFINE)$finitseqlight)\G\s*+(?&fasterdecls)*+}sxx;
                 #CORE::print("trying again with debug\n" . $initseqlight );
                 pos($subject) = $lastposcurrlast;
                 goto tryagain_main
