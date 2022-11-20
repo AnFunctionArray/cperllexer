@@ -3,7 +3,7 @@ sub dispatch_file_scope_stm {
     my $currpos = $_[0];
     $lastcurpos = $currpos;
     #CORE::print ( $currpos . "__" .$lastpos . "\n" );
-    if ($nqueues++ == $minlen) {
+    if ($currpos - $lastpos_dispatch >= $minlen) {
         $q->enqueue([scalar($lastntypedfs), scalar($lastpos_dispatch), scalar($currpos)]);
         $lastpos_dispatch = $currpos;
         if ($typedefs_changed) {

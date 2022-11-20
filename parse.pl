@@ -59,7 +59,7 @@ $genml = $ENV{'GENMLJSON'};
 @flags = ();
 
 $maxtimoeut = $ENV{'TIMEOUTWAIT'} // -1;
-$minlen = $ENV{'MINQUEUECOUNT'};
+$minlen = $ENV{'MINLEN'};
 $debug = $ENV{'DEBUG'};
 $silent = $ENV{'SILENT'};
 $lineonly = $ENV{'LINEONLY'};
@@ -1007,7 +1007,7 @@ tryagain_main:
             $lastposcurrlast = pos($subject);
         }
 
-        if(!($subject =~ m{$}sxxg)) {
+        if(!($lastposcurrlast > scalar(length $subject) - 1)) {
             @flags = ();
             @matches = ();
             @savedcallouts = ();
@@ -1034,7 +1034,9 @@ tryagain_main:
         }
     #}
 
-    if ($nqueues) {
+    pos($subject) = $lastpos_dispatch;
+
+    if (!($subject =~ m{\G\s*+$}sxxg)) {
         $q->enqueue([scalar($lastntypedfs), scalar($lastpos_dispatch), scalar(length $subject) - 1]);
     }
 
