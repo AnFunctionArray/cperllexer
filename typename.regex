@@ -165,9 +165,9 @@
 
 
 (?<abstrbitfield>\s*+:\s*+(?{call 'beginconstantexpr'})(?&assignorsomething)(?{call 'endconstantexpr'}))
-(?<designator>\s*+(\[(?&primexprnew)\]|\.\s*+(?&identifier))\s*+)
-(?<initializer>(?&assignorsomething)(?{call 'extract'})|\s*+[{]((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*+[}]\s*+)
-(?<abstrinitialization>=(?{call 'begin_initializer'})(?&initializer)(?{call 'finalize_initializer'}))
+(?<designator>\s*+(\[(?&primexprnew)\]|\.\s*+(?<dsig_ident>(?&identifierpure)))(?{call 'go_to_level'})\s*+)
+(?<initializer>(?&assignorsomething)(?{call 'init_commit'})|\s*+[{](?{call 'init_go_down_level'})((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*+[}](?{call 'init_go_up_level'})\s*+)
+(?<abstrinitialization>=(?{call 'begin_initializer'})(?&initializer)(?{call 'init_end'}))
 
 (?<add_ident_to_enum_def>\s*+(?<identlasttag>(?&identifierraw_qualified))(?{call 'add_ident_to_enum_def'})\s*+)
 
