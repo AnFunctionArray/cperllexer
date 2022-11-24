@@ -11,8 +11,8 @@
 (?<fasterdecls>(?(?=(?{push2 \@matches, {}})(?<declbod>((?(<tagend>)(*F))(\s*+(?&typeorqualifortypdf)\s*+
     |\s*+\b(?<tagtype>struct|union|enum)\b\s*+(?<identtag>((?&identifierpure))(?{eval {$matches[-1]{strc}=$^N}}))?+\s*+((?&brackets)(?{register_taggable()}))?+\s*+((?<tagend>;)(?{dispatch_file_scope_stm(pos(),$minlen)}))?+))*+
     (?(<tagend>)|(?&identoutter)
-    (\s*+(?&parens)\s*+)*+((,(?&identoutter)(\s*+(?&parens)\s*+)*+)*+
-    ((?![{])((?&parens)|(?&brackets)|(?&strunus)|[^\[\]\(\)\{\}'";])*+;(?{dispatch_file_scope_stm(pos(),$minlen)}))
+    (\s*+(?&parens)\s*+)*+(?&init_q)?+((,(?&identoutter)(\s*+(?&parens)\s*+)*+(?<init_q>=((?&parens)|(?&brackets)|(?&strunus)|[^\[\]\(\)\{\}'";,])*+)?+)*+
+    (;(?{dispatch_file_scope_stm(pos(),$minlen)}))
     |\s*+(?&brackets)(?{dispatch_file_scope_stm(pos(),$minlen)})))))
     \g{declbod}(?<=[};])
     (?{pop2 \@matches})|(*F)(?{pop2 \@matches})))

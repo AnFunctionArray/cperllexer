@@ -10,13 +10,15 @@
 	(?{pop2 \@flags})|(?{pop2 \@flags})(*F)))
 
 (?<castexpr>(?(?=((?&typenamerev)))\g{-1}|(?<unaryexpr>(?(?=((?&inner)))\g{-1}
-						|(?<inparenths>\s*+[(](?&primexprnew)[)]
-						\s*+))(((\[(?&primexprnew)\](?{call 'subscript'})|[(](?{call 'startfunctioncall'})(?&primexprcall)?+[)]
+						|(?<inparenths>\s*+\((?&primexprnew)\)
+						\s*+))(((\[(?&primexprnew)\](?{call 'subscript'})
+						|\((?{call 'startfunctioncall'})(?&primexprcall)?+\)
 						(?{call 'endfunctioncall'}))\s*+
-						|(?<arrowordot>(?<arrowordotraw>[.]|->))(?&identifierminemember)
-						|(?<postfixarith>(?<postfixarithraw>[+][+]|--)\s*+)
-						(?{call 'unaryincdec'})))*+
+						|(?&arrowordot)|(?&postfixarith)))*+
 						|(?&unary))))
+
+(?<postfixarith>\s*+(?<postfixarithraw>[+][+]|--)\s*+(?{call 'unaryincdec'}))
+(?<arrowordot>\s*+(?<arrowordotraw>[.]|->)\s*+(?&identifierminemember))
 
 (?<identifierminemember>\s*+(?<ident>(?&identifierraw_qualified))
 	(?{call 'memberaccess'})\s*+)

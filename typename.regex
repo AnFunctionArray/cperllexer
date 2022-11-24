@@ -112,7 +112,9 @@
 (?<abstdeclorallqualifsdestr>
 	(?{push2 \@declqualifs, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
 
-	(?(?=(?<declinner>(?&Tasbtdecloutter)(?{call 'enddeclaration'})(?{replayrecord \@declqualifs})(?{call 'endqualifs'})(?&Tabstinitorbitfl)?+))\g{declinner}
+	(?(?=(?<declinner>(?&Tasbtdecloutter)(?{call 'enddeclaration'})(?{replayrecord \@declqualifs})(?{call 'endqualifs'})
+	(?&Tabstinitorbitfl)?+(?{call 'announce_decl'})))
+	\g{declinner}
 	(?(?{eval {existsflag "outterparams", {"outter" => undef, "optoutter"}} or 0})|(,(?&declinner))*+)|(?(?{print3("dump\n");eval {exists $matches[-1]{strc}} or 0})
 	(?{print "is rec $recording \n"; call 'check_stray_struc' if (not eval {exists $matches[-1]{enum}})})
 	|
@@ -166,8 +168,14 @@
 
 (?<abstrbitfield>\s*+:\s*+(?{call 'beginconstantexpr'})(?&assignorsomething)(?{call 'endconstantexpr'}))
 (?<designator>\s*+(\[(?&primexprnew)\]|\.\s*+(?<dsig_ident>(?&identifierpure)))(?{call 'go_to_level'})\s*+)
-(?<initializer>(?&assignorsomething)(?{call 'init_commit'})|\s*+[{](?{call 'init_go_down_level'})((?&designator)++=)?+(?&initializer)?(,(?&initializer))*+,?+\s*+[}](?{call 'init_go_up_level'})\s*+)
-(?<abstrinitialization>=(?{call 'begin_initializer'})(?&initializer)(?{call 'init_end'}))
+(?<initializer>(?&assignorsomething)(?{call 'init_commit'})
+	|\s*+[{](?{call 'init_go_down_level'})((?&designator)++=)?+(?&initializer)?
+	(,(?&initializer))*+,?+\s*+[}](?{call 'init_go_up_level'})\s*+)
+(?<abstrinitialization>=(?{call 'begin_initializer'})
+	(?# Below allow string literal not to be converted)
+	(?(?=((?&stringlit)))\g{-1}|(?&initializer))
+	(?{call 'init_end'})
+)
 
 (?<add_ident_to_enum_def>\s*+(?<identlasttag>(?&identifierraw_qualified))(?{call 'add_ident_to_enum_def'})\s*+)
 
