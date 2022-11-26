@@ -20,7 +20,7 @@ sub dispatch_file_scope_stm {
 }
 
 sub register_taggable {
-    push_decl($lastcurpos, $+{tagtype} . " " . $+{identtag})
+    push_decl($lastcurpos, $+{tagtype} . " " . $+{identtag}) if ($+{identtag})
 }
 
 sub register_normal_decl {
