@@ -20,7 +20,7 @@
 (?<postfixarith>\s*+(?<postfixarithraw>[+][+]|--)\s*+(?{call 'unaryincdec'}))
 (?<arrowordot>\s*+(?<arrowordotraw>[.]|->)\s*+(?&identifierminemember))
 
-(?<identifierminemember>\s*+(?<ident>(?&identifierraw_qualified))
+(?<identifierminemember>\s*+(?<ident_member>(?&identifierraw_qualified))
 	(?{call 'memberaccess'})\s*+)
 
 (?<testxpr>(?&inner)|(?&inparenths))

@@ -39,7 +39,7 @@
 			(?(?=((?&identifierminedecl)))\g{-1}|(?{call 'identifier_decl'}))
 \s*+)
 
-(?<identifierminedecl>\s*+(?<ident>(?&identifierraw_qualified))
+(?<identifierminedecl>\s*+(?<ident_decl>(?&identifierraw_qualified))
 	(?{call 'identifier_decl'})\s*+)
 
 (?<Tabstrrestalt>
