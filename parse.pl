@@ -996,7 +996,8 @@ tryagain:    #[{}];
     my $tryagain = 2;
     my $lasrtypedefobj = {%{$typedefidentifiersvector->[0]}};
     my $lastposcurrlast = 0;
-    my $compreg = qr{$initseqlight\G\s*+(?&fasterdecls)*+}sxx;
+    my $compreg = eval { #use re qw(Debug EXECUTE); 
+        qr{$initseqlight\G\s*+(?&fasterdecls)*+}sxx; };
 
     #while(1) {
         {

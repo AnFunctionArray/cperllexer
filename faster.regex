@@ -11,10 +11,10 @@
 (?<fasterdecls>(?(?=(?{push2 \@matches, {}})(?<declbod>((?(<tagend>)(*F))(\s*+(?&typeorqualifortypdf)\s*+
     |(\s*+\b(?<tagtype>struct|union)\b\s*+(?<identtag>((?&identifierpure)?+))(?{eval {$matches[-1]{strc}=$^N}})\s*+
     ((?&brackets)(?{register_taggable()}))?+\s*+
-    |\s*+\benum\b\s*+(?<ident_enum>((?&identifierpure)?+))(?{eval {$matches[-1]{strc}=$^N}})\s*+
+    |\s*+\benum\b\s*+(?<ident_enum>(((?&identifierpure))(?{eval {$matches[-1]{strc}=$^N}}))?+)\s*+
     (\{\s*+(?{push2 \@matches, {}})
-        (((?&normal_rec)(?&init_q)?+,)*+
-        (?&normal_rec)(?&init_q)?+,?+)?+
+        ((?&normal_rec)(?&init_q)?+
+        (,(?&normal_rec)(?&init_q)?+)*+,?+)?+
     (?{pop2 \@matches})\s*+\}\s*+)?+)((?<tagend>;)(?{dispatch_file_scope_stm(pos(),$minlen)}))?+
     ))*+
     (?(<tagend>)|(?&identoutter)
