@@ -1570,7 +1570,7 @@ sub callcommon {
     #}
     my $res=not $facet;
     my $out=-1;
-    
+    #CORE::print("calling: " . $funcnm . "\n");
     if($res) {
         eval {$funcnm->($captures, $flags, \$res, \$out) };
     }

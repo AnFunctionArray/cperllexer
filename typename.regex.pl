@@ -235,8 +235,8 @@ sub identifier_decl {
 sub register_decl{
     #$silent = 0;
     #$sielnt = 1;
-    my $identifier = $_[0]{'ident'};
-    #CORE::print ("register $threadid ". $identifier . $_[0]{'typedefkey'} . "\n");
+    my $identifier = $_[0]{'ident_decl'};
+    #CORE::print ("register $threadid ". $identifier . " " . $_[0]{'typedefkey'} . "\n");
     #use Data::Dumper;
     #Dumper($_[0]);
     return if not $identifier;

@@ -26,7 +26,7 @@ sub register_taggable {
 sub register_normal_decl {
     my $poslast = pos();
     my $ident = $_[0];
-    $matches[-1]{'ident'} = $ident;
+    $matches[-1]{'ident_decl'} = $ident;
     #CORE::print ("registering " . $ident . " " . $matches[-1]{typedefkey} . "\n");
     register_decl($matches[-1]);
     push_decl($lastcurpos, $ident)
