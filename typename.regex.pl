@@ -155,8 +155,8 @@ sub checkident  {
 sub checkidentpermissive  {
     #print3 "checking" .$^N . "\n";
     print3 Dumper(\%keywords) . "\n";
-    if ((not exists $keywords{$^N})) {
-        print3 "$^N -> ident-permissive\n";
+    my $ident = $^N;
+    if ((not exists $keywords{$ident})) {
         return 1
     }
     return 0;
@@ -194,12 +194,13 @@ sub checktypeorqualifortypdf  {
         }
         #dec2 "facet"
     }
-    elsif (not eval {exists $matches[-1]{typedefnmmatched} or exists $matches[-1]{typefound} or 
+    else{
+        if (not eval {exists $matches[-1]{typedefnmmatched} or exists $matches[-1]{typefound} or 
             exists $matches[-1]{qualifnonstoragefnd} or exists $matches[-1]{strc}} and checktypedef2($input)) {
         #CORE::print("there typ" . Dumper(\@matches));
-        eval {$matches[-1]{typedefnmmatched} = $input};
+        eval {(%matches[-1])->{typedefnmmatched} = $input};
         return 1;
-    }
+    }}
     #dec2 "facet";
     return 0;
 }
@@ -222,12 +223,17 @@ sub endfulldecl {
     }
 }
 
+sub announce_decl2 {
+    identifier_decl($matches);
+    call 'announce_decl'
+}
+
 sub identifier_decl {
     my @fwdargs = @_;
     my $flags = $_[1];
-    return if(existsflag "bitfl", {"nonbitfl"}, $flags);
+    #return if(existsflag "bitfl", {"nonbitfl"}, $flags);
 
-    return unless(existsflag "outter", {"optoutter" => undef, "outterparams"}, $flags);
+    #return unless(existsflag "outter", {"optoutter" => undef, "outterparams"}, $flags);
 
     return register_decl(@fwdargs);
 }
@@ -235,7 +241,9 @@ sub identifier_decl {
 sub register_decl{
     #$silent = 0;
     #$sielnt = 1;
-    my $identifier = $_[0]{'ident'};
+    #use Data::Dumper;
+    my $identifier = $_[0]{'ident_decl'};
+    #CORE::print (Dumper($_[0]));
     #CORE::print ("register $threadid ". $identifier . $_[0]{'typedefkey'} . "\n");
     #use Data::Dumper;
     #Dumper($_[0]);
@@ -244,7 +252,7 @@ sub register_decl{
     my $priorstate = exists $typedefidentifiersvector->[-1]->{$identifier} ? $typedefidentifiersvector->[-1]->{$identifier} : -1;
     my $currentstate = exists $_[0]{'typedefkey'};
     $typedefidentifiersvector->[-1]->{$identifier} = $currentstate ? 1 : 0;
-
+    #print ("state $currentstate for $identifier\n");
     #$qtypdfs->enqueue([scalar($currentstate ? 1 : 0),$identifier]) if($threadid eq 0);
 
     #print3 "$priorstate -> $currentstate\n";

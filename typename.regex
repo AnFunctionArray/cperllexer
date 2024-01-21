@@ -113,7 +113,7 @@
 	(?{push2 \@declqualifs, \@{$savedcallouts[-1]}; pop2 \@savedcallouts})
 
 	(?(?=(?<declinner>(?&Tasbtdecloutter)(?{call 'enddeclaration'})(?{replayrecord \@declqualifs})(?{call 'endqualifs'})
-	(?&Tabstinitorbitfl)?+(?{call 'announce_decl'})))
+	(?&Tabstinitorbitfl)?+(?{call 'announce_decl2'})))
 	\g{declinner}
 	(?(?{eval {existsflag "outterparams", {"outter" => undef, "optoutter"}} or 0})|(,(?&declinner))*+)|(?(?{print3("dump\n");eval {exists $matches[-1]{strc}} or 0})
 	(?{print "is rec $recording \n"; call 'check_stray_struc' if (not eval {exists $matches[-1]{enum}})})
